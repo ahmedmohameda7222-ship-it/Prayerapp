@@ -8,9 +8,10 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import type { Locale } from "@/lib/i18n/types";
 
 const languageOptions: { value: Locale; labelKey: string }[] = [
+  { value: "ar", labelKey: "settings.arabic" },
   { value: "en", labelKey: "settings.english" },
   { value: "de", labelKey: "settings.german" },
-  { value: "ar", labelKey: "settings.arabic" },
+  { value: "tr", labelKey: "settings.turkish" },
 ];
 
 const timeFormatOptions = [
@@ -38,7 +39,7 @@ export function SettingsControls() {
           <Languages className="h-5 w-5" aria-hidden="true" />
           {t("settings.language")}
         </h2>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {languageOptions.map((item) => (
             <button
               key={item.value}

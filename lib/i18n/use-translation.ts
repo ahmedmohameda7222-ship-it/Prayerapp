@@ -1,16 +1,17 @@
 "use client";
 
 import { useLocale } from "./context";
+import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 import de from "../../messages/de.json";
-import ar from "../../messages/ar.json";
+import tr from "../../messages/tr.json";
 import type { Locale } from "./types";
 
-const messages = { en, de, ar };
+const messages = { ar, en, de, tr };
 
 export function useTranslation() {
   const { locale } = useLocale();
-  const current = messages[locale] || messages.en;
+  const current = messages[locale] || messages.ar;
 
   const t = (key: string): string => {
     const keys = key.split(".");
@@ -19,8 +20,8 @@ export function useTranslation() {
       if (value && typeof value === "object" && k in value) {
         value = (value as Record<string, unknown>)[k];
       } else {
-        // Fallback chain: current locale -> en -> key itself
-        let fallback: unknown = messages.en;
+        // Fallback chain: current locale -> Arabic -> key itself
+        let fallback: unknown = messages.ar;
         for (const fk of keys) {
           if (fallback && typeof fallback === "object" && fk in fallback) {
             fallback = (fallback as Record<string, unknown>)[fk];

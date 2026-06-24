@@ -9,7 +9,7 @@ type I18nContextType = {
 };
 
 const I18nContext = createContext<I18nContextType>({
-  locale: "en",
+  locale: "ar",
   setLocale: () => {},
 });
 
@@ -20,21 +20,23 @@ function getCookieLocale(): Locale | null {
   const match = document.cookie.match(new RegExp(`(^| )${COOKIE_NAME}=([^;]+)`));
   if (match) {
     const value = match[2];
-    if (value === "en" || value === "de" || value === "ar") return value;
+    if (value === "ar" || value === "en" || value === "de" || value === "tr") return value;
   }
   return null;
 }
 
 function getBrowserLocale(): Locale {
-  if (typeof navigator === "undefined") return "en";
+  if (typeof navigator === "undefined") return "ar";
   const lang = navigator.language;
-  if (lang.startsWith("de")) return "de";
   if (lang.startsWith("ar")) return "ar";
-  return "en";
+  if (lang.startsWith("de")) return "de";
+  if (lang.startsWith("tr")) return "tr";
+  if (lang.startsWith("en")) return "en";
+  return "ar";
 }
 
 function resolveInitialLocale(): Locale {
-  if (typeof window === "undefined") return "en";
+  if (typeof window === "undefined") return "ar";
   return getCookieLocale() || getBrowserLocale();
 }
 

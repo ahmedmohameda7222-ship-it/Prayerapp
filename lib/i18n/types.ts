@@ -1,1 +1,1 @@
-export type Locale = "en" | "de" | "ar";
+export type Locale = "ar" | "en" | "de" | "tr";

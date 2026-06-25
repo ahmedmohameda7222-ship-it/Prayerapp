@@ -184,8 +184,28 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   actor TEXT NOT NULL,
   action TEXT NOT NULL,
+  entity_type TEXT,
+  entity_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add entity_type and entity_id columns if they don't exist (safe migration)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'audit_logs' AND column_name = 'entity_type'
+  ) THEN
+    ALTER TABLE audit_logs ADD COLUMN entity_type TEXT;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'audit_logs' AND column_name = 'entity_id'
+  ) THEN
+    ALTER TABLE audit_logs ADD COLUMN entity_id TEXT;
+  END IF;
+END
+$$;
 
 -- Row Level Security (RLS) policies
 ALTER TABLE prayer_times ENABLE ROW LEVEL SECURITY;

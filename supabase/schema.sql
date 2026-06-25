@@ -225,21 +225,91 @@ ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Public read policies for published data
-CREATE POLICY IF NOT EXISTS "Public read published prayer times" ON prayer_times FOR SELECT USING (published = true);
-CREATE POLICY IF NOT EXISTS "Public read published jumuah" ON jumuah_times FOR SELECT USING (published = true);
-CREATE POLICY IF NOT EXISTS "Public read published announcements" ON announcements FOR SELECT USING (published = true);
-CREATE POLICY IF NOT EXISTS "Public read donation settings" ON donation_settings FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read active campaigns" ON donation_campaigns FOR SELECT USING (is_active = true);
-CREATE POLICY IF NOT EXISTS "Public read azkar" ON azkar_items FOR SELECT USING (is_published = true);
-CREATE POLICY IF NOT EXISTS "Public read events" ON events FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read ramadan" ON ramadan_days FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read mosque settings" ON mosque_settings FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read azkar categories" ON azkar_categories FOR SELECT USING (true);
+-- PostgreSQL/Supabase does not support CREATE POLICY IF NOT EXISTS.
+-- Drop-and-recreate keeps this schema safe to run multiple times.
+DROP POLICY IF EXISTS "Public read published prayer times" ON prayer_times;
+CREATE POLICY "Public read published prayer times"
+ON prayer_times
+FOR SELECT
+USING (published = true);
+
+DROP POLICY IF EXISTS "Public read published jumuah" ON jumuah_times;
+CREATE POLICY "Public read published jumuah"
+ON jumuah_times
+FOR SELECT
+USING (published = true);
+
+DROP POLICY IF EXISTS "Public read published announcements" ON announcements;
+CREATE POLICY "Public read published announcements"
+ON announcements
+FOR SELECT
+USING (published = true);
+
+DROP POLICY IF EXISTS "Public read donation settings" ON donation_settings;
+CREATE POLICY "Public read donation settings"
+ON donation_settings
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Public read active campaigns" ON donation_campaigns;
+CREATE POLICY "Public read active campaigns"
+ON donation_campaigns
+FOR SELECT
+USING (is_active = true);
+
+DROP POLICY IF EXISTS "Public read azkar" ON azkar_items;
+CREATE POLICY "Public read azkar"
+ON azkar_items
+FOR SELECT
+USING (is_published = true);
+
+DROP POLICY IF EXISTS "Public read events" ON events;
+CREATE POLICY "Public read events"
+ON events
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Public read ramadan" ON ramadan_days;
+CREATE POLICY "Public read ramadan"
+ON ramadan_days
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Public read mosque settings" ON mosque_settings;
+CREATE POLICY "Public read mosque settings"
+ON mosque_settings
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Public read azkar categories" ON azkar_categories;
+CREATE POLICY "Public read azkar categories"
+ON azkar_categories
+FOR SELECT
+USING (true);
 
 -- Admin users table: only authenticated admin users can read/write
-CREATE POLICY IF NOT EXISTS "Admin users read own" ON admin_users FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Admin users write super" ON admin_users FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admin users read own" ON admin_users;
+CREATE POLICY "Admin users read own"
+ON admin_users
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Admin users write super" ON admin_users;
+CREATE POLICY "Admin users write super"
+ON admin_users
+FOR ALL
+USING (true)
+WITH CHECK (true);
 
 -- Audit logs: admin readable
-CREATE POLICY IF NOT EXISTS "Audit logs admin read" ON audit_logs FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Audit logs admin write" ON audit_logs FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Audit logs admin read" ON audit_logs;
+CREATE POLICY "Audit logs admin read"
+ON audit_logs
+FOR SELECT
+USING (true);
+
+DROP POLICY IF EXISTS "Audit logs admin write" ON audit_logs;
+CREATE POLICY "Audit logs admin write"
+ON audit_logs
+FOR INSERT
+WITH CHECK (true);

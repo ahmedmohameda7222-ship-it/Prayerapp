@@ -27,10 +27,10 @@ async function createAuditLog(
 
 function validateAzkar(data: Record<string, string>): string[] {
   const errors: string[] = [];
-  if (!data.category?.trim()) errors.push("Category is required");
-  if (!data.arabicText?.trim()) errors.push("Arabic text is required");
+  if (!data.category?.trim()) errors.push("admin.errors.categoryRequired");
+  if (!data.arabicText?.trim()) errors.push("admin.errors.arabicTextRequired");
   const repeatCount = Number(data.repeatCount);
-  if (Number.isNaN(repeatCount) || repeatCount <= 0) errors.push("Repeat count must be a positive number");
+  if (Number.isNaN(repeatCount) || repeatCount <= 0) errors.push("admin.errors.repeatCountPositive");
   return errors;
 }
 
@@ -40,17 +40,19 @@ export async function createAzkarAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateAzkar(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db = {
     category: data.category.trim(),
     arabic_text: data.arabicText.trim(),
     transliteration: data.transliteration?.trim() || "",
+    translation_ar: data.translationAr?.trim() || "",
     translation_en: data.translationEn?.trim() || "",
     translation_de: data.translationDe?.trim() || "",
+    translation_tr: data.translationTr?.trim() || "",
     repeat_count: Number(data.repeatCount),
     source: data.source?.trim() || "",
     sort_order: Number(data.sortOrder || "0"),
@@ -58,7 +60,7 @@ export async function createAzkarAction(
   };
 
   const { data: result, error } = await client.from("azkar_items").insert(db).select().single();
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
   await createAuditLog(email, "created azkar item", "azkar", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/azkar");
@@ -73,17 +75,19 @@ export async function updateAzkarAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateAzkar(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db = {
     category: data.category.trim(),
     arabic_text: data.arabicText.trim(),
     transliteration: data.transliteration?.trim() || "",
+    translation_ar: data.translationAr?.trim() || "",
     translation_en: data.translationEn?.trim() || "",
     translation_de: data.translationDe?.trim() || "",
+    translation_tr: data.translationTr?.trim() || "",
     repeat_count: Number(data.repeatCount),
     source: data.source?.trim() || "",
     sort_order: Number(data.sortOrder || "0"),
@@ -91,7 +95,7 @@ export async function updateAzkarAction(
   };
 
   const { error } = await client.from("azkar_items").update(db).eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
   await createAuditLog(email, "updated azkar item", "azkar", id);
   revalidatePath("/admin/azkar");
@@ -102,10 +106,10 @@ export async function updateAzkarAction(
 export async function deleteAzkarAction(token: string, id: string): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const { error } = await client.from("azkar_items").delete().eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.deleteFailed" };
 
   await createAuditLog(email, "deleted azkar item", "azkar", id);
   revalidatePath("/admin/azkar");
@@ -116,10 +120,10 @@ export async function deleteAzkarAction(token: string, id: string): Promise<{ su
 export async function togglePublishAzkarAction(token: string, id: string, isPublished: boolean): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const { error } = await client.from("azkar_items").update({ is_published: isPublished }).eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.toggleFailed" };
 
   const verb = isPublished ? "published" : "unpublished";
   await createAuditLog(email, `${verb} azkar item ${id}`, "azkar", id);

@@ -7,12 +7,23 @@ import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { ramadanDays } from "@/lib/mock-data";
 import { FormattedTime } from "@/components/ui/FormattedTime";
+import { useTranslation } from "@/lib/i18n/use-translation";
+import { getLocalizedField } from "@/lib/i18n/localized-content";
 
 export default function RamadanPage() {
+  const { t, locale } = useTranslation();
   const day = ramadanDays[0];
+  const note = getLocalizedField(day, "note", locale);
+  const rows = [
+    [t("ramadan.imsak"), day.imsak],
+    [t("ramadan.fajr"), day.fajr],
+    [t("ramadan.iftarMaghrib"), day.iftar],
+    [t("ramadan.taraweeh"), day.taraweeh],
+  ];
+
   return (
     <AppShell>
-      <PageHeader title="Ramadan" />
+      <PageHeader titleKey="ramadan.title" />
       <div className="grid gap-5">
         <Card className="patterned bg-gradient-to-br from-[var(--color-emerald-dark)] to-[var(--color-emerald)] text-[var(--color-card)]">
           <div className="relative z-10 flex items-center gap-3">
@@ -20,18 +31,13 @@ export default function RamadanPage() {
               <Moon className="h-7 w-7" />
             </div>
             <div>
-              <h2 className="font-brand text-3xl">Ramadan Schedule</h2>
-              <p className="text-white/76">Placeholder calendar for Deggendorf.</p>
+              <h2 className="font-brand text-3xl">{t("ramadan.schedule")}</h2>
+              <p className="text-white/76">{note || t("ramadan.placeholder")}</p>
             </div>
           </div>
         </Card>
         <div className="grid grid-cols-2 gap-3">
-          {[
-            ["Imsak", day.imsak],
-            ["Fajr", day.fajr],
-            ["Iftar / Maghrib", day.iftar],
-            ["Taraweeh", day.taraweeh],
-          ].map(([label, value]) => (
+          {rows.map(([label, value]) => (
             <Card key={label}>
               <p className="text-xs font-bold uppercase text-[var(--color-muted)]">{label}</p>
               <p className="mt-1 text-2xl font-extrabold text-[var(--color-emerald)]"><FormattedTime time={value} /></p>
@@ -39,12 +45,12 @@ export default function RamadanPage() {
           ))}
         </div>
         <section>
-          <SectionTitle>Ramadan Announcements</SectionTitle>
-          <Card><p className="text-sm text-[var(--color-muted)]">Ramadan announcements will be published by the mosque administration.</p></Card>
+          <SectionTitle>{t("ramadan.announcements")}</SectionTitle>
+          <Card><p className="text-sm text-[var(--color-muted)]">{t("ramadan.announcementsPlaceholder")}</p></Card>
         </section>
         <section>
-          <SectionTitle>Calendar Placeholder</SectionTitle>
-          <Card><p className="text-sm text-[var(--color-muted)]">Daily Ramadan rows will appear here once the schedule is published.</p></Card>
+          <SectionTitle>{t("ramadan.calendarPlaceholder")}</SectionTitle>
+          <Card><p className="text-sm text-[var(--color-muted)]">{t("ramadan.calendarPlaceholderDesc")}</p></Card>
         </section>
       </div>
     </AppShell>

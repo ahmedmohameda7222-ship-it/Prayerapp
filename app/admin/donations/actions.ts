@@ -27,23 +27,24 @@ async function createAuditLog(
 
 function validateDonationSettings(data: Record<string, string>): string[] {
   const errors: string[] = [];
-  if (!data.accountHolder?.trim()) errors.push("Account holder is required");
-  if (!data.iban?.trim()) errors.push("IBAN is required");
-  if (!data.bic?.trim()) errors.push("BIC is required");
-  if (!data.defaultPurpose?.trim()) errors.push("Default purpose is required");
+  if (!data.accountHolder?.trim()) errors.push("admin.errors.accountHolderRequired");
+  if (!data.iban?.trim()) errors.push("admin.errors.ibanRequired");
+  if (!data.bic?.trim()) errors.push("admin.errors.bicRequired");
+  if (!data.defaultPurposeAr?.trim()) errors.push("admin.errors.arabicDefaultPurposeRequired");
   return errors;
 }
 
 function validateCampaign(data: Record<string, string>): string[] {
   const errors: string[] = [];
-  if (!data.title?.trim()) errors.push("Title is required");
+  if (!data.titleAr?.trim()) errors.push("admin.errors.arabicTitleRequired");
+  if (!data.descriptionAr?.trim()) errors.push("admin.errors.arabicDescriptionRequired");
   const target = Number(data.targetAmount);
-  if (Number.isNaN(target) || target <= 0) errors.push("Target amount must be a positive number");
+  if (Number.isNaN(target) || target <= 0) errors.push("admin.errors.positiveTargetRequired");
   const collected = Number(data.collectedAmount);
-  if (Number.isNaN(collected) || collected < 0) errors.push("Collected amount must be zero or positive");
-  if (!data.startDate?.trim()) errors.push("Start date is required");
+  if (Number.isNaN(collected) || collected < 0) errors.push("admin.errors.nonNegativeCollectedRequired");
+  if (!data.startDate?.trim()) errors.push("admin.errors.startDateRequired");
   if (data.endDate && data.startDate && data.endDate < data.startDate) {
-    errors.push("End date must be after start date");
+    errors.push("admin.errors.endDateAfterStart");
   }
   return errors;
 }
@@ -54,22 +55,30 @@ export async function updateDonationSettingsAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateDonationSettings(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db: Record<string, unknown> = {
     account_holder: data.accountHolder.trim(),
     iban: data.iban.trim(),
     bic: data.bic.trim(),
     paypal_link: data.paypalLink?.trim() || null,
-    default_purpose: data.defaultPurpose.trim(),
-    receipt_note: data.receiptNote?.trim() || "",
+    default_purpose: data.defaultPurposeAr.trim(),
+    default_purpose_ar: data.defaultPurposeAr.trim(),
+    default_purpose_en: data.defaultPurposeEn?.trim() || null,
+    default_purpose_de: data.defaultPurposeDe?.trim() || null,
+    default_purpose_tr: data.defaultPurposeTr?.trim() || null,
+    receipt_note: data.receiptNoteAr?.trim() || "",
+    receipt_note_ar: data.receiptNoteAr?.trim() || null,
+    receipt_note_en: data.receiptNoteEn?.trim() || null,
+    receipt_note_de: data.receiptNoteDe?.trim() || null,
+    receipt_note_tr: data.receiptNoteTr?.trim() || null,
   };
 
   const { error } = await client.from("donation_settings").update(db).eq("id", "1");
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
   await createAuditLog(email, "updated donation settings", "donation_settings");
   revalidatePath("/admin/donations");
@@ -84,14 +93,22 @@ export async function createDonationCampaignAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateCampaign(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db = {
-    title: data.title.trim(),
-    description: data.description?.trim() || "",
+    title: data.titleAr.trim(),
+    title_ar: data.titleAr.trim(),
+    title_en: data.titleEn?.trim() || null,
+    title_de: data.titleDe?.trim() || null,
+    title_tr: data.titleTr?.trim() || null,
+    description: data.descriptionAr.trim(),
+    description_ar: data.descriptionAr.trim(),
+    description_en: data.descriptionEn?.trim() || null,
+    description_de: data.descriptionDe?.trim() || null,
+    description_tr: data.descriptionTr?.trim() || null,
     target_amount: Number(data.targetAmount),
     collected_amount: Number(data.collectedAmount || "0"),
     start_date: data.startDate,
@@ -101,9 +118,9 @@ export async function createDonationCampaignAction(
   };
 
   const { data: result, error } = await client.from("donation_campaigns").insert(db).select().single();
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, `created donation campaign "${data.title.trim()}"`, "donation_campaign", String((result as Record<string, unknown>).id));
+  await createAuditLog(email, `created donation campaign "${data.titleAr.trim()}"`, "donation_campaign", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
@@ -117,14 +134,22 @@ export async function updateDonationCampaignAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateCampaign(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db: Record<string, unknown> = {
-    title: data.title.trim(),
-    description: data.description?.trim() || "",
+    title: data.titleAr.trim(),
+    title_ar: data.titleAr.trim(),
+    title_en: data.titleEn?.trim() || null,
+    title_de: data.titleDe?.trim() || null,
+    title_tr: data.titleTr?.trim() || null,
+    description: data.descriptionAr.trim(),
+    description_ar: data.descriptionAr.trim(),
+    description_en: data.descriptionEn?.trim() || null,
+    description_de: data.descriptionDe?.trim() || null,
+    description_tr: data.descriptionTr?.trim() || null,
     target_amount: Number(data.targetAmount),
     collected_amount: Number(data.collectedAmount || "0"),
     start_date: data.startDate,
@@ -134,9 +159,9 @@ export async function updateDonationCampaignAction(
   };
 
   const { error } = await client.from("donation_campaigns").update(db).eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, `updated donation campaign "${data.title.trim()}"`, "donation_campaign", id);
+  await createAuditLog(email, `updated donation campaign "${data.titleAr.trim()}"`, "donation_campaign", id);
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
@@ -146,10 +171,10 @@ export async function updateDonationCampaignAction(
 export async function deleteDonationCampaignAction(token: string, id: string): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const { error } = await client.from("donation_campaigns").delete().eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.deleteFailed" };
 
   await createAuditLog(email, `deleted donation campaign ${id}`, "donation_campaign", id);
   revalidatePath("/admin/donations");
@@ -161,10 +186,10 @@ export async function deleteDonationCampaignAction(token: string, id: string): P
 export async function toggleActiveCampaignAction(token: string, id: string, isActive: boolean): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const { error } = await client.from("donation_campaigns").update({ is_active: isActive }).eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.toggleFailed" };
 
   const verb = isActive ? "activated" : "deactivated";
   await createAuditLog(email, `${verb} donation campaign ${id}`, "donation_campaign", id);
@@ -177,10 +202,10 @@ export async function toggleActiveCampaignAction(token: string, id: string, isAc
 export async function toggleFeaturedCampaignAction(token: string, id: string, isFeatured: boolean): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const { error } = await client.from("donation_campaigns").update({ is_featured: isFeatured }).eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.toggleFailed" };
 
   const verb = isFeatured ? "featured" : "unfeatured";
   await createAuditLog(email, `${verb} donation campaign ${id}`, "donation_campaign", id);

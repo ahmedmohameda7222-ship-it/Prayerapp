@@ -2,15 +2,6 @@ import type { PrayerName, PrayerTime } from "./types";
 
 export const prayerOrder: PrayerName[] = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"];
 
-export const prayerLabels: Record<PrayerName, string> = {
-  fajr: "Fajr",
-  sunrise: "Sunrise",
-  dhuhr: "Dhuhr",
-  asr: "Asr",
-  maghrib: "Maghrib",
-  isha: "Isha",
-};
-
 export function getPrayerForDate(times: PrayerTime[], date: string) {
   return times.find((item) => item.date === date && item.published);
 }

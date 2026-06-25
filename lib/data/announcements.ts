@@ -1,12 +1,15 @@
 import { createClient } from "@/lib/supabase/client";
 import { announcements as mockAnnouncements } from "@/lib/mock-data";
 import type { Announcement } from "@/lib/types";
+import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 function mapFromDb(row: Record<string, unknown>): Announcement {
   return {
     id: String(row.id),
-    title: String(row.title),
-    message: String(row.message),
+    title: readDbString(row, "title"),
+    message: readDbString(row, "message"),
+    ...localizedFieldsFromDb(row, "title", "title"),
+    ...localizedFieldsFromDb(row, "message", "message"),
     type: String(row.type) as Announcement["type"],
     isUrgent: Boolean(row.is_urgent),
     published: Boolean(row.published),
@@ -17,8 +20,10 @@ function mapFromDb(row: Record<string, unknown>): Announcement {
 function mapToDb(item: Partial<Announcement>): Record<string, unknown> {
   const db: Record<string, unknown> = {};
   if (item.id) db.id = item.id;
-  if (item.title) db.title = item.title;
-  if (item.message) db.message = item.message;
+  Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "title", "title", { includeLegacy: true }));
+  Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "message", "message", { includeLegacy: true }));
+  if (!db.title && item.title) db.title = item.title;
+  if (!db.message && item.message) db.message = item.message;
   if (item.type) db.type = item.type;
   if (item.isUrgent !== undefined) db.is_urgent = item.isUrgent;
   if (item.published !== undefined) db.published = item.published;

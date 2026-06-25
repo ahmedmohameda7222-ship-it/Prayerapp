@@ -31,16 +31,16 @@ function timeRegex() {
 
 function validateRamadanDay(data: Record<string, string>): string[] {
   const errors: string[] = [];
-  if (!data.date?.trim()) errors.push("Date is required");
+  if (!data.date?.trim()) errors.push("admin.errors.dateRequired");
   const ramadanDay = Number(data.ramadanDay);
-  if (Number.isNaN(ramadanDay) || ramadanDay <= 0) errors.push("Ramadan day must be a positive number");
-  if (!data.imsak?.trim()) errors.push("Imsak is required");
-  if (!data.fajr?.trim()) errors.push("Fajr is required");
-  if (!data.maghrib?.trim()) errors.push("Maghrib is required");
-  if (!data.iftar?.trim()) errors.push("Iftar is required");
+  if (Number.isNaN(ramadanDay) || ramadanDay <= 0) errors.push("admin.errors.ramadanDayPositive");
+  if (!data.imsak?.trim()) errors.push("admin.errors.imsakRequired");
+  if (!data.fajr?.trim()) errors.push("admin.errors.fajrRequired");
+  if (!data.maghrib?.trim()) errors.push("admin.errors.maghribRequired");
+  if (!data.iftar?.trim()) errors.push("admin.errors.iftarRequired");
   const times = [data.imsak, data.fajr, data.maghrib, data.iftar, data.taraweeh];
   for (const t of times) {
-    if (t && !timeRegex().test(t)) errors.push(`Invalid time format: ${t}. Use HH:mm.`);
+    if (t && !timeRegex().test(t)) errors.push("admin.errors.invalidTimeFormat");
   }
   return errors;
 }
@@ -51,10 +51,10 @@ export async function createRamadanDayAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateRamadanDay(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db = {
     date: data.date,
@@ -64,11 +64,15 @@ export async function createRamadanDayAction(
     maghrib: data.maghrib,
     iftar: data.iftar,
     taraweeh: data.taraweeh?.trim() || null,
-    note: data.note?.trim() || null,
+    note: data.noteAr?.trim() || null,
+    note_ar: data.noteAr?.trim() || null,
+    note_en: data.noteEn?.trim() || null,
+    note_de: data.noteDe?.trim() || null,
+    note_tr: data.noteTr?.trim() || null,
   };
 
   const { data: result, error } = await client.from("ramadan_days").insert(db).select().single();
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
   await createAuditLog(email, `created Ramadan day ${data.ramadanDay}`, "ramadan_day", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/ramadan");
@@ -84,10 +88,10 @@ export async function updateRamadanDayAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateRamadanDay(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db = {
     date: data.date,
@@ -97,11 +101,15 @@ export async function updateRamadanDayAction(
     maghrib: data.maghrib,
     iftar: data.iftar,
     taraweeh: data.taraweeh?.trim() || null,
-    note: data.note?.trim() || null,
+    note: data.noteAr?.trim() || null,
+    note_ar: data.noteAr?.trim() || null,
+    note_en: data.noteEn?.trim() || null,
+    note_de: data.noteDe?.trim() || null,
+    note_tr: data.noteTr?.trim() || null,
   };
 
   const { error } = await client.from("ramadan_days").update(db).eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
   await createAuditLog(email, `updated Ramadan day ${data.ramadanDay}`, "ramadan_day", id);
   revalidatePath("/admin/ramadan");
@@ -113,10 +121,10 @@ export async function updateRamadanDayAction(
 export async function deleteRamadanDayAction(token: string, id: string): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const { error } = await client.from("ramadan_days").delete().eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.deleteFailed" };
 
   await createAuditLog(email, `deleted Ramadan day ${id}`, "ramadan_day", id);
   revalidatePath("/admin/ramadan");

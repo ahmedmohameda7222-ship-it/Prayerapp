@@ -27,11 +27,12 @@ async function createAuditLog(
 
 function validateEvent(data: Record<string, string>): string[] {
   const errors: string[] = [];
-  if (!data.title?.trim()) errors.push("Title is required");
-  if (!data.date?.trim()) errors.push("Date is required");
-  if (!data.startTime?.trim()) errors.push("Start time is required");
-  if (!data.location?.trim()) errors.push("Location is required");
-  if (!data.type?.trim()) errors.push("Type is required");
+  if (!data.titleAr?.trim()) errors.push("admin.errors.arabicTitleRequired");
+  if (!data.descriptionAr?.trim()) errors.push("admin.errors.arabicDescriptionRequired");
+  if (!data.locationAr?.trim()) errors.push("admin.errors.arabicLocationRequired");
+  if (!data.date?.trim()) errors.push("admin.errors.dateRequired");
+  if (!data.startTime?.trim()) errors.push("admin.errors.startTimeRequired");
+  if (!data.type?.trim()) errors.push("admin.errors.typeRequired");
   return errors;
 }
 
@@ -41,25 +42,37 @@ export async function createEventAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateEvent(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db = {
-    title: data.title.trim(),
-    description: data.description?.trim() || "",
+    title: data.titleAr.trim(),
+    title_ar: data.titleAr.trim(),
+    title_en: data.titleEn?.trim() || null,
+    title_de: data.titleDe?.trim() || null,
+    title_tr: data.titleTr?.trim() || null,
+    description: data.descriptionAr.trim(),
+    description_ar: data.descriptionAr.trim(),
+    description_en: data.descriptionEn?.trim() || null,
+    description_de: data.descriptionDe?.trim() || null,
+    description_tr: data.descriptionTr?.trim() || null,
     date: data.date,
     start_time: data.startTime,
     end_time: data.endTime?.trim() || null,
-    location: data.location.trim(),
+    location: data.locationAr.trim(),
+    location_ar: data.locationAr.trim(),
+    location_en: data.locationEn?.trim() || null,
+    location_de: data.locationDe?.trim() || null,
+    location_tr: data.locationTr?.trim() || null,
     type: data.type.trim(),
   };
 
   const { data: result, error } = await client.from("events").insert(db).select().single();
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, `created event "${data.title.trim()}"`, "event", String((result as Record<string, unknown>).id));
+  await createAuditLog(email, `created event "${data.titleAr.trim()}"`, "event", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/events");
   revalidatePath("/events");
   revalidatePath("/");
@@ -73,25 +86,37 @@ export async function updateEventAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateEvent(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db = {
-    title: data.title.trim(),
-    description: data.description?.trim() || "",
+    title: data.titleAr.trim(),
+    title_ar: data.titleAr.trim(),
+    title_en: data.titleEn?.trim() || null,
+    title_de: data.titleDe?.trim() || null,
+    title_tr: data.titleTr?.trim() || null,
+    description: data.descriptionAr.trim(),
+    description_ar: data.descriptionAr.trim(),
+    description_en: data.descriptionEn?.trim() || null,
+    description_de: data.descriptionDe?.trim() || null,
+    description_tr: data.descriptionTr?.trim() || null,
     date: data.date,
     start_time: data.startTime,
     end_time: data.endTime?.trim() || null,
-    location: data.location.trim(),
+    location: data.locationAr.trim(),
+    location_ar: data.locationAr.trim(),
+    location_en: data.locationEn?.trim() || null,
+    location_de: data.locationDe?.trim() || null,
+    location_tr: data.locationTr?.trim() || null,
     type: data.type.trim(),
   };
 
   const { error } = await client.from("events").update(db).eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, `updated event "${data.title.trim()}"`, "event", id);
+  await createAuditLog(email, `updated event "${data.titleAr.trim()}"`, "event", id);
   revalidatePath("/admin/events");
   revalidatePath("/events");
   revalidatePath("/");
@@ -101,10 +126,10 @@ export async function updateEventAction(
 export async function deleteEventAction(token: string, id: string): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const { error } = await client.from("events").delete().eq("id", id);
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.deleteFailed" };
 
   await createAuditLog(email, `deleted event ${id}`, "event", id);
   revalidatePath("/admin/events");

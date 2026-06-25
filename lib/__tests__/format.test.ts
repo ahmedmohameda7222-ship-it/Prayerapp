@@ -11,8 +11,13 @@ describe("format utilities", () => {
   });
 
   it("formatCurrency formats EUR with German locale", () => {
-    const result = formatCurrency(1500);
+    const result = formatCurrency(1500, "de");
     expect(result).toContain("1.500");
+    expect(result).toContain("€");
+  });
+
+  it("formatCurrency defaults to Arabic locale", () => {
+    const result = formatCurrency(1500);
     expect(result).toContain("€");
   });
 

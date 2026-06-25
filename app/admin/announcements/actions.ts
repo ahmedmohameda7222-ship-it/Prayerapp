@@ -9,10 +9,10 @@ const validTypes: AnnouncementType[] = ["General", "Urgent", "Location update", 
 
 function validateAnnouncement(data: Record<string, string>) {
   const errors: string[] = [];
-  if (!data.title?.trim()) errors.push("Title is required");
-  if (!data.message?.trim()) errors.push("Message is required");
+  if (!data.titleAr?.trim()) errors.push("admin.errors.arabicTitleRequired");
+  if (!data.messageAr?.trim()) errors.push("admin.errors.arabicMessageRequired");
   if (!data.type || !validTypes.includes(data.type as AnnouncementType)) {
-    errors.push("Type is required");
+    errors.push("admin.errors.typeRequired");
   }
   return errors;
 }
@@ -45,17 +45,25 @@ export async function createAnnouncementAction(
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
-    return { success: false, error: "Supabase is not configured." };
+    return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
   const errors = validateAnnouncement(data);
   if (errors.length > 0) {
-    return { success: false, error: errors.join("; ") };
+    return { success: false, error: errors[0] };
   }
 
   const db = {
-    title: data.title.trim(),
-    message: data.message.trim(),
+    title: data.titleAr.trim(),
+    title_ar: data.titleAr.trim(),
+    title_en: data.titleEn?.trim() || null,
+    title_de: data.titleDe?.trim() || null,
+    title_tr: data.titleTr?.trim() || null,
+    message: data.messageAr.trim(),
+    message_ar: data.messageAr.trim(),
+    message_en: data.messageEn?.trim() || null,
+    message_de: data.messageDe?.trim() || null,
+    message_tr: data.messageTr?.trim() || null,
     type: data.type,
     is_urgent: data.isUrgent === "true",
     published: data.published === "true",
@@ -63,10 +71,10 @@ export async function createAnnouncementAction(
 
   const { data: result, error } = await client.from("announcements").insert(db).select().single();
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "admin.errors.saveFailed" };
   }
 
-  await createAuditLog(email, `created announcement "${data.title.trim()}"`, "announcement", String((result as Record<string, unknown>).id));
+  await createAuditLog(email, `created announcement "${data.titleAr.trim()}"`, "announcement", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/announcements");
   revalidatePath("/news");
   revalidatePath("/friday");
@@ -82,17 +90,25 @@ export async function updateAnnouncementAction(
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
-    return { success: false, error: "Supabase is not configured." };
+    return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
   const errors = validateAnnouncement(data);
   if (errors.length > 0) {
-    return { success: false, error: errors.join("; ") };
+    return { success: false, error: errors[0] };
   }
 
   const db = {
-    title: data.title.trim(),
-    message: data.message.trim(),
+    title: data.titleAr.trim(),
+    title_ar: data.titleAr.trim(),
+    title_en: data.titleEn?.trim() || null,
+    title_de: data.titleDe?.trim() || null,
+    title_tr: data.titleTr?.trim() || null,
+    message: data.messageAr.trim(),
+    message_ar: data.messageAr.trim(),
+    message_en: data.messageEn?.trim() || null,
+    message_de: data.messageDe?.trim() || null,
+    message_tr: data.messageTr?.trim() || null,
     type: data.type,
     is_urgent: data.isUrgent === "true",
     published: data.published === "true",
@@ -100,10 +116,10 @@ export async function updateAnnouncementAction(
 
   const { error } = await client.from("announcements").update(db).eq("id", id).select().single();
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "admin.errors.saveFailed" };
   }
 
-  await createAuditLog(email, `updated announcement "${data.title.trim()}"`, "announcement", id);
+  await createAuditLog(email, `updated announcement "${data.titleAr.trim()}"`, "announcement", id);
   revalidatePath("/admin/announcements");
   revalidatePath("/news");
   revalidatePath("/friday");
@@ -115,12 +131,12 @@ export async function deleteAnnouncementAction(token: string, id: string) {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
-    return { success: false, error: "Supabase is not configured." };
+    return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
   const { error } = await client.from("announcements").delete().eq("id", id);
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "admin.errors.deleteFailed" };
   }
 
   await createAuditLog(email, `deleted announcement ${id}`, "announcement", id);
@@ -135,12 +151,12 @@ export async function togglePublishAnnouncementAction(token: string, id: string,
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
-    return { success: false, error: "Supabase is not configured." };
+    return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
   const { error } = await client.from("announcements").update({ published }).eq("id", id);
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "admin.errors.toggleFailed" };
   }
 
   const verb = published ? "published" : "unpublished";
@@ -156,12 +172,12 @@ export async function toggleUrgentAnnouncementAction(token: string, id: string, 
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
-    return { success: false, error: "Supabase is not configured." };
+    return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
   const { error } = await client.from("announcements").update({ is_urgent: isUrgent }).eq("id", id);
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "admin.errors.toggleFailed" };
   }
 
   const verb = isUrgent ? "marked urgent" : "unmarked urgent";

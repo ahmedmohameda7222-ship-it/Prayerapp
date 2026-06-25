@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { jumuahTimes as mockJumuahTimes } from "@/lib/mock-data";
 import type { JumuahTime } from "@/lib/types";
+import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 function mapFromDb(row: Record<string, unknown>): JumuahTime {
   return {
@@ -11,8 +12,10 @@ function mapFromDb(row: Record<string, unknown>): JumuahTime {
     locationName: String(row.location_name),
     locationAddress: String(row.location_address),
     khateebName: String(row.khateeb_name),
-    language: String(row.language),
-    notes: String(row.notes),
+    language: readDbString(row, "language"),
+    notes: readDbString(row, "notes"),
+    ...localizedFieldsFromDb(row, "language", "language"),
+    ...localizedFieldsFromDb(row, "notes", "notes"),
     published: Boolean(row.published),
   };
 }
@@ -26,8 +29,10 @@ function mapToDb(item: Partial<JumuahTime>): Record<string, unknown> {
   if (item.locationName) db.location_name = item.locationName;
   if (item.locationAddress) db.location_address = item.locationAddress;
   if (item.khateebName) db.khateeb_name = item.khateebName;
-  if (item.language) db.language = item.language;
-  if (item.notes) db.notes = item.notes;
+  Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "language", "language", { includeLegacy: true }));
+  Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "notes", "notes", { includeLegacy: true }));
+  if (item.language) db.language = item.languageAr || item.language;
+  if (item.notes) db.notes = item.notesAr || item.notes;
   if (item.published !== undefined) db.published = item.published;
   return db;
 }

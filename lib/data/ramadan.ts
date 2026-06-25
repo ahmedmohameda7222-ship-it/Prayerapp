@@ -1,23 +1,28 @@
 import { createClient } from "@/lib/supabase/client";
 import { ramadanDays as mockRamadanDays } from "@/lib/mock-data";
 import type { RamadanDay } from "@/lib/types";
+import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 export async function getRamadanDays(): Promise<RamadanDay[]> {
   const client = createClient();
   if (!client) return mockRamadanDays;
   const { data, error } = await client.from("ramadan_days").select("*").order("date", { ascending: true });
   if (error || !data) return mockRamadanDays;
-  return data.map((row: unknown) => ({
-    id: String((row as Record<string, unknown>).id),
-    date: String((row as Record<string, unknown>).date),
-    ramadanDay: Number((row as Record<string, unknown>).ramadan_day),
-    imsak: String((row as Record<string, unknown>).imsak),
-    fajr: String((row as Record<string, unknown>).fajr),
-    maghrib: String((row as Record<string, unknown>).maghrib),
-    iftar: String((row as Record<string, unknown>).iftar),
-    taraweeh: String((row as Record<string, unknown>).taraweeh),
-    note: (row as Record<string, unknown>).note ? String((row as Record<string, unknown>).note) : undefined,
-  }));
+  return data.map((row: unknown) => {
+    const record = row as Record<string, unknown>;
+    return {
+      id: String(record.id),
+      date: String(record.date),
+      ramadanDay: Number(record.ramadan_day),
+      imsak: String(record.imsak),
+      fajr: String(record.fajr),
+      maghrib: String(record.maghrib),
+      iftar: String(record.iftar),
+      taraweeh: String(record.taraweeh),
+      note: readDbString(record, "note") || undefined,
+      ...localizedFieldsFromDb(record, "note", "note"),
+    };
+  });
 }
 
 export async function createRamadanDay(item: Omit<RamadanDay, "id">): Promise<RamadanDay> {
@@ -31,7 +36,8 @@ export async function createRamadanDay(item: Omit<RamadanDay, "id">): Promise<Ra
     maghrib: item.maghrib,
     iftar: item.iftar,
     taraweeh: item.taraweeh,
-    note: item.note,
+    note: item.noteAr || item.note,
+    ...localizedFieldsToDb(item as unknown as Record<string, unknown>, "note", "note", { includeLegacy: true }),
   };
   const { data, error } = await client.from("ramadan_days").insert(db).select().single();
   if (error || !data) throw new Error("Failed to create Ramadan day");
@@ -53,7 +59,8 @@ export async function updateRamadanDay(id: string, item: Partial<RamadanDay>): P
   if (item.maghrib) db.maghrib = item.maghrib;
   if (item.iftar) db.iftar = item.iftar;
   if (item.taraweeh) db.taraweeh = item.taraweeh;
-  if (item.note !== undefined) db.note = item.note;
+  Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "note", "note", { includeLegacy: true }));
+  if (item.note !== undefined) db.note = item.noteAr || item.note;
   const { data, error } = await client.from("ramadan_days").update(db).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update Ramadan day");
   return { ...item, id: String((data as Record<string, unknown>).id) } as RamadanDay;

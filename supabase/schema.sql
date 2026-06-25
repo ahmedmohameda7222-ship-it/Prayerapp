@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS prayer_times (
   maghrib_iqama TEXT,
   isha_iqama TEXT,
   note TEXT,
+  note_ar TEXT,
+  note_en TEXT,
+  note_de TEXT,
+  note_tr TEXT,
   published BOOLEAN DEFAULT false,
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(date)
@@ -32,7 +36,15 @@ CREATE TABLE IF NOT EXISTS jumuah_times (
   location_address TEXT NOT NULL,
   khateeb_name TEXT NOT NULL,
   language TEXT NOT NULL,
+  language_ar TEXT,
+  language_en TEXT,
+  language_de TEXT,
+  language_tr TEXT,
   notes TEXT,
+  notes_ar TEXT,
+  notes_en TEXT,
+  notes_de TEXT,
+  notes_tr TEXT,
   published BOOLEAN DEFAULT false,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -41,7 +53,15 @@ CREATE TABLE IF NOT EXISTS jumuah_times (
 CREATE TABLE IF NOT EXISTS announcements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
+  title_ar TEXT,
+  title_en TEXT,
+  title_de TEXT,
+  title_tr TEXT,
   message TEXT NOT NULL,
+  message_ar TEXT,
+  message_en TEXT,
+  message_de TEXT,
+  message_tr TEXT,
   type TEXT NOT NULL DEFAULT 'General',
   is_urgent BOOLEAN DEFAULT false,
   published BOOLEAN DEFAULT false,
@@ -56,7 +76,15 @@ CREATE TABLE IF NOT EXISTS donation_settings (
   bic TEXT NOT NULL,
   paypal_link TEXT,
   default_purpose TEXT NOT NULL,
+  default_purpose_ar TEXT,
+  default_purpose_en TEXT,
+  default_purpose_de TEXT,
+  default_purpose_tr TEXT,
   receipt_note TEXT NOT NULL,
+  receipt_note_ar TEXT,
+  receipt_note_en TEXT,
+  receipt_note_de TEXT,
+  receipt_note_tr TEXT,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -64,7 +92,15 @@ CREATE TABLE IF NOT EXISTS donation_settings (
 CREATE TABLE IF NOT EXISTS donation_campaigns (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
+  title_ar TEXT,
+  title_en TEXT,
+  title_de TEXT,
+  title_tr TEXT,
   description TEXT NOT NULL,
+  description_ar TEXT,
+  description_en TEXT,
+  description_de TEXT,
+  description_tr TEXT,
   target_amount NUMERIC NOT NULL DEFAULT 0,
   collected_amount NUMERIC NOT NULL DEFAULT 0,
   start_date DATE NOT NULL,
@@ -118,8 +154,10 @@ CREATE TABLE IF NOT EXISTS azkar_items (
   category TEXT NOT NULL,
   arabic_text TEXT NOT NULL,
   transliteration TEXT NOT NULL,
+  translation_ar TEXT,
   translation_en TEXT NOT NULL,
   translation_de TEXT NOT NULL,
+  translation_tr TEXT,
   repeat_count INTEGER NOT NULL DEFAULT 1,
   source TEXT NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0,
@@ -131,11 +169,23 @@ CREATE TABLE IF NOT EXISTS azkar_items (
 CREATE TABLE IF NOT EXISTS events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
+  title_ar TEXT,
+  title_en TEXT,
+  title_de TEXT,
+  title_tr TEXT,
   description TEXT NOT NULL,
+  description_ar TEXT,
+  description_en TEXT,
+  description_de TEXT,
+  description_tr TEXT,
   date DATE NOT NULL,
   start_time TEXT NOT NULL,
   end_time TEXT NOT NULL,
   location TEXT NOT NULL,
+  location_ar TEXT,
+  location_en TEXT,
+  location_de TEXT,
+  location_tr TEXT,
   type TEXT NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -151,6 +201,10 @@ CREATE TABLE IF NOT EXISTS ramadan_days (
   iftar TEXT NOT NULL,
   taraweeh TEXT NOT NULL,
   note TEXT,
+  note_ar TEXT,
+  note_en TEXT,
+  note_de TEXT,
+  note_tr TEXT,
   UNIQUE(date)
 );
 
@@ -158,6 +212,10 @@ CREATE TABLE IF NOT EXISTS ramadan_days (
 CREATE TABLE IF NOT EXISTS mosque_settings (
   id TEXT PRIMARY KEY DEFAULT '1',
   mosque_name TEXT NOT NULL,
+  mosque_name_ar TEXT,
+  mosque_name_en TEXT,
+  mosque_name_de TEXT,
+  mosque_name_tr TEXT,
   address TEXT NOT NULL,
   phone TEXT NOT NULL,
   email TEXT NOT NULL,
@@ -206,6 +264,98 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Multilingual content columns (safe migration / backfill)
+ALTER TABLE IF EXISTS prayer_times
+  ADD COLUMN IF NOT EXISTS note_ar TEXT,
+  ADD COLUMN IF NOT EXISTS note_en TEXT,
+  ADD COLUMN IF NOT EXISTS note_de TEXT,
+  ADD COLUMN IF NOT EXISTS note_tr TEXT;
+UPDATE prayer_times SET note_ar = note WHERE note_ar IS NULL AND note IS NOT NULL;
+
+ALTER TABLE IF EXISTS jumuah_times
+  ADD COLUMN IF NOT EXISTS language_ar TEXT,
+  ADD COLUMN IF NOT EXISTS language_en TEXT,
+  ADD COLUMN IF NOT EXISTS language_de TEXT,
+  ADD COLUMN IF NOT EXISTS language_tr TEXT,
+  ADD COLUMN IF NOT EXISTS notes_ar TEXT,
+  ADD COLUMN IF NOT EXISTS notes_en TEXT,
+  ADD COLUMN IF NOT EXISTS notes_de TEXT,
+  ADD COLUMN IF NOT EXISTS notes_tr TEXT;
+UPDATE jumuah_times SET language_ar = language WHERE language_ar IS NULL AND language IS NOT NULL;
+UPDATE jumuah_times SET notes_ar = notes WHERE notes_ar IS NULL AND notes IS NOT NULL;
+
+ALTER TABLE IF EXISTS announcements
+  ADD COLUMN IF NOT EXISTS title_ar TEXT,
+  ADD COLUMN IF NOT EXISTS title_en TEXT,
+  ADD COLUMN IF NOT EXISTS title_de TEXT,
+  ADD COLUMN IF NOT EXISTS title_tr TEXT,
+  ADD COLUMN IF NOT EXISTS message_ar TEXT,
+  ADD COLUMN IF NOT EXISTS message_en TEXT,
+  ADD COLUMN IF NOT EXISTS message_de TEXT,
+  ADD COLUMN IF NOT EXISTS message_tr TEXT;
+UPDATE announcements SET title_ar = title WHERE title_ar IS NULL AND title IS NOT NULL;
+UPDATE announcements SET message_ar = message WHERE message_ar IS NULL AND message IS NOT NULL;
+
+ALTER TABLE IF EXISTS donation_settings
+  ADD COLUMN IF NOT EXISTS default_purpose_ar TEXT,
+  ADD COLUMN IF NOT EXISTS default_purpose_en TEXT,
+  ADD COLUMN IF NOT EXISTS default_purpose_de TEXT,
+  ADD COLUMN IF NOT EXISTS default_purpose_tr TEXT,
+  ADD COLUMN IF NOT EXISTS receipt_note_ar TEXT,
+  ADD COLUMN IF NOT EXISTS receipt_note_en TEXT,
+  ADD COLUMN IF NOT EXISTS receipt_note_de TEXT,
+  ADD COLUMN IF NOT EXISTS receipt_note_tr TEXT;
+UPDATE donation_settings SET default_purpose_ar = default_purpose WHERE default_purpose_ar IS NULL AND default_purpose IS NOT NULL;
+UPDATE donation_settings SET receipt_note_ar = receipt_note WHERE receipt_note_ar IS NULL AND receipt_note IS NOT NULL;
+
+ALTER TABLE IF EXISTS donation_campaigns
+  ADD COLUMN IF NOT EXISTS title_ar TEXT,
+  ADD COLUMN IF NOT EXISTS title_en TEXT,
+  ADD COLUMN IF NOT EXISTS title_de TEXT,
+  ADD COLUMN IF NOT EXISTS title_tr TEXT,
+  ADD COLUMN IF NOT EXISTS description_ar TEXT,
+  ADD COLUMN IF NOT EXISTS description_en TEXT,
+  ADD COLUMN IF NOT EXISTS description_de TEXT,
+  ADD COLUMN IF NOT EXISTS description_tr TEXT;
+UPDATE donation_campaigns SET title_ar = title WHERE title_ar IS NULL AND title IS NOT NULL;
+UPDATE donation_campaigns SET description_ar = description WHERE description_ar IS NULL AND description IS NOT NULL;
+
+ALTER TABLE IF EXISTS events
+  ADD COLUMN IF NOT EXISTS title_ar TEXT,
+  ADD COLUMN IF NOT EXISTS title_en TEXT,
+  ADD COLUMN IF NOT EXISTS title_de TEXT,
+  ADD COLUMN IF NOT EXISTS title_tr TEXT,
+  ADD COLUMN IF NOT EXISTS description_ar TEXT,
+  ADD COLUMN IF NOT EXISTS description_en TEXT,
+  ADD COLUMN IF NOT EXISTS description_de TEXT,
+  ADD COLUMN IF NOT EXISTS description_tr TEXT,
+  ADD COLUMN IF NOT EXISTS location_ar TEXT,
+  ADD COLUMN IF NOT EXISTS location_en TEXT,
+  ADD COLUMN IF NOT EXISTS location_de TEXT,
+  ADD COLUMN IF NOT EXISTS location_tr TEXT;
+UPDATE events SET title_ar = title WHERE title_ar IS NULL AND title IS NOT NULL;
+UPDATE events SET description_ar = description WHERE description_ar IS NULL AND description IS NOT NULL;
+UPDATE events SET location_ar = location WHERE location_ar IS NULL AND location IS NOT NULL;
+
+ALTER TABLE IF EXISTS ramadan_days
+  ADD COLUMN IF NOT EXISTS note_ar TEXT,
+  ADD COLUMN IF NOT EXISTS note_en TEXT,
+  ADD COLUMN IF NOT EXISTS note_de TEXT,
+  ADD COLUMN IF NOT EXISTS note_tr TEXT;
+UPDATE ramadan_days SET note_ar = note WHERE note_ar IS NULL AND note IS NOT NULL;
+
+ALTER TABLE IF EXISTS azkar_items
+  ADD COLUMN IF NOT EXISTS translation_ar TEXT,
+  ADD COLUMN IF NOT EXISTS translation_tr TEXT;
+UPDATE azkar_items SET translation_ar = arabic_text WHERE translation_ar IS NULL AND arabic_text IS NOT NULL;
+
+ALTER TABLE IF EXISTS mosque_settings
+  ADD COLUMN IF NOT EXISTS mosque_name_ar TEXT,
+  ADD COLUMN IF NOT EXISTS mosque_name_en TEXT,
+  ADD COLUMN IF NOT EXISTS mosque_name_de TEXT,
+  ADD COLUMN IF NOT EXISTS mosque_name_tr TEXT;
+UPDATE mosque_settings SET mosque_name_ar = mosque_name WHERE mosque_name_ar IS NULL AND mosque_name IS NOT NULL;
 
 -- Row Level Security (RLS) policies
 ALTER TABLE prayer_times ENABLE ROW LEVEL SECURITY;

@@ -8,7 +8,7 @@ import { PrayerRow } from "./PrayerRow";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 export function PrayerTimesCard({ prayer, activePrayer = "asr" }: { prayer?: PrayerTime; activePrayer?: PrayerName }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   if (!prayer) {
     return (
       <Card>
@@ -21,7 +21,7 @@ export function PrayerTimesCard({ prayer, activePrayer = "asr" }: { prayer?: Pra
     <Card>
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-extrabold uppercase tracking-[0.04em] text-[var(--color-emerald)]">{t("prayer.todaysPrayerTimes")}</h2>
-        <span className="rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-bold text-[var(--color-muted)]">{formatLongDate(prayer.date)}</span>
+        <span className="rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-bold text-[var(--color-muted)]">{formatLongDate(prayer.date, locale)}</span>
       </div>
       <div className="grid gap-1">
         {prayerOrder.map((name) => (

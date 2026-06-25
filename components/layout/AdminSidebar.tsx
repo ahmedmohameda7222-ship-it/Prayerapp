@@ -5,23 +5,25 @@ import { Bell, BookOpen, CalendarDays, Clock, FileClock, HandHeart, LayoutDashbo
 import { usePathname } from "next/navigation";
 import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 const items = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/prayer-times", label: "Prayer Times", icon: Clock },
-  { href: "/admin/jumuah", label: "Jumu'ah", icon: MosqueIcon },
-  { href: "/admin/announcements", label: "Announcements", icon: Bell },
-  { href: "/admin/donations", label: "Donations", icon: HandHeart },
-  { href: "/admin/azkar", label: "Azkar & Duaa", icon: BookOpen },
-  { href: "/admin/events", label: "Events", icon: CalendarDays },
-  { href: "/admin/ramadan", label: "Ramadan", icon: CalendarDays },
-  { href: "/admin/logs", label: "Audit Logs", icon: FileClock },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin", labelKey: "admin.dashboard", icon: LayoutDashboard },
+  { href: "/admin/prayer-times", labelKey: "admin.prayerTimes", icon: Clock },
+  { href: "/admin/jumuah", labelKey: "admin.jumuah", icon: MosqueIcon },
+  { href: "/admin/announcements", labelKey: "admin.announcements", icon: Bell },
+  { href: "/admin/donations", labelKey: "admin.donations", icon: HandHeart },
+  { href: "/admin/azkar", labelKey: "admin.azkar", icon: BookOpen },
+  { href: "/admin/events", labelKey: "admin.events", icon: CalendarDays },
+  { href: "/admin/ramadan", labelKey: "admin.ramadan", icon: CalendarDays },
+  { href: "/admin/logs", labelKey: "admin.auditLogs", icon: FileClock },
+  { href: "/admin/settings", labelKey: "admin.settings", icon: Settings },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const { user, signOut } = useAdminAuth();
+  const { t } = useTranslation();
 
   return (
     <aside className="bg-[var(--color-emerald)] p-4 text-[var(--color-card)] lg:min-h-screen">
@@ -31,13 +33,13 @@ export function AdminSidebar() {
         </div>
         <div>
           <p className="font-brand text-xl">Deggendorf Prayer</p>
-          <p className="text-xs text-white/70">Admin</p>
+          <p className="text-xs text-white/70">{t("admin.admin")}</p>
         </div>
       </div>
 
       {user?.email && (
         <div className="mb-4 rounded-2xl bg-white/10 p-3">
-          <p className="text-xs text-white/70">Signed in as</p>
+          <p className="text-xs text-white/70">{t("admin.signedInAs")}</p>
           <p className="text-sm font-bold">{user.email}</p>
         </div>
       )}
@@ -49,7 +51,7 @@ export function AdminSidebar() {
           return (
             <Link key={item.href} href={item.href} className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold transition ${active ? "bg-[var(--color-gold)] text-[var(--color-emerald-dark)]" : "text-white/82 hover:bg-white/10"}`}>
               <Icon className="h-5 w-5" aria-hidden="true" />
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           );
         })}
@@ -61,7 +63,7 @@ export function AdminSidebar() {
           className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-white/82 transition hover:bg-white/10"
         >
           <LogOut className="h-5 w-5" aria-hidden="true" />
-          Log Out
+          {t("admin.logOut")}
         </button>
       </div>
     </aside>

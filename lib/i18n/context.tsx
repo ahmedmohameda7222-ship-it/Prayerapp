@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
-import type { Locale } from "./types";
+import { getTextDirection } from "./direction";
+import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "./types";
 
 type I18nContextType = {
   locale: Locale;
@@ -9,48 +10,50 @@ type I18nContextType = {
 };
 
 const I18nContext = createContext<I18nContextType>({
-  locale: "ar",
+  locale: DEFAULT_LOCALE,
   setLocale: () => {},
 });
 
 const COOKIE_NAME = "locale";
+const STORAGE_NAME = "locale";
 
 function getCookieLocale(): Locale | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(new RegExp(`(^| )${COOKIE_NAME}=([^;]+)`));
   if (match) {
-    const value = match[2];
-    if (value === "ar" || value === "en" || value === "de" || value === "tr") return value;
+    const value = decodeURIComponent(match[2] || "");
+    const locale = normalizeLocale(value);
+    if (locale === value) return locale;
   }
   return null;
 }
 
-function getBrowserLocale(): Locale {
-  if (typeof navigator === "undefined") return "ar";
-  const lang = navigator.language;
-  if (lang.startsWith("ar")) return "ar";
-  if (lang.startsWith("de")) return "de";
-  if (lang.startsWith("tr")) return "tr";
-  if (lang.startsWith("en")) return "en";
-  return "ar";
+function getStoredLocale(): Locale | null {
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem(STORAGE_NAME);
+  if (!stored) return null;
+  const locale = normalizeLocale(stored);
+  return locale === stored ? locale : null;
 }
 
-function resolveInitialLocale(): Locale {
-  if (typeof window === "undefined") return "ar";
-  return getCookieLocale() || getBrowserLocale();
+function resolveInitialLocale(initialLocale?: Locale): Locale {
+  if (typeof window === "undefined") return initialLocale || DEFAULT_LOCALE;
+  return getStoredLocale() || getCookieLocale() || initialLocale || DEFAULT_LOCALE;
 }
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => resolveInitialLocale());
+export function I18nProvider({ children, initialLocale = DEFAULT_LOCALE }: { children: React.ReactNode; initialLocale?: Locale }) {
+  const [locale, setLocaleState] = useState<Locale>(() => resolveInitialLocale(initialLocale));
 
   useEffect(() => {
     document.documentElement.lang = locale;
-    document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
+    document.documentElement.dir = getTextDirection(locale);
+    window.localStorage.setItem(STORAGE_NAME, locale);
+    document.cookie = `${COOKIE_NAME}=${encodeURIComponent(locale)}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
   }, [locale]);
 
   const setLocale = useCallback((nextLocale: Locale) => {
-    setLocaleState(nextLocale);
-    document.cookie = `${COOKIE_NAME}=${nextLocale}; path=/; max-age=${60 * 60 * 24 * 365}`;
+    const normalizedLocale = normalizeLocale(nextLocale);
+    setLocaleState(normalizedLocale);
   }, []);
 
   return (

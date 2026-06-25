@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { Save, AlertTriangle } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { AlertTriangle, Save } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
+import { LocalizedContentFields } from "@/components/admin/LocalizedContentFields";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getMosqueSettings } from "@/lib/data/mosque-settings";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
+import { useTranslation } from "@/lib/i18n/use-translation";
 import type { MosqueSettings } from "@/lib/types";
 import { updateMosqueSettingsAction } from "./actions";
 
 export default function AdminSettingsPage() {
   const { session } = useAdminAuth();
+  const { t } = useTranslation();
   const [, setSettings] = useState<MosqueSettings | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
@@ -21,58 +24,81 @@ export default function AdminSettingsPage() {
   const hasSupabase = !!createClient();
 
   useEffect(() => {
-    getMosqueSettings().then((s) => {
-      setSettings(s);
+    getMosqueSettings().then((settings) => {
+      setSettings(settings);
       setForm({
-        mosqueName: s.mosqueName,
-        address: s.address,
-        phone: s.phone,
-        email: s.email,
-        googleMapsLink: s.googleMapsLink,
-        whatsappLink: s.whatsappLink,
-        telegramLink: s.telegramLink,
-        accountHolder: s.accountHolder,
-        iban: s.iban,
-        bic: s.bic,
+        mosqueNameAr: settings.mosqueNameAr || settings.mosqueName,
+        mosqueNameEn: settings.mosqueNameEn || "",
+        mosqueNameDe: settings.mosqueNameDe || "",
+        mosqueNameTr: settings.mosqueNameTr || "",
+        address: settings.address,
+        phone: settings.phone,
+        email: settings.email,
+        googleMapsLink: settings.googleMapsLink,
+        whatsappLink: settings.whatsappLink,
+        telegramLink: settings.telegramLink,
+        accountHolder: settings.accountHolder,
+        iban: settings.iban,
+        bic: settings.bic,
       });
     });
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault(); setError(""); setSuccess("");
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
     const token = session?.access_token || "";
-    if (!token) { setError("Not authenticated."); return; }
+    if (!token) {
+      setError(t("admin.errors.notAuthenticated"));
+      return;
+    }
     startTransition(async () => {
       const result = await updateMosqueSettingsAction(token, form);
-      if (!result.success) setError(result.error || "Failed.");
-      else { setSuccess("Settings updated."); setSettings(await getMosqueSettings()); }
+      if (!result.success) setError(t(result.error || "admin.errors.saveFailed"));
+      else {
+        setSuccess(t("admin.messages.settingsUpdated"));
+        setSettings(await getMosqueSettings());
+      }
     });
   }
 
   const fields = [
-    { k: "mosqueName", l: "Mosque Name" }, { k: "address", l: "Address" }, { k: "phone", l: "Phone" },
-    { k: "email", l: "Email" }, { k: "googleMapsLink", l: "Google Maps Link" },
-    { k: "whatsappLink", l: "WhatsApp Link" }, { k: "telegramLink", l: "Telegram Link" },
-    { k: "accountHolder", l: "Account Holder" }, { k: "iban", l: "IBAN" }, { k: "bic", l: "BIC" },
+    { key: "address", labelKey: "admin.address", required: true },
+    { key: "phone", labelKey: "admin.phone" },
+    { key: "email", labelKey: "admin.email" },
+    { key: "googleMapsLink", labelKey: "admin.googleMapsLink" },
+    { key: "whatsappLink", labelKey: "admin.whatsappLink" },
+    { key: "telegramLink", labelKey: "admin.telegramLink" },
+    { key: "accountHolder", labelKey: "donations.accountHolder" },
+    { key: "iban", labelKey: "donations.iban" },
+    { key: "bic", labelKey: "donations.bic" },
   ];
 
   return (
-    <AdminShell title="App Settings">
+    <AdminShell titleKey="admin.appSettings">
       <div className="grid gap-5">
-        {!hasSupabase && <Card className="flex items-center gap-3 p-4 text-sm font-bold text-[var(--color-warning)]"><AlertTriangle className="h-5 w-5" aria-hidden="true" /> Supabase is not configured. Admin editing is disabled.</Card>}
-        {error && <Card className="p-4 text-sm font-bold text-[var(--color-danger)]">{error}</Card>}
-        {success && <Card className="p-4 text-sm font-bold text-[var(--color-success)]">{success}</Card>}
+        {!hasSupabase ? <Card className="flex items-center gap-3 p-4 text-sm font-bold text-[var(--color-warning)]"><AlertTriangle className="h-5 w-5" aria-hidden="true" /> {t("admin.supabaseNotConfigured")}</Card> : null}
+        {error ? <Card className="p-4 text-sm font-bold text-[var(--color-danger)]">{error}</Card> : null}
+        {success ? <Card className="p-4 text-sm font-bold text-[var(--color-success)]">{success}</Card> : null}
 
         <Card>
-          <h2 className="mb-4 text-lg font-extrabold text-[var(--color-emerald)]">Mosque Settings</h2>
+          <h2 className="mb-4 text-lg font-extrabold text-[var(--color-emerald)]">{t("admin.mosqueSettings")}</h2>
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-            {fields.map(({ k, l }) => (
-              <label key={k} className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">{l}
-                <input type="text" required={k === "mosqueName" || k === "address"} value={form[k] || ""} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
+            <LocalizedContentFields
+              fields={[{ base: "mosqueName", labelKey: "admin.mosqueName", requiredArabic: true }]}
+              form={form}
+              setForm={setForm}
+              disabled={!hasSupabase || isPending}
+            />
+            {fields.map(({ key, labelKey, required }) => (
+              <label key={key} className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                {t(labelKey)}
+                <input type="text" required={required} value={form[key] || ""} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
               </label>
             ))}
             <div className="flex gap-3 md:col-span-2">
-              <Button type="submit" disabled={!hasSupabase || isPending}><Save className="h-4 w-4" aria-hidden="true" /> Save Settings</Button>
+              <Button type="submit" disabled={!hasSupabase || isPending}><Save className="h-4 w-4" aria-hidden="true" /> {t("admin.saveSettings")}</Button>
             </div>
           </form>
         </Card>

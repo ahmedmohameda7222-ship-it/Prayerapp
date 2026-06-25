@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { PrayerTime } from "@/lib/types";
+import type { PrayerName, PrayerTime } from "@/lib/types";
 import { formatLongDate } from "@/lib/date-utils";
-import { formatCountdown, getNextPrayer, prayerLabels } from "@/lib/prayer-utils";
+import { formatCountdown, getNextPrayer } from "@/lib/prayer-utils";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 export function PrayerCountdown({ prayer }: { prayer: PrayerTime }) {
-  const [state, setState] = useState({
+  const { t, locale } = useTranslation();
+  const [state, setState] = useState<{
+    name: PrayerName;
+    time: string;
+    countdown: string;
+  }>({
     name: "asr",
     time: prayer.asr,
     countdown: "01:24:36",
@@ -28,10 +34,10 @@ export function PrayerCountdown({ prayer }: { prayer: PrayerTime }) {
 
   return (
     <>
-      <p className="mb-1 text-xs font-extrabold uppercase tracking-[0.12em] text-[var(--color-gold)]">Next Prayer</p>
-      <h2 className="font-brand text-5xl font-semibold leading-tight">{prayerLabels[state.name as keyof typeof prayerLabels]}</h2>
+      <p className="mb-1 text-xs font-extrabold uppercase tracking-[0.12em] text-[var(--color-gold)]">{t("prayer.nextPrayer")}</p>
+      <h2 className="font-brand text-5xl font-semibold leading-tight">{t(`prayer.${state.name}`)}</h2>
       <p className="font-brand text-[40px] font-semibold leading-tight">{state.countdown}</p>
-      <p className="mt-2 text-sm font-bold text-white/86">{state.time} · {formatLongDate(prayer.date)}</p>
+      <p className="mt-2 text-sm font-bold text-white/86">{state.time} | {formatLongDate(prayer.date, locale)}</p>
     </>
   );
 }

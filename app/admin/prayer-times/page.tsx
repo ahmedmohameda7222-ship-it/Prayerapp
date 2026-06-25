@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { Plus, Pencil, Trash2, Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { AlertTriangle, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { AdminWarningCard } from "@/components/admin/AdminWarningCard";
 import { Button } from "@/components/ui/Button";
@@ -9,12 +9,13 @@ import { Card } from "@/components/ui/Card";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
+import { useTranslation } from "@/lib/i18n/use-translation";
 import type { PrayerTime } from "@/lib/types";
 import {
   createPrayerTimeAction,
-  updatePrayerTimeAction,
   deletePrayerTimeAction,
   togglePublishPrayerTimeAction,
+  updatePrayerTimeAction,
 } from "./actions";
 
 const emptyForm = {
@@ -36,6 +37,7 @@ const emptyForm = {
 
 export default function AdminPrayerTimesPage() {
   const { session } = useAdminAuth();
+  const { t } = useTranslation();
   const [items, setItems] = useState<PrayerTime[]>([]);
   const [form, setForm] = useState<Record<string, string>>({ ...emptyForm });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -44,17 +46,12 @@ export default function AdminPrayerTimesPage() {
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
 
-  useEffect(() => {
-    getPrayerTimes().then((data) => {
-      setItems(data);
-    });
-  }, []);
+  useEffect(() => { getPrayerTimes().then((data) => setItems(data)); }, []);
 
   function resetForm() {
     setForm({ ...emptyForm });
     setEditingId(null);
     setError("");
-    setSuccess("");
   }
 
   function fillForm(item: PrayerTime) {
@@ -79,46 +76,42 @@ export default function AdminPrayerTimesPage() {
     setSuccess("");
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function refreshItems() {
+    setItems(await getPrayerTimes());
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setError("");
     setSuccess("");
     const token = session?.access_token || "";
     if (!token) {
-      setError("Not authenticated.");
+      setError(t("admin.errors.notAuthenticated"));
       return;
     }
-
     startTransition(async () => {
-      const result = editingId
-        ? await updatePrayerTimeAction(token, editingId, form)
-        : await createPrayerTimeAction(token, form);
-
+      const result = editingId ? await updatePrayerTimeAction(token, editingId, form) : await createPrayerTimeAction(token, form);
       if (!result.success) {
-        setError(result.error || "Failed to save.");
-      } else {
-        setSuccess(editingId ? "Updated successfully." : "Created successfully.");
-        resetForm();
-        const fresh = await getPrayerTimes();
-        setItems(fresh);
+        setError(t(result.error || "admin.errors.saveFailed"));
+        return;
       }
+      resetForm();
+      setSuccess(t(editingId ? "admin.messages.updated" : "admin.messages.created"));
+      await refreshItems();
     });
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this prayer time?")) return;
+    if (!confirm(t("admin.confirmDeletePrayerTime"))) return;
     setError("");
     const token = session?.access_token || "";
     if (!token) return;
-
     startTransition(async () => {
       const result = await deletePrayerTimeAction(token, id);
-      if (!result.success) {
-        setError(result.error || "Failed to delete.");
-      } else {
-        setSuccess("Deleted successfully.");
-        const fresh = await getPrayerTimes();
-        setItems(fresh);
+      if (!result.success) setError(t(result.error || "admin.errors.deleteFailed"));
+      else {
+        setSuccess(t("admin.messages.deleted"));
+        await refreshItems();
       }
     });
   }
@@ -127,108 +120,69 @@ export default function AdminPrayerTimesPage() {
     setError("");
     const token = session?.access_token || "";
     if (!token) return;
-
     startTransition(async () => {
       const result = await togglePublishPrayerTimeAction(token, id, !current);
-      if (!result.success) {
-        setError(result.error || "Failed to toggle.");
-      } else {
-        const fresh = await getPrayerTimes();
-        setItems(fresh);
-      }
+      if (!result.success) setError(t(result.error || "admin.errors.toggleFailed"));
+      else await refreshItems();
     });
   }
 
+  const fields = [
+    { key: "date", labelKey: "admin.date", type: "date" },
+    { key: "fajr", labelKey: "prayer.fajr", type: "time" },
+    { key: "sunrise", labelKey: "prayer.sunrise", type: "time" },
+    { key: "dhuhr", labelKey: "prayer.dhuhr", type: "time" },
+    { key: "asr", labelKey: "prayer.asr", type: "time" },
+    { key: "maghrib", labelKey: "prayer.maghrib", type: "time" },
+    { key: "isha", labelKey: "prayer.isha", type: "time" },
+    { key: "fajrIqama", labelKey: "admin.fajrIqama", type: "time", optional: true },
+    { key: "dhuhrIqama", labelKey: "admin.dhuhrIqama", type: "time", optional: true },
+    { key: "asrIqama", labelKey: "admin.asrIqama", type: "time", optional: true },
+    { key: "maghribIqama", labelKey: "admin.maghribIqama", type: "time", optional: true },
+    { key: "ishaIqama", labelKey: "admin.ishaIqama", type: "time", optional: true },
+    { key: "note", labelKey: "admin.note", type: "text", optional: true },
+  ];
+
   const tableHeaders = [
-    "Date", "Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha",
-    "Fajr Iqama", "Dhuhr Iqama", "Asr Iqama", "Maghrib Iqama", "Isha Iqama",
-    "Note", "Published", "Actions",
+    "admin.date", "prayer.fajr", "prayer.sunrise", "prayer.dhuhr", "prayer.asr", "prayer.maghrib", "prayer.isha",
+    "admin.fajrIqama", "admin.dhuhrIqama", "admin.asrIqama", "admin.maghribIqama", "admin.ishaIqama",
+    "admin.note", "admin.published", "admin.actions",
   ];
 
   return (
-    <AdminShell title="Prayer Times Management">
+    <AdminShell titleKey="admin.prayerTimesManagement">
       <div className="grid gap-5">
-        <AdminWarningCard message="Prayer times for next week are missing." />
+        <AdminWarningCard message={t("admin.missingNextWeek")} />
 
-        {!hasSupabase && (
-          <Card className="flex items-center gap-3 p-4 text-sm font-bold text-[var(--color-warning)]">
-            <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-            Supabase is not configured. Admin editing is disabled.
-          </Card>
-        )}
-
-        {error && (
-          <Card className="p-4 text-sm font-bold text-[var(--color-danger)]">
-            {error}
-          </Card>
-        )}
-        {success && (
-          <Card className="p-4 text-sm font-bold text-[var(--color-success)]">
-            {success}
-          </Card>
-        )}
+        {!hasSupabase ? <Card className="flex items-center gap-3 p-4 text-sm font-bold text-[var(--color-warning)]"><AlertTriangle className="h-5 w-5" aria-hidden="true" /> {t("admin.supabaseNotConfigured")}</Card> : null}
+        {error ? <Card className="p-4 text-sm font-bold text-[var(--color-danger)]">{error}</Card> : null}
+        {success ? <Card className="p-4 text-sm font-bold text-[var(--color-success)]">{success}</Card> : null}
 
         <Card>
-          <h2 className="mb-4 text-lg font-extrabold text-[var(--color-emerald)]">
-            {editingId ? "Edit Prayer Time" : "Create Prayer Time"}
-          </h2>
+          <h2 className="mb-4 text-lg font-extrabold text-[var(--color-emerald)]">{editingId ? t("admin.editPrayerTime") : t("admin.createPrayerTime")}</h2>
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-            {[
-              { key: "date", label: "Date", type: "date" },
-              { key: "fajr", label: "Fajr", type: "time" },
-              { key: "sunrise", label: "Sunrise", type: "time" },
-              { key: "dhuhr", label: "Dhuhr", type: "time" },
-              { key: "asr", label: "Asr", type: "time" },
-              { key: "maghrib", label: "Maghrib", type: "time" },
-              { key: "isha", label: "Isha", type: "time" },
-              { key: "fajrIqama", label: "Fajr Iqama", type: "time" },
-              { key: "dhuhrIqama", label: "Dhuhr Iqama", type: "time" },
-              { key: "asrIqama", label: "Asr Iqama", type: "time" },
-              { key: "maghribIqama", label: "Maghrib Iqama", type: "time" },
-              { key: "ishaIqama", label: "Isha Iqama", type: "time" },
-              { key: "note", label: "Note", type: "text" },
-            ].map(({ key, label, type }) => (
+            {fields.map(({ key, labelKey, type, optional }) => (
               <label key={key} className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
-                {label}
-                <input
-                  type={type}
-                  required={key === "date" || !key.includes("Iqama")}
-                  value={form[key]}
-                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                  disabled={!hasSupabase || isPending}
-                  className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50"
-                />
+                {t(labelKey)}
+                <input type={type} required={!optional} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
               </label>
             ))}
             <label className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3 text-sm font-bold text-[var(--color-emerald)] md:col-span-2">
-              <input
-                type="checkbox"
-                checked={form.published === "true"}
-                onChange={(e) => setForm((f) => ({ ...f, published: String(e.target.checked) }))}
-                disabled={!hasSupabase || isPending}
-                className="h-5 w-5 accent-[var(--color-emerald)]"
-              />
-              Published
+              <input type="checkbox" checked={form.published === "true"} onChange={(event) => setForm((current) => ({ ...current, published: String(event.target.checked) }))} disabled={!hasSupabase || isPending} className="h-5 w-5 accent-[var(--color-emerald)]" />
+              {t("admin.published")}
             </label>
             <div className="flex gap-3 md:col-span-2">
-              <Button type="submit" disabled={!hasSupabase || isPending}>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                {editingId ? "Update" : "Create"}
-              </Button>
-              {editingId && (
-                <Button type="button" variant="ghost" onClick={resetForm} disabled={isPending}>
-                  Cancel
-                </Button>
-              )}
+              <Button type="submit" disabled={!hasSupabase || isPending}><Plus className="h-4 w-4" aria-hidden="true" /> {editingId ? t("common.update") : t("common.create")}</Button>
+              {editingId ? <Button type="button" variant="ghost" onClick={resetForm} disabled={isPending}>{t("common.cancel")}</Button> : null}
             </div>
           </form>
         </Card>
 
         <div className="admin-grid">
-          {["Weekly editor placeholder", "Monthly editor placeholder", "CSV import placeholder"].map((title) => (
-            <section key={title} className="card p-4">
-              <h2 className="font-bold text-[var(--color-emerald)]">{title}</h2>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">This area is ready for backend connection later.</p>
+          {["admin.weeklyEditor", "admin.monthlyEditor", "admin.csvImport"].map((key) => (
+            <section key={key} className="card p-4">
+              <h2 className="font-bold text-[var(--color-emerald)]">{t(key)}</h2>
+              <p className="mt-2 text-sm text-[var(--color-muted)]">{t("admin.backendPlaceholder")}</p>
             </section>
           ))}
         </div>
@@ -236,11 +190,7 @@ export default function AdminPrayerTimesPage() {
         <div className="overflow-x-auto rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]">
           <table className="w-full min-w-[680px] text-left text-sm">
             <thead className="bg-[var(--color-emerald)] text-[var(--color-card)]">
-              <tr>
-                {tableHeaders.map((h) => (
-                  <th key={h} className="px-3 py-3">{h}</th>
-                ))}
-              </tr>
+              <tr>{tableHeaders.map((key) => <th key={key} className="px-3 py-3">{t(key)}</th>)}</tr>
             </thead>
             <tbody>
               {items.map((item) => (
@@ -258,33 +208,12 @@ export default function AdminPrayerTimesPage() {
                   <td className="px-3 py-3">{item.maghribIqama || "-"}</td>
                   <td className="px-3 py-3">{item.ishaIqama || "-"}</td>
                   <td className="px-3 py-3">{item.note || "-"}</td>
-                  <td className="px-3 py-3">{item.published ? "Yes" : "No"}</td>
+                  <td className="px-3 py-3">{item.published ? t("common.yes") : t("common.no")}</td>
                   <td className="px-3 py-3">
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => fillForm(item)}
-                        disabled={isPending}
-                        aria-label="Edit"
-                        className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleTogglePublish(item.id, item.published)}
-                        disabled={isPending}
-                        aria-label={item.published ? "Unpublish" : "Publish"}
-                        className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"
-                      >
-                        {item.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        disabled={isPending}
-                        aria-label="Delete"
-                        className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-danger)]/10 text-[var(--color-danger)]"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <button onClick={() => fillForm(item)} disabled={isPending} aria-label={t("common.edit")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"><Pencil className="h-4 w-4" /></button>
+                      <button onClick={() => handleTogglePublish(item.id, item.published)} disabled={isPending} aria-label={item.published ? t("admin.unpublish") : t("admin.publish")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]">{item.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+                      <button onClick={() => handleDelete(item.id)} disabled={isPending} aria-label={t("common.delete")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-danger)]/10 text-[var(--color-danger)]"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </td>
                 </tr>

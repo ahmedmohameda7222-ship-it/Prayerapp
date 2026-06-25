@@ -33,8 +33,7 @@ export async function getAllowedAdminEmail(token: string): Promise<string | null
 export async function requireAllowedAdmin(token: string): Promise<string> {
   const email = await getAllowedAdminEmail(token);
   if (!email) {
-    throw new Error("Unauthorized: admin access required.");
+    throw new Error("admin.errors.unauthorized");
   }
   return email;
 }
-

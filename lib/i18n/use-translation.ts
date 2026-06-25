@@ -13,7 +13,7 @@ export function useTranslation() {
   const { locale } = useLocale();
   const current = messages[locale] || messages.ar;
 
-  const t = (key: string): string => {
+  const t = (key: string, values?: Record<string, string | number>): string => {
     const keys = key.split(".");
     let value: unknown = current;
     for (const k of keys) {
@@ -30,11 +30,17 @@ export function useTranslation() {
             break;
           }
         }
-        return typeof fallback === "string" ? fallback : key;
+        const fallbackText = typeof fallback === "string" ? fallback : key;
+        return interpolate(fallbackText, values);
       }
     }
-    return typeof value === "string" ? value : key;
+    return interpolate(typeof value === "string" ? value : key, values);
   };
 
   return { t, locale: locale as Locale };
+}
+
+function interpolate(text: string, values?: Record<string, string | number>) {
+  if (!values) return text;
+  return text.replace(/\{(\w+)\}/gu, (_, name: string) => String(values[name] ?? `{${name}}`));
 }

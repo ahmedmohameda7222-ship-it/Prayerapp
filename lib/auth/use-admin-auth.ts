@@ -80,19 +80,19 @@ export function useAdminAuth() {
     async (email: string, password: string) => {
       const client = createClient();
       if (!client) {
-        dispatch({ type: "SET_ERROR", error: "Supabase is not configured." });
+        dispatch({ type: "SET_ERROR", error: "admin.errors.supabaseNotConfigured" });
         return false;
       }
       dispatch({ type: "SET_LOADING", loading: true });
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error || !data.session) {
-        dispatch({ type: "SET_ERROR", error: error?.message || "Invalid email or password." });
+        dispatch({ type: "SET_ERROR", error: "admin.errors.invalidCredentials" });
         return false;
       }
       const allowed = isAdminEmail(data.user?.email);
       if (!allowed) {
         await client.auth.signOut();
-        dispatch({ type: "SET_ERROR", error: "You are not authorized to access the admin dashboard." });
+        dispatch({ type: "SET_ERROR", error: "admin.errors.unauthorized" });
         return false;
       }
       dispatch({ type: "SET_SESSION", user: data.user, session: data.session, isAdmin: true });

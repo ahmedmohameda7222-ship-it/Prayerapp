@@ -7,6 +7,7 @@ import {
   donationReport as mockDonationReport,
 } from "@/lib/mock-data";
 import type { DonationSettings, DonationCampaign, Donation, DonationReceiptRequest, DonationReport } from "@/lib/types";
+import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 export async function getDonationSettings(): Promise<DonationSettings> {
   const client = createClient();
@@ -18,8 +19,10 @@ export async function getDonationSettings(): Promise<DonationSettings> {
     iban: String(data.iban),
     bic: String(data.bic),
     paypalLink: data.paypal_link ? String(data.paypal_link) : undefined,
-    defaultPurpose: String(data.default_purpose),
-    receiptNote: String(data.receipt_note),
+    defaultPurpose: readDbString(data as Record<string, unknown>, "default_purpose"),
+    receiptNote: readDbString(data as Record<string, unknown>, "receipt_note"),
+    ...localizedFieldsFromDb(data as Record<string, unknown>, "defaultPurpose", "default_purpose"),
+    ...localizedFieldsFromDb(data as Record<string, unknown>, "receiptNote", "receipt_note"),
   };
 }
 
@@ -31,8 +34,10 @@ export async function updateDonationSettings(settings: Partial<DonationSettings>
   if (settings.iban) db.iban = settings.iban;
   if (settings.bic) db.bic = settings.bic;
   if (settings.paypalLink !== undefined) db.paypal_link = settings.paypalLink;
-  if (settings.defaultPurpose) db.default_purpose = settings.defaultPurpose;
-  if (settings.receiptNote) db.receipt_note = settings.receiptNote;
+  Object.assign(db, localizedFieldsToDb(settings as Record<string, unknown>, "defaultPurpose", "default_purpose", { includeLegacy: true }));
+  Object.assign(db, localizedFieldsToDb(settings as Record<string, unknown>, "receiptNote", "receipt_note", { includeLegacy: true }));
+  if (settings.defaultPurpose) db.default_purpose = settings.defaultPurposeAr || settings.defaultPurpose;
+  if (settings.receiptNote) db.receipt_note = settings.receiptNoteAr || settings.receiptNote;
   const { data, error } = await client.from("donation_settings").update(db).eq("id", "1").select().single();
   if (error || !data) return { ...mockDonationSettings, ...settings } as DonationSettings;
   return getDonationSettings();
@@ -47,25 +52,32 @@ export async function getDonationCampaigns(): Promise<DonationCampaign[]> {
     .eq("is_active", true)
     .order("end_date", { ascending: true });
   if (error || !data) return mockDonationCampaigns;
-  return data.map((row: unknown) => ({
-    id: String((row as Record<string, unknown>).id),
-    title: String((row as Record<string, unknown>).title),
-    description: String((row as Record<string, unknown>).description),
-    targetAmount: Number((row as Record<string, unknown>).target_amount),
-    collectedAmount: Number((row as Record<string, unknown>).collected_amount),
-    startDate: String((row as Record<string, unknown>).start_date),
-    endDate: String((row as Record<string, unknown>).end_date),
-    isActive: Boolean((row as Record<string, unknown>).is_active),
-    isFeatured: Boolean((row as Record<string, unknown>).is_featured),
-  }));
+  return data.map((row: unknown) => {
+    const record = row as Record<string, unknown>;
+    return {
+      id: String(record.id),
+      title: readDbString(record, "title"),
+      description: readDbString(record, "description"),
+      targetAmount: Number(record.target_amount),
+      collectedAmount: Number(record.collected_amount),
+      startDate: String(record.start_date),
+      endDate: String(record.end_date),
+      isActive: Boolean(record.is_active),
+      isFeatured: Boolean(record.is_featured),
+      ...localizedFieldsFromDb(record, "title", "title"),
+      ...localizedFieldsFromDb(record, "description", "description"),
+    };
+  });
 }
 
 export async function createDonationCampaign(item: Omit<DonationCampaign, "id">): Promise<DonationCampaign> {
   const client = createClient();
   if (!client) return { ...item, id: `mock-${Date.now()}` } as DonationCampaign;
   const db = {
-    title: item.title,
-    description: item.description,
+    ...localizedFieldsToDb(item as unknown as Record<string, unknown>, "title", "title", { includeLegacy: true }),
+    ...localizedFieldsToDb(item as unknown as Record<string, unknown>, "description", "description", { includeLegacy: true }),
+    title: item.titleAr || item.title,
+    description: item.descriptionAr || item.description,
     target_amount: item.targetAmount,
     collected_amount: item.collectedAmount,
     start_date: item.startDate,
@@ -86,8 +98,10 @@ export async function updateDonationCampaign(id: string, item: Partial<DonationC
     return { ...existing, ...item } as DonationCampaign;
   }
   const db: Record<string, unknown> = {};
-  if (item.title) db.title = item.title;
-  if (item.description) db.description = item.description;
+  Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "title", "title", { includeLegacy: true }));
+  Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "description", "description", { includeLegacy: true }));
+  if (item.title) db.title = item.titleAr || item.title;
+  if (item.description) db.description = item.descriptionAr || item.description;
   if (item.targetAmount !== undefined) db.target_amount = item.targetAmount;
   if (item.collectedAmount !== undefined) db.collected_amount = item.collectedAmount;
   if (item.startDate) db.start_date = item.startDate;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getPrayerForDate, getIqama, getNextPrayer, prayerOrder, formatCountdown, prayerLabels } from "@/lib/prayer-utils";
+import { getPrayerForDate, getIqama, getNextPrayer, prayerOrder, formatCountdown } from "@/lib/prayer-utils";
 import type { PrayerTime } from "@/lib/types";
 
 const samplePrayer: PrayerTime = {
@@ -26,11 +26,6 @@ describe("prayer-utils", () => {
     expect(prayerOrder).toHaveLength(6);
     expect(prayerOrder[0]).toBe("fajr");
     expect(prayerOrder[5]).toBe("isha");
-  });
-
-  it("prayerLabels maps names correctly", () => {
-    expect(prayerLabels.fajr).toBe("Fajr");
-    expect(prayerLabels.maghrib).toBe("Maghrib");
   });
 
   it("getPrayerForDate finds published prayer by date", () => {

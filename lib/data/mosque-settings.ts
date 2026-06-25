@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { mosqueSettings as mockMosqueSettings } from "@/lib/mock-data";
 import type { MosqueSettings } from "@/lib/types";
+import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 export async function getMosqueSettings(): Promise<MosqueSettings> {
   const client = createClient();
@@ -8,7 +9,8 @@ export async function getMosqueSettings(): Promise<MosqueSettings> {
   const { data, error } = await client.from("mosque_settings").select("*").single();
   if (error || !data) return mockMosqueSettings;
   return {
-    mosqueName: String((data as Record<string, unknown>).mosque_name),
+    mosqueName: readDbString(data as Record<string, unknown>, "mosque_name"),
+    ...localizedFieldsFromDb(data as Record<string, unknown>, "mosqueName", "mosque_name"),
     address: String((data as Record<string, unknown>).address),
     phone: String((data as Record<string, unknown>).phone),
     email: String((data as Record<string, unknown>).email),
@@ -25,7 +27,8 @@ export async function updateMosqueSettings(settings: Partial<MosqueSettings>): P
   const client = createClient();
   if (!client) return { ...mockMosqueSettings, ...settings } as MosqueSettings;
   const db: Record<string, unknown> = {};
-  if (settings.mosqueName) db.mosque_name = settings.mosqueName;
+  Object.assign(db, localizedFieldsToDb(settings as Record<string, unknown>, "mosqueName", "mosque_name", { includeLegacy: true }));
+  if (settings.mosqueName) db.mosque_name = settings.mosqueNameAr || settings.mosqueName;
   if (settings.address) db.address = settings.address;
   if (settings.phone) db.phone = settings.phone;
   if (settings.email) db.email = settings.email;

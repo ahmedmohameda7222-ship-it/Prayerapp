@@ -1,5 +1,33 @@
 export type PrayerName = "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
 
+export interface LocalizedTitleFields {
+  titleAr?: string;
+  titleEn?: string;
+  titleDe?: string;
+  titleTr?: string;
+}
+
+export interface LocalizedMessageFields {
+  messageAr?: string;
+  messageEn?: string;
+  messageDe?: string;
+  messageTr?: string;
+}
+
+export interface LocalizedDescriptionFields {
+  descriptionAr?: string;
+  descriptionEn?: string;
+  descriptionDe?: string;
+  descriptionTr?: string;
+}
+
+export interface LocalizedLocationFields {
+  locationAr?: string;
+  locationEn?: string;
+  locationDe?: string;
+  locationTr?: string;
+}
+
 export interface PrayerTime {
   id: string;
   date: string;
@@ -15,6 +43,10 @@ export interface PrayerTime {
   maghribIqama?: string;
   ishaIqama?: string;
   note?: string;
+  noteAr?: string;
+  noteEn?: string;
+  noteDe?: string;
+  noteTr?: string;
   published: boolean;
   updatedAt: string;
 }
@@ -28,13 +60,21 @@ export interface JumuahTime {
   locationAddress: string;
   khateebName: string;
   language: string;
+  languageAr?: string;
+  languageEn?: string;
+  languageDe?: string;
+  languageTr?: string;
   notes: string;
+  notesAr?: string;
+  notesEn?: string;
+  notesDe?: string;
+  notesTr?: string;
   published: boolean;
 }
 
 export type AnnouncementType = "General" | "Urgent" | "Location update" | "Community" | "Ramadan" | "Eid" | "Donation";
 
-export interface Announcement {
+export interface Announcement extends LocalizedTitleFields, LocalizedMessageFields {
   id: string;
   title: string;
   message: string;
@@ -50,10 +90,18 @@ export interface DonationSettings {
   bic: string;
   paypalLink?: string;
   defaultPurpose: string;
+  defaultPurposeAr?: string;
+  defaultPurposeEn?: string;
+  defaultPurposeDe?: string;
+  defaultPurposeTr?: string;
   receiptNote: string;
+  receiptNoteAr?: string;
+  receiptNoteEn?: string;
+  receiptNoteDe?: string;
+  receiptNoteTr?: string;
 }
 
-export interface DonationCampaign {
+export interface DonationCampaign extends LocalizedTitleFields, LocalizedDescriptionFields {
   id: string;
   title: string;
   description: string;
@@ -99,13 +147,15 @@ export interface AzkarItem {
   transliteration: string;
   translationEn: string;
   translationDe: string;
+  translationAr?: string;
+  translationTr?: string;
   repeatCount: number;
   source: string;
   sortOrder: number;
   isPublished: boolean;
 }
 
-export interface Event {
+export interface Event extends LocalizedTitleFields, LocalizedDescriptionFields, LocalizedLocationFields {
   id: string;
   title: string;
   description: string;
@@ -126,10 +176,18 @@ export interface RamadanDay {
   iftar: string;
   taraweeh: string;
   note?: string;
+  noteAr?: string;
+  noteEn?: string;
+  noteDe?: string;
+  noteTr?: string;
 }
 
 export interface MosqueSettings {
   mosqueName: string;
+  mosqueNameAr?: string;
+  mosqueNameEn?: string;
+  mosqueNameDe?: string;
+  mosqueNameTr?: string;
   address: string;
   phone: string;
   email: string;

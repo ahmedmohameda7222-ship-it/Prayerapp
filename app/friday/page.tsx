@@ -9,46 +9,57 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { AnnouncementCard } from "@/components/news/AnnouncementCard";
 import { announcements, jumuahTimes } from "@/lib/mock-data";
 import { FormattedTime } from "@/components/ui/FormattedTime";
+import { useTranslation } from "@/lib/i18n/use-translation";
+import { getLocalizedField } from "@/lib/i18n/localized-content";
 
 export default function FridayPage() {
+  const { t, locale } = useTranslation();
   const friday = jumuahTimes[0];
+  const locationName = getLocalizedField(friday, "locationName", locale) || friday.locationName;
+  const language = getLocalizedField(friday, "language", locale) || friday.language;
+  const notes = getLocalizedField(friday, "notes", locale) || friday.notes;
   const details = [
-    [Clock, "Khutbah Time", friday.khutbahTime],
-    [Clock, "Jumu'ah Prayer", friday.prayerTime],
-    [MapPin, "Location", friday.locationName],
-    [Mic2, "Khateeb", friday.khateebName],
-    [Languages, "Language", friday.language],
+    [Clock, t("friday.khutbahTime"), friday.khutbahTime, true],
+    [Clock, t("friday.jumuahPrayer"), friday.prayerTime, true],
+    [MapPin, t("friday.location"), locationName, false],
+    [Mic2, t("friday.khateeb"), friday.khateebName, false],
+    [Languages, t("friday.language"), language, false],
   ] as const;
 
   return (
     <AppShell>
-      <PageHeader title="Jumu'ah" />
+      <PageHeader titleKey="friday.title" />
       <div className="grid gap-5">
-        <HeroCard src="/assets/hero-friday-mosque-night.png" alt="Friday mosque illustration" priority>
-          <h2 className="font-brand text-5xl font-semibold">Jumu&apos;ah</h2>
-          <p className="mt-3 text-lg font-bold text-[var(--color-gold)]">Khutbah <FormattedTime time={friday.khutbahTime} /> · Prayer <FormattedTime time={friday.prayerTime} /></p>
-          <p className="mt-2 text-sm text-white/82">{friday.locationName}</p>
+        <HeroCard src="/assets/hero-friday-mosque-night.png" alt={t("friday.heroAlt")} priority>
+          <h2 className="font-brand text-5xl font-semibold">{t("friday.title")}</h2>
+          <p className="mt-3 text-lg font-bold text-[var(--color-gold)]">
+            {t("prayer.khutbah")} <FormattedTime time={friday.khutbahTime} /> | {t("prayer.prayer")}{" "}
+            <FormattedTime time={friday.prayerTime} />
+          </p>
+          <p className="mt-2 text-sm text-white/82">{locationName}</p>
         </HeroCard>
         <Card>
           <div className="grid gap-3">
-            {details.map(([Icon, label, value]) => (
+            {details.map(([Icon, label, value, isTime]) => (
               <div key={label} className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3">
                 <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--color-gold-soft)] text-[var(--color-gold-dark)]">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase text-[var(--color-muted)]">{label}</p>
-                  <p className="font-bold text-[var(--color-charcoal)]">{label.includes("Time") ? <FormattedTime time={value} /> : value}</p>
+                  <p className="font-bold text-[var(--color-charcoal)]">{isTime ? <FormattedTime time={value} /> : value}</p>
                 </div>
               </div>
             ))}
-            <p className="rounded-2xl bg-[var(--color-emerald-soft)] p-3 text-sm font-bold text-[var(--color-emerald)]">{friday.notes}</p>
+            <p className="rounded-2xl bg-[var(--color-emerald-soft)] p-3 text-sm font-bold text-[var(--color-emerald)]">{notes}</p>
           </div>
         </Card>
         <section>
-          <SectionTitle>Announcements</SectionTitle>
+          <SectionTitle>{t("friday.announcements")}</SectionTitle>
           <div className="grid gap-3">
-            {announcements.slice(0, 3).map((announcement) => <AnnouncementCard key={announcement.id} announcement={announcement} />)}
+            {announcements.slice(0, 3).map((announcement) => (
+              <AnnouncementCard key={announcement.id} announcement={announcement} />
+            ))}
           </div>
         </section>
       </div>

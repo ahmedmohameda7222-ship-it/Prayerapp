@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
-const amounts = ["€5", "€10", "€20", "€50", "Custom"];
+const amounts = ["€5", "€10", "€20", "€50"];
 
 export function QuickDonateButtons() {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState("€20");
+  const options = [...amounts, t("donations.customAmount")];
+
   return (
     <div className="grid grid-cols-5 gap-2">
-      {amounts.map((amount) => (
+      {options.map((amount) => (
         <button
           key={amount}
           onClick={() => setSelected(amount)}

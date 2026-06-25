@@ -10,25 +10,25 @@ function timeRegex() {
 
 function validatePrayerTime(data: Record<string, string>) {
   const errors: string[] = [];
-  if (!data.date) errors.push("Date is required");
-  if (!data.fajr) errors.push("Fajr is required");
-  if (!data.sunrise) errors.push("Sunrise is required");
-  if (!data.dhuhr) errors.push("Dhuhr is required");
-  if (!data.asr) errors.push("Asr is required");
-  if (!data.maghrib) errors.push("Maghrib is required");
-  if (!data.isha) errors.push("Isha is required");
+  if (!data.date) errors.push("admin.errors.dateRequired");
+  if (!data.fajr) errors.push("admin.errors.fajrRequired");
+  if (!data.sunrise) errors.push("admin.errors.sunriseRequired");
+  if (!data.dhuhr) errors.push("admin.errors.dhuhrRequired");
+  if (!data.asr) errors.push("admin.errors.asrRequired");
+  if (!data.maghrib) errors.push("admin.errors.maghribRequired");
+  if (!data.isha) errors.push("admin.errors.ishaRequired");
 
   const times = [data.fajr, data.sunrise, data.dhuhr, data.asr, data.maghrib, data.isha];
   for (const t of times) {
     if (t && !timeRegex().test(t)) {
-      errors.push(`Invalid time format: ${t}. Use HH:mm.`);
+      errors.push("admin.errors.invalidTimeFormat");
     }
   }
 
   const iqamaTimes = [data.fajrIqama, data.dhuhrIqama, data.asrIqama, data.maghribIqama, data.ishaIqama];
   for (const t of iqamaTimes) {
     if (t && !timeRegex().test(t)) {
-      errors.push(`Invalid iqama time format: ${t}. Use HH:mm.`);
+      errors.push("admin.errors.invalidIqamaTimeFormat");
     }
   }
 
@@ -71,17 +71,17 @@ export async function createPrayerTimeAction(
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
-    return { success: false, error: "Supabase is not configured." };
+    return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
   const errors = validatePrayerTime(data);
   if (errors.length > 0) {
-    return { success: false, error: errors.join("; ") };
+    return { success: false, error: errors[0] };
   }
 
   const duplicate = await checkDuplicateDate(client, data.date);
   if (duplicate) {
-    return { success: false, error: `Prayer time for ${data.date} already exists.` };
+    return { success: false, error: "admin.errors.prayerDateExists" };
   }
 
   const db: Record<string, unknown> = {
@@ -103,7 +103,7 @@ export async function createPrayerTimeAction(
 
   const { data: result, error } = await client.from("prayer_times").insert(db).select().single();
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "admin.errors.saveFailed" };
   }
 
   await createAuditLog(email, `created prayer time for ${data.date}`, "prayer_time", String((result as Record<string, unknown>).id));
@@ -121,17 +121,17 @@ export async function updatePrayerTimeAction(
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
-    return { success: false, error: "Supabase is not configured." };
+    return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
   const errors = validatePrayerTime(data);
   if (errors.length > 0) {
-    return { success: false, error: errors.join("; ") };
+    return { success: false, error: errors[0] };
   }
 
   const duplicate = await checkDuplicateDate(client, data.date, id);
   if (duplicate) {
-    return { success: false, error: `Prayer time for ${data.date} already exists.` };
+    return { success: false, error: "admin.errors.prayerDateExists" };
   }
 
   const db: Record<string, unknown> = {
@@ -153,7 +153,7 @@ export async function updatePrayerTimeAction(
 
   const { error } = await client.from("prayer_times").update(db).eq("id", id).select().single();
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "admin.errors.saveFailed" };
   }
 
   await createAuditLog(email, `updated prayer time for ${data.date}`, "prayer_time", id);
@@ -167,12 +167,12 @@ export async function deletePrayerTimeAction(token: string, id: string) {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
-    return { success: false, error: "Supabase is not configured." };
+    return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
   const { error } = await client.from("prayer_times").delete().eq("id", id);
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "admin.errors.deleteFailed" };
   }
 
   await createAuditLog(email, `deleted prayer time ${id}`, "prayer_time", id);
@@ -186,12 +186,12 @@ export async function togglePublishPrayerTimeAction(token: string, id: string, p
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
-    return { success: false, error: "Supabase is not configured." };
+    return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
   const { error } = await client.from("prayer_times").update({ published }).eq("id", id);
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: "admin.errors.toggleFailed" };
   }
 
   const verb = published ? "published" : "unpublished";

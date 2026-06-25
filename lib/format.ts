@@ -1,5 +1,14 @@
-export function formatCurrency(value: number) {
-  return new Intl.NumberFormat("de-DE", {
+import type { Locale } from "@/lib/i18n/types";
+
+const intlLocales: Record<Locale, string> = {
+  ar: "ar-DE",
+  en: "en-DE",
+  de: "de-DE",
+  tr: "tr-DE",
+};
+
+export function formatCurrency(value: number, locale: Locale = "ar") {
+  return new Intl.NumberFormat(intlLocales[locale], {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,

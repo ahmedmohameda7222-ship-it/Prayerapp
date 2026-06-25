@@ -2,7 +2,7 @@
 
 import { ChevronRight, Clock, Moon, Sun, Sunrise } from "lucide-react";
 import type { PrayerName, PrayerTime } from "@/lib/types";
-import { getIqama, prayerLabels } from "@/lib/prayer-utils";
+import { getIqama } from "@/lib/prayer-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { formatTime } from "@/lib/time-format";
@@ -29,7 +29,7 @@ export function PrayerRow({ prayer, name, active = false }: { prayer: PrayerTime
         <Icon className="h-5 w-5" aria-hidden="true" />
       </div>
       <div>
-        <p className={`font-bold ${active ? "text-[var(--color-emerald)]" : "text-[var(--color-charcoal)]"}`}>{prayerLabels[name]}</p>
+        <p className={`font-bold ${active ? "text-[var(--color-emerald)]" : "text-[var(--color-charcoal)]"}`}>{t(`prayer.${name}`)}</p>
         {formattedIqama ? <p className="text-xs text-[var(--color-muted)]">{t("prayer.iqama")} {formattedIqama}</p> : <p className="text-xs text-[var(--color-muted)]">{t("prayer.noIqama")}</p>}
       </div>
       <p className={`text-lg font-extrabold ${active ? "text-[var(--color-emerald)]" : "text-[var(--color-charcoal)]"}`}>{formattedTime}</p>

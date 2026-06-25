@@ -1,5 +1,14 @@
-export function formatLongDate(date: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+import type { Locale } from "@/lib/i18n/types";
+
+const intlLocales: Record<Locale, string> = {
+  ar: "ar",
+  en: "en-GB",
+  de: "de-DE",
+  tr: "tr-TR",
+};
+
+export function formatLongDate(date: string, locale: Locale = "ar") {
+  return new Intl.DateTimeFormat(intlLocales[locale], {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -8,8 +17,8 @@ export function formatLongDate(date: string) {
   }).format(new Date(`${date}T12:00:00+02:00`));
 }
 
-export function formatShortDate(date: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+export function formatShortDate(date: string, locale: Locale = "ar") {
+  return new Intl.DateTimeFormat(intlLocales[locale], {
     weekday: "short",
     day: "numeric",
     month: "short",

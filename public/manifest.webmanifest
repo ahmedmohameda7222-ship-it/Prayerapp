@@ -1,7 +1,7 @@
 {
   "name": "Deggendorf Prayer",
   "short_name": "Deggendorf Prayer",
-  "description": "Local prayer times, Jumu'ah, announcements, donations, and community information for Deggendorf.",
+  "description": "مواقيت الصلاة والجمعة والإعلانات والتبرعات ومعلومات المجتمع في دغندورف.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf6ee",

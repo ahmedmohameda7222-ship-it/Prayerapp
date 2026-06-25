@@ -29,10 +29,10 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validateMosqueSettings(data: Record<string, string>): string[] {
   const errors: string[] = [];
-  if (!data.mosqueName?.trim()) errors.push("Mosque name is required");
-  if (!data.address?.trim()) errors.push("Address is required");
+  if (!data.mosqueNameAr?.trim()) errors.push("admin.errors.arabicMosqueNameRequired");
+  if (!data.address?.trim()) errors.push("admin.errors.addressRequired");
   if (data.email?.trim() && !emailRegex.test(data.email.trim())) {
-    errors.push("Email must be a valid email address");
+    errors.push("admin.errors.validEmailRequired");
   }
   return errors;
 }
@@ -43,13 +43,17 @@ export async function updateMosqueSettingsAction(
 ): Promise<{ success: boolean; error?: string }> {
   const email = await requireAllowedAdmin(token);
   const client = createServerClient();
-  if (!client) return { success: false, error: "Supabase is not configured." };
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
   const errors = validateMosqueSettings(data);
-  if (errors.length > 0) return { success: false, error: errors.join("; ") };
+  if (errors.length > 0) return { success: false, error: errors[0] };
 
   const db: Record<string, unknown> = {
-    mosque_name: data.mosqueName.trim(),
+    mosque_name: data.mosqueNameAr.trim(),
+    mosque_name_ar: data.mosqueNameAr.trim(),
+    mosque_name_en: data.mosqueNameEn?.trim() || null,
+    mosque_name_de: data.mosqueNameDe?.trim() || null,
+    mosque_name_tr: data.mosqueNameTr?.trim() || null,
     address: data.address.trim(),
     phone: data.phone?.trim() || "",
     email: data.email?.trim() || "",
@@ -62,7 +66,7 @@ export async function updateMosqueSettingsAction(
   };
 
   const { error } = await client.from("mosque_settings").update(db).eq("id", "1");
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
 
   await createAuditLog(email, "updated mosque settings", "mosque_settings");
   revalidatePath("/admin/settings");

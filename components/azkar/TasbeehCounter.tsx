@@ -5,13 +5,14 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
-export function TasbeehCounter({ name = "Subhan Allah", target = 33 }: { name?: string; target?: number }) {
+export function TasbeehCounter({ name, target = 33 }: { name?: string; target?: number }) {
   const { t } = useTranslation();
   const [count, setCount] = useState(0);
   const progress = Math.min(100, (count / target) * 100);
+  const displayName = name || t("azkar.defaultTasbeeh");
   return (
     <section className="card p-5 text-center" aria-label={t("azkar.tasbeeh")}>
-      <p className="text-sm font-bold text-[var(--color-muted)]">{name}</p>
+      <p className="text-sm font-bold text-[var(--color-muted)]">{displayName}</p>
       <p className="font-brand my-3 text-6xl font-semibold text-[var(--color-emerald)]" aria-live="polite">{count}</p>
       <p className="text-sm text-[var(--color-muted)]">{t("azkar.target")} {target}</p>
       <div className="my-4 h-2 rounded-full bg-[var(--color-border)]">

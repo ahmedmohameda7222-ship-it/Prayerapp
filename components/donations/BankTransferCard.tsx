@@ -5,15 +5,17 @@ import { Check, Copy } from "lucide-react";
 import type { DonationSettings } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import { getLocalizedField } from "@/lib/i18n/localized-content";
 
 export function BankTransferCard({ settings }: { settings: DonationSettings }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [copied, setCopied] = useState("");
+  const defaultPurpose = getLocalizedField(settings, "defaultPurpose", locale) || settings.defaultPurpose;
   const rows: [string, string, string][] = [
     [t("donations.accountHolder"), settings.accountHolder, "accountHolder"],
     [t("donations.iban"), settings.iban, "iban"],
     [t("donations.bic"), settings.bic, "bic"],
-    [t("donations.reference"), settings.defaultPurpose, "reference"],
+    [t("donations.reference"), defaultPurpose, "reference"],
   ];
 
   async function copy(label: string, value: string, key: string) {

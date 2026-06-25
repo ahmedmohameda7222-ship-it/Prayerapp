@@ -5,7 +5,7 @@ import { SettingsControls } from "@/components/settings/SettingsControls";
 export default function SettingsPage() {
   return (
     <AppShell>
-      <PageHeader title="Settings" />
+      <PageHeader titleKey="settings.title" />
       <SettingsControls />
     </AppShell>
   );

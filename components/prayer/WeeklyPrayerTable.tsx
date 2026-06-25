@@ -1,8 +1,13 @@
+"use client";
+
 import type { PrayerName, PrayerTime } from "@/lib/types";
 import { formatShortDate } from "@/lib/date-utils";
 import { getIqama, prayerLabels, prayerOrder } from "@/lib/prayer-utils";
+import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
+import { formatTime } from "@/lib/time-format";
 
 export function WeeklyPrayerTable({ times, selectedDate, activePrayer = "asr" }: { times: PrayerTime[]; selectedDate: string; activePrayer?: PrayerName }) {
+  const { timeFormat } = useTimeFormat();
   return (
     <div className="overflow-x-auto rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]">
       <table className="w-full min-w-[680px] border-collapse text-left text-sm">
@@ -20,8 +25,8 @@ export function WeeklyPrayerTable({ times, selectedDate, activePrayer = "asr" }:
               <td className="whitespace-nowrap px-4 py-3 font-bold text-[var(--color-emerald)]">{formatShortDate(day.date)}</td>
               {prayerOrder.map((name) => (
                 <td key={name} className={`px-3 py-3 ${day.date === selectedDate && name === activePrayer ? "text-[var(--color-emerald)]" : ""}`}>
-                  <div className="font-extrabold">{day[name]}</div>
-                  {getIqama(day, name) ? <div className="text-xs text-[var(--color-muted)]">Iqama {getIqama(day, name)}</div> : <div className="text-xs text-[var(--color-muted)]">-</div>}
+                  <div className="font-extrabold">{formatTime(day[name], timeFormat)}</div>
+                  {getIqama(day, name) ? <div className="text-xs text-[var(--color-muted)]">Iqama {formatTime(getIqama(day, name) || "", timeFormat)}</div> : <div className="text-xs text-[var(--color-muted)]">-</div>}
                 </td>
               ))}
             </tr>

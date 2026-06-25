@@ -1,3 +1,5 @@
+"use client";
+
 import { Clock, Languages, MapPin, Mic2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -6,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { AnnouncementCard } from "@/components/news/AnnouncementCard";
 import { announcements, jumuahTimes } from "@/lib/mock-data";
+import { FormattedTime } from "@/components/ui/FormattedTime";
 
 export default function FridayPage() {
   const friday = jumuahTimes[0];
@@ -23,7 +26,7 @@ export default function FridayPage() {
       <div className="grid gap-5">
         <HeroCard src="/assets/hero-friday-mosque-night.png" alt="Friday mosque illustration" priority>
           <h2 className="font-brand text-5xl font-semibold">Jumu&apos;ah</h2>
-          <p className="mt-3 text-lg font-bold text-[var(--color-gold)]">Khutbah {friday.khutbahTime} · Prayer {friday.prayerTime}</p>
+          <p className="mt-3 text-lg font-bold text-[var(--color-gold)]">Khutbah <FormattedTime time={friday.khutbahTime} /> · Prayer <FormattedTime time={friday.prayerTime} /></p>
           <p className="mt-2 text-sm text-white/82">{friday.locationName}</p>
         </HeroCard>
         <Card>
@@ -35,7 +38,7 @@ export default function FridayPage() {
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase text-[var(--color-muted)]">{label}</p>
-                  <p className="font-bold text-[var(--color-charcoal)]">{value}</p>
+                  <p className="font-bold text-[var(--color-charcoal)]">{label.includes("Time") ? <FormattedTime time={value} /> : value}</p>
                 </div>
               </div>
             ))}

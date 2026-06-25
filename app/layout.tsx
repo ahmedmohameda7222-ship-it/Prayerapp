@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n/context";
+import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 
 export const metadata: Metadata = {
   title: "Deggendorf Prayer",
@@ -51,7 +52,9 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
       </head>
       <body>
-        <I18nProvider>{children}</I18nProvider>
+        <I18nProvider>
+          <TimeFormatProvider>{children}</TimeFormatProvider>
+        </I18nProvider>
       </body>
     </html>
   );

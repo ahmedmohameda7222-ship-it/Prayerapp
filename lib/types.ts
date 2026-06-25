@@ -1,11 +1,3 @@
-export type UserRole =
-  | "Super Admin"
-  | "Prayer Admin"
-  | "Donation Admin"
-  | "Content Admin"
-  | "Announcement Admin"
-  | "Viewer";
-
 export type PrayerName = "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
 
 export interface PrayerTime {

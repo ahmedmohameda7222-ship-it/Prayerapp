@@ -13,7 +13,6 @@ import type {
   MosqueSettings,
   PrayerTime,
   RamadanDay,
-  UserRole,
 } from "./types";
 
 export const timezone = "Europe/Berlin";
@@ -207,8 +206,6 @@ export const ramadanDays: RamadanDay[] = [
   { id: "ram-1", date: "2026-02-18", ramadanDay: 1, imsak: "05:08", fajr: "05:18", maghrib: "17:39", iftar: "17:39", taraweeh: "19:30", note: "Ramadan calendar placeholder." },
   { id: "ram-2", date: "2026-02-19", ramadanDay: 2, imsak: "05:06", fajr: "05:16", maghrib: "17:41", iftar: "17:41", taraweeh: "19:30" },
 ];
-
-export const userRoles: UserRole[] = ["Super Admin", "Prayer Admin", "Donation Admin", "Content Admin", "Announcement Admin", "Viewer"];
 
 export const auditLogs: AuditLog[] = [
   { id: "log-1", actor: "Ahmed", action: "changed Asr time on 2026-07-01 from 17:20 to 17:30", createdAt: "2026-06-24 10:15" },

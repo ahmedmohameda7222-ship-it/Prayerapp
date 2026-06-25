@@ -1,23 +1,99 @@
+"use client";
+
+import { useState, useEffect, useTransition } from "react";
+import { Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
-import { AdminFormSection } from "@/components/admin/AdminFormSection";
-import { AdminTable } from "@/components/admin/AdminTable";
-import { FormField } from "@/components/admin/FormField";
-import { ramadanDays } from "@/lib/mock-data";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { getRamadanDays } from "@/lib/data/ramadan";
+import { createClient } from "@/lib/supabase/client";
+import { useAdminAuth } from "@/lib/auth/use-admin-auth";
+import type { RamadanDay } from "@/lib/types";
+import { createRamadanDayAction, updateRamadanDayAction, deleteRamadanDayAction } from "./actions";
+
+const emptyForm = { date: "", ramadanDay: "", imsak: "", fajr: "", maghrib: "", iftar: "", taraweeh: "", note: "" };
 
 export default function AdminRamadanPage() {
-  const day = ramadanDays[0];
+  const { session } = useAdminAuth();
+  const [items, setItems] = useState<RamadanDay[]>([]);
+  const [form, setForm] = useState<Record<string, string>>({ ...emptyForm });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const hasSupabase = !!createClient();
+
+  useEffect(() => { getRamadanDays().then((d) => setItems(d)); }, []);
+
+  function resetForm() { setForm({ ...emptyForm }); setEditingId(null); setError(""); setSuccess(""); }
+  function fillForm(r: RamadanDay) { setForm({ date: r.date, ramadanDay: String(r.ramadanDay), imsak: r.imsak, fajr: r.fajr, maghrib: r.maghrib, iftar: r.iftar, taraweeh: r.taraweeh || "", note: r.note || "" }); setEditingId(r.id); setError(""); setSuccess(""); }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault(); setError(""); setSuccess("");
+    const token = session?.access_token || "";
+    if (!token) { setError("Not authenticated."); return; }
+    startTransition(async () => {
+      const result = editingId ? await updateRamadanDayAction(token, editingId, form) : await createRamadanDayAction(token, form);
+      if (!result.success) setError(result.error || "Failed.");
+      else { setSuccess(editingId ? "Updated." : "Created."); resetForm(); setItems(await getRamadanDays()); }
+    });
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete?")) return; setError("");
+    const token = session?.access_token || "";
+    startTransition(async () => { const result = await deleteRamadanDayAction(token, id); if (!result.success) setError(result.error || "Failed."); else { setSuccess("Deleted."); setItems(await getRamadanDays()); } });
+  }
+
   return (
     <AdminShell title="Ramadan Management">
       <div className="grid gap-5">
-        <AdminFormSection title="Ramadan day placeholder editor">
-          <FormField label="date" value={day.date} type="date" />
-          <FormField label="imsak" value={day.imsak} type="time" />
-          <FormField label="fajr" value={day.fajr} type="time" />
-          <FormField label="iftar" value={day.iftar} type="time" />
-          <FormField label="taraweeh" value={day.taraweeh} type="time" />
-          <FormField label="note" value={day.note} />
-        </AdminFormSection>
-        <AdminTable headers={["Day", "Date", "Imsak", "Fajr", "Iftar / Maghrib", "Taraweeh"]} rows={ramadanDays.map((item) => [item.ramadanDay, item.date, item.imsak, item.fajr, item.iftar, item.taraweeh])} />
+        {!hasSupabase && <Card className="flex items-center gap-3 p-4 text-sm font-bold text-[var(--color-warning)]"><AlertTriangle className="h-5 w-5" aria-hidden="true" /> Supabase is not configured. Admin editing is disabled.</Card>}
+        {error && <Card className="p-4 text-sm font-bold text-[var(--color-danger)]">{error}</Card>}
+        {success && <Card className="p-4 text-sm font-bold text-[var(--color-success)]">{success}</Card>}
+
+        <Card>
+          <h2 className="mb-4 text-lg font-extrabold text-[var(--color-emerald)]">{editingId ? "Edit Ramadan Day" : "Create Ramadan Day"}</h2>
+          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+            {[
+              { k: "date", l: "Date", t: "date" }, { k: "ramadanDay", l: "Ramadan Day #", t: "number" },
+              { k: "imsak", l: "Imsak", t: "time" }, { k: "fajr", l: "Fajr", t: "time" },
+              { k: "maghrib", l: "Maghrib", t: "time" }, { k: "iftar", l: "Iftar", t: "time" },
+              { k: "taraweeh", l: "Taraweeh", t: "time" }, { k: "note", l: "Note" },
+            ].map(({ k, l, t }) => (
+              <label key={k} className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">{l}
+                <input type={t || "text"} required={k !== "note" && k !== "taraweeh"} value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
+              </label>
+            ))}
+            <div className="flex gap-3 md:col-span-2">
+              <Button type="submit" disabled={!hasSupabase || isPending}><Plus className="h-4 w-4" aria-hidden="true" /> {editingId ? "Update" : "Create"}</Button>
+              {editingId && <Button type="button" variant="ghost" onClick={resetForm} disabled={isPending}>Cancel</Button>}
+            </div>
+          </form>
+        </Card>
+
+        <div className="overflow-x-auto rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]">
+          <table className="w-full min-w-[680px] text-left text-sm">
+            <thead className="bg-[var(--color-emerald)] text-[var(--color-card)]"><tr>{["Day","Date","Imsak","Fajr","Maghrib","Iftar","Taraweeh","Actions"].map((h)=><th key={h} className="px-3 py-3">{h}</th>)}</tr></thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id} className="border-t border-[var(--color-border)]">
+                  <td className="px-3 py-3">{item.ramadanDay}</td>
+                  <td className="px-3 py-3">{item.date}</td>
+                  <td className="px-3 py-3">{item.imsak}</td>
+                  <td className="px-3 py-3">{item.fajr}</td>
+                  <td className="px-3 py-3">{item.maghrib}</td>
+                  <td className="px-3 py-3">{item.iftar}</td>
+                  <td className="px-3 py-3">{item.taraweeh || "-"}</td>
+                  <td className="px-3 py-3"><div className="flex gap-1">
+                    <button onClick={() => fillForm(item)} disabled={isPending} aria-label="Edit" className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => handleDelete(item.id)} disabled={isPending} aria-label="Delete" className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-danger)]/10 text-[var(--color-danger)]"><Trash2 className="h-4 w-4" /></button>
+                  </div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </AdminShell>
   );

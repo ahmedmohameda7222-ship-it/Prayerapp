@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { Bell, Clock, Languages, Moon } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useLocale } from "@/lib/i18n/context";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import type { Locale } from "@/lib/i18n/types";
 
 const languageOptions: { value: Locale; labelKey: string }[] = [
@@ -15,8 +15,8 @@ const languageOptions: { value: Locale; labelKey: string }[] = [
 ];
 
 const timeFormatOptions = [
-  { value: "24-hour", labelKey: "settings.24hour" },
-  { value: "12-hour", labelKey: "settings.12hour" },
+  { value: "24-hour" as const, labelKey: "settings.24hour" },
+  { value: "12-hour" as const, labelKey: "settings.12hour" },
 ];
 
 const notificationKeys = [
@@ -30,7 +30,7 @@ const notificationKeys = [
 export function SettingsControls() {
   const { locale, setLocale } = useLocale();
   const { t } = useTranslation();
-  const [timeFormat, setTimeFormat] = useState("24-hour");
+  const { timeFormat, setTimeFormat } = useTimeFormat();
 
   return (
     <div className="grid gap-5">

@@ -1,9 +1,12 @@
+"use client";
+
 import { Moon } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { ramadanDays } from "@/lib/mock-data";
+import { FormattedTime } from "@/components/ui/FormattedTime";
 
 export default function RamadanPage() {
   const day = ramadanDays[0];
@@ -31,7 +34,7 @@ export default function RamadanPage() {
           ].map(([label, value]) => (
             <Card key={label}>
               <p className="text-xs font-bold uppercase text-[var(--color-muted)]">{label}</p>
-              <p className="mt-1 text-2xl font-extrabold text-[var(--color-emerald)]">{value}</p>
+              <p className="mt-1 text-2xl font-extrabold text-[var(--color-emerald)]"><FormattedTime time={value} /></p>
             </Card>
           ))}
         </div>

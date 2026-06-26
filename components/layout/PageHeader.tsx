@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
+import { NotificationButton } from "@/components/notifications/NotificationButton";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 export function PageHeader({ title, titleKey, arch = false }: { title?: string; titleKey?: string; arch?: boolean }) {
@@ -16,9 +17,7 @@ export function PageHeader({ title, titleKey, arch = false }: { title?: string; 
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <h1 className="font-brand text-center text-3xl font-semibold">{displayTitle}</h1>
-          <button aria-label={t("common.notifications")} className="grid h-11 w-11 place-items-center rounded-full bg-white/10">
-            <Bell className="h-5 w-5" />
-          </button>
+          <NotificationButton inverted />
         </div>
       </header>
     );
@@ -30,9 +29,7 @@ export function PageHeader({ title, titleKey, arch = false }: { title?: string; 
         <ChevronLeft className="h-5 w-5" />
       </Link>
       <h1 className="font-brand text-center text-3xl font-semibold text-[var(--color-emerald)]">{displayTitle}</h1>
-      <button aria-label={t("common.notifications")} className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-emerald)]">
-        <Bell className="h-5 w-5" />
-      </button>
+      <NotificationButton />
     </header>
   );
 }

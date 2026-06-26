@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { AlertTriangle, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { AdminWarningCard } from "@/components/admin/AdminWarningCard";
 import { Button } from "@/components/ui/Button";
@@ -11,11 +11,13 @@ import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { PrayerTime } from "@/lib/types";
+import { parsePrayerTimesCsv } from "@/lib/csv/prayer-import";
 import {
   createPrayerTimeAction,
   deletePrayerTimeAction,
   togglePublishPrayerTimeAction,
   updatePrayerTimeAction,
+  importPrayerTimesAction,
 } from "./actions";
 
 const emptyForm = {
@@ -46,7 +48,7 @@ export default function AdminPrayerTimesPage() {
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
 
-  useEffect(() => { getPrayerTimes().then((data) => setItems(data)); }, []);
+  useEffect(() => { getPrayerTimes(true).then((data) => setItems(data)).catch(() => setError(t("common.dataLoadFailed"))); }, [t]);
 
   function resetForm() {
     setForm({ ...emptyForm });
@@ -77,7 +79,7 @@ export default function AdminPrayerTimesPage() {
   }
 
   async function refreshItems() {
-    setItems(await getPrayerTimes());
+    setItems(await getPrayerTimes(true));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -125,6 +127,26 @@ export default function AdminPrayerTimesPage() {
       if (!result.success) setError(t(result.error || "admin.errors.toggleFailed"));
       else await refreshItems();
     });
+  }
+
+  async function handleCsvImport(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    const token = session?.access_token || "";
+    if (!file || !token) return;
+    setError(""); setSuccess("");
+    try {
+      const rows = parsePrayerTimesCsv(await file.text());
+      startTransition(async () => {
+        const result = await importPrayerTimesAction(token, rows);
+        if (!result.success) return setError(t(result.error || "admin.errors.invalidCsv"));
+        setSuccess(t("admin.messages.csvImported", { count: result.count || rows.length }));
+        await refreshItems();
+      });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("admin.errors.invalidCsv"));
+    } finally {
+      event.target.value = "";
+    }
   }
 
   const fields = [
@@ -178,14 +200,14 @@ export default function AdminPrayerTimesPage() {
           </form>
         </Card>
 
-        <div className="admin-grid">
-          {["admin.weeklyEditor", "admin.monthlyEditor", "admin.csvImport"].map((key) => (
-            <section key={key} className="card p-4">
-              <h2 className="font-bold text-[var(--color-emerald)]">{t(key)}</h2>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">{t("admin.backendPlaceholder")}</p>
-            </section>
-          ))}
-        </div>
+        <Card>
+          <h2 className="font-bold text-[var(--color-emerald)]">{t("admin.csvImport")}</h2>
+          <p className="mt-2 text-sm text-[var(--color-muted)]">{t("admin.csvImportHelp")}</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl bg-[var(--color-emerald)] px-4 py-2 text-sm font-bold text-[var(--color-card)]"><Upload className="h-4 w-4" />{t("admin.chooseCsv")}<input type="file" accept=".csv,text/csv" onChange={handleCsvImport} disabled={!hasSupabase || isPending} className="sr-only" /></label>
+            <a href="/templates/prayer-times-template.csv" download className="inline-flex min-h-11 items-center rounded-2xl border border-[var(--color-border)] px-4 py-2 text-sm font-bold text-[var(--color-emerald)]">{t("admin.downloadCsvTemplate")}</a>
+          </div>
+        </Card>
 
         <div className="overflow-x-auto rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]">
           <table className="w-full min-w-[680px] text-left text-sm">

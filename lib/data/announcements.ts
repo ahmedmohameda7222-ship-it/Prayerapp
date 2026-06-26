@@ -31,15 +31,16 @@ function mapToDb(item: Partial<Announcement>): Record<string, unknown> {
   return db;
 }
 
-export async function getAnnouncements(): Promise<Announcement[]> {
+export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {
   const client = createClient();
   if (!client) return mockAnnouncements.filter((a) => a.published);
-  const { data, error } = await client
+  let query = client
     .from("announcements")
     .select("*")
-    .eq("published", true)
     .order("created_at", { ascending: false });
-  if (error || !data) return mockAnnouncements.filter((a) => a.published);
+  if (!includeUnpublished) query = query.eq("published", true);
+  const { data, error } = await query;
+  if (error || !data) throw new Error("Unable to load announcements");
   return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
 }
 

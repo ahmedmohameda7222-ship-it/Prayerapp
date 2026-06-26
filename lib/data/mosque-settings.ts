@@ -7,7 +7,7 @@ export async function getMosqueSettings(): Promise<MosqueSettings> {
   const client = createClient();
   if (!client) return mockMosqueSettings;
   const { data, error } = await client.from("mosque_settings").select("*").single();
-  if (error || !data) return mockMosqueSettings;
+  if (error || !data) throw new Error("Unable to load mosque settings");
   return {
     mosqueName: readDbString(data as Record<string, unknown>, "mosque_name"),
     ...localizedFieldsFromDb(data as Record<string, unknown>, "mosqueName", "mosque_name"),
@@ -38,7 +38,7 @@ export async function updateMosqueSettings(settings: Partial<MosqueSettings>): P
   if (settings.accountHolder) db.account_holder = settings.accountHolder;
   if (settings.iban) db.iban = settings.iban;
   if (settings.bic) db.bic = settings.bic;
-  const { data, error } = await client.from("mosque_settings").update(db).eq("id", "1").select().single();
-  if (error || !data) return { ...mockMosqueSettings, ...settings } as MosqueSettings;
+  const { data, error } = await client.from("mosque_settings").upsert({ id: "1", ...db }, { onConflict: "id" }).select().single();
+  if (error || !data) throw new Error("Unable to update mosque settings");
   return getMosqueSettings();
 }

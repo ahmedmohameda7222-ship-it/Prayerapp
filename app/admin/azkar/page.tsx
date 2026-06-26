@@ -41,7 +41,7 @@ export default function AdminAzkarPage() {
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
 
-  useEffect(() => { getAzkarItems().then((data) => setItems(data)); }, []);
+  useEffect(() => { getAzkarItems(true).then((data) => setItems(data)).catch(() => setError(t("common.dataLoadFailed"))); }, [t]);
 
   function resetForm() {
     setForm({ ...emptyForm });
@@ -69,7 +69,7 @@ export default function AdminAzkarPage() {
   }
 
   async function refreshItems() {
-    setItems(await getAzkarItems());
+    setItems(await getAzkarItems(true));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -163,7 +163,6 @@ export default function AdminAzkarPage() {
             </label>
             <div className="flex flex-wrap gap-3 md:col-span-2">
               <Button type="submit" disabled={!hasSupabase || isPending}><Plus className="h-4 w-4" aria-hidden="true" /> {editingId ? t("common.update") : t("common.create")}</Button>
-              <Button type="button" variant="soft" onClick={() => setError(t("admin.religiousTranslationReviewRequired"))}>{t("admin.generateTranslations")}</Button>
               {editingId ? <Button type="button" variant="ghost" onClick={resetForm} disabled={isPending}>{t("common.cancel")}</Button> : null}
             </div>
           </form>

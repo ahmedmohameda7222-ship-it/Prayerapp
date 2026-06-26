@@ -17,6 +17,8 @@ export function SegmentedControl({
         return (
           <button
             key={optionValue}
+            type="button"
+            aria-pressed={value === optionValue}
             onClick={() => onChange(optionValue)}
             className={`min-h-10 rounded-xl px-3 text-sm font-bold transition ${
               value === optionValue ? "bg-[var(--color-emerald)] text-[var(--color-card)]" : "text-[var(--color-muted)]"

@@ -7,14 +7,24 @@ import { HeroCard } from "@/components/ui/HeroCard";
 import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { AnnouncementCard } from "@/components/news/AnnouncementCard";
-import { announcements, jumuahTimes } from "@/lib/mock-data";
+import { getAnnouncements } from "@/lib/data/announcements";
+import { getJumuahTimes } from "@/lib/data/jumuah";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { DataError, DataLoading } from "@/components/ui/DataState";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { todayIso } from "@/lib/date-utils";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
 
 export default function FridayPage() {
   const { t, locale } = useTranslation();
-  const friday = jumuahTimes[0];
+  const { data, error, loading, reload } = useAsyncData(loadFridayData);
+  const announcements = data?.announcements || [];
+  const friday = (data?.jumuahTimes || []).find((item) => item.date >= todayIso()) || data?.jumuahTimes[0];
+  if (loading) return <AppShell><PageHeader titleKey="friday.title" /><DataLoading /></AppShell>;
+  if (error) return <AppShell><PageHeader titleKey="friday.title" /><DataError message={error} retry={reload} /></AppShell>;
+  if (!friday) return <AppShell><PageHeader titleKey="friday.title" /><EmptyState message={t("friday.empty")} /></AppShell>;
   const locationName = getLocalizedField(friday, "locationName", locale) || friday.locationName;
   const language = getLocalizedField(friday, "language", locale) || friday.language;
   const notes = getLocalizedField(friday, "notes", locale) || friday.notes;
@@ -65,4 +75,9 @@ export default function FridayPage() {
       </div>
     </AppShell>
   );
+}
+
+async function loadFridayData() {
+  const [jumuahTimes, announcements] = await Promise.all([getJumuahTimes(), getAnnouncements()]);
+  return { jumuahTimes, announcements };
 }

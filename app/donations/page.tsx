@@ -7,13 +7,18 @@ import { Card } from "@/components/ui/Card";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { BankTransferCard } from "@/components/donations/BankTransferCard";
 import { DonationCampaignCard } from "@/components/donations/DonationCampaignCard";
-import { QuickDonateButtons } from "@/components/donations/QuickDonateButtons";
 import { TransparencyCard } from "@/components/donations/TransparencyCard";
-import { donationCampaigns, donationReport, donationSettings } from "@/lib/mock-data";
+import { ReceiptRequestForm } from "@/components/donations/ReceiptRequestForm";
+import { DataError, DataLoading } from "@/components/ui/DataState";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { getDonationCampaigns, getDonationReport, getDonationSettings } from "@/lib/data/donations";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 export default function DonationsPage() {
   const { t } = useTranslation();
+  const { data, error, loading, reload } = useAsyncData(loadDonationPageData);
+  const donationCampaigns = data?.campaigns || [];
 
   return (
     <AppShell>
@@ -23,26 +28,35 @@ export default function DonationsPage() {
           <h2 className="font-brand text-4xl font-semibold">{t("donations.supportMasjid")}</h2>
           <p className="mt-3 max-w-sm text-base leading-7 text-white/86">{t("donations.supportMasjidDesc")}</p>
         </HeroCard>
-        <section>
-          <SectionTitle>{t("donations.quickDonate")}</SectionTitle>
-          <QuickDonateButtons />
-        </section>
+        {loading ? <DataLoading /> : null}
+        {error ? <DataError message={error} retry={reload} /> : null}
+        {data ? <>
         <section>
           <SectionTitle>{t("donations.activeCampaigns")}</SectionTitle>
           <div className="grid gap-3">
             {donationCampaigns.map((campaign) => <DonationCampaignCard key={campaign.id} campaign={campaign} />)}
+            {!donationCampaigns.length ? <EmptyState message={t("donations.noCampaigns")} /> : null}
           </div>
         </section>
-        <BankTransferCard settings={donationSettings} />
+        <BankTransferCard settings={data.settings} />
         <section>
           <SectionTitle>{t("donations.transparency")}</SectionTitle>
-          <TransparencyCard report={donationReport} />
+          <TransparencyCard report={data.report} />
         </section>
         <Card>
           <h2 className="font-bold text-[var(--color-emerald)]">{t("donations.receiptRequest")}</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{t("donations.receiptRequestDesc")}</p>
+          <div className="mt-4"><ReceiptRequestForm /></div>
         </Card>
+        </> : null}
       </div>
     </AppShell>
   );
+}
+
+async function loadDonationPageData() {
+  const [settings, campaigns, report] = await Promise.all([
+    getDonationSettings(), getDonationCampaigns(), getDonationReport(),
+  ]);
+  return { settings, campaigns, report };
 }

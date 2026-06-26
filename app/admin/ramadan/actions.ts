@@ -26,14 +26,14 @@ async function createAuditLog(
 }
 
 function timeRegex() {
-  return /^\d{2}:\d{2}$/;
+  return /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 }
 
 function validateRamadanDay(data: Record<string, string>): string[] {
   const errors: string[] = [];
-  if (!data.date?.trim()) errors.push("admin.errors.dateRequired");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date || "")) errors.push("admin.errors.dateRequired");
   const ramadanDay = Number(data.ramadanDay);
-  if (Number.isNaN(ramadanDay) || ramadanDay <= 0) errors.push("admin.errors.ramadanDayPositive");
+  if (!Number.isInteger(ramadanDay) || ramadanDay < 1 || ramadanDay > 30) errors.push("admin.errors.ramadanDayPositive");
   if (!data.imsak?.trim()) errors.push("admin.errors.imsakRequired");
   if (!data.fajr?.trim()) errors.push("admin.errors.fajrRequired");
   if (!data.maghrib?.trim()) errors.push("admin.errors.maghribRequired");

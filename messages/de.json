@@ -13,7 +13,10 @@
     "no": "Nein",
     "backHome": "Zur Startseite",
     "notifications": "Benachrichtigungen",
-    "appIconAlt": "App-Symbol von Deggendorf Prayer"
+    "appIconAlt": "App-Symbol von Deggendorf Prayer",
+    "retry": "Erneut versuchen",
+    "dataLoadFailed": "Die aktuellen Daten konnten nicht geladen werden.",
+    "privacy": "Datenschutz"
   },
   "nav": {
     "ariaLabel": "Hauptnavigation",
@@ -68,18 +71,18 @@
     "location": "Ort",
     "khateeb": "Chateeb",
     "language": "Sprache",
-    "announcements": "Freitagsmitteilungen"
+    "announcements": "Freitagsmitteilungen",
+    "empty": "Es wurde noch kein kommendes Freitagsgebet veröffentlicht."
   },
   "news": {
-    "title": "Mitteilungen"
+    "title": "Mitteilungen",
+    "empty": "Es wurden keine Mitteilungen veröffentlicht."
   },
   "donations": {
     "title": "Spenden",
     "heroAlt": "Spenden und Moschee-Unterstützung",
     "supportMasjid": "Unterstütze deine Moschee",
     "supportMasjidDesc": "Deine Großzügigkeit trägt Gebet, Zusammenhalt und Gemeindearbeit.",
-    "quickDonate": "Schnell spenden",
-    "customAmount": "Eigener Betrag",
     "activeCampaigns": "Aktive Kampagnen",
     "bankTransfer": "Banküberweisung",
     "accountHolder": "Kontoinhaber",
@@ -98,7 +101,17 @@
     "collected": "Gesammelt",
     "target": "Ziel",
     "collectedAmount": "{amount} gesammelt",
-    "goalAmount": "{amount} Ziel - {progress}%"
+    "goalAmount": "{amount} Ziel - {progress}%",
+    "noCampaigns": "Es gibt keine aktiven Kampagnen.",
+    "donorName": "Vollständiger Name", "email": "E-Mail-Adresse", "amount": "Spendenbetrag", "donationDate": "Spendendatum",
+    "postalAddress": "Postanschrift für die Bescheinigung", "transferReference": "Überweisungsreferenz (optional)",
+    "privacyConsent": "Ich stimme der Verarbeitung meiner Angaben zur Ausstellung der Bescheinigung zu.",
+    "requestRejected": "Die Anfrage konnte nicht angenommen werden.", "invalidName": "Bitte vollständigen Namen eingeben.",
+    "invalidEmail": "Bitte gültige E-Mail-Adresse eingeben.", "invalidAddress": "Bitte gültige Postanschrift eingeben.",
+    "invalidDate": "Bitte gültiges Spendendatum eingeben.", "invalidAmount": "Bitte gültigen Spendenbetrag eingeben.",
+    "privacyRequired": "Die Datenschutzeinwilligung ist erforderlich.", "tooManyRequests": "Zu viele Anfragen. Bitte später erneut versuchen.",
+    "requestFailed": "Die Anfrage konnte nicht gespeichert werden.", "requestSent": "Die Bescheinigungsanfrage wurde gesendet.",
+    "submitRequest": "Bescheinigung anfragen", "received": "Erhalten"
   },
   "azkar": {
     "title": "Azkar & Duaa",
@@ -110,7 +123,9 @@
     "target": "Ziel",
     "startDhikr": "Dhikr starten",
     "repeatCount": "Wiederholungen",
-    "defaultTasbeeh": "Subhan Allah"
+    "defaultTasbeeh": "Subhan Allah",
+    "empty": "In dieser Kategorie sind keine Azkar veröffentlicht.",
+    "moreInCategory": "Weitere in dieser Kategorie"
   },
   "azkarCategories": {
     "Morning": "Morgen",
@@ -121,7 +136,8 @@
     "Friday": "Freitag"
   },
   "events": {
-    "title": "Veranstaltungen"
+    "title": "Veranstaltungen",
+    "empty": "Es wurden keine kommenden Veranstaltungen veröffentlicht."
   },
   "eventTypes": {
     "Class": "Unterricht",
@@ -141,7 +157,9 @@
     "parkingNotes": "Parkhinweise",
     "communityLinks": "Gemeindelinks",
     "facilityPlaceholder": "Informationen werden von der Moscheeverwaltung gepflegt.",
-    "viewBankDetails": "Bankdaten unter Spenden ansehen"
+    "viewBankDetails": "Bankdaten unter Spenden ansehen",
+    "visitorInfo": "Besucherinformationen",
+    "visitorInfoDesc": "Bitte beachte die Hinweise der Moschee und kontaktiere die Verwaltung bei Fragen zu Barrierefreiheit, Parken oder Frauenbereich."
   },
   "ramadan": {
     "title": "Ramadan",
@@ -154,11 +172,18 @@
     "announcements": "Ramadan-Mitteilungen",
     "announcementsPlaceholder": "Ramadan-Mitteilungen werden von der Moscheeverwaltung veröffentlicht.",
     "calendarPlaceholder": "Vorläufiger Kalender",
-    "calendarPlaceholderDesc": "Tägliche Ramadan-Zeilen erscheinen hier, sobald der Zeitplan veröffentlicht ist."
+    "calendarPlaceholderDesc": "Tägliche Ramadan-Zeilen erscheinen hier, sobald der Zeitplan veröffentlicht ist.",
+    "noSchedule": "Es wurde kein Ramadan-Zeitplan veröffentlicht.", "noAnnouncements": "Es wurden keine Ramadan-Mitteilungen veröffentlicht.",
+    "day": "Ramadan-Tag {day}", "dayLabel": "Tag", "calendar": "Ramadan-Kalender"
   },
   "qibla": {
     "title": "Qibla",
-    "comingSoon": "Die Qibla-Richtungsfunktion wird bald hinzugefügt."
+    "comingSoon": "Die Qibla-Richtungsfunktion wird bald hinzugefügt.",
+    "direction": "Qibla: {degrees}° von Norden", "deggendorfEstimate": "Schätzung für das Zentrum von Deggendorf.",
+    "locating": "Standort wird ermittelt...", "locationReady": "Richtung anhand des aktuellen Standorts berechnet.",
+    "locationDenied": "Standortzugriff abgelehnt; Deggendorf-Schätzung wird angezeigt.", "locationUnsupported": "Standort ist auf diesem Gerät nicht verfügbar.",
+    "calibrationHelp": "Bewege das Handy in einer Acht, um den Kompass zu kalibrieren.", "useMyLocation": "Meinen Standort verwenden",
+    "sensorNote": "Der Pfeil folgt dem Gerätekompass, wenn Sensorzugriff verfügbar ist."
   },
   "settings": {
     "title": "Einstellungen",
@@ -178,7 +203,20 @@
     "12hour": "12 Stunden",
     "theme": "Design",
     "light": "Hell",
-    "darkPlaceholder": "Dunkel, bald verfügbar"
+    "darkPlaceholder": "Dunkel, bald verfügbar", "dark": "Dunkel",
+    "enableBrowserNotifications": "Browser-Benachrichtigungen aktivieren", "browserNotificationsEnabled": "Browser-Benachrichtigungen aktiviert",
+    "browserNotificationsUnsupported": "Browser-Benachrichtigungen werden nicht unterstützt"
+  },
+  "notifications": { "empty": "Es gibt keine dringenden Neuigkeiten." },
+  "privacy": {
+    "title": "Datenschutz", "controllerTitle": "Verantwortliche Organisation",
+    "controllerText": "Die Moscheegemeinde, die diese Website betreibt, ist für die übermittelten personenbezogenen Daten verantwortlich.",
+    "dataTitle": "Erhobene Daten", "dataText": "Bescheinigungsanfragen enthalten Name, E-Mail, Postanschrift, Spendendatum, Betrag und optional eine Überweisungsreferenz. App-Einstellungen bleiben auf deinem Gerät.",
+    "purposeTitle": "Zweck", "purposeText": "Die Daten werden nur zur Prüfung der Spende und zur Erstellung oder Rückfrage zur Spendenbescheinigung verwendet.",
+    "retentionTitle": "Speicherdauer", "retentionText": "Daten werden nur so lange gespeichert, wie es betrieblich und gesetzlich erforderlich ist.",
+    "rightsTitle": "Deine Rechte", "rightsText": "Du kannst Auskunft, Berichtigung, Löschung, Einschränkung oder Informationen zur Verarbeitung verlangen, soweit gesetzliche Pflichten dem nicht entgegenstehen.",
+    "contactTitle": "Kontakt", "contactText": "Nutze für Datenschutz- und Bescheinigungsfragen die Kontaktdaten auf der Moschee-Seite.",
+    "reviewNotice": "Diese Seite ist eine Arbeitsvorlage und sollte vor dem öffentlichen Start rechtlich geprüft werden."
   },
   "announcementTypes": {
     "General": "Allgemein",
@@ -216,7 +254,7 @@
     "required": "erforderlich",
     "missingNextWeek": "Gebetszeiten für nächste Woche fehlen.",
     "todayPrayerStatus": "Gebetsstatus heute",
-    "published": "Veröffentlicht",
+    "published": "Veröffentlicht", "notPublished": "Nicht veröffentlicht",
     "liveDate": "Veröffentlichtes Datum: {date}",
     "jumuahStatus": "Jumu'ah-Veröffentlichung",
     "fridayVisible": "Freitagsdetails sichtbar",
@@ -310,6 +348,8 @@
     "managedManually": "Manuell verwaltet",
     "manualDonationsReceipts": "Manuelle Spenden und Bescheinigungen",
     "futurePhasePlaceholder": "Dieser Bereich wird in einer späteren Phase aktiviert.",
+    "noReceiptRequests": "Noch keine Bescheinigungsanfragen.", "status": "Status", "donationReport": "Monatlicher Spendenbericht", "month": "Monat",
+    "csvImportHelp": "Bis zu 366 Tageszeilen hochladen. Bestehende Daten werden aktualisiert.", "chooseCsv": "CSV-Datei auswählen", "downloadCsvTemplate": "CSV-Vorlage herunterladen",
     "setupRequired": "Einrichtung erforderlich",
     "supabaseEnvMissing": "Die Supabase-Konfiguration ist unvollständig. Prüfe die Umgebungsvariablen.",
     "supabaseNotConfigured": "Supabase ist noch nicht konfiguriert.",
@@ -374,7 +414,7 @@
       "created": "Erfolgreich erstellt.",
       "updated": "Erfolgreich aktualisiert.",
       "deleted": "Erfolgreich gelöscht.",
-      "settingsUpdated": "Einstellungen gespeichert."
+      "settingsUpdated": "Einstellungen gespeichert.", "csvImported": "{count} Gebetszeit-Zeilen importiert."
     },
     "errors": {
       "notAuthenticated": "Bitte zuerst anmelden.",
@@ -421,7 +461,9 @@
       "imsakRequired": "Imsak-Zeit ist erforderlich.",
       "iftarRequired": "Iftar-Zeit ist erforderlich.",
       "ramadanDayPositive": "Ramadan-Tag muss größer als null sein.",
-      "repeatCountPositive": "Wiederholungen müssen größer als null sein."
+      "repeatCountPositive": "Wiederholungen müssen größer als null sein.",
+      "invalidInput": "Mindestens ein Wert ist ungültig.", "validHttpsUrlRequired": "Externe Links müssen HTTPS verwenden.",
+      "endTimeAfterStart": "Die Endzeit muss nach der Startzeit liegen.", "invalidCsv": "Die CSV-Datei enthält fehlende oder ungültige Werte."
     }
   }
 }

@@ -1,0 +1,101 @@
+import { createClient } from "@/lib/supabase/client";
+import { prayerTimes as mockPrayerTimes } from "@/lib/mock-data";
+import type { PrayerTime } from "@/lib/types";
+
+function mapFromDb(row: Record<string, unknown>): PrayerTime {
+  return {
+    id: String(row.id),
+    date: String(row.date),
+    fajr: String(row.fajr),
+    sunrise: String(row.sunrise),
+    dhuhr: String(row.dhuhr),
+    asr: String(row.asr),
+    maghrib: String(row.maghrib),
+    isha: String(row.isha),
+    fajrIqama: row.fajr_iqama ? String(row.fajr_iqama) : undefined,
+    dhuhrIqama: row.dhuhr_iqama ? String(row.dhuhr_iqama) : undefined,
+    asrIqama: row.asr_iqama ? String(row.asr_iqama) : undefined,
+    maghribIqama: row.maghrib_iqama ? String(row.maghrib_iqama) : undefined,
+    ishaIqama: row.isha_iqama ? String(row.isha_iqama) : undefined,
+    note: row.note ? String(row.note) : undefined,
+    published: Boolean(row.published),
+    updatedAt: row.updated_at ? String(row.updated_at) : new Date().toISOString(),
+  };
+}
+
+function mapToDb(item: Partial<PrayerTime>): Record<string, unknown> {
+  const db: Record<string, unknown> = {};
+  if (item.id) db.id = item.id;
+  if (item.date) db.date = item.date;
+  if (item.fajr) db.fajr = item.fajr;
+  if (item.sunrise) db.sunrise = item.sunrise;
+  if (item.dhuhr) db.dhuhr = item.dhuhr;
+  if (item.asr) db.asr = item.asr;
+  if (item.maghrib) db.maghrib = item.maghrib;
+  if (item.isha) db.isha = item.isha;
+  if (item.fajrIqama !== undefined) db.fajr_iqama = item.fajrIqama;
+  if (item.dhuhrIqama !== undefined) db.dhuhr_iqama = item.dhuhrIqama;
+  if (item.asrIqama !== undefined) db.asr_iqama = item.asrIqama;
+  if (item.maghribIqama !== undefined) db.maghrib_iqama = item.maghribIqama;
+  if (item.ishaIqama !== undefined) db.isha_iqama = item.ishaIqama;
+  if (item.note !== undefined) db.note = item.note;
+  if (item.published !== undefined) db.published = item.published;
+  db.updated_at = new Date().toISOString();
+  return db;
+}
+
+export async function getPrayerTimes(): Promise<PrayerTime[]> {
+  const client = createClient();
+  if (!client) return mockPrayerTimes;
+  const { data, error } = await client
+    .from("prayer_times")
+    .select("*")
+    .eq("published", true)
+    .order("date", { ascending: true });
+  if (error || !data) return mockPrayerTimes;
+  return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+}
+
+export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | undefined> {
+  const client = createClient();
+  if (!client) return mockPrayerTimes.find((p) => p.date === date && p.published);
+  const { data, error } = await client
+    .from("prayer_times")
+    .select("*")
+    .eq("date", date)
+    .eq("published", true)
+    .single();
+  if (error || !data) return mockPrayerTimes.find((p) => p.date === date && p.published);
+  return mapFromDb(data as Record<string, unknown>);
+}
+
+export async function createPrayerTime(item: Omit<PrayerTime, "id">): Promise<PrayerTime> {
+  const client = createClient();
+  const dbItem = mapToDb(item);
+  if (!client) {
+    return { ...item, id: `mock-${Date.now()}` } as PrayerTime;
+  }
+  const { data, error } = await client.from("prayer_times").insert(dbItem).select().single();
+  if (error || !data) throw new Error("Failed to create prayer time");
+  return mapFromDb(data as Record<string, unknown>);
+}
+
+export async function updatePrayerTime(id: string, item: Partial<PrayerTime>): Promise<PrayerTime> {
+  const client = createClient();
+  if (!client) {
+    const existing = mockPrayerTimes.find((p) => p.id === id);
+    if (!existing) throw new Error("Not found");
+    return { ...existing, ...item } as PrayerTime;
+  }
+  const dbItem = mapToDb(item);
+  const { data, error } = await client.from("prayer_times").update(dbItem).eq("id", id).select().single();
+  if (error || !data) throw new Error("Failed to update prayer time");
+  return mapFromDb(data as Record<string, unknown>);
+}
+
+export async function deletePrayerTime(id: string): Promise<void> {
+  const client = createClient();
+  if (!client) return;
+  const { error } = await client.from("prayer_times").delete().eq("id", id);
+  if (error) throw new Error("Failed to delete prayer time");
+}

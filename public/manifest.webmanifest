@@ -1,0 +1,23 @@
+{
+  "name": "Deggendorf Prayer",
+  "short_name": "Deggendorf Prayer",
+  "description": "مواقيت الصلاة والجمعة والإعلانات والتبرعات ومعلومات المجتمع في دغندورف.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf6ee",
+  "theme_color": "#0e3d36",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/assets/app-icon-main.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/app-icon-main.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

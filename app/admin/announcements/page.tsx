@@ -48,8 +48,8 @@ export default function AdminAnnouncementsPage() {
   const hasSupabase = !!createClient();
 
   useEffect(() => {
-    getAnnouncements().then((data) => setItems(data));
-  }, []);
+    getAnnouncements(true).then((data) => setItems(data)).catch(() => setError(t("common.dataLoadFailed")));
+  }, [t]);
 
   function resetForm() {
     setForm({ ...emptyForm });
@@ -77,7 +77,7 @@ export default function AdminAnnouncementsPage() {
   }
 
   async function refreshItems() {
-    setItems(await getAnnouncements());
+    setItems(await getAnnouncements(true));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -214,9 +214,6 @@ export default function AdminAnnouncementsPage() {
               <Button type="submit" disabled={!hasSupabase || isPending}>
                 <Plus className="h-4 w-4" aria-hidden="true" />
                 {editingId ? t("common.update") : t("common.create")}
-              </Button>
-              <Button type="button" variant="soft" onClick={() => setError(t("admin.translationNotConfigured"))}>
-                {t("admin.generateTranslations")}
               </Button>
               {editingId ? (
                 <Button type="button" variant="ghost" onClick={resetForm} disabled={isPending}>

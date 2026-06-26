@@ -13,7 +13,7 @@ export async function getDonationSettings(): Promise<DonationSettings> {
   const client = createClient();
   if (!client) return mockDonationSettings;
   const { data, error } = await client.from("donation_settings").select("*").single();
-  if (error || !data) return mockDonationSettings;
+  if (error || !data) throw new Error("Unable to load donation settings");
   return {
     accountHolder: String(data.account_holder),
     iban: String(data.iban),
@@ -38,20 +38,21 @@ export async function updateDonationSettings(settings: Partial<DonationSettings>
   Object.assign(db, localizedFieldsToDb(settings as Record<string, unknown>, "receiptNote", "receipt_note", { includeLegacy: true }));
   if (settings.defaultPurpose) db.default_purpose = settings.defaultPurposeAr || settings.defaultPurpose;
   if (settings.receiptNote) db.receipt_note = settings.receiptNoteAr || settings.receiptNote;
-  const { data, error } = await client.from("donation_settings").update(db).eq("id", "1").select().single();
-  if (error || !data) return { ...mockDonationSettings, ...settings } as DonationSettings;
+  const { data, error } = await client.from("donation_settings").upsert({ id: "1", ...db }, { onConflict: "id" }).select().single();
+  if (error || !data) throw new Error("Unable to update donation settings");
   return getDonationSettings();
 }
 
-export async function getDonationCampaigns(): Promise<DonationCampaign[]> {
+export async function getDonationCampaigns(includeInactive = false): Promise<DonationCampaign[]> {
   const client = createClient();
   if (!client) return mockDonationCampaigns;
-  const { data, error } = await client
+  let query = client
     .from("donation_campaigns")
     .select("*")
-    .eq("is_active", true)
     .order("end_date", { ascending: true });
-  if (error || !data) return mockDonationCampaigns;
+  if (!includeInactive) query = query.eq("is_active", true);
+  const { data, error } = await query;
+  if (error || !data) throw new Error("Unable to load donation campaigns");
   return data.map((row: unknown) => {
     const record = row as Record<string, unknown>;
     return {
@@ -124,7 +125,7 @@ export async function getDonations(): Promise<Donation[]> {
   const client = createClient();
   if (!client) return mockDonations;
   const { data, error } = await client.from("donations").select("*").order("received_at", { ascending: false });
-  if (error || !data) return mockDonations;
+  if (error || !data) throw new Error("Unable to load donations");
   return data.map((row: unknown) => ({
     id: String((row as Record<string, unknown>).id),
     amount: Number((row as Record<string, unknown>).amount),
@@ -139,12 +140,15 @@ export async function getDonationReceiptRequests(): Promise<DonationReceiptReque
   const client = createClient();
   if (!client) return mockReceiptRequests;
   const { data, error } = await client.from("donation_receipt_requests").select("*").order("created_at", { ascending: false });
-  if (error || !data) return mockReceiptRequests;
+  if (error || !data) throw new Error("Unable to load receipt requests");
   return data.map((row: unknown) => ({
     id: String((row as Record<string, unknown>).id),
     donorName: String((row as Record<string, unknown>).donor_name),
     amount: Number((row as Record<string, unknown>).amount),
     email: String((row as Record<string, unknown>).email),
+    postalAddress: (row as Record<string, unknown>).postal_address ? String((row as Record<string, unknown>).postal_address) : undefined,
+    donationDate: (row as Record<string, unknown>).donation_date ? String((row as Record<string, unknown>).donation_date) : undefined,
+    transferReference: (row as Record<string, unknown>).transfer_reference ? String((row as Record<string, unknown>).transfer_reference) : undefined,
     status: String((row as Record<string, unknown>).status) as DonationReceiptRequest["status"],
     createdAt: String((row as Record<string, unknown>).created_at),
   }));
@@ -154,7 +158,10 @@ export async function getDonationReport(): Promise<DonationReport> {
   const client = createClient();
   if (!client) return mockDonationReport;
   const { data, error } = await client.from("donation_reports").select("*").order("month", { ascending: false }).limit(1).single();
-  if (error || !data) return mockDonationReport;
+  if (error || !data) {
+    if (error?.code === "PGRST116") return { month: new Date().toISOString().slice(0, 7), monthlyNeed: 0, donationsReceived: 0, remaining: 0 };
+    throw new Error("Unable to load donation report");
+  }
   return {
     month: String((data as Record<string, unknown>).month),
     monthlyNeed: Number((data as Record<string, unknown>).monthly_need),

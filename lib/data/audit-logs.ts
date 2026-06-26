@@ -6,7 +6,7 @@ export async function getAuditLogs(): Promise<AuditLog[]> {
   const client = createClient();
   if (!client) return mockAuditLogs;
   const { data, error } = await client.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100);
-  if (error || !data) return mockAuditLogs;
+  if (error || !data) throw new Error("Unable to load audit logs");
   return data.map((row: unknown) => ({
     id: String((row as Record<string, unknown>).id),
     actor: String((row as Record<string, unknown>).actor),

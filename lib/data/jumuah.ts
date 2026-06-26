@@ -37,15 +37,16 @@ function mapToDb(item: Partial<JumuahTime>): Record<string, unknown> {
   return db;
 }
 
-export async function getJumuahTimes(): Promise<JumuahTime[]> {
+export async function getJumuahTimes(includeUnpublished = false): Promise<JumuahTime[]> {
   const client = createClient();
   if (!client) return mockJumuahTimes;
-  const { data, error } = await client
+  let query = client
     .from("jumuah_times")
     .select("*")
-    .eq("published", true)
     .order("date", { ascending: true });
-  if (error || !data) return mockJumuahTimes;
+  if (!includeUnpublished) query = query.eq("published", true);
+  const { data, error } = await query;
+  if (error || !data) throw new Error("Unable to load Jumu'ah times");
   return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
 }
 

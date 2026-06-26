@@ -5,6 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/types";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
+import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
 
 const metadataDescriptions: Record<Locale, string> = {
   ar: "مواقيت الصلاة والجمعة والإعلانات والتبرعات ومعلومات المجتمع في دغندورف.",
@@ -41,13 +42,14 @@ export const viewport: Viewport = {
 };
 
 function ServiceWorkerRegistration() {
+  if (process.env.NODE_ENV !== "production") return null;
   return (
     <script
       dangerouslySetInnerHTML={{
         __html: `
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js').catch(function() {});
+              navigator.serviceWorker.register('/sw.js').catch(function(error) { console.warn('Service worker registration failed', error); });
             });
           }
         `,
@@ -65,13 +67,13 @@ export default async function RootLayout({
   const initialLocale = normalizeLocale(cookieStore.get("locale")?.value || DEFAULT_LOCALE);
 
   return (
-    <html lang={initialLocale} dir={getTextDirection(initialLocale)}>
+    <html lang={initialLocale} dir={getTextDirection(initialLocale)} suppressHydrationWarning>
       <head>
         <ServiceWorkerRegistration />
       </head>
       <body>
         <I18nProvider initialLocale={initialLocale}>
-          <TimeFormatProvider>{children}</TimeFormatProvider>
+          <AppPreferencesProvider><TimeFormatProvider>{children}</TimeFormatProvider></AppPreferencesProvider>
         </I18nProvider>
       </body>
     </html>

@@ -13,7 +13,10 @@
     "no": "No",
     "backHome": "Back home",
     "notifications": "Notifications",
-    "appIconAlt": "Deggendorf Prayer app icon"
+    "appIconAlt": "Deggendorf Prayer app icon",
+    "retry": "Try again",
+    "dataLoadFailed": "The latest data could not be loaded.",
+    "privacy": "Privacy policy"
   },
   "nav": {
     "ariaLabel": "Primary navigation",
@@ -68,18 +71,18 @@
     "location": "Location",
     "khateeb": "Khateeb",
     "language": "Language",
-    "announcements": "Friday Announcements"
+    "announcements": "Friday Announcements",
+    "empty": "No upcoming Friday prayer has been published."
   },
   "news": {
-    "title": "Announcements"
+    "title": "Announcements",
+    "empty": "No announcements have been published."
   },
   "donations": {
     "title": "Donations",
     "heroAlt": "Charity and mosque support",
     "supportMasjid": "Support Your Masjid",
     "supportMasjidDesc": "Your generosity helps sustain prayer, unity, and community work.",
-    "quickDonate": "Quick Donate",
-    "customAmount": "Custom amount",
     "activeCampaigns": "Active Campaigns",
     "bankTransfer": "Bank Transfer",
     "accountHolder": "Account holder",
@@ -98,7 +101,27 @@
     "collected": "Collected",
     "target": "Target",
     "collectedAmount": "{amount} collected",
-    "goalAmount": "{amount} goal - {progress}%"
+    "goalAmount": "{amount} goal - {progress}%",
+    "noCampaigns": "There are no active campaigns.",
+    "donorName": "Full name",
+    "email": "Email address",
+    "amount": "Donation amount",
+    "donationDate": "Donation date",
+    "postalAddress": "Postal address for the receipt",
+    "transferReference": "Transfer reference (optional)",
+    "privacyConsent": "I agree that my information may be processed to issue the requested receipt.",
+    "requestRejected": "The request could not be accepted.",
+    "invalidName": "Enter your full name.",
+    "invalidEmail": "Enter a valid email address.",
+    "invalidAddress": "Enter a valid postal address.",
+    "invalidDate": "Enter a valid donation date.",
+    "invalidAmount": "Enter a valid donation amount.",
+    "privacyRequired": "Privacy consent is required.",
+    "tooManyRequests": "Too many recent requests. Please try again later.",
+    "requestFailed": "The request could not be saved. Please try again.",
+    "requestSent": "Your receipt request was sent successfully.",
+    "submitRequest": "Send receipt request",
+    "received": "Received"
   },
   "azkar": {
     "title": "Azkar & Duaa",
@@ -110,7 +133,9 @@
     "target": "Target",
     "startDhikr": "Start dhikr",
     "repeatCount": "Repeat count",
-    "defaultTasbeeh": "Subhan Allah"
+    "defaultTasbeeh": "Subhan Allah",
+    "empty": "No azkar are published in this category.",
+    "moreInCategory": "More in this category"
   },
   "azkarCategories": {
     "Morning": "Morning",
@@ -121,7 +146,8 @@
     "Friday": "Friday"
   },
   "events": {
-    "title": "Events"
+    "title": "Events",
+    "empty": "No upcoming events have been published."
   },
   "eventTypes": {
     "Class": "Class",
@@ -141,7 +167,9 @@
     "parkingNotes": "Parking notes",
     "communityLinks": "Community links",
     "facilityPlaceholder": "Information managed by mosque administration.",
-    "viewBankDetails": "View bank details on Donations"
+    "viewBankDetails": "View bank details on Donations",
+    "visitorInfo": "Visitor information",
+    "visitorInfoDesc": "Please respect posted mosque guidance and contact the administration if you need accessibility, parking, or women’s prayer-area information."
   },
   "ramadan": {
     "title": "Ramadan",
@@ -154,11 +182,25 @@
     "announcements": "Ramadan Announcements",
     "announcementsPlaceholder": "Ramadan announcements will be published by the mosque administration.",
     "calendarPlaceholder": "Temporary calendar",
-    "calendarPlaceholderDesc": "Daily Ramadan rows will appear here once the schedule is published."
+    "calendarPlaceholderDesc": "Daily Ramadan rows will appear here once the schedule is published.",
+    "noSchedule": "No Ramadan schedule has been published.",
+    "noAnnouncements": "No Ramadan announcements have been published.",
+    "day": "Ramadan day {day}",
+    "dayLabel": "Day",
+    "calendar": "Ramadan calendar"
   },
   "qibla": {
     "title": "Qibla",
-    "comingSoon": "Qibla direction feature will be added soon."
+    "comingSoon": "Qibla direction feature will be added soon.",
+    "direction": "Qibla: {degrees}° from north",
+    "deggendorfEstimate": "Estimated from central Deggendorf.",
+    "locating": "Finding your location...",
+    "locationReady": "Direction calculated from your current location.",
+    "locationDenied": "Location permission was denied; showing the Deggendorf estimate.",
+    "locationUnsupported": "Location is unavailable on this device.",
+    "calibrationHelp": "Move your phone in a figure-eight to calibrate its compass.",
+    "useMyLocation": "Use my location",
+    "sensorNote": "The arrow follows the device compass when sensor access is available."
   },
   "settings": {
     "title": "Settings",
@@ -178,7 +220,30 @@
     "12hour": "12-hour",
     "theme": "Theme",
     "light": "Light",
-    "darkPlaceholder": "Dark, coming soon"
+    "darkPlaceholder": "Dark, coming soon",
+    "dark": "Dark",
+    "enableBrowserNotifications": "Enable browser notifications",
+    "browserNotificationsEnabled": "Browser notifications enabled",
+    "browserNotificationsUnsupported": "Browser notifications are not supported"
+  },
+  "notifications": {
+    "empty": "There are no urgent updates."
+  },
+  "privacy": {
+    "title": "Privacy policy",
+    "controllerTitle": "Responsible organization",
+    "controllerText": "The mosque organization operating this website is responsible for the personal data submitted through it.",
+    "dataTitle": "Data we collect",
+    "dataText": "Receipt requests contain your name, email, postal address, donation date, amount, and optional transfer reference. Language, theme, time format, and notification preferences stay on your device.",
+    "purposeTitle": "Purpose",
+    "purposeText": "Receipt-request data is used only to review the donation and prepare or contact you about a donation receipt.",
+    "retentionTitle": "Retention",
+    "retentionText": "Data is kept only as long as operationally and legally necessary, then deleted or anonymized.",
+    "rightsTitle": "Your rights",
+    "rightsText": "You may request access, correction, deletion, restriction, or information about how your data is processed, subject to applicable legal obligations.",
+    "contactTitle": "Contact",
+    "contactText": "Use the contact information on the Mosque Info page for privacy and receipt questions.",
+    "reviewNotice": "This page is an operational template and should be reviewed by the mosque’s legal or data-protection adviser before public launch."
   },
   "announcementTypes": {
     "General": "General",
@@ -217,6 +282,7 @@
     "missingNextWeek": "Prayer times for next week are missing.",
     "todayPrayerStatus": "Today Prayer Status",
     "published": "Published",
+    "notPublished": "Not published",
     "liveDate": "Published date: {date}",
     "jumuahStatus": "Jumu'ah Published Status",
     "fridayVisible": "Friday details visible",
@@ -310,6 +376,13 @@
     "managedManually": "Managed manually",
     "manualDonationsReceipts": "Manual donations and receipts",
     "futurePhasePlaceholder": "This section will be activated in a later phase.",
+    "noReceiptRequests": "No receipt requests yet.",
+    "status": "Status",
+    "donationReport": "Monthly donation report",
+    "month": "Month",
+    "csvImportHelp": "Upload up to 366 daily rows. Existing dates are updated and new dates are created.",
+    "chooseCsv": "Choose CSV file",
+    "downloadCsvTemplate": "Download CSV template",
     "setupRequired": "Setup required",
     "supabaseEnvMissing": "Supabase configuration is incomplete. Check environment variables.",
     "supabaseNotConfigured": "Supabase is not configured yet.",
@@ -374,7 +447,8 @@
       "created": "Created successfully.",
       "updated": "Updated successfully.",
       "deleted": "Deleted successfully.",
-      "settingsUpdated": "Settings saved."
+      "settingsUpdated": "Settings saved.",
+      "csvImported": "Imported {count} prayer-time rows."
     },
     "errors": {
       "notAuthenticated": "Please sign in first.",
@@ -421,7 +495,11 @@
       "imsakRequired": "Imsak time is required.",
       "iftarRequired": "Iftar time is required.",
       "ramadanDayPositive": "Ramadan day number must be greater than zero.",
-      "repeatCountPositive": "Repeat count must be greater than zero."
+      "repeatCountPositive": "Repeat count must be greater than zero.",
+      "invalidInput": "One or more values are invalid.",
+      "validHttpsUrlRequired": "External links must use HTTPS.",
+      "endTimeAfterStart": "End time must be after start time.",
+      "invalidCsv": "The CSV file contains missing or invalid values."
     }
   }
 }

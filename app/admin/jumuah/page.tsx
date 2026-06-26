@@ -43,7 +43,7 @@ export default function AdminJumuahPage() {
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
 
-  useEffect(() => { getJumuahTimes().then((data) => setItems(data)); }, []);
+  useEffect(() => { getJumuahTimes(true).then((data) => setItems(data)).catch(() => setError(t("common.dataLoadFailed"))); }, [t]);
 
   function resetForm() {
     setForm({ ...emptyForm });
@@ -75,7 +75,7 @@ export default function AdminJumuahPage() {
   }
 
   async function refreshItems() {
-    setItems(await getJumuahTimes());
+    setItems(await getJumuahTimes(true));
   }
 
   async function handleSubmit(event: React.FormEvent) {

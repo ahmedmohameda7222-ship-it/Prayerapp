@@ -7,19 +7,20 @@ export async function getAzkarCategories(): Promise<AzkarCategory[]> {
   const client = createClient();
   if (!client) return mockCategories;
   const { data, error } = await client.from("azkar_categories").select("name").order("sort_order", { ascending: true });
-  if (error || !data) return mockCategories;
+  if (error || !data) throw new Error("Unable to load azkar categories");
   return data.map((row: unknown) => String((row as Record<string, unknown>).name)) as AzkarCategory[];
 }
 
-export async function getAzkarItems(): Promise<AzkarItem[]> {
+export async function getAzkarItems(includeUnpublished = false): Promise<AzkarItem[]> {
   const client = createClient();
   if (!client) return mockItems.filter((i) => i.isPublished);
-  const { data, error } = await client
+  let query = client
     .from("azkar_items")
     .select("*")
-    .eq("is_published", true)
     .order("sort_order", { ascending: true });
-  if (error || !data) return mockItems.filter((i) => i.isPublished);
+  if (!includeUnpublished) query = query.eq("is_published", true);
+  const { data, error } = await query;
+  if (error || !data) throw new Error("Unable to load azkar");
   return data.map((row: unknown) => {
     const record = row as Record<string, unknown>;
     return {

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getLocalizedAzkarTranslation } from "@/lib/i18n/localized-content";
 
-export function AzkarCard({ item }: { item: AzkarItem }) {
+export function AzkarCard({ item, onStart }: { item: AzkarItem; onStart?: (item: AzkarItem) => void }) {
   const { t, locale } = useTranslation();
   const translation = getLocalizedAzkarTranslation(item, locale);
 
@@ -20,7 +20,7 @@ export function AzkarCard({ item }: { item: AzkarItem }) {
             <p className="text-xs font-bold uppercase tracking-[0.06em] text-[var(--color-gold)]">{t("azkar.repeatCount", { count: item.repeatCount })}</p>
             <p className="text-sm text-white/70">{item.source}</p>
           </div>
-          <Button variant="gold">{t("azkar.startDhikr")}</Button>
+          <Button type="button" onClick={() => onStart?.(item)} variant="gold">{t("azkar.startDhikr")}</Button>
         </div>
       </div>
     </section>

@@ -4,18 +4,26 @@ import { CalendarDays, MapPin } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
-import { events } from "@/lib/mock-data";
+import { getEvents } from "@/lib/data/events";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { DataError, DataLoading } from "@/components/ui/DataState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { FormattedTimeRange } from "@/components/ui/FormattedTime";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
-import { formatShortDate } from "@/lib/date-utils";
+import { formatShortDate, todayIso } from "@/lib/date-utils";
 
 export default function EventsPage() {
   const { t, locale } = useTranslation();
+  const { data, error, loading, reload } = useAsyncData(getEvents);
+  const events = (data || []).filter((event) => event.date >= todayIso());
 
   return (
     <AppShell>
       <PageHeader titleKey="events.title" />
+      {loading ? <DataLoading /> : null}
+      {error ? <DataError message={error} retry={reload} /> : null}
+      {!loading && !error && !events.length ? <EmptyState message={t("events.empty")} /> : null}
       <div className="grid gap-3">
         {events.map((event) => {
           const title = getLocalizedField(event, "title", locale);

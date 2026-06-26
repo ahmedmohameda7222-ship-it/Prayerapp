@@ -31,6 +31,9 @@ function validateDonationSettings(data: Record<string, string>): string[] {
   if (!data.iban?.trim()) errors.push("admin.errors.ibanRequired");
   if (!data.bic?.trim()) errors.push("admin.errors.bicRequired");
   if (!data.defaultPurposeAr?.trim()) errors.push("admin.errors.arabicDefaultPurposeRequired");
+  if (!/^[A-Z]{2}[0-9A-Z\s]{13,32}$/i.test((data.iban || "").replace(/\s/g, ""))) errors.push("admin.errors.ibanRequired");
+  if (!/^[A-Z0-9]{8}(?:[A-Z0-9]{3})?$/i.test(data.bic || "")) errors.push("admin.errors.bicRequired");
+  if (data.paypalLink && !/^https:\/\//i.test(data.paypalLink)) errors.push("admin.errors.validHttpsUrlRequired");
   return errors;
 }
 
@@ -42,7 +45,8 @@ function validateCampaign(data: Record<string, string>): string[] {
   if (Number.isNaN(target) || target <= 0) errors.push("admin.errors.positiveTargetRequired");
   const collected = Number(data.collectedAmount);
   if (Number.isNaN(collected) || collected < 0) errors.push("admin.errors.nonNegativeCollectedRequired");
-  if (!data.startDate?.trim()) errors.push("admin.errors.startDateRequired");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.startDate || "")) errors.push("admin.errors.startDateRequired");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.endDate || "")) errors.push("admin.errors.endDateAfterStart");
   if (data.endDate && data.startDate && data.endDate < data.startDate) {
     errors.push("admin.errors.endDateAfterStart");
   }
@@ -77,7 +81,7 @@ export async function updateDonationSettingsAction(
     receipt_note_tr: data.receiptNoteTr?.trim() || null,
   };
 
-  const { error } = await client.from("donation_settings").update(db).eq("id", "1");
+  const { error } = await client.from("donation_settings").upsert({ id: "1", ...db }, { onConflict: "id" });
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
   await createAuditLog(email, "updated donation settings", "donation_settings");
@@ -212,5 +216,35 @@ export async function toggleFeaturedCampaignAction(token: string, id: string, is
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
+  return { success: true };
+}
+
+export async function updateReceiptStatusAction(token: string, id: string, status: string): Promise<{ success: boolean; error?: string }> {
+  const email = await requireAllowedAdmin(token);
+  if (!/^[0-9a-f-]{36}$/i.test(id) || !["Pending", "Reviewed", "Sent"].includes(status)) {
+    return { success: false, error: "admin.errors.invalidInput" };
+  }
+  const client = createServerClient();
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+  const { error } = await client.from("donation_receipt_requests").update({ status }).eq("id", id);
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
+  await createAuditLog(email, `changed receipt request ${id} to ${status}`, "donation_receipt_request", id);
+  revalidatePath("/admin/donations");
+  return { success: true };
+}
+
+export async function updateDonationReportAction(token: string, data: Record<string, string>): Promise<{ success: boolean; error?: string }> {
+  const email = await requireAllowedAdmin(token);
+  const monthlyNeed = Number(data.monthlyNeed);
+  const donationsReceived = Number(data.donationsReceived);
+  if (!/^\d{4}-\d{2}$/.test(data.month || "") || !Number.isFinite(monthlyNeed) || monthlyNeed < 0 || !Number.isFinite(donationsReceived) || donationsReceived < 0) {
+    return { success: false, error: "admin.errors.invalidInput" };
+  }
+  const client = createServerClient();
+  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+  const { error } = await client.from("donation_reports").upsert({ month: data.month, monthly_need: monthlyNeed, donations_received: donationsReceived, remaining: Math.max(0, monthlyNeed - donationsReceived) }, { onConflict: "month" });
+  if (error) return { success: false, error: "admin.errors.saveFailed" };
+  await createAuditLog(email, `updated donation report for ${data.month}`, "donation_report", data.month);
+  revalidatePath("/admin/donations"); revalidatePath("/donations");
   return { success: true };
 }

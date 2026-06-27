@@ -15,8 +15,11 @@ const STATIC_ASSETS = [
   "/more",
   "/assets/app-icon-main.png",
   "/assets/hero-home-mosque-night.png",
+  "/assets/hero-home-mosque-night-desktop.png",
   "/assets/hero-friday-mosque-night.png",
+  "/assets/hero-friday-mosque-night-desktop.png",
   "/assets/hero-donations-charity.png",
+  "/assets/hero-donations-charity-desktop.png",
 ];
 
 self.addEventListener("install", (event) => {

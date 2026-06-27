@@ -73,7 +73,7 @@ export default function FridayPage() {
     <AppShell>
       <PageHeader titleKey="friday.title" />
       <div className="grid gap-5">
-        <HeroCard src="/assets/hero-friday-mosque-night.png" alt={t("friday.heroAlt")} priority>
+        <HeroCard src="/assets/hero-friday-mosque-night.png" desktopSrc="/assets/hero-friday-mosque-night-desktop.png" alt={t("friday.heroAlt")} priority>
           <h2 className="font-brand text-5xl font-semibold">{t("friday.title")}</h2>
           <p className="mt-3 text-lg font-bold text-[var(--color-gold)]">
             {t("prayer.khutbah")} <FormattedTime time={firstFriday.khutbahTime} /> | {t("prayer.prayer")}{" "}

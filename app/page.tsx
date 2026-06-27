@@ -30,7 +30,7 @@ export default function HomePage() {
         {error ? <DataError message={error} retry={reload} /> : null}
         {today ? (
           <>
-            <HeroCard src="/assets/hero-home-mosque-night.png" alt={t("home.heroAlt")} priority>
+            <HeroCard src="/assets/hero-home-mosque-night.png" desktopSrc="/assets/hero-home-mosque-night-desktop.png" alt={t("home.heroAlt")} priority>
               <PrayerCountdown prayer={today} schedule={prayerTimes || [today]} />
             </HeroCard>
             <PrayerTimesCard prayer={today} />

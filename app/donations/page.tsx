@@ -23,7 +23,7 @@ export default function DonationsPage() {
     <AppShell>
       <PageHeader titleKey="donations.title" />
       <div className="grid gap-5">
-        <HeroCard src="/assets/hero-donations-charity.png" alt={t("donations.heroAlt")} priority>
+        <HeroCard src="/assets/hero-donations-charity.png" desktopSrc="/assets/hero-donations-charity-desktop.png" alt={t("donations.heroAlt")} priority>
           <h2 className="font-brand text-4xl font-semibold">{t("donations.supportMasjid")}</h2>
           <p className="mt-3 max-w-sm text-base leading-7 text-white/86">{t("donations.supportMasjidDesc")}</p>
         </HeroCard>

@@ -7,7 +7,7 @@ export function AzkarCategoryChips({ categories, selected, onSelect }: { categor
   const { t } = useTranslation();
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {categories.map((category) => (
         <button
           key={category}

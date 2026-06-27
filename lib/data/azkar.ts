@@ -1,54 +1,27 @@
 import { createClient } from "@/lib/supabase/client";
 import type { AzkarCategory, AzkarItem } from "@/lib/types";
-import { previewAzkarCategories, previewAzkarItems } from "./demo-data";
-import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
-import { getCached, invalidateCachePrefix } from "./cache";
+import { hardcodedAzkarCategories, hardcodedAzkarItems } from "./hardcoded-azkar";
+import { localizedFieldsToDb } from "./localized-db";
+import { invalidateCachePrefix } from "./cache";
 
-function filterPreviewAzkarItems(includeUnpublished = false): AzkarItem[] {
-  return previewAzkarItems.filter((item) => includeUnpublished || item.isPublished);
-}
+const categoryOrder = new Map<AzkarCategory, number>(
+  hardcodedAzkarCategories.map((category, index) => [category, index])
+);
 
 export async function getAzkarCategories(): Promise<AzkarCategory[]> {
-  const client = createClient();
-  if (!client) return previewAzkarCategories;
-  return getCached("azkar_categories", async () => {
-    const { data, error } = await client.from("azkar_categories").select("name").order("sort_order", { ascending: true });
-    if (error || !data) throw new Error("Unable to load azkar categories");
-    return data.map((row: unknown) => String((row as Record<string, unknown>).name)) as AzkarCategory[];
-  });
+  return [...hardcodedAzkarCategories];
 }
 
 export async function getAzkarItems(includeUnpublished = false): Promise<AzkarItem[]> {
-  const client = createClient();
-  if (!client) return filterPreviewAzkarItems(includeUnpublished);
-  const key = `azkar_items_${includeUnpublished}`;
-  return getCached(key, async () => {
-    let query = client
-      .from("azkar_items")
-      .select("*")
-      .order("sort_order", { ascending: true });
-    if (!includeUnpublished) query = query.eq("is_published", true);
-    const { data, error } = await query;
-    if (error || !data) throw new Error("Unable to load azkar");
-    return data.map((row: unknown) => {
-      const record = row as Record<string, unknown>;
-      return {
-        id: String(record.id),
-        category: String(record.category) as AzkarCategory,
-        arabicText: String(record.arabic_text),
-        transliteration: String(record.transliteration),
-        translationEn: readDbString(record, "translation_en"),
-        translationDe: readDbString(record, "translation_de"),
-        translationAr: readDbString(record, "translation_ar"),
-        translationTr: readDbString(record, "translation_tr"),
-        repeatCount: Number(record.repeat_count),
-        source: String(record.source),
-        sortOrder: Number(record.sort_order),
-        isPublished: Boolean(record.is_published),
-        ...localizedFieldsFromDb(record, "translation", "translation"),
-      };
+  return hardcodedAzkarItems
+    .filter((item) => includeUnpublished || item.isPublished)
+    .map((item) => ({ ...item }))
+    .sort((a, b) => {
+      const categoryDifference =
+        (categoryOrder.get(a.category) ?? Number.MAX_SAFE_INTEGER) -
+        (categoryOrder.get(b.category) ?? Number.MAX_SAFE_INTEGER);
+      return categoryDifference || a.sortOrder - b.sortOrder;
     });
-  });
 }
 
 export async function createAzkarItem(item: Omit<AzkarItem, "id">): Promise<AzkarItem> {

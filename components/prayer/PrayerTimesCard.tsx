@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { PrayerRow } from "./PrayerRow";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
-export function PrayerTimesCard({ prayer, activePrayer = "asr" }: { prayer?: PrayerTime; activePrayer?: PrayerName }) {
+export function PrayerTimesCard({ prayer, activePrayer }: { prayer?: PrayerTime; activePrayer?: PrayerName }) {
   const { t, locale } = useTranslation();
   if (!prayer) {
     return (

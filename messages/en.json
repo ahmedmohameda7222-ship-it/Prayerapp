@@ -50,7 +50,30 @@
     "supportMasjid": "Support Your Masjid",
     "supportMasjidDesc": "Donate by bank transfer and follow campaigns.",
     "azkarReminder": "Daily Azkar Reminder",
-    "azkarReminderDesc": "Morning, evening, and after-prayer dhikr."
+    "azkarReminderDesc": "Morning, evening, and after-prayer dhikr.",
+    "nextAction": "Recommended next",
+    "smartActions": {
+      "afterPrayer": {
+        "title": "After-prayer Azkar",
+        "description": "Complete the remembrance after prayer."
+      },
+      "morning": {
+        "title": "Morning Azkar",
+        "description": "Begin your day with morning remembrance."
+      },
+      "evening": {
+        "title": "Evening Azkar",
+        "description": "Complete your evening remembrance."
+      },
+      "sleep": {
+        "title": "Sleep Azkar",
+        "description": "Complete the remembrance before sleep."
+      },
+      "friday": {
+        "title": "Friday and Jumu'ah",
+        "description": "View today's khutbah, prayer time, and location."
+      }
+    }
   },
   "times": {
     "title": "Prayer Times",
@@ -127,10 +150,13 @@
     "title": "Azkar",
     "subtitle": "Daily remembrance for peace and protection",
     "categoryStatus": "{category} Azkar · {completed} / {total} completed",
+    "favoritesStatus": "Favorites · {completed} / {total} completed",
     "dailyProgress": "Daily progress",
     "progressSummary": "{completed} of {total} completed",
     "continueCategory": "Continue {category} Azkar",
     "categoryCompleted": "{category} Azkar completed",
+    "continueFavorites": "Continue favorite Azkar",
+    "favoritesCompleted": "Favorite Azkar completed",
     "routine": "Daily routine",
     "completed": "Completed",
     "count": "Count",
@@ -140,7 +166,7 @@
     "hideTranslations": "Hide translations",
     "addFavorite": "Add to favorites",
     "removeFavorite": "Remove from favorites",
-    "noFavorites": "Tap the heart on an Azkar card to keep it here.",
+    "noFavorites": "No favorite Azkar yet. Tap the heart on any dhikr to add it here.",
     "featured": "Featured Azkar",
     "tasbeeh": "Tasbeeh Counter",
     "favorites": "Favorites",

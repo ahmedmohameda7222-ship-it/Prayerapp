@@ -61,5 +61,14 @@ export function getLocalizedAzkarTranslation<T extends LocalizedRecord>(
   item: T | null | undefined,
   locale: Locale
 ): string {
+  if (locale === "ar") {
+    if (!item) return "";
+    for (const key of fieldCandidates("translation", "ar")) {
+      const value = readNonEmpty(item, key);
+      if (value) return value;
+    }
+    return "";
+  }
+
   return getLocalizedField(item, "translation", locale);
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { BookOpen, HandHeart } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppShell } from "@/components/layout/AppShell";
@@ -11,16 +12,34 @@ import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { PrayerCountdown } from "@/components/prayer/PrayerCountdown";
 import { PrayerTimesCard } from "@/components/prayer/PrayerTimesCard";
 import { QuickActionCard } from "@/components/home/QuickActionCard";
+import { SmartNextActionCard } from "@/components/home/SmartNextActionCard";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { todayIso } from "@/lib/date-utils";
-import { getPrayerForDate } from "@/lib/prayer-utils";
+import { getSmartNextAction } from "@/lib/home-utils";
+import { getNextPrayer, getNextPrayerFromSchedule, getPrayerForDate } from "@/lib/prayer-utils";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import type { PrayerTime } from "@/lib/types";
+
+const EMPTY_SCHEDULE: PrayerTime[] = [];
 
 export default function HomePage() {
   const { t } = useTranslation();
   const { data: prayerTimes, error, loading, reload } = useAsyncData(getPrayerTimes);
-  const today = getPrayerForDate(prayerTimes || [], todayIso());
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const schedule = prayerTimes || EMPTY_SCHEDULE;
+  const today = getPrayerForDate(schedule, todayIso(now));
+  const activePrayer = useMemo(() => {
+    const next = getNextPrayerFromSchedule(schedule, now);
+    return next?.name || (today ? getNextPrayer(today, now).name : undefined);
+  }, [now, schedule, today]);
+  const smartAction = useMemo(() => schedule.length ? getSmartNextAction(schedule, now) : undefined, [now, schedule]);
 
   return (
     <AppShell>
@@ -31,9 +50,10 @@ export default function HomePage() {
         {today ? (
           <>
             <HeroCard src="/assets/hero-home-mosque-night.png" desktopSrc="/assets/hero-home-mosque-night-desktop.png" alt={t("home.heroAlt")} priority>
-              <PrayerCountdown prayer={today} schedule={prayerTimes || [today]} />
+              <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} />
             </HeroCard>
-            <PrayerTimesCard prayer={today} />
+            <PrayerTimesCard prayer={today} activePrayer={activePrayer} />
+            {smartAction ? <SmartNextActionCard action={smartAction} /> : null}
           </>
         ) : !loading && !error ? <EmptyState message={t("prayer.notPublished")} /> : null}
         <section>

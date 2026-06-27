@@ -47,7 +47,30 @@
     "supportMasjid": "Caminizi Destekleyin",
     "supportMasjidDesc": "Banka havalesiyle bağış yapın ve kampanyaları takip edin.",
     "azkarReminder": "Günlük Zikir Hatırlatıcısı",
-    "azkarReminderDesc": "Sabah, akşam ve namaz sonrası zikir."
+    "azkarReminderDesc": "Sabah, akşam ve namaz sonrası zikir.",
+    "nextAction": "Sıradaki öneri",
+    "smartActions": {
+      "afterPrayer": {
+        "title": "Namaz sonrası zikir",
+        "description": "Namazdan sonraki zikri tamamlayın."
+      },
+      "morning": {
+        "title": "Sabah zikirleri",
+        "description": "Güne sabah zikirleriyle başlayın."
+      },
+      "evening": {
+        "title": "Akşam zikirleri",
+        "description": "Akşam zikirlerinizi tamamlayın."
+      },
+      "sleep": {
+        "title": "Uyku zikirleri",
+        "description": "Uyumadan önce zikirleri tamamlayın."
+      },
+      "friday": {
+        "title": "Cuma",
+        "description": "Bugünkü hutbe, namaz vakti ve konumu görüntüleyin."
+      }
+    }
   },
   "times": {
     "title": "Namaz Vakitleri",
@@ -109,10 +132,13 @@
     "title": "Zikirler",
     "subtitle": "Huzur ve korunma için günlük zikirler",
     "categoryStatus": "{category} zikirleri · {completed} / {total} tamamlandı",
+    "favoritesStatus": "Favoriler · {completed} / {total} tamamlandı",
     "dailyProgress": "Günlük ilerleme",
     "progressSummary": "{total} zikrin {completed} tanesi tamamlandı",
     "continueCategory": "{category} zikirlerine devam et",
     "categoryCompleted": "{category} zikirleri tamamlandı",
+    "continueFavorites": "Favori zikirlere devam et",
+    "favoritesCompleted": "Favori zikirler tamamlandı",
     "routine": "Günlük rutin",
     "completed": "Tamamlandı",
     "count": "Say",
@@ -122,7 +148,7 @@
     "hideTranslations": "Çevirileri gizle",
     "addFavorite": "Favorilere ekle",
     "removeFavorite": "Favorilerden çıkar",
-    "noFavorites": "Buraya kaydetmek için bir zikir kartındaki kalbe dokunun.",
+    "noFavorites": "Henüz favori zikir yok. Buraya eklemek için herhangi bir zikrin kalbine dokunun.",
     "featured": "Öne Çıkan Zikirler",
     "tasbeeh": "Tesbih Sayacı",
     "favorites": "Favoriler",

@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { AzkarCard } from "@/components/azkar/AzkarCard";
-import { AzkarCategoryChips } from "@/components/azkar/AzkarCategoryChips";
-import { FavoriteAzkarList } from "@/components/azkar/FavoriteAzkarList";
+import { AzkarCategoryChips, type AzkarTab } from "@/components/azkar/AzkarCategoryChips";
 import { TasbeehCounter } from "@/components/azkar/TasbeehCounter";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionTitle } from "@/components/ui/SectionTitle";
@@ -82,6 +81,11 @@ function readFavoriteIds(validIds: Set<string>) {
   }
 }
 
+function readRequestedCategory(categories: AzkarCategory[]) {
+  const requested = new URLSearchParams(window.location.search).get("tab");
+  return isCategory(requested, categories) ? requested : undefined;
+}
+
 export function AzkarRoutine({
   categories,
   items,
@@ -90,7 +94,8 @@ export function AzkarRoutine({
   items: AzkarItem[];
 }) {
   const { t } = useTranslation();
-  const [selectedCategory, setSelectedCategory] = useState<AzkarCategory>("Morning");
+  const [selectedTab, setSelectedTab] = useState<AzkarTab>("Morning");
+  const [lastRealCategory, setLastRealCategory] = useState<AzkarCategory>("Morning");
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => new Set());
   const [hydrated, setHydrated] = useState(false);
@@ -99,7 +104,10 @@ export function AzkarRoutine({
   /* eslint-disable react-hooks/set-state-in-effect -- localStorage is only available after mount. */
   useEffect(() => {
     const stored = readStoredProgress(categories);
-    setSelectedCategory(stored.lastSelectedCategory);
+    const requestedCategory = readRequestedCategory(categories);
+    const initialCategory = requestedCategory || stored.lastSelectedCategory;
+    setSelectedTab(initialCategory);
+    setLastRealCategory(initialCategory);
     setCounts(stored.counts);
     setFavoriteIds(readFavoriteIds(validIds));
     setHydrated(true);
@@ -110,7 +118,7 @@ export function AzkarRoutine({
     if (!hydrated) return;
     const progress: StoredProgress = {
       date: localDateKey(new Date()),
-      lastSelectedCategory: selectedCategory,
+      lastSelectedCategory: lastRealCategory,
       counts,
     };
 
@@ -119,7 +127,7 @@ export function AzkarRoutine({
     } catch {
       // The routine remains usable when storage is unavailable.
     }
-  }, [counts, hydrated, selectedCategory]);
+  }, [counts, hydrated, lastRealCategory]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -130,21 +138,21 @@ export function AzkarRoutine({
     }
   }, [favoriteIds, hydrated]);
 
-  const categoryItems = useMemo(
-    () => items.filter((item) => item.category === selectedCategory),
-    [items, selectedCategory]
-  );
-  const favoriteItems = useMemo(
-    () => items.filter((item) => favoriteIds.has(item.id)),
-    [favoriteIds, items]
+  const visibleItems = useMemo(
+    () => selectedTab === "Favorites"
+      ? items.filter((item) => favoriteIds.has(item.id))
+      : items.filter((item) => item.category === selectedTab),
+    [favoriteIds, items, selectedTab]
   );
   const completedCount = useMemo(
-    () => categoryItems.filter((item) => (counts[item.id] || 0) >= item.repeatCount).length,
-    [categoryItems, counts]
+    () => visibleItems.filter((item) => (counts[item.id] || 0) >= item.repeatCount).length,
+    [counts, visibleItems]
   );
-  const totalCount = categoryItems.length;
+  const totalCount = visibleItems.length;
   const progressPercent = totalCount ? (completedCount / totalCount) * 100 : 0;
-  const localizedCategory = t(`azkarCategories.${selectedCategory}`);
+  const localizedTab = selectedTab === "Favorites"
+    ? t("azkar.favorites")
+    : t(`azkarCategories.${selectedTab}`);
 
   const incrementItem = useCallback((item: AzkarItem) => {
     setCounts((current) => ({
@@ -166,12 +174,10 @@ export function AzkarRoutine({
     });
   }, []);
 
-  const openFavorite = useCallback((item: AzkarItem) => {
-    setSelectedCategory(item.category);
-    window.setTimeout(() => {
-      document.getElementById(`azkar-${item.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 0);
-  }, []);
+  function selectTab(tab: AzkarTab) {
+    setSelectedTab(tab);
+    if (tab !== "Favorites") setLastRealCategory(tab);
+  }
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -180,8 +186,8 @@ export function AzkarRoutine({
       <header className="mb-5 text-center text-[var(--color-card)]">
         <p className="text-sm leading-6 text-white/80">{t("azkar.subtitle")}</p>
         <p className="mt-2 text-sm font-bold text-[var(--color-gold-soft)]">
-          {t("azkar.categoryStatus", {
-            category: localizedCategory,
+          {t(selectedTab === "Favorites" ? "azkar.favoritesStatus" : "azkar.categoryStatus", {
+            category: localizedTab,
             completed: completedCount,
             total: totalCount,
           })}
@@ -191,8 +197,8 @@ export function AzkarRoutine({
       <div className="grid gap-5">
         <AzkarCategoryChips
           categories={categories}
-          selected={selectedCategory}
-          onSelect={setSelectedCategory}
+          selected={selectedTab}
+          onSelect={selectTab}
         />
 
         <section className="card overflow-hidden p-4 sm:p-5" aria-labelledby="azkar-progress-title">
@@ -202,8 +208,8 @@ export function AzkarRoutine({
               <div>
                 <p className="font-extrabold">
                   {completedCount === totalCount
-                    ? t("azkar.categoryCompleted", { category: localizedCategory })
-                    : t("azkar.continueCategory", { category: localizedCategory })}
+                    ? t(selectedTab === "Favorites" ? "azkar.favoritesCompleted" : "azkar.categoryCompleted", { category: localizedTab })
+                    : t(selectedTab === "Favorites" ? "azkar.continueFavorites" : "azkar.continueCategory", { category: localizedTab })}
                 </p>
                 <p className="text-xs font-bold opacity-70">
                   {completedCount} / {totalCount}
@@ -227,7 +233,7 @@ export function AzkarRoutine({
             className="mt-3 h-2.5 overflow-hidden rounded-full bg-[var(--color-cream-deep)]"
             role="progressbar"
             aria-valuemin={0}
-            aria-valuemax={totalCount}
+            aria-valuemax={Math.max(totalCount, 1)}
             aria-valuenow={completedCount}
             aria-label={t("azkar.dailyProgress")}
           >
@@ -240,10 +246,10 @@ export function AzkarRoutine({
 
         <section aria-labelledby="azkar-routine-title">
           <SectionTitle>
-            <span id="azkar-routine-title">{t("azkar.routine")}</span>
+            <span id="azkar-routine-title">{selectedTab === "Favorites" ? t("azkar.favorites") : t("azkar.routine")}</span>
           </SectionTitle>
           <div className="grid gap-4">
-            {categoryItems.map((item, index) => (
+            {visibleItems.map((item, index) => (
               <AzkarCard
                 key={item.id}
                 item={item}
@@ -255,14 +261,12 @@ export function AzkarRoutine({
                 onToggleFavorite={() => toggleFavorite(item.id)}
               />
             ))}
+            {visibleItems.length === 0 ? (
+              <div className="card border-dashed p-6 text-center text-sm text-[var(--color-muted)]">
+                {t(selectedTab === "Favorites" ? "azkar.noFavorites" : "azkar.empty")}
+              </div>
+            ) : null}
           </div>
-        </section>
-
-        <section aria-labelledby="azkar-favorites-title">
-          <SectionTitle>
-            <span id="azkar-favorites-title">{t("azkar.favorites")}</span>
-          </SectionTitle>
-          <FavoriteAzkarList items={favoriteItems} onSelect={openFavorite} />
         </section>
 
         <section aria-labelledby="azkar-tasbeeh-title">

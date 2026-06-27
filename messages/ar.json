@@ -47,7 +47,30 @@
     "supportMasjid": "ادعم مسجدك",
     "supportMasjidDesc": "تبرع عبر التحويل البنكي وتابع الحملات.",
     "azkarReminder": "تذكير الأذكار اليومي",
-    "azkarReminderDesc": "أذكار الصباح والمساء وبعد الصلاة."
+    "azkarReminderDesc": "أذكار الصباح والمساء وبعد الصلاة.",
+    "nextAction": "الخطوة التالية المقترحة",
+    "smartActions": {
+      "afterPrayer": {
+        "title": "أذكار ما بعد الصلاة",
+        "description": "أكمل أذكار ما بعد الصلاة."
+      },
+      "morning": {
+        "title": "أذكار الصباح",
+        "description": "ابدأ يومك بأذكار الصباح."
+      },
+      "evening": {
+        "title": "أذكار المساء",
+        "description": "أكمل أذكار المساء."
+      },
+      "sleep": {
+        "title": "أذكار النوم",
+        "description": "أكمل الأذكار قبل النوم."
+      },
+      "friday": {
+        "title": "الجمعة",
+        "description": "اطّلع على خطبة اليوم ووقت الصلاة والموقع."
+      }
+    }
   },
   "times": {
     "title": "مواقيت الصلاة",
@@ -109,10 +132,13 @@
     "title": "الأذكار",
     "subtitle": "ذكر يومي للسكينة والحفظ",
     "categoryStatus": "{category} · اكتمل {completed} / {total}",
+    "favoritesStatus": "المفضلة · اكتمل {completed} / {total}",
     "dailyProgress": "تقدم اليوم",
     "progressSummary": "اكتمل {completed} من {total}",
     "continueCategory": "متابعة {category}",
     "categoryCompleted": "اكتملت {category}",
+    "continueFavorites": "متابعة الأذكار المفضلة",
+    "favoritesCompleted": "اكتملت الأذكار المفضلة",
     "routine": "الورد اليومي",
     "completed": "مكتمل",
     "count": "عدّ",
@@ -122,7 +148,7 @@
     "hideTranslations": "إخفاء الترجمات",
     "addFavorite": "إضافة إلى المفضلة",
     "removeFavorite": "إزالة من المفضلة",
-    "noFavorites": "اضغط على القلب في بطاقة الذكر لحفظه هنا.",
+    "noFavorites": "لا توجد أذكار مفضلة بعد. اضغط على القلب في أي ذكر لإضافته هنا.",
     "featured": "أذكار مميزة",
     "tasbeeh": "عداد التسبيح",
     "favorites": "المفضلة",

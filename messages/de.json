@@ -50,7 +50,30 @@
     "supportMasjid": "Unterstütze deine Moschee",
     "supportMasjidDesc": "Spende per Banküberweisung und verfolge Kampagnen.",
     "azkarReminder": "Tägliche Azkar-Erinnerung",
-    "azkarReminderDesc": "Dhikr am Morgen, am Abend und nach dem Gebet."
+    "azkarReminderDesc": "Dhikr am Morgen, am Abend und nach dem Gebet.",
+    "nextAction": "Als Nächstes empfohlen",
+    "smartActions": {
+      "afterPrayer": {
+        "title": "Azkar nach dem Gebet",
+        "description": "Vervollständige den Dhikr nach dem Gebet."
+      },
+      "morning": {
+        "title": "Morgen-Azkar",
+        "description": "Beginne deinen Tag mit dem morgendlichen Dhikr."
+      },
+      "evening": {
+        "title": "Abend-Azkar",
+        "description": "Vervollständige deinen abendlichen Dhikr."
+      },
+      "sleep": {
+        "title": "Schlaf-Azkar",
+        "description": "Vervollständige den Dhikr vor dem Schlafen."
+      },
+      "friday": {
+        "title": "Freitag und Jumu'ah",
+        "description": "Sieh dir die heutige Chutba, Gebetszeit und den Ort an."
+      }
+    }
   },
   "times": {
     "title": "Gebetszeiten",
@@ -117,10 +140,13 @@
     "title": "Azkar",
     "subtitle": "Tägliches Gedenken für Frieden und Schutz",
     "categoryStatus": "{category} · {completed} / {total} abgeschlossen",
+    "favoritesStatus": "Favoriten · {completed} / {total} abgeschlossen",
     "dailyProgress": "Tagesfortschritt",
     "progressSummary": "{completed} von {total} abgeschlossen",
     "continueCategory": "{category}-Azkar fortsetzen",
     "categoryCompleted": "{category}-Azkar abgeschlossen",
+    "continueFavorites": "Favorisierte Azkar fortsetzen",
+    "favoritesCompleted": "Favorisierte Azkar abgeschlossen",
     "routine": "Tägliche Routine",
     "completed": "Abgeschlossen",
     "count": "Zählen",
@@ -130,7 +156,7 @@
     "hideTranslations": "Übersetzungen ausblenden",
     "addFavorite": "Zu Favoriten hinzufügen",
     "removeFavorite": "Aus Favoriten entfernen",
-    "noFavorites": "Tippe auf das Herz einer Azkar-Karte, um sie hier zu speichern.",
+    "noFavorites": "Noch keine Azkar-Favoriten. Tippe auf das Herz eines Dhikr, um es hier hinzuzufügen.",
     "featured": "Ausgewählte Azkar",
     "tasbeeh": "Tasbeeh-Zähler",
     "favorites": "Favoriten",

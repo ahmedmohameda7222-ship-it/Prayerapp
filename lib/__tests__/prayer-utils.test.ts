@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { getPrayerForDate, getIqama, getNextPrayer, prayerOrder, formatCountdown } from "@/lib/prayer-utils";
 import type { PrayerTime } from "@/lib/types";
+import { getSmartNextAction } from "@/lib/home-utils";
 
 const samplePrayer: PrayerTime = {
   id: "pt-1",
@@ -65,5 +66,23 @@ describe("prayer-utils", () => {
     const next = getNextPrayer(samplePrayer, now);
     expect(next.name).toBe("dhuhr");
     expect(next.time).toBe("13:13");
+  });
+});
+
+describe("getSmartNextAction", () => {
+  it("prioritizes after-prayer Azkar shortly after an obligatory prayer", () => {
+    const now = new Date("2026-06-24T13:30:00+02:00");
+    expect(getSmartNextAction([samplePrayer], now)).toBe("afterPrayer");
+  });
+
+  it("recommends the expected Azkar for morning, evening, and night", () => {
+    expect(getSmartNextAction([samplePrayer], new Date("2026-06-24T10:00:00+02:00"))).toBe("morning");
+    expect(getSmartNextAction([samplePrayer], new Date("2026-06-24T19:00:00+02:00"))).toBe("evening");
+    expect(getSmartNextAction([samplePrayer], new Date("2026-06-24T23:50:00+02:00"))).toBe("sleep");
+  });
+
+  it("prefers Friday during the daytime Friday window", () => {
+    const friday = { ...samplePrayer, id: "pt-friday", date: "2026-06-26" };
+    expect(getSmartNextAction([friday], new Date("2026-06-26T11:00:00+02:00"))).toBe("friday");
   });
 });

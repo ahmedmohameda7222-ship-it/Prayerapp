@@ -22,7 +22,7 @@ export default function MorePage() {
   return (
     <AppShell>
       <PageHeader titleKey="nav.more" />
-      <div className="grid gap-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         {items.map(([href, labelKey, Icon]) => (
           <Link key={href} href={href} className="card flex min-h-16 items-center gap-3 p-4">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--color-emerald)] text-[var(--color-gold)]">

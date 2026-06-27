@@ -32,7 +32,7 @@ export default function DonationsPage() {
         {data ? <>
         <section>
           <SectionTitle>{t("donations.activeCampaigns")}</SectionTitle>
-          <div className="grid gap-3">
+          <div className="grid gap-3 lg:grid-cols-2">
             {donationCampaigns.map((campaign) => <DonationCampaignCard key={campaign.id} campaign={campaign} />)}
             {!donationCampaigns.length ? <EmptyState message={t("donations.noCampaigns")} /> : null}
           </div>

@@ -83,7 +83,7 @@ export default function FridayPage() {
         </HeroCard>
 
         <SectionTitle>{t("friday.title")}</SectionTitle>
-        <div className="grid gap-4">
+        <div className="grid gap-4 lg:grid-cols-2">
           {fridays.map((jumuah, index) => (
             <JumuahCard key={jumuah.id} jumuah={jumuah} index={index} />
           ))}

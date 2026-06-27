@@ -38,7 +38,7 @@ export default function HomePage() {
         ) : !loading && !error ? <EmptyState message={t("prayer.notPublished")} /> : null}
         <section>
           <SectionTitle>{t("home.quickActions")}</SectionTitle>
-          <div className="grid gap-3">
+          <div className="grid gap-3 lg:grid-cols-2">
             <QuickActionCard href="/friday" title={t("home.jumuah")} description={t("home.jumuahDesc")} icon={MosqueIcon} />
             <QuickActionCard href="/donations" title={t("home.supportMasjid")} description={t("home.supportMasjidDesc")} icon={HandHeart} />
             <QuickActionCard href="/azkar" title={t("home.azkarReminder")} description={t("home.azkarReminderDesc")} icon={BookOpen} />

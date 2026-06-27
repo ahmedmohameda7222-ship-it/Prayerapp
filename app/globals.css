@@ -180,14 +180,23 @@ textarea {
   color: var(--color-card);
 }
 
-@media (min-width: 920px) {
+@media (min-width: 1024px) {
   .admin-layout {
     display: grid;
     grid-template-columns: 280px 1fr;
   }
 
   .public-desktop-frame {
-    max-width: 760px;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 24px 32px 112px;
+  }
+
+  .app-container {
+    max-width: 1200px;
+  }
+
+  .page-shell {
+    padding: 24px 32px 112px;
   }
 }

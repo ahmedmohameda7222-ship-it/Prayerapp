@@ -18,7 +18,7 @@ export default function NewsPage() {
       {loading ? <DataLoading /> : null}
       {error ? <DataError message={error} retry={reload} /> : null}
       {!loading && !error && !data?.length ? <EmptyState message={t("news.empty")} /> : null}
-      <div className="grid gap-3">{data?.map((item) => <AnnouncementCard key={item.id} announcement={item} />)}</div>
+      <div className="grid gap-3 lg:grid-cols-2">{data?.map((item) => <AnnouncementCard key={item.id} announcement={item} />)}</div>
     </AppShell>
   );
 }

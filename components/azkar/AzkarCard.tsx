@@ -102,7 +102,6 @@ export function AzkarCard({
             <p dir="ltr"><strong className="text-[var(--color-gold-dark)]">EN</strong> · {item.translationEn}</p>
             <p dir="ltr"><strong className="text-[var(--color-gold-dark)]">DE</strong> · {item.translationDe}</p>
             <p dir="ltr"><strong className="text-[var(--color-gold-dark)]">TR</strong> · {item.translationTr}</p>
-            <p dir="rtl"><strong className="text-[var(--color-gold-dark)]">AR</strong> · {item.translationAr}</p>
           </div>
         ) : null}
 

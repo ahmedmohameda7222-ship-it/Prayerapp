@@ -9,9 +9,9 @@ function mapFromDb(row: Record<string, unknown>): JumuahTime {
     date: String(row.date),
     khutbahTime: String(row.khutbah_time),
     prayerTime: String(row.prayer_time),
-    locationName: String(row.location_name),
-    locationAddress: String(row.location_address),
-    khateebName: String(row.khateeb_name),
+    locationName: row.location_name ? String(row.location_name) : undefined,
+    locationAddress: row.location_address ? String(row.location_address) : undefined,
+    khateebName: row.khateeb_name ? String(row.khateeb_name) : undefined,
     language: readDbString(row, "language"),
     notes: readDbString(row, "notes"),
     ...localizedFieldsFromDb(row, "language", "language"),
@@ -26,13 +26,13 @@ function mapToDb(item: Partial<JumuahTime>): Record<string, unknown> {
   if (item.date) db.date = item.date;
   if (item.khutbahTime) db.khutbah_time = item.khutbahTime;
   if (item.prayerTime) db.prayer_time = item.prayerTime;
-  if (item.locationName) db.location_name = item.locationName;
-  if (item.locationAddress) db.location_address = item.locationAddress;
-  if (item.khateebName) db.khateeb_name = item.khateebName;
+  db.location_name = item.locationName || null;
+  db.location_address = item.locationAddress || null;
+  db.khateeb_name = item.khateebName || null;
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "language", "language", { includeLegacy: true }));
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "notes", "notes", { includeLegacy: true }));
   if (item.language) db.language = item.languageAr || item.language;
-  if (item.notes) db.notes = item.notesAr || item.notes;
+  if (item.notes !== undefined) db.notes = item.notesAr || item.notes;
   if (item.published !== undefined) db.published = item.published;
   return db;
 }

@@ -13,10 +13,10 @@ function validateJumuah(data: Record<string, string>) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date || "")) errors.push("admin.errors.dateRequired");
   if (!data.khutbahTime) errors.push("admin.errors.khutbahTimeRequired");
   if (!data.prayerTime) errors.push("admin.errors.prayerTimeRequired");
-  if (!data.locationName) errors.push("admin.errors.locationNameRequired");
-  if (!data.locationAddress) errors.push("admin.errors.locationAddressRequired");
   if (!data.languageAr) errors.push("admin.errors.arabicLanguageRequired");
-  if ((data.locationName || "").length > 160 || (data.locationAddress || "").length > 300 || (data.khateebName || "").length > 160) errors.push("admin.errors.invalidInput");
+  if (data.locationName && data.locationName.length > 160) errors.push("admin.errors.invalidInput");
+  if (data.locationAddress && data.locationAddress.length > 300) errors.push("admin.errors.invalidInput");
+  if (data.khateebName && data.khateebName.length > 160) errors.push("admin.errors.invalidInput");
 
   const times = [data.khutbahTime, data.prayerTime];
   for (const t of times) {
@@ -26,7 +26,8 @@ function validateJumuah(data: Record<string, string>) {
   }
   return errors;
 }
-
+
+
 
 export async function createJumuahAction(
   token: string,

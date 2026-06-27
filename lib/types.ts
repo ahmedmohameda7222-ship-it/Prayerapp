@@ -56,9 +56,9 @@ export interface JumuahTime {
   date: string;
   khutbahTime: string;
   prayerTime: string;
-  locationName: string;
-  locationAddress: string;
-  khateebName: string;
+  locationName?: string;
+  locationAddress?: string;
+  khateebName?: string;
   language: string;
   languageAr?: string;
   languageEn?: string;

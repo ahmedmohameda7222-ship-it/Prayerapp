@@ -56,9 +56,9 @@ export default function AdminJumuahPage() {
       date: item.date,
       khutbahTime: item.khutbahTime,
       prayerTime: item.prayerTime,
-      locationName: item.locationName,
-      locationAddress: item.locationAddress,
-      khateebName: item.khateebName,
+      locationName: item.locationName || "",
+      locationAddress: item.locationAddress || "",
+      khateebName: item.khateebName || "",
       languageAr: item.languageAr || item.language,
       languageEn: item.languageEn || "",
       languageDe: item.languageDe || "",
@@ -139,8 +139,8 @@ export default function AdminJumuahPage() {
               { key: "date", labelKey: "admin.date", type: "date" },
               { key: "khutbahTime", labelKey: "friday.khutbahTime", type: "time" },
               { key: "prayerTime", labelKey: "friday.jumuahPrayer", type: "time" },
-              { key: "locationName", labelKey: "admin.locationName", type: "text" },
-              { key: "locationAddress", labelKey: "admin.locationAddress", type: "text" },
+              { key: "locationName", labelKey: "admin.locationName", type: "text", optional: true },
+              { key: "locationAddress", labelKey: "admin.locationAddress", type: "text", optional: true },
               { key: "khateebName", labelKey: "friday.khateeb", type: "text", optional: true },
             ].map(({ key, labelKey, type, optional }) => (
               <label key={key} className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">

@@ -16,25 +16,58 @@ import { todayIso } from "@/lib/date-utils";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
+import type { JumuahTime } from "@/lib/types";
+
+function JumuahCard({ jumuah, index }: { jumuah: JumuahTime; index: number }) {
+  const { t, locale } = useTranslation();
+  const locationName = getLocalizedField(jumuah, "locationName", locale) || jumuah.locationName;
+  const language = getLocalizedField(jumuah, "language", locale) || jumuah.language;
+  const notes = getLocalizedField(jumuah, "notes", locale) || jumuah.notes;
+  const details: [React.ElementType, string, string, boolean][] = [
+    [Clock, t("friday.khutbahTime"), jumuah.khutbahTime, true],
+    [Clock, t("friday.jumuahPrayer"), jumuah.prayerTime, true],
+  ];
+  if (locationName) details.push([MapPin, t("friday.location"), locationName, false]);
+  if (jumuah.khateebName) details.push([Mic2, t("friday.khateeb"), jumuah.khateebName, false]);
+  if (language) details.push([Languages, t("friday.language"), language, false]);
+
+  return (
+    <Card>
+      <h3 className="mb-3 text-sm font-extrabold uppercase tracking-[0.04em] text-[var(--color-emerald)]">
+        {t("friday.jumuahPrayer")} {index > 0 ? `#${index + 1}` : ""}
+      </h3>
+      <div className="grid gap-3">
+        {details.map(([Icon, label, value, isTime]) => (
+          <div key={label} className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3">
+            <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--color-gold-soft)] text-[var(--color-gold-dark)]">
+              <Icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase text-[var(--color-muted)]">{label}</p>
+              <p className="font-bold text-[var(--color-charcoal)]">{isTime ? <FormattedTime time={value} /> : value}</p>
+            </div>
+          </div>
+        ))}
+        {notes ? <p className="rounded-2xl bg-[var(--color-emerald-soft)] p-3 text-sm font-bold text-[var(--color-emerald)]">{notes}</p> : null}
+      </div>
+    </Card>
+  );
+}
 
 export default function FridayPage() {
   const { t, locale } = useTranslation();
   const { data, error, loading, reload } = useAsyncData(loadFridayData);
   const announcements = data?.announcements || [];
-  const friday = (data?.jumuahTimes || []).find((item) => item.date >= todayIso()) || data?.jumuahTimes[0];
+  const today = todayIso();
+  const upcomingJumuah = (data?.jumuahTimes || []).filter((item) => item.date >= today);
+  const fridays = upcomingJumuah.length > 0 ? upcomingJumuah : (data?.jumuahTimes || []);
+  const firstFriday = fridays[0];
+
   if (loading) return <AppShell><PageHeader titleKey="friday.title" /><DataLoading /></AppShell>;
   if (error) return <AppShell><PageHeader titleKey="friday.title" /><DataError message={error} retry={reload} /></AppShell>;
-  if (!friday) return <AppShell><PageHeader titleKey="friday.title" /><EmptyState message={t("friday.empty")} /></AppShell>;
-  const locationName = getLocalizedField(friday, "locationName", locale) || friday.locationName;
-  const language = getLocalizedField(friday, "language", locale) || friday.language;
-  const notes = getLocalizedField(friday, "notes", locale) || friday.notes;
-  const details = [
-    [Clock, t("friday.khutbahTime"), friday.khutbahTime, true],
-    [Clock, t("friday.jumuahPrayer"), friday.prayerTime, true],
-    [MapPin, t("friday.location"), locationName, false],
-    [Mic2, t("friday.khateeb"), friday.khateebName, false],
-    [Languages, t("friday.language"), language, false],
-  ] as const;
+  if (!firstFriday) return <AppShell><PageHeader titleKey="friday.title" /><EmptyState message={t("friday.empty")} /></AppShell>;
+
+  const firstLocation = getLocalizedField(firstFriday, "locationName", locale) || firstFriday.locationName;
 
   return (
     <AppShell>
@@ -43,27 +76,19 @@ export default function FridayPage() {
         <HeroCard src="/assets/hero-friday-mosque-night.png" alt={t("friday.heroAlt")} priority>
           <h2 className="font-brand text-5xl font-semibold">{t("friday.title")}</h2>
           <p className="mt-3 text-lg font-bold text-[var(--color-gold)]">
-            {t("prayer.khutbah")} <FormattedTime time={friday.khutbahTime} /> | {t("prayer.prayer")}{" "}
-            <FormattedTime time={friday.prayerTime} />
+            {t("prayer.khutbah")} <FormattedTime time={firstFriday.khutbahTime} /> | {t("prayer.prayer")}{" "}
+            <FormattedTime time={firstFriday.prayerTime} />
           </p>
-          <p className="mt-2 text-sm text-white/82">{locationName}</p>
+          {firstLocation ? <p className="mt-2 text-sm text-white/82">{firstLocation}</p> : null}
         </HeroCard>
-        <Card>
-          <div className="grid gap-3">
-            {details.map(([Icon, label, value, isTime]) => (
-              <div key={label} className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3">
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--color-gold-soft)] text-[var(--color-gold-dark)]">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase text-[var(--color-muted)]">{label}</p>
-                  <p className="font-bold text-[var(--color-charcoal)]">{isTime ? <FormattedTime time={value} /> : value}</p>
-                </div>
-              </div>
-            ))}
-            <p className="rounded-2xl bg-[var(--color-emerald-soft)] p-3 text-sm font-bold text-[var(--color-emerald)]">{notes}</p>
-          </div>
-        </Card>
+
+        <SectionTitle>{t("friday.title")}</SectionTitle>
+        <div className="grid gap-4">
+          {fridays.map((jumuah, index) => (
+            <JumuahCard key={jumuah.id} jumuah={jumuah} index={index} />
+          ))}
+        </div>
+
         <section>
           <SectionTitle>{t("friday.announcements")}</SectionTitle>
           <div className="grid gap-3">

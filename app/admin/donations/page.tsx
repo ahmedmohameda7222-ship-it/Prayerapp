@@ -6,7 +6,7 @@ import { AdminShell } from "@/components/layout/AdminShell";
 import { LocalizedContentFields } from "@/components/admin/LocalizedContentFields";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { getDonationCampaigns, getDonationReceiptRequests, getDonationSettings, getDonations } from "@/lib/data/donations";
+import { getDonationCampaigns, getDonationReceiptRequests, getDonationSettings, getDonations, getDonationReport } from "@/lib/data/donations";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -19,6 +19,8 @@ import {
   toggleFeaturedCampaignAction,
   updateDonationCampaignAction,
   updateDonationSettingsAction,
+  updateReceiptStatusAction,
+  updateDonationReportAction,
 } from "./actions";
 
 const emptyCampaignForm = {
@@ -44,8 +46,9 @@ export default function AdminDonationsPage() {
   const [, setSettings] = useState<DonationSettings | null>(null);
   const [campaigns, setCampaigns] = useState<DonationCampaign[]>([]);
   const [, setDonations] = useState<Donation[]>([]);
-  const [, setReceipts] = useState<DonationReceiptRequest[]>([]);
+  const [receipts, setReceipts] = useState<DonationReceiptRequest[]>([]);
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({});
+  const [reportForm, setReportForm] = useState<Record<string, string>>({ month: "", monthlyNeed: "0", donationsReceived: "0" });
   const [campaignForm, setCampaignForm] = useState<Record<string, string>>({ ...emptyCampaignForm });
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -70,11 +73,34 @@ export default function AdminDonationsPage() {
         receiptNoteDe: settings.receiptNoteDe || "",
         receiptNoteTr: settings.receiptNoteTr || "",
       });
+    }).catch(() => setError(t("common.dataLoadFailed")));
+    getDonationCampaigns(true).then((data) => setCampaigns(data)).catch(() => setError(t("common.dataLoadFailed")));
+    getDonations().then((data) => setDonations(data)).catch(() => setError(t("common.dataLoadFailed")));
+    getDonationReceiptRequests().then((data) => setReceipts(data)).catch(() => setError(t("common.dataLoadFailed")));
+    getDonationReport().then((report) => setReportForm({ month: report.month, monthlyNeed: String(report.monthlyNeed), donationsReceived: String(report.donationsReceived) })).catch(() => setError(t("common.dataLoadFailed")));
+  }, [t]);
+
+  function handleReceiptStatus(id: string, status: string) {
+    const token = session?.access_token || "";
+    if (!token) return setError(t("admin.errors.notAuthenticated"));
+    startTransition(async () => {
+      const result = await updateReceiptStatusAction(token, id, status);
+      if (!result.success) return setError(t(result.error || "admin.errors.saveFailed"));
+      setReceipts(await getDonationReceiptRequests());
+      setSuccess(t("admin.messages.updated"));
     });
-    getDonationCampaigns().then((data) => setCampaigns(data));
-    getDonations().then((data) => setDonations(data));
-    getDonationReceiptRequests().then((data) => setReceipts(data));
-  }, []);
+  }
+
+  function handleReportSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    const token = session?.access_token || "";
+    if (!token) return setError(t("admin.errors.notAuthenticated"));
+    startTransition(async () => {
+      const result = await updateDonationReportAction(token, reportForm);
+      if (!result.success) return setError(t(result.error || "admin.errors.saveFailed"));
+      setSuccess(t("admin.messages.settingsUpdated"));
+    });
+  }
 
   async function handleSettingsSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -124,7 +150,7 @@ export default function AdminDonationsPage() {
   }
 
   async function refreshCampaigns() {
-    setCampaigns(await getDonationCampaigns());
+    setCampaigns(await getDonationCampaigns(true));
   }
 
   async function handleCampaignSubmit(event: React.FormEvent) {
@@ -219,6 +245,14 @@ export default function AdminDonationsPage() {
         </Card>
 
         <Card>
+          <h2 className="mb-4 text-lg font-extrabold text-[var(--color-emerald)]">{t("admin.donationReport")}</h2>
+          <form onSubmit={handleReportSubmit} className="grid gap-3 md:grid-cols-3">
+            {[{ key: "month", type: "month", label: "admin.month" }, { key: "monthlyNeed", type: "number", label: "donations.monthlyNeed" }, { key: "donationsReceived", type: "number", label: "donations.received" }].map((field) => <label key={field.key} className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">{t(field.label)}<input required min={field.type === "number" ? 0 : undefined} step={field.type === "number" ? "0.01" : undefined} type={field.type} value={reportForm[field.key] || ""} onChange={(event) => setReportForm((current) => ({ ...current, [field.key]: event.target.value }))} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3" /></label>)}
+            <div className="md:col-span-3"><Button type="submit" disabled={isPending}>{t("common.save")}</Button></div>
+          </form>
+        </Card>
+
+        <Card>
           <h2 className="mb-4 text-lg font-extrabold text-[var(--color-emerald)]">{editingCampaignId ? t("admin.editCampaign") : t("admin.createCampaign")}</h2>
           <form onSubmit={handleCampaignSubmit} className="grid gap-4 md:grid-cols-2">
             <LocalizedContentFields
@@ -251,7 +285,6 @@ export default function AdminDonationsPage() {
             </div>
             <div className="flex flex-wrap gap-3 md:col-span-2">
               <Button type="submit" disabled={!hasSupabase || isPending}><Plus className="h-4 w-4" aria-hidden="true" /> {editingCampaignId ? t("common.update") : t("common.create")}</Button>
-              <Button type="button" variant="soft" onClick={() => setError(t("admin.translationNotConfigured"))}>{t("admin.generateTranslations")}</Button>
               {editingCampaignId ? <Button type="button" variant="ghost" onClick={resetCampaignForm} disabled={isPending}>{t("common.cancel")}</Button> : null}
             </div>
           </form>
@@ -278,7 +311,21 @@ export default function AdminDonationsPage() {
           </table>
         </div>
 
-        <section className="card p-4"><h2 className="font-bold text-[var(--color-emerald)]">{t("admin.manualDonationsReceipts")}</h2><p className="mt-2 text-sm text-[var(--color-muted)]">{t("admin.futurePhasePlaceholder")}</p></section>
+        <section className="card overflow-x-auto p-4">
+          <h2 className="mb-3 font-bold text-[var(--color-emerald)]">{t("admin.manualDonationsReceipts")}</h2>
+          {!receipts.length ? <p className="text-sm text-[var(--color-muted)]">{t("admin.noReceiptRequests")}</p> : (
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead><tr>{["donations.donorName", "donations.amount", "donations.donationDate", "donations.email", "admin.status"].map((key) => <th key={key} className="px-3 py-2">{t(key)}</th>)}</tr></thead>
+              <tbody>{receipts.map((receipt) => <tr key={receipt.id} className="border-t border-[var(--color-border)]">
+                <td className="px-3 py-3"><p className="font-bold">{receipt.donorName}</p><p className="max-w-[240px] text-xs text-[var(--color-muted)]">{receipt.postalAddress}</p></td>
+                <td className="px-3 py-3">{receipt.amount} €</td>
+                <td className="px-3 py-3">{receipt.donationDate || "-"}</td>
+                <td className="px-3 py-3">{receipt.email}</td>
+                <td className="px-3 py-3"><select value={receipt.status} disabled={isPending} onChange={(event) => handleReceiptStatus(receipt.id, event.target.value)} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-cream)] px-2 py-2"><option>Pending</option><option>Reviewed</option><option>Sent</option></select></td>
+              </tr>)}</tbody>
+            </table>
+          )}
+        </section>
       </div>
     </AdminShell>
   );

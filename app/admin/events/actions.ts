@@ -30,9 +30,12 @@ function validateEvent(data: Record<string, string>): string[] {
   if (!data.titleAr?.trim()) errors.push("admin.errors.arabicTitleRequired");
   if (!data.descriptionAr?.trim()) errors.push("admin.errors.arabicDescriptionRequired");
   if (!data.locationAr?.trim()) errors.push("admin.errors.arabicLocationRequired");
-  if (!data.date?.trim()) errors.push("admin.errors.dateRequired");
-  if (!data.startTime?.trim()) errors.push("admin.errors.startTimeRequired");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date || "")) errors.push("admin.errors.dateRequired");
+  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(data.startTime || "")) errors.push("admin.errors.startTimeRequired");
+  if (data.endTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(data.endTime)) errors.push("admin.errors.invalidTimeFormat");
+  if (data.endTime && data.endTime <= data.startTime) errors.push("admin.errors.endTimeAfterStart");
   if (!data.type?.trim()) errors.push("admin.errors.typeRequired");
+  if (data.titleAr?.length > 200 || data.descriptionAr?.length > 4000 || data.locationAr?.length > 300) errors.push("admin.errors.invalidInput");
   return errors;
 }
 

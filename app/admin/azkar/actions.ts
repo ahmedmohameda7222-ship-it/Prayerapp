@@ -27,10 +27,13 @@ async function createAuditLog(
 
 function validateAzkar(data: Record<string, string>): string[] {
   const errors: string[] = [];
-  if (!data.category?.trim()) errors.push("admin.errors.categoryRequired");
+  if (!["Morning", "Evening", "After Prayer", "Sleep", "Travel", "Friday"].includes(data.category || "")) errors.push("admin.errors.categoryRequired");
   if (!data.arabicText?.trim()) errors.push("admin.errors.arabicTextRequired");
   const repeatCount = Number(data.repeatCount);
-  if (Number.isNaN(repeatCount) || repeatCount <= 0) errors.push("admin.errors.repeatCountPositive");
+  if (!Number.isInteger(repeatCount) || repeatCount <= 0 || repeatCount > 10000) errors.push("admin.errors.repeatCountPositive");
+  const sortOrder = Number(data.sortOrder || "0");
+  if (!Number.isInteger(sortOrder) || Math.abs(sortOrder) > 100000) errors.push("admin.errors.invalidInput");
+  if ((data.arabicText || "").length > 5000 || (data.source || "").length > 500) errors.push("admin.errors.invalidInput");
   return errors;
 }
 

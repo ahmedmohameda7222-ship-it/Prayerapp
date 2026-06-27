@@ -5,27 +5,37 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { HeroCard } from "@/components/ui/HeroCard";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { DataError, DataLoading } from "@/components/ui/DataState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { PrayerCountdown } from "@/components/prayer/PrayerCountdown";
 import { PrayerTimesCard } from "@/components/prayer/PrayerTimesCard";
 import { QuickActionCard } from "@/components/home/QuickActionCard";
-import { prayerTimes } from "@/lib/mock-data";
+import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { todayIso } from "@/lib/date-utils";
 import { getPrayerForDate } from "@/lib/prayer-utils";
+import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 export default function HomePage() {
   const { t } = useTranslation();
-  const today = getPrayerForDate(prayerTimes, todayIso()) ?? prayerTimes[0];
+  const { data: prayerTimes, error, loading, reload } = useAsyncData(getPrayerTimes);
+  const today = getPrayerForDate(prayerTimes || [], todayIso());
 
   return (
     <AppShell>
       <AppHeader />
       <div className="grid gap-5">
-        <HeroCard src="/assets/hero-home-mosque-night.png" alt={t("home.heroAlt")} priority>
-          <PrayerCountdown prayer={today} />
-        </HeroCard>
-        <PrayerTimesCard prayer={today} />
+        {loading ? <DataLoading /> : null}
+        {error ? <DataError message={error} retry={reload} /> : null}
+        {today ? (
+          <>
+            <HeroCard src="/assets/hero-home-mosque-night.png" alt={t("home.heroAlt")} priority>
+              <PrayerCountdown prayer={today} schedule={prayerTimes || [today]} />
+            </HeroCard>
+            <PrayerTimesCard prayer={today} />
+          </>
+        ) : !loading && !error ? <EmptyState message={t("prayer.notPublished")} /> : null}
         <section>
           <SectionTitle>{t("home.quickActions")}</SectionTitle>
           <div className="grid gap-3">

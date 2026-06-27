@@ -14,6 +14,7 @@ function validateAnnouncement(data: Record<string, string>) {
   if (!data.type || !validTypes.includes(data.type as AnnouncementType)) {
     errors.push("admin.errors.typeRequired");
   }
+  if ((data.titleAr || "").length > 200 || (data.messageAr || "").length > 5000) errors.push("admin.errors.invalidInput");
   return errors;
 }
 

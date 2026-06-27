@@ -39,7 +39,7 @@ export default function AdminRamadanPage() {
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
 
-  useEffect(() => { getRamadanDays().then((data) => setItems(data)); }, []);
+  useEffect(() => { getRamadanDays(true).then((data) => setItems(data)).catch(() => setError(t("common.dataLoadFailed"))); }, [t]);
 
   function resetForm() {
     setForm({ ...emptyForm });
@@ -67,7 +67,7 @@ export default function AdminRamadanPage() {
   }
 
   async function refreshItems() {
-    setItems(await getRamadanDays());
+    setItems(await getRamadanDays(true));
   }
 
   async function handleSubmit(event: React.FormEvent) {

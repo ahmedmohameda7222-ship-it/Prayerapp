@@ -3,7 +3,7 @@
 import { useEffect, useReducer, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { isAdminEmail } from "./admin-config";
+import { verifyAdminAction } from "./admin-actions";
 import type { User, Session } from "@supabase/supabase-js";
 
 export type AdminAuthState = {
@@ -59,8 +59,8 @@ export function useAdminAuth() {
         dispatch({ type: "SET_LOADING", loading: false });
         return;
       }
-      const email = data.session.user.email;
-      const allowed = isAdminEmail(email);
+      const verification = await verifyAdminAction(data.session.access_token);
+      const allowed = verification.allowed;
       dispatch({ type: "SET_SESSION", user: data.session.user, session: data.session, isAdmin: allowed });
     }
     init();
@@ -89,7 +89,8 @@ export function useAdminAuth() {
         dispatch({ type: "SET_ERROR", error: "admin.errors.invalidCredentials" });
         return false;
       }
-      const allowed = isAdminEmail(data.user?.email);
+      const verification = await verifyAdminAction(data.session.access_token);
+      const allowed = verification.allowed;
       if (!allowed) {
         await client.auth.signOut();
         dispatch({ type: "SET_ERROR", error: "admin.errors.unauthorized" });
@@ -112,8 +113,8 @@ export function useAdminAuth() {
       dispatch({ type: "SET_LOADING", loading: false });
       return;
     }
-    const email = data.session.user.email;
-    const allowed = isAdminEmail(email);
+    const verification = await verifyAdminAction(data.session.access_token);
+    const allowed = verification.allowed;
     dispatch({ type: "SET_SESSION", user: data.session.user, session: data.session, isAdmin: allowed });
   }, []);
 

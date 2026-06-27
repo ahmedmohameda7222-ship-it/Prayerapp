@@ -3,11 +3,13 @@ import { ramadanDays as mockRamadanDays } from "@/lib/mock-data";
 import type { RamadanDay } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
-export async function getRamadanDays(): Promise<RamadanDay[]> {
+export async function getRamadanDays(includeUnpublished = false): Promise<RamadanDay[]> {
   const client = createClient();
   if (!client) return mockRamadanDays;
-  const { data, error } = await client.from("ramadan_days").select("*").order("date", { ascending: true });
-  if (error || !data) return mockRamadanDays;
+  let query = client.from("ramadan_days").select("*").order("date", { ascending: true });
+  if (!includeUnpublished) query = query.eq("published", true);
+  const { data, error } = await query;
+  if (error || !data) throw new Error("Unable to load Ramadan schedule");
   return data.map((row: unknown) => {
     const record = row as Record<string, unknown>;
     return {
@@ -20,6 +22,7 @@ export async function getRamadanDays(): Promise<RamadanDay[]> {
       iftar: String(record.iftar),
       taraweeh: String(record.taraweeh),
       note: readDbString(record, "note") || undefined,
+      published: record.published !== false,
       ...localizedFieldsFromDb(record, "note", "note"),
     };
   });

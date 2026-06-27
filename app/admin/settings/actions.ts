@@ -26,6 +26,7 @@ async function createAuditLog(
 }
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const urlRegex = /^https:\/\//i;
 
 function validateMosqueSettings(data: Record<string, string>): string[] {
   const errors: string[] = [];
@@ -34,6 +35,10 @@ function validateMosqueSettings(data: Record<string, string>): string[] {
   if (data.email?.trim() && !emailRegex.test(data.email.trim())) {
     errors.push("admin.errors.validEmailRequired");
   }
+  for (const value of [data.googleMapsLink, data.whatsappLink, data.telegramLink]) {
+    if (value?.trim() && !urlRegex.test(value.trim())) errors.push("admin.errors.validHttpsUrlRequired");
+  }
+  if (data.phone?.length > 40 || data.address?.length > 300) errors.push("admin.errors.invalidInput");
   return errors;
 }
 
@@ -65,7 +70,7 @@ export async function updateMosqueSettingsAction(
     bic: data.bic?.trim() || "",
   };
 
-  const { error } = await client.from("mosque_settings").update(db).eq("id", "1");
+  const { error } = await client.from("mosque_settings").upsert({ id: "1", ...db }, { onConflict: "id" });
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
   await createAuditLog(email, "updated mosque settings", "mosque_settings");

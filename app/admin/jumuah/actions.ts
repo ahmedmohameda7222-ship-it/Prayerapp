@@ -5,17 +5,18 @@ import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
 
 function timeRegex() {
-  return /^\d{2}:\d{2}$/;
+  return /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 }
 
 function validateJumuah(data: Record<string, string>) {
   const errors: string[] = [];
-  if (!data.date) errors.push("admin.errors.dateRequired");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date || "")) errors.push("admin.errors.dateRequired");
   if (!data.khutbahTime) errors.push("admin.errors.khutbahTimeRequired");
   if (!data.prayerTime) errors.push("admin.errors.prayerTimeRequired");
   if (!data.locationName) errors.push("admin.errors.locationNameRequired");
   if (!data.locationAddress) errors.push("admin.errors.locationAddressRequired");
   if (!data.languageAr) errors.push("admin.errors.arabicLanguageRequired");
+  if ((data.locationName || "").length > 160 || (data.locationAddress || "").length > 300 || (data.khateebName || "").length > 160) errors.push("admin.errors.invalidInput");
 
   const times = [data.khutbahTime, data.prayerTime];
   for (const t of times) {

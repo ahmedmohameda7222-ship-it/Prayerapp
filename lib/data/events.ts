@@ -3,11 +3,13 @@ import { events as mockEvents } from "@/lib/mock-data";
 import type { Event } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
-export async function getEvents(): Promise<Event[]> {
+export async function getEvents(includeUnpublished = false): Promise<Event[]> {
   const client = createClient();
   if (!client) return mockEvents;
-  const { data, error } = await client.from("events").select("*").order("date", { ascending: true });
-  if (error || !data) return mockEvents;
+  let query = client.from("events").select("*").order("date", { ascending: true });
+  if (!includeUnpublished) query = query.eq("published", true);
+  const { data, error } = await query;
+  if (error || !data) throw new Error("Unable to load events");
   return data.map((row: unknown) => {
     const record = row as Record<string, unknown>;
     return {
@@ -19,6 +21,7 @@ export async function getEvents(): Promise<Event[]> {
       endTime: String(record.end_time || ""),
       location: readDbString(record, "location"),
       type: String(record.type),
+      published: record.published !== false,
       ...localizedFieldsFromDb(record, "title", "title"),
       ...localizedFieldsFromDb(record, "description", "description"),
       ...localizedFieldsFromDb(record, "location", "location"),

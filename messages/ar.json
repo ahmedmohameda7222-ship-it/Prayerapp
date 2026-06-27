@@ -13,7 +13,7 @@
     "no": "لا",
     "backHome": "العودة إلى الرئيسية",
     "notifications": "الإشعارات",
-    "appIconAlt": "أيقونة تطبيق Deggendorf Prayer"
+    "appIconAlt": "أيقونة تطبيق Deggendorf Prayer", "retry": "حاول مرة أخرى", "dataLoadFailed": "تعذر تحميل أحدث البيانات.", "privacy": "سياسة الخصوصية"
   },
   "nav": {
     "ariaLabel": "التنقل الرئيسي",
@@ -68,18 +68,16 @@
     "location": "الموقع",
     "khateeb": "الخطيب",
     "language": "اللغة",
-    "announcements": "إعلانات الجمعة"
+    "announcements": "إعلانات الجمعة", "empty": "لم يتم نشر موعد صلاة الجمعة القادمة."
   },
   "news": {
-    "title": "الإعلانات"
+    "title": "الإعلانات", "empty": "لا توجد إعلانات منشورة."
   },
   "donations": {
     "title": "التبرعات",
     "heroAlt": "صدقة ودعم للمسجد",
     "supportMasjid": "ادعم مسجدك",
     "supportMasjidDesc": "كرمك يساعد على استمرار الصلاة والوحدة والعمل المجتمعي.",
-    "quickDonate": "تبرع سريع",
-    "customAmount": "مبلغ مخصص",
     "activeCampaigns": "الحملات النشطة",
     "bankTransfer": "التحويل البنكي",
     "accountHolder": "صاحب الحساب",
@@ -98,7 +96,14 @@
     "collected": "تم جمعه",
     "target": "الهدف",
     "collectedAmount": "تم جمع {amount}",
-    "goalAmount": "الهدف {amount} - {progress}%"
+    "goalAmount": "الهدف {amount} - {progress}%", "noCampaigns": "لا توجد حملات نشطة.",
+    "donorName": "الاسم الكامل", "email": "البريد الإلكتروني", "amount": "مبلغ التبرع", "donationDate": "تاريخ التبرع",
+    "postalAddress": "العنوان البريدي للإيصال", "transferReference": "مرجع التحويل (اختياري)",
+    "privacyConsent": "أوافق على معالجة بياناتي لإصدار إيصال التبرع المطلوب.", "requestRejected": "تعذر قبول الطلب.",
+    "invalidName": "أدخل الاسم الكامل.", "invalidEmail": "أدخل بريدا إلكترونيا صالحا.", "invalidAddress": "أدخل عنوانا بريديا صالحا.",
+    "invalidDate": "أدخل تاريخ تبرع صالحا.", "invalidAmount": "أدخل مبلغ تبرع صالحا.", "privacyRequired": "الموافقة على الخصوصية مطلوبة.",
+    "tooManyRequests": "طلبات كثيرة مؤخرا. حاول لاحقا.", "requestFailed": "تعذر حفظ الطلب. حاول مرة أخرى.",
+    "requestSent": "تم إرسال طلب الإيصال بنجاح.", "submitRequest": "إرسال طلب الإيصال", "received": "المستلم"
   },
   "azkar": {
     "title": "الأذكار والأدعية",
@@ -110,7 +115,7 @@
     "target": "الهدف",
     "startDhikr": "ابدأ الذكر",
     "repeatCount": "عدد التكرار",
-    "defaultTasbeeh": "سبحان الله"
+    "defaultTasbeeh": "سبحان الله", "empty": "لا توجد أذكار منشورة في هذه الفئة.", "moreInCategory": "المزيد في هذه الفئة"
   },
   "azkarCategories": {
     "Morning": "أذكار الصباح",
@@ -121,7 +126,7 @@
     "Friday": "الجمعة"
   },
   "events": {
-    "title": "الفعاليات"
+    "title": "الفعاليات", "empty": "لا توجد فعاليات قادمة منشورة."
   },
   "eventTypes": {
     "Class": "درس",
@@ -141,7 +146,8 @@
     "parkingNotes": "ملاحظات مواقف السيارات",
     "communityLinks": "روابط المجتمع",
     "facilityPlaceholder": "معلومات يديرها مسؤولو المسجد.",
-    "viewBankDetails": "عرض تفاصيل الحساب في صفحة التبرعات"
+    "viewBankDetails": "عرض تفاصيل الحساب في صفحة التبرعات", "visitorInfo": "معلومات الزوار",
+    "visitorInfoDesc": "يرجى احترام إرشادات المسجد والتواصل مع الإدارة للاستفسار عن سهولة الوصول أو المواقف أو مصلى النساء."
   },
   "ramadan": {
     "title": "رمضان",
@@ -154,11 +160,16 @@
     "announcements": "إعلانات رمضان",
     "announcementsPlaceholder": "ستنشر إدارة المسجد إعلانات رمضان.",
     "calendarPlaceholder": "تقويم مؤقت",
-    "calendarPlaceholderDesc": "ستظهر أيام رمضان هنا بعد نشر الجدول."
+    "calendarPlaceholderDesc": "ستظهر أيام رمضان هنا بعد نشر الجدول.", "noSchedule": "لم يتم نشر جدول رمضان.",
+    "noAnnouncements": "لا توجد إعلانات رمضان منشورة.", "day": "اليوم {day} من رمضان", "dayLabel": "اليوم", "calendar": "تقويم رمضان"
   },
   "qibla": {
     "title": "القبلة",
-    "comingSoon": "سيتم إضافة ميزة اتجاه القبلة قريبا."
+    "comingSoon": "سيتم إضافة ميزة اتجاه القبلة قريبا.", "direction": "القبلة: {degrees}° من الشمال",
+    "deggendorfEstimate": "اتجاه تقديري من وسط ديغندورف.", "locating": "جار تحديد موقعك...", "locationReady": "تم حساب الاتجاه من موقعك الحالي.",
+    "locationDenied": "تم رفض إذن الموقع؛ يظهر تقدير ديغندورف.", "locationUnsupported": "الموقع غير متاح على هذا الجهاز.",
+    "calibrationHelp": "حرك الهاتف على شكل رقم ثمانية لمعايرة البوصلة.", "useMyLocation": "استخدم موقعي",
+    "sensorNote": "يتبع السهم بوصلة الجهاز عند توفر المستشعر."
   },
   "settings": {
     "title": "الإعدادات",
@@ -178,7 +189,18 @@
     "12hour": "12 ساعة",
     "theme": "المظهر",
     "light": "فاتح",
-    "darkPlaceholder": "داكن قريبا"
+    "darkPlaceholder": "داكن قريبا", "dark": "داكن", "enableBrowserNotifications": "تفعيل إشعارات المتصفح",
+    "browserNotificationsEnabled": "تم تفعيل إشعارات المتصفح", "browserNotificationsUnsupported": "إشعارات المتصفح غير مدعومة"
+  },
+  "notifications": { "empty": "لا توجد تحديثات عاجلة." },
+  "privacy": {
+    "title": "سياسة الخصوصية", "controllerTitle": "الجهة المسؤولة", "controllerText": "الجهة المشغلة للمسجد والموقع مسؤولة عن البيانات الشخصية المقدمة عبره.",
+    "dataTitle": "البيانات التي نجمعها", "dataText": "تحتوي طلبات الإيصال على الاسم والبريد والعنوان وتاريخ التبرع والمبلغ ومرجع التحويل الاختياري. تبقى إعدادات التطبيق على جهازك.",
+    "purposeTitle": "الغرض", "purposeText": "تستخدم البيانات فقط لمراجعة التبرع وإعداد إيصال التبرع أو التواصل بشأنه.",
+    "retentionTitle": "مدة الاحتفاظ", "retentionText": "يحتفظ بالبيانات للمدة التشغيلية والقانونية اللازمة فقط ثم تحذف أو تجهل.",
+    "rightsTitle": "حقوقك", "rightsText": "يمكنك طلب الوصول أو التصحيح أو الحذف أو التقييد أو معلومات عن معالجة بياناتك ضمن الالتزامات القانونية.",
+    "contactTitle": "التواصل", "contactText": "استخدم معلومات التواصل في صفحة معلومات المسجد لأسئلة الخصوصية والإيصالات.",
+    "reviewNotice": "هذه الصفحة نموذج تشغيلي ويجب مراجعته قانونيا قبل الإطلاق العام."
   },
   "announcementTypes": {
     "General": "عام",
@@ -216,7 +238,7 @@
     "required": "مطلوب",
     "missingNextWeek": "مواقيت الصلاة للأسبوع القادم غير متوفرة.",
     "todayPrayerStatus": "حالة صلاة اليوم",
-    "published": "منشور",
+    "published": "منشور", "notPublished": "غير منشور",
     "liveDate": "التاريخ المنشور: {date}",
     "jumuahStatus": "حالة نشر الجمعة",
     "fridayVisible": "تفاصيل الجمعة ظاهرة",
@@ -309,7 +331,9 @@
     "ishaIqama": "إقامة العشاء",
     "managedManually": "تدار يدويا",
     "manualDonationsReceipts": "التبرعات والإيصالات اليدوية",
-    "futurePhasePlaceholder": "سيتم تفعيل هذا القسم في مرحلة لاحقة.",
+    "futurePhasePlaceholder": "سيتم تفعيل هذا القسم في مرحلة لاحقة.", "noReceiptRequests": "لا توجد طلبات إيصال بعد.",
+    "status": "الحالة", "donationReport": "تقرير التبرعات الشهري", "month": "الشهر",
+    "csvImportHelp": "ارفع حتى 366 صفا يوميا. سيتم تحديث التواريخ الموجودة وإنشاء الجديدة.", "chooseCsv": "اختر ملف CSV", "downloadCsvTemplate": "تنزيل نموذج CSV",
     "setupRequired": "الإعداد مطلوب",
     "supabaseEnvMissing": "إعدادات Supabase غير مكتملة. تحقق من متغيرات البيئة.",
     "supabaseNotConfigured": "لم يتم إعداد Supabase بعد.",
@@ -374,7 +398,7 @@
       "created": "تم الإنشاء بنجاح.",
       "updated": "تم التحديث بنجاح.",
       "deleted": "تم الحذف بنجاح.",
-      "settingsUpdated": "تم حفظ الإعدادات."
+      "settingsUpdated": "تم حفظ الإعدادات.", "csvImported": "تم استيراد {count} صفا لمواقيت الصلاة."
     },
     "errors": {
       "notAuthenticated": "يرجى تسجيل الدخول أولا.",
@@ -421,7 +445,9 @@
       "imsakRequired": "وقت الإمساك مطلوب.",
       "iftarRequired": "وقت الإفطار مطلوب.",
       "ramadanDayPositive": "يجب أن يكون رقم يوم رمضان أكبر من صفر.",
-      "repeatCountPositive": "يجب أن يكون عدد التكرار أكبر من صفر."
+      "repeatCountPositive": "يجب أن يكون عدد التكرار أكبر من صفر.", "invalidInput": "قيمة واحدة أو أكثر غير صالحة.",
+      "validHttpsUrlRequired": "يجب أن تستخدم الروابط الخارجية HTTPS.", "endTimeAfterStart": "يجب أن يكون وقت النهاية بعد البداية.",
+      "invalidCsv": "يحتوي ملف CSV على قيم ناقصة أو غير صالحة."
     }
   }
 }

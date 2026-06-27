@@ -4,7 +4,7 @@ type LocalizedRecord = object;
 
 function fallbackLocales(locale: Locale): Locale[] {
   const ordered: Locale[] = [];
-  for (const item of [locale, "ar", "en", ...SUPPORTED_LOCALES] as Locale[]) {
+  for (const item of [locale, "de", "ar", "en", ...SUPPORTED_LOCALES] as Locale[]) {
     if (!ordered.includes(item)) ordered.push(item);
   }
   return ordered;

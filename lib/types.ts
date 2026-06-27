@@ -127,6 +127,9 @@ export interface DonationReceiptRequest {
   donorName: string;
   amount: number;
   email: string;
+  postalAddress?: string;
+  donationDate?: string;
+  transferReference?: string;
   status: "Pending" | "Reviewed" | "Sent";
   createdAt: string;
 }
@@ -164,6 +167,7 @@ export interface Event extends LocalizedTitleFields, LocalizedDescriptionFields,
   endTime: string;
   location: string;
   type: string;
+  published?: boolean;
 }
 
 export interface RamadanDay {
@@ -180,6 +184,7 @@ export interface RamadanDay {
   noteEn?: string;
   noteDe?: string;
   noteTr?: string;
+  published?: boolean;
 }
 
 export interface MosqueSettings {

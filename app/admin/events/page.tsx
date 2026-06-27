@@ -46,7 +46,7 @@ export default function AdminEventsPage() {
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
 
-  useEffect(() => { getEvents().then((data) => setItems(data)); }, []);
+  useEffect(() => { getEvents(true).then((data) => setItems(data)).catch(() => setError(t("common.dataLoadFailed"))); }, [t]);
 
   function resetForm() {
     setForm({ ...emptyForm });
@@ -79,7 +79,7 @@ export default function AdminEventsPage() {
   }
 
   async function refreshItems() {
-    setItems(await getEvents());
+    setItems(await getEvents(true));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -170,7 +170,6 @@ export default function AdminEventsPage() {
             </label>
             <div className="flex flex-wrap gap-3 md:col-span-2">
               <Button type="submit" disabled={!hasSupabase || isPending}><Plus className="h-4 w-4" aria-hidden="true" /> {editingId ? t("common.update") : t("common.create")}</Button>
-              <Button type="button" variant="soft" onClick={() => setError(t("admin.translationNotConfigured"))}>{t("admin.generateTranslations")}</Button>
               {editingId ? <Button type="button" variant="ghost" onClick={resetForm} disabled={isPending}>{t("common.cancel")}</Button> : null}
             </div>
           </form>

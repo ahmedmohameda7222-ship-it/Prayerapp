@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import type { DonationSettings, DonationCampaign, Donation, DonationReport } from "@/lib/types";
+import { previewDonationCampaigns, previewDonationReport, previewDonationSettings } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
 
@@ -20,9 +21,13 @@ const DEFAULT_SETTINGS: DonationSettings = {
   receiptNoteTr: "",
 };
 
+function filterPreviewDonationCampaigns(includeInactive = false): DonationCampaign[] {
+  return previewDonationCampaigns.filter((item) => includeInactive || item.isActive);
+}
+
 export async function getDonationSettings(): Promise<DonationSettings> {
   const client = createClient();
-  if (!client) return { ...DEFAULT_SETTINGS };
+  if (!client) return previewDonationSettings;
   return getCached("donation_settings", async () => {
     const { data, error } = await client.from("donation_settings").select("*").single();
     const record = data as Record<string, unknown> | null;
@@ -61,7 +66,7 @@ export async function updateDonationSettings(settings: Partial<DonationSettings>
 
 export async function getDonationCampaigns(includeInactive = false): Promise<DonationCampaign[]> {
   const client = createClient();
-  if (!client) return [];
+  if (!client) return filterPreviewDonationCampaigns(includeInactive);
   const key = `donation_campaigns_${includeInactive}`;
   return getCached(key, async () => {
     let query = client
@@ -158,7 +163,7 @@ export async function getDonations(): Promise<Donation[]> {
 
 export async function getDonationReport(): Promise<DonationReport> {
   const client = createClient();
-  if (!client) return { month: new Date().toISOString().slice(0, 7), monthlyNeed: 0, donationsReceived: 0, remaining: 0 };
+  if (!client) return previewDonationReport;
   return getCached("donation_report", async () => {
     const { data, error } = await client.from("donation_reports").select("*").order("month", { ascending: false }).limit(1).single();
     if (error?.code === "PGRST116") return { month: new Date().toISOString().slice(0, 7), monthlyNeed: 0, donationsReceived: 0, remaining: 0 };

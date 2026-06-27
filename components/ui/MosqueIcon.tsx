@@ -1,9 +1,10 @@
 export function MosqueIcon({ className = "h-6 w-6" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 48 48" fill="none" aria-hidden="true">
-      <path d="M8 39h32M12 39V22l12-10 12 10v17" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M18 39V28a6 6 0 0 1 12 0v11M24 12V7M20 7h8M7 39V27m34 12V27" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M14 23a10 10 0 0 1 20 0" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M5 41h39M9 41V29h25v12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 29c0-7.2 5.6-13 12.5-13S34 21.8 34 29" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17.5 41v-7a4 4 0 0 1 8 0v7M38 41V15h5v26M36.5 19h8M38 15l2.5-5 2.5 5M40.5 10V6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M24.5 6a4 4 0 1 0 2.2 7.3A3.6 3.6 0 0 1 24.5 6Z" fill="currentColor" />
     </svg>
   );
 }

@@ -31,14 +31,14 @@ export function HeroCard({
   } = getImageProps({ ...common, src, width: 1448, height: 1086, quality: 75 });
 
   return (
-    <section className={`relative min-h-[220px] overflow-hidden rounded-[24px] shadow-[var(--shadow-card)] lg:aspect-[21/9] lg:min-h-0 ${className}`}>
+    <section className={`relative min-h-[200px] overflow-hidden rounded-[24px] shadow-[var(--shadow-card)] sm:min-h-[220px] lg:aspect-[2.7/1] lg:min-h-0 ${className}`}>
       <picture>
         <source media="(min-width: 1024px)" srcSet={desktopSrcSet} />
         <source media="(max-width: 1023px)" srcSet={mobileSrcSet} />
         <img {...imageProps} alt={alt} />
       </picture>
       <div className="hero-overlay absolute inset-0" />
-      <div className="relative z-10 flex min-h-[220px] flex-col justify-end p-5 text-[var(--color-card)] lg:absolute lg:inset-0 lg:min-h-0">{children}</div>
+      <div className="relative z-10 flex min-h-[200px] flex-col justify-end p-4 text-[var(--color-card)] sm:min-h-[220px] sm:p-5 lg:absolute lg:inset-0 lg:min-h-0">{children}</div>
     </section>
   );
 }

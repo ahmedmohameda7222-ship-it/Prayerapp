@@ -35,24 +35,26 @@ export function HomePageClient({ initialPrayerTimes }: { initialPrayerTimes: Pra
   }, []);
 
   return (
-    <div className="grid gap-5">
+    <div className="home-dashboard grid gap-5">
       {today ? (
         <>
-          <HeroCard
-            src="/assets/hero-home-mosque-night.png"
-            desktopSrc="/assets/hero-home-mosque-night-desktop.png"
-            alt={t("home.heroAlt")}
-            priority
-          >
-            <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} />
-          </HeroCard>
-          <PrayerTimesCard prayer={today} activePrayer={activePrayer} />
-          {smartAction ? <SmartNextActionCard action={smartAction} /> : null}
+          <div className="home-hero">
+            <HeroCard
+              src="/assets/hero-home-mosque-night.png"
+              desktopSrc="/assets/hero-home-mosque-night-desktop.png"
+              alt={t("home.heroAlt")}
+              priority
+            >
+              <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} />
+            </HeroCard>
+          </div>
+          <div className="home-prayers"><PrayerTimesCard prayer={today} activePrayer={activePrayer} /></div>
+          {smartAction ? <div className="home-smart"><SmartNextActionCard action={smartAction} /></div> : null}
         </>
       ) : (
         <EmptyState message={t("prayer.notPublished")} />
       )}
-      <section>
+      <section className="home-quick-actions">
         <SectionTitle>{t("home.quickActions")}</SectionTitle>
         <div className="grid gap-3 lg:grid-cols-2">
           <QuickActionCard href="/friday" title={t("home.jumuah")} description={t("home.jumuahDesc")} icon={MosqueIcon} />

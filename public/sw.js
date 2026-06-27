@@ -1,25 +1,41 @@
-const CACHE_NAME = "deggendorf-prayer-v8";
-const STATIC_ASSETS = [
-  "/offline",
+const CACHE_PREFIX = "deggendorf-prayer";
+const VERSION = "v12";
+const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
+const STATIC_CACHE = `${CACHE_PREFIX}-static-${VERSION}`;
+const IMAGE_CACHE = `${CACHE_PREFIX}-images-${VERSION}`;
+const PAGE_CACHE = `${CACHE_PREFIX}-pages-${VERSION}`;
+const OFFLINE_URL = "/offline";
+const PRECACHE_ASSETS = [
+  "/",
+  OFFLINE_URL,
+  "/manifest.webmanifest",
   "/assets/app-icon-main.png",
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    Promise.all([
+      caches.open(SHELL_CACHE).then((cache) =>
+        Promise.allSettled(PRECACHE_ASSETS.map((asset) => cache.add(asset)))
+      ),
+      self.skipWaiting(),
+    ])
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      )
-    )
+    Promise.all([
+      caches.keys().then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith(CACHE_PREFIX) && ![SHELL_CACHE, STATIC_CACHE, IMAGE_CACHE, PAGE_CACHE].includes(key))
+            .map((key) => caches.delete(key))
+        )
+      ),
+      self.clients.claim(),
+    ])
   );
-  self.clients.claim();
 });
 
 function isPrivateOrDataRequest(request) {
@@ -28,82 +44,137 @@ function isPrivateOrDataRequest(request) {
     request.method !== "GET" ||
     url.pathname.startsWith("/admin") ||
     url.pathname.startsWith("/api") ||
-    url.hostname.includes("supabase")
+    url.hostname.includes("supabase") ||
+    request.headers.has("authorization")
   );
 }
 
 function isStaticAsset(request) {
   const url = new URL(request.url);
   return (
-    url.pathname.endsWith(".js") ||
-    url.pathname.endsWith(".css") ||
-    url.pathname.endsWith(".png") ||
-    url.pathname.endsWith(".jpg") ||
-    url.pathname.endsWith(".jpeg") ||
-    url.pathname.endsWith(".svg") ||
-    url.pathname.endsWith(".woff2") ||
-    url.pathname.endsWith(".json") ||
-    url.pathname.startsWith("/_next/")
+    ["font", "image", "script", "style"].includes(request.destination) ||
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/_next/image") ||
+    url.pathname === "/manifest.webmanifest"
   );
 }
 
+function isNextPageRequest(request) {
+  return request.headers.get("RSC") === "1" || request.headers.has("next-router-prefetch");
+}
+
+function isCacheable(response) {
+  return response && response.ok && (response.type === "basic" || response.type === "cors");
+}
+
+async function trimCache(cacheName, maxEntries) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length <= maxEntries) return;
+  await Promise.all(keys.slice(0, keys.length - maxEntries).map((key) => cache.delete(key)));
+}
+
+async function storeResponse(cacheName, request, response, maxEntries) {
+  if (!isCacheable(response)) return;
+  const copy = response.clone();
+  try {
+    const cache = await caches.open(cacheName);
+    await cache.put(request, copy);
+    await trimCache(cacheName, maxEntries);
+  } catch {
+    // A cache write failure must never block the live response.
+  }
+}
+
+async function fetchWithTimeout(request, timeoutMs = 4000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(request, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function cacheTargetForUrl(url) {
+  const isImage = url.pathname.startsWith("/_next/image") || /\.(png|jpe?g|webp|svg|gif|avif)$/i.test(url.pathname);
+  return isImage
+    ? { cacheName: IMAGE_CACHE, maxEntries: 24 }
+    : { cacheName: STATIC_CACHE, maxEntries: 48 };
+}
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "CACHE_RESOURCES" || !Array.isArray(event.data.urls)) return;
+
+  event.waitUntil((async () => {
+    const urls = event.data.urls.slice(0, 48).filter((value) => {
+      if (typeof value !== "string") return false;
+      const url = new URL(value, self.location.origin);
+      return url.origin === self.location.origin && (
+        url.pathname.startsWith("/_next/static/") ||
+        url.pathname.startsWith("/_next/image") ||
+        url.pathname.startsWith("/assets/")
+      );
+    });
+
+    await Promise.allSettled(urls.map(async (value) => {
+      const url = new URL(value, self.location.origin);
+      const target = cacheTargetForUrl(url);
+      const cache = await caches.open(target.cacheName);
+      const request = new Request(url.href, { credentials: "same-origin" });
+      if (await cache.match(request)) return;
+      const response = await fetch(request);
+      await storeResponse(target.cacheName, request, response, target.maxEntries);
+    }));
+  })());
+});
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-  if (isPrivateOrDataRequest(request)) return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || isPrivateOrDataRequest(request)) return;
 
-  // Static assets: cache-first, then network
-  if (isStaticAsset(request)) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        });
-      })
-    );
-    return;
-  }
-
-  // Navigation: network-first with offline fallback
   if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) return cached;
-          const offline = await caches.match("/offline");
-          if (offline) return offline;
-          return new Response("You are offline", {
-            status: 503,
-            headers: { "Content-Type": "text/html" },
-          });
-        })
-    );
+    event.respondWith((async () => {
+      try {
+        const response = await fetchWithTimeout(request);
+        await storeResponse(PAGE_CACHE, request, response, 18);
+        return response;
+      } catch {
+        return (
+          (await caches.match(request)) ||
+          (url.pathname === "/" ? await caches.match("/") : undefined) ||
+          (await caches.match(OFFLINE_URL)) ||
+          new Response("You are offline", { status: 503, headers: { "Content-Type": "text/plain" } })
+        );
+      }
+    })());
     return;
   }
 
-  // Everything else: stale-while-revalidate
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request).then((response) => {
-        if (response.ok && response.type === "basic") {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-        }
+  if (isStaticAsset(request)) {
+    event.respondWith((async () => {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      const response = await fetch(request);
+      const isImage = request.destination === "image" || url.pathname.startsWith("/_next/image");
+      await storeResponse(isImage ? IMAGE_CACHE : STATIC_CACHE, request, response, isImage ? 24 : 48);
+      return response;
+    })());
+    return;
+  }
+
+  if (isNextPageRequest(request)) {
+    event.respondWith((async () => {
+      try {
+        const response = await fetchWithTimeout(request);
+        await storeResponse(PAGE_CACHE, request, response, 18);
         return response;
-      });
-      return cached || network;
-    })
-  );
+      } catch {
+        return (await caches.match(request)) || Response.error();
+      }
+    })());
+  }
 });
 
 self.addEventListener("push", (event) => {

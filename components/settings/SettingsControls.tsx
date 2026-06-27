@@ -1,19 +1,10 @@
 "use client";
 
-import { Bell, Clock, Languages } from "lucide-react";
+import { Bell, Clock } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { useLocale } from "@/lib/i18n/context";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
-import type { Locale } from "@/lib/i18n/types";
 import { useAppPreferences, type NotificationPreferenceKey } from "@/components/providers/AppPreferencesProvider";
-
-const languageOptions: { value: Locale; labelKey: string }[] = [
-  { value: "ar", labelKey: "settings.arabic" },
-  { value: "en", labelKey: "settings.english" },
-  { value: "de", labelKey: "settings.german" },
-  { value: "tr", labelKey: "settings.turkish" },
-];
 
 const timeFormatOptions = [
   { value: "24-hour" as const, labelKey: "settings.24hour" },
@@ -29,35 +20,12 @@ const notificationKeys: Array<{ key: NotificationPreferenceKey; label: string }>
 ];
 
 export function SettingsControls() {
-  const { locale, setLocale } = useLocale();
   const { t } = useTranslation();
   const { timeFormat, setTimeFormat } = useTimeFormat();
   const { notifications, setNotification, permission, requestNotificationPermission } = useAppPreferences();
 
   return (
     <div className="grid gap-5">
-      <Card>
-        <h2 className="mb-3 flex items-center gap-2 font-bold text-[var(--color-emerald)]">
-          <Languages className="h-5 w-5" aria-hidden="true" />
-          {t("settings.language")}
-        </h2>
-        <div className="grid grid-cols-4 gap-2">
-          {languageOptions.map((item) => (
-            <button
-              key={item.value}
-              onClick={() => setLocale(item.value)}
-              aria-pressed={locale === item.value}
-              className={`min-h-11 rounded-2xl border px-2 text-sm font-bold transition ${
-                locale === item.value
-                  ? "border-[var(--color-emerald)] bg-[var(--color-emerald)] text-[var(--color-card)]"
-                  : "border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-emerald)]"
-              }`}
-            >
-              {t(item.labelKey)}
-            </button>
-          ))}
-        </div>
-      </Card>
       <Card>
         <h2 className="mb-3 flex items-center gap-2 font-bold text-[var(--color-emerald)]">
           <Bell className="h-5 w-5" aria-hidden="true" />

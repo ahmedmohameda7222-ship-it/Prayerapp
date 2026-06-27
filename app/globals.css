@@ -103,6 +103,10 @@ textarea {
   margin-inline: -16px;
 }
 
+.language-menu[open] > summary {
+  border-color: var(--color-gold);
+}
+
 .card {
   border: 1px solid var(--color-border);
   border-radius: 20px;
@@ -181,8 +185,10 @@ textarea {
 
 @media (min-width: 1024px) {
   .app-header-banner {
-    margin-top: -24px;
-    margin-inline: -32px;
+    width: min(100%, 960px);
+    margin-top: 0;
+    margin-inline: auto;
+    border-radius: 28px;
   }
 
   body::before {
@@ -198,14 +204,39 @@ textarea {
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: 24px 32px 112px;
+    padding: 24px 32px 116px;
   }
 
   .app-container {
-    max-width: none;
+    max-width: 1180px;
   }
 
   .page-shell {
     padding: 24px 32px 112px;
+  }
+
+  .home-dashboard {
+    grid-template-areas:
+      "hero prayers"
+      "smart prayers"
+      "quick quick";
+    grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.65fr);
+    align-items: start;
+  }
+
+  .home-hero {
+    grid-area: hero;
+  }
+
+  .home-prayers {
+    grid-area: prayers;
+  }
+
+  .home-smart {
+    grid-area: smart;
+  }
+
+  .home-quick-actions {
+    grid-area: quick;
   }
 }

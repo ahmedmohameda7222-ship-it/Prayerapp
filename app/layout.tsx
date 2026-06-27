@@ -42,7 +42,6 @@ export const viewport: Viewport = {
 };
 
 function ServiceWorkerRegistration() {
-  if (process.env.NODE_ENV !== "production") return null;
   return (
     <script
       dangerouslySetInnerHTML={{

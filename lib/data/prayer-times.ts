@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import type { PrayerTime } from "@/lib/types";
+import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
 
 function mapFromDb(row: Record<string, unknown>): PrayerTime {
   return {
@@ -46,38 +47,45 @@ function mapToDb(item: Partial<PrayerTime>): Record<string, unknown> {
 export async function getPrayerTimes(includeUnpublished = false): Promise<PrayerTime[]> {
   const client = createClient();
   if (!client) return [];
-  let query = client
-    .from("prayer_times")
-    .select("*")
-    .order("date", { ascending: true });
-  if (!includeUnpublished) query = query.eq("published", true);
-  const { data, error } = await query;
-  if (error || !data) throw new Error("Unable to load prayer times");
-  return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+  const key = `prayer_times_${includeUnpublished}`;
+  return getCached(key, async () => {
+    let query = client
+      .from("prayer_times")
+      .select("*")
+      .order("date", { ascending: true });
+    if (!includeUnpublished) query = query.eq("published", true);
+    const { data, error } = await query;
+    if (error || !data) throw new Error("Unable to load prayer times");
+    return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+  });
 }
 
 export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | undefined> {
   const client = createClient();
   if (!client) return undefined;
-  const { data, error } = await client
-    .from("prayer_times")
-    .select("*")
-    .eq("date", date)
-    .eq("published", true)
-    .single();
-  if (error || !data) {
-    if (error?.code === "PGRST116") return undefined;
-    throw new Error("Unable to load prayer time");
-  }
-  return mapFromDb(data as Record<string, unknown>);
+  return getCached(`prayer_time_${date}`, async () => {
+    const { data, error } = await client
+      .from("prayer_times")
+      .select("*")
+      .eq("date", date)
+      .eq("published", true)
+      .single();
+    if (error || !data) {
+      if (error?.code === "PGRST116") return undefined;
+      throw new Error("Unable to load prayer time");
+    }
+    return mapFromDb(data as Record<string, unknown>);
+  });
 }
 
 export async function createPrayerTime(item: Omit<PrayerTime, "id">): Promise<PrayerTime> {
   const client = createClient();
   if (!client) throw new Error("Supabase is not configured");
   const dbItem = mapToDb(item);
-  const { data, error } = await client.from("prayer_times").insert(dbItem).select().single();
+  const { data, error } = await client.from("prayer_times").insert(dbItem as never).select().single();
   if (error || !data) throw new Error("Failed to create prayer time");
+  invalidateCachePrefix("prayer_times");
+  invalidateCache(`prayer_time_${item.date}`);
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -85,8 +93,10 @@ export async function updatePrayerTime(id: string, item: Partial<PrayerTime>): P
   const client = createClient();
   if (!client) throw new Error("Supabase is not configured");
   const dbItem = mapToDb(item);
-  const { data, error } = await client.from("prayer_times").update(dbItem).eq("id", id).select().single();
+  const { data, error } = await client.from("prayer_times").update(dbItem as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update prayer time");
+  invalidateCachePrefix("prayer_times");
+  if (item.date) invalidateCache(`prayer_time_${item.date}`);
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -95,4 +105,5 @@ export async function deletePrayerTime(id: string): Promise<void> {
   if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("prayer_times").delete().eq("id", id);
   if (error) throw new Error("Failed to delete prayer time");
+  invalidateCachePrefix("prayer_times");
 }

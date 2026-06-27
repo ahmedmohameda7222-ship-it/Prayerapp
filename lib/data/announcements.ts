@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Announcement } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
+import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
 
 function mapFromDb(row: Record<string, unknown>): Announcement {
   return {
@@ -33,29 +34,34 @@ function mapToDb(item: Partial<Announcement>): Record<string, unknown> {
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {
   const client = createClient();
   if (!client) return [];
-  let query = client
-    .from("announcements")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (!includeUnpublished) query = query.eq("published", true);
-  const { data, error } = await query;
-  if (error || !data) throw new Error("Unable to load announcements");
-  return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+  const key = `announcements_${includeUnpublished}`;
+  return getCached(key, async () => {
+    let query = client
+      .from("announcements")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!includeUnpublished) query = query.eq("published", true);
+    const { data, error } = await query;
+    if (error || !data) throw new Error("Unable to load announcements");
+    return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+  });
 }
 
 export async function createAnnouncement(item: Omit<Announcement, "id" | "createdAt">): Promise<Announcement> {
   const client = createClient();
   if (!client) throw new Error("Supabase is not configured");
-  const { data, error } = await client.from("announcements").insert(mapToDb(item)).select().single();
+  const { data, error } = await client.from("announcements").insert(mapToDb(item) as never).select().single();
   if (error || !data) throw new Error("Failed to create announcement");
+  invalidateCachePrefix("announcements");
   return mapFromDb(data as Record<string, unknown>);
 }
 
 export async function updateAnnouncement(id: string, item: Partial<Announcement>): Promise<Announcement> {
   const client = createClient();
   if (!client) throw new Error("Supabase is not configured");
-  const { data, error } = await client.from("announcements").update(mapToDb(item)).eq("id", id).select().single();
+  const { data, error } = await client.from("announcements").update(mapToDb(item) as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update announcement");
+  invalidateCachePrefix("announcements");
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -64,4 +70,5 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("announcements").delete().eq("id", id);
   if (error) throw new Error("Failed to delete announcement");
+  invalidateCachePrefix("announcements");
 }

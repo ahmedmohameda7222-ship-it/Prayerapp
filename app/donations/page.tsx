@@ -37,7 +37,7 @@ export default function DonationsPage() {
             {!donationCampaigns.length ? <EmptyState message={t("donations.noCampaigns")} /> : null}
           </div>
         </section>
-        <BankTransferCard settings={data.settings} />
+        {data.settings ? <BankTransferCard settings={data.settings} /> : null}
         <section>
           <SectionTitle>{t("donations.transparency")}</SectionTitle>
           <TransparencyCard report={data.report} />
@@ -49,8 +49,11 @@ export default function DonationsPage() {
 }
 
 async function loadDonationPageData() {
-  const [settings, campaigns, report] = await Promise.all([
-    getDonationSettings(), getDonationCampaigns(), getDonationReport(),
+  const [settingsResult, campaigns, report] = await Promise.allSettled([
+    getDonationSettings(),
+    getDonationCampaigns(),
+    getDonationReport(),
   ]);
-  return { settings, campaigns, report };
+  const settings = settingsResult.status === "fulfilled" ? settingsResult.value : undefined;
+  return { settings, campaigns: campaigns.status === "fulfilled" ? campaigns.value : [], report: report.status === "fulfilled" ? report.value : { month: "", monthlyNeed: 0, donationsReceived: 0, remaining: 0 } };
 }

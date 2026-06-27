@@ -64,7 +64,8 @@ body::before {
   inset: 0;
   content: "";
   pointer-events: none;
-  background-color: #0e3d36;
+  background-color: #005a52;
+  background-image: url("/assets/app-main-background.png");
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -182,6 +183,10 @@ textarea {
   .app-header-banner {
     margin-top: -24px;
     margin-inline: -32px;
+  }
+
+  body::before {
+    background-image: url("/assets/app-main-background-desktop.png");
   }
 
   .admin-layout {

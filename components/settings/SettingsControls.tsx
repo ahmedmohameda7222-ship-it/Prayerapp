@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Clock, Languages, Moon } from "lucide-react";
+import { Bell, Clock, Languages } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useLocale } from "@/lib/i18n/context";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -32,7 +32,7 @@ export function SettingsControls() {
   const { locale, setLocale } = useLocale();
   const { t } = useTranslation();
   const { timeFormat, setTimeFormat } = useTimeFormat();
-  const { theme, setTheme, notifications, setNotification, permission, requestNotificationPermission } = useAppPreferences();
+  const { notifications, setNotification, permission, requestNotificationPermission } = useAppPreferences();
 
   return (
     <div className="grid gap-5">
@@ -101,20 +101,6 @@ export function SettingsControls() {
               {t(item.labelKey)}
             </button>
           ))}
-        </div>
-      </Card>
-      <Card>
-        <h2 className="mb-3 flex items-center gap-2 font-bold text-[var(--color-emerald)]">
-          <Moon className="h-5 w-5" aria-hidden="true" />
-          {t("settings.theme")}
-        </h2>
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => setTheme("light")} aria-pressed={theme === "light"} className={`min-h-11 rounded-2xl text-sm font-bold ${theme === "light" ? "bg-[var(--color-emerald)] text-[var(--color-card)]" : "border border-[var(--color-border)] text-[var(--color-emerald)]"}`}>
-            {t("settings.light")}
-          </button>
-          <button type="button" onClick={() => setTheme("dark")} aria-pressed={theme === "dark"} className={`min-h-11 rounded-2xl text-sm font-bold ${theme === "dark" ? "bg-[var(--color-emerald)] text-[var(--color-card)]" : "border border-[var(--color-border)] text-[var(--color-emerald)]"}`}>
-            {t("settings.dark")}
-          </button>
         </div>
       </Card>
     </div>

@@ -1,27 +1,7 @@
-const CACHE_NAME = "deggendorf-prayer-v7";
+const CACHE_NAME = "deggendorf-prayer-v8";
 const STATIC_ASSETS = [
-  "/",
   "/offline",
-  "/times",
-  "/friday",
-  "/news",
-  "/donations",
-  "/mosque",
-  "/events",
-  "/azkar",
-  "/ramadan",
-  "/qibla",
-  "/settings",
-  "/more",
   "/assets/app-icon-main.png",
-  "/assets/app-main-background.png",
-  "/assets/app-main-background-desktop.png",
-  "/assets/hero-home-mosque-night.png",
-  "/assets/hero-home-mosque-night-desktop.png",
-  "/assets/hero-friday-mosque-night.png",
-  "/assets/hero-friday-mosque-night-desktop.png",
-  "/assets/hero-donations-charity.png",
-  "/assets/hero-donations-charity-desktop.png",
 ];
 
 self.addEventListener("install", (event) => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Clock, Home, LayoutGrid, Newspaper } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -15,13 +16,16 @@ export function BottomNav() {
   const pathname = usePathname();
   const { t } = useTranslation();
 
-  const navItems = [
-    { href: "/", label: t("nav.home"), icon: Home },
-    { href: "/times", label: t("nav.times"), icon: Clock },
-    { href: "/friday", label: t("nav.friday"), icon: MosqueIcon },
-    { href: "/news", label: t("nav.news"), icon: Newspaper },
-    { href: "/more", label: t("nav.more"), icon: LayoutGrid },
-  ];
+  const navItems = useMemo(
+    () => [
+      { href: "/", label: t("nav.home"), icon: Home },
+      { href: "/times", label: t("nav.times"), icon: Clock },
+      { href: "/friday", label: t("nav.friday"), icon: MosqueIcon },
+      { href: "/news", label: t("nav.news"), icon: Newspaper },
+      { href: "/more", label: t("nav.more"), icon: LayoutGrid },
+    ],
+    [t]
+  );
 
   return (
     <nav aria-label={t("nav.ariaLabel")} className="fixed inset-x-0 bottom-0 z-50 mx-auto h-[82px] max-w-[760px] rounded-t-[28px] bg-gradient-to-br from-[var(--color-emerald-dark)] to-[var(--color-emerald)] px-3 pt-3 shadow-[0_-8px_28px_rgba(6,43,38,0.18)] lg:max-w-none lg:rounded-t-none">

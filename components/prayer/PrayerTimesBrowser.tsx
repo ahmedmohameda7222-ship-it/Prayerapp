@@ -18,15 +18,23 @@ type RangeTab = "today" | "week" | "month";
 
 export function PrayerTimesBrowser() {
   const { t, locale } = useTranslation();
-  const { data: prayerTimes, error, loading, reload } = useAsyncData(getPrayerTimes);
+  const today = todayIso();
+  const startDate = addDaysIso(today, -30);
+  const endDate = addDaysIso(today, 90);
+  const { data: prayerTimes, error, loading, reload } = useAsyncData(
+    () => getPrayerTimes(false, startDate, endDate)
+  );
   const [tab, setTab] = useState<RangeTab>("week");
-  const [cursor, setCursor] = useState(todayIso);
-  const actualToday = todayIso();
-  const tabs = [
-    { value: "today", label: t("times.today") },
-    { value: "week", label: t("times.week") },
-    { value: "month", label: t("times.month") },
-  ];
+  const [cursor, setCursor] = useState(today);
+  const actualToday = today;
+  const tabs = useMemo(
+    () => [
+      { value: "today", label: t("times.today") },
+      { value: "week", label: t("times.week") },
+      { value: "month", label: t("times.month") },
+    ],
+    [t]
+  );
 
   const range = useMemo(() => {
     if (tab === "today") return { start: cursor, end: cursor };

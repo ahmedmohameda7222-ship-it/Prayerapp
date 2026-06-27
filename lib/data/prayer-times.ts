@@ -49,16 +49,24 @@ function mapToDb(item: Partial<PrayerTime>): Record<string, unknown> {
   return db;
 }
 
-export async function getPrayerTimes(includeUnpublished = false): Promise<PrayerTime[]> {
+export async function getPrayerTimes(
+  includeUnpublished = false,
+  startDate?: string,
+  endDate?: string,
+  limit?: number,
+): Promise<PrayerTime[]> {
   const client = createClient();
   if (!client) return filterPreviewPrayerTimes(includeUnpublished);
-  const key = `prayer_times_${includeUnpublished}`;
+  const key = `prayer_times_${includeUnpublished}_${startDate || "all"}_${endDate || "all"}_${limit || "all"}`;
   return getCached(key, async () => {
     let query = client
       .from("prayer_times")
       .select("*")
       .order("date", { ascending: true });
     if (!includeUnpublished) query = query.eq("published", true);
+    if (startDate) query = query.gte("date", startDate);
+    if (endDate) query = query.lte("date", endDate);
+    if (limit) query = query.limit(limit);
     const { data, error } = await query;
     if (error || !data) throw new Error("Unable to load prayer times");
     return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));

@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { AlertTriangle, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { AlertTriangle, Plus } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { LocalizedContentFields } from "@/components/admin/LocalizedContentFields";
+import { JumuahTable } from "@/components/admin/JumuahTable";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { getLocalizedField } from "@/lib/i18n/localized-content";
 import type { JumuahTime } from "@/lib/types";
 import { createJumuahAction, deleteJumuahAction, togglePublishJumuahAction, updateJumuahAction } from "./actions";
 
@@ -51,7 +51,7 @@ export default function AdminJumuahPage() {
     setError("");
   }
 
-  function fillForm(item: JumuahTime) {
+  const fillForm = useCallback((item: JumuahTime) => {
     setForm({
       date: item.date,
       khutbahTime: item.khutbahTime,
@@ -72,11 +72,11 @@ export default function AdminJumuahPage() {
     setEditingId(item.id);
     setError("");
     setSuccess("");
-  }
+  }, []);
 
-  async function refreshItems() {
+  const refreshItems = useCallback(async () => {
     setItems(await getJumuahTimes(true));
-  }
+  }, []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -99,7 +99,7 @@ export default function AdminJumuahPage() {
     });
   }
 
-  async function handleDelete(id: string) {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm(t("admin.confirmDeleteJumuah"))) return;
     setError("");
     const token = session?.access_token || "";
@@ -112,9 +112,9 @@ export default function AdminJumuahPage() {
         await refreshItems();
       }
     });
-  }
+  }, [session, refreshItems, t]);
 
-  async function handleTogglePublish(id: string, current: boolean) {
+  const handleTogglePublish = useCallback(async (id: string, current: boolean) => {
     setError("");
     const token = session?.access_token || "";
     if (!token) return;
@@ -123,7 +123,7 @@ export default function AdminJumuahPage() {
       if (!result.success) setError(t(result.error || "admin.errors.toggleFailed"));
       else await refreshItems();
     });
-  }
+  }, [session, refreshItems, t]);
 
   return (
     <AdminShell titleKey="admin.jumuahManagement">
@@ -168,33 +168,14 @@ export default function AdminJumuahPage() {
           </form>
         </Card>
 
-        <div className="overflow-x-auto rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]">
-          <table className="w-full min-w-[680px] text-left text-sm">
-            <thead className="bg-[var(--color-emerald)] text-[var(--color-card)]">
-              <tr>{["admin.date", "prayer.khutbah", "prayer.prayer", "friday.location", "friday.khateeb", "friday.language", "admin.published", "admin.actions"].map((key) => <th key={key} className="px-3 py-3">{t(key)}</th>)}</tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-t border-[var(--color-border)]">
-                  <td className="px-3 py-3">{item.date}</td>
-                  <td className="px-3 py-3">{item.khutbahTime}</td>
-                  <td className="px-3 py-3">{item.prayerTime}</td>
-                  <td className="px-3 py-3">{item.locationName}</td>
-                  <td className="px-3 py-3">{item.khateebName}</td>
-                  <td className="px-3 py-3">{getLocalizedField(item, "language", locale)}</td>
-                  <td className="px-3 py-3">{item.published ? t("common.yes") : t("common.no")}</td>
-                  <td className="px-3 py-3">
-                    <div className="flex gap-1">
-                      <button onClick={() => fillForm(item)} disabled={isPending} aria-label={t("common.edit")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => handleTogglePublish(item.id, item.published)} disabled={isPending} aria-label={item.published ? t("admin.unpublish") : t("admin.publish")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]">{item.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
-                      <button onClick={() => handleDelete(item.id)} disabled={isPending} aria-label={t("common.delete")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-danger)]/10 text-[var(--color-danger)]"><Trash2 className="h-4 w-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <JumuahTable
+          items={items}
+          disabled={isPending}
+          locale={locale}
+          onEdit={fillForm}
+          onTogglePublish={handleTogglePublish}
+          onDelete={handleDelete}
+        />
       </div>
     </AdminShell>
   );

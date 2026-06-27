@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { AlertTriangle, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { AlertTriangle, Plus } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LocalizedContentFields } from "@/components/admin/LocalizedContentFields";
+import { AnnouncementsTable } from "@/components/admin/AnnouncementsTable";
 import { getAnnouncements } from "@/lib/data/announcements";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { getLocalizedField } from "@/lib/i18n/localized-content";
 import type { Announcement, AnnouncementType } from "@/lib/types";
 import {
   createAnnouncementAction,
@@ -57,7 +57,7 @@ export default function AdminAnnouncementsPage() {
     setError("");
   }
 
-  function fillForm(item: Announcement) {
+  const fillForm = useCallback((item: Announcement) => {
     setForm({
       titleAr: item.titleAr || item.title,
       titleEn: item.titleEn || "",
@@ -74,11 +74,11 @@ export default function AdminAnnouncementsPage() {
     setEditingId(item.id);
     setError("");
     setSuccess("");
-  }
+  }, []);
 
-  async function refreshItems() {
+  const refreshItems = useCallback(async () => {
     setItems(await getAnnouncements(true));
-  }
+  }, []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -106,7 +106,7 @@ export default function AdminAnnouncementsPage() {
     });
   }
 
-  async function handleDelete(id: string) {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm(t("admin.confirmDeleteAnnouncement"))) return;
     setError("");
     const token = session?.access_token || "";
@@ -121,9 +121,9 @@ export default function AdminAnnouncementsPage() {
       setSuccess(t("admin.messages.deleted"));
       await refreshItems();
     });
-  }
+  }, [session, refreshItems, t]);
 
-  async function handleTogglePublish(id: string, current: boolean) {
+  const handleTogglePublish = useCallback(async (id: string, current: boolean) => {
     setError("");
     const token = session?.access_token || "";
     if (!token) return;
@@ -132,9 +132,9 @@ export default function AdminAnnouncementsPage() {
       if (!result.success) setError(t(result.error || "admin.errors.toggleFailed"));
       else await refreshItems();
     });
-  }
+  }, [session, refreshItems, t]);
 
-  async function handleToggleUrgent(id: string, current: boolean) {
+  const handleToggleUrgent = useCallback(async (id: string, current: boolean) => {
     setError("");
     const token = session?.access_token || "";
     if (!token) return;
@@ -143,7 +143,7 @@ export default function AdminAnnouncementsPage() {
       if (!result.success) setError(t(result.error || "admin.errors.toggleFailed"));
       else await refreshItems();
     });
-  }
+  }, [session, refreshItems, t]);
 
   return (
     <AdminShell titleKey="admin.announcementsManagement">
@@ -224,51 +224,15 @@ export default function AdminAnnouncementsPage() {
           </form>
         </Card>
 
-        <div className="overflow-x-auto rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]">
-          <table className="w-full min-w-[680px] text-left text-sm">
-            <thead className="bg-[var(--color-emerald)] text-[var(--color-card)]">
-              <tr>
-                {["admin.title", "admin.type", "admin.urgent", "admin.published", "admin.actions"].map((key) => (
-                  <th key={key} className="px-3 py-3">{t(key)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-t border-[var(--color-border)]">
-                  <td className="px-3 py-3">
-                    <p className="font-bold">{getLocalizedField(item, "title", locale)}</p>
-                    <p className="text-xs text-[var(--color-muted)]">{getLocalizedField(item, "message", locale).slice(0, 60)}...</p>
-                  </td>
-                  <td className="px-3 py-3">{t(`announcementTypes.${item.type}`)}</td>
-                  <td className="px-3 py-3">
-                    <button
-                      onClick={() => handleToggleUrgent(item.id, item.isUrgent)}
-                      disabled={isPending}
-                      className={`rounded-full px-3 py-1 text-xs font-bold ${item.isUrgent ? "bg-[var(--color-danger)]/10 text-[var(--color-danger)]" : "bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"}`}
-                    >
-                      {item.isUrgent ? t("admin.urgent") : t("admin.normal")}
-                    </button>
-                  </td>
-                  <td className="px-3 py-3">{item.published ? t("common.yes") : t("common.no")}</td>
-                  <td className="px-3 py-3">
-                    <div className="flex gap-1">
-                      <button onClick={() => fillForm(item)} disabled={isPending} aria-label={t("common.edit")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]">
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => handleTogglePublish(item.id, item.published)} disabled={isPending} aria-label={item.published ? t("admin.unpublish") : t("admin.publish")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]">
-                        {item.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                      <button onClick={() => handleDelete(item.id)} disabled={isPending} aria-label={t("common.delete")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-danger)]/10 text-[var(--color-danger)]">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AnnouncementsTable
+          items={items}
+          disabled={isPending}
+          locale={locale}
+          onEdit={fillForm}
+          onTogglePublish={handleTogglePublish}
+          onToggleUrgent={handleToggleUrgent}
+          onDelete={handleDelete}
+        />
       </div>
     </AdminShell>
   );

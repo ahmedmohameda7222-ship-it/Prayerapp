@@ -7,7 +7,8 @@ import type { PrayerTime } from "@/lib/types";
 
 const tableHeaders = [
   "admin.date", "prayer.fajr", "prayer.sunrise", "prayer.dhuhr", "prayer.asr", "prayer.maghrib", "prayer.isha",
-  "admin.fajrIqama", "admin.dhuhrIqama", "admin.asrIqama", "admin.maghribIqama", "admin.ishaIqama",
+  "prayer.salatFajr", "admin.dhuhrIqama", "admin.asrIqama", "prayer.salatMaghrib", "admin.ishaIqama",
+  "admin.maghribProgram", "admin.lessonTitle", "admin.lessonDurationMinutes", "admin.combinedSalatIsha",
   "admin.note", "admin.published", "admin.actions",
 ];
 
@@ -47,6 +48,10 @@ export const PrayerTimesTable = memo(function PrayerTimesTable({
               <td className="px-3 py-3">{item.asrIqama || "-"}</td>
               <td className="px-3 py-3">{item.maghribIqama || "-"}</td>
               <td className="px-3 py-3">{item.ishaIqama || "-"}</td>
+              <td className="px-3 py-3">{item.maghribProgram?.enabled ? t("common.yes") : t("common.no")}</td>
+              <td className="px-3 py-3">{item.maghribProgram?.lessonTitle || "-"}</td>
+              <td className="px-3 py-3">{item.maghribProgram?.lessonDurationMinutes || "-"}</td>
+              <td className="px-3 py-3">{item.maghribProgram?.combinedIshaTime || "-"}</td>
               <td className="px-3 py-3">{item.note || "-"}</td>
               <td className="px-3 py-3">{item.published ? t("common.yes") : t("common.no")}</td>
               <td className="px-3 py-3">

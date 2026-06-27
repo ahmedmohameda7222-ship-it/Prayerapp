@@ -8,6 +8,7 @@ function filterPreviewPrayerTimes(includeUnpublished = false): PrayerTime[] {
 }
 
 function mapFromDb(row: Record<string, unknown>): PrayerTime {
+  const maghribIqama = row.maghrib_iqama ? String(row.maghrib_iqama) : undefined;
   return {
     id: String(row.id),
     date: String(row.date),
@@ -20,8 +21,15 @@ function mapFromDb(row: Record<string, unknown>): PrayerTime {
     fajrIqama: row.fajr_iqama ? String(row.fajr_iqama) : undefined,
     dhuhrIqama: row.dhuhr_iqama ? String(row.dhuhr_iqama) : undefined,
     asrIqama: row.asr_iqama ? String(row.asr_iqama) : undefined,
-    maghribIqama: row.maghrib_iqama ? String(row.maghrib_iqama) : undefined,
+    maghribIqama,
     ishaIqama: row.isha_iqama ? String(row.isha_iqama) : undefined,
+    maghribProgram: {
+      enabled: Boolean(row.maghrib_program_enabled),
+      maghribIqamaTime: maghribIqama,
+      lessonTitle: row.maghrib_lesson_title ? String(row.maghrib_lesson_title) : undefined,
+      lessonDurationMinutes: row.maghrib_lesson_duration_minutes == null ? undefined : Number(row.maghrib_lesson_duration_minutes),
+      combinedIshaTime: row.maghrib_combined_isha_time ? String(row.maghrib_combined_isha_time) : undefined,
+    },
     note: row.note ? String(row.note) : undefined,
     published: Boolean(row.published),
     updatedAt: row.updated_at ? String(row.updated_at) : new Date().toISOString(),
@@ -43,6 +51,13 @@ function mapToDb(item: Partial<PrayerTime>): Record<string, unknown> {
   if (item.asrIqama !== undefined) db.asr_iqama = item.asrIqama;
   if (item.maghribIqama !== undefined) db.maghrib_iqama = item.maghribIqama;
   if (item.ishaIqama !== undefined) db.isha_iqama = item.ishaIqama;
+  if (item.maghribProgram !== undefined) {
+    db.maghrib_program_enabled = item.maghribProgram.enabled;
+    db.maghrib_iqama = item.maghribProgram.maghribIqamaTime || null;
+    db.maghrib_lesson_title = item.maghribProgram.lessonTitle || null;
+    db.maghrib_lesson_duration_minutes = item.maghribProgram.lessonDurationMinutes ?? null;
+    db.maghrib_combined_isha_time = item.maghribProgram.combinedIshaTime || null;
+  }
   if (item.note !== undefined) db.note = item.note;
   if (item.published !== undefined) db.published = item.published;
   db.updated_at = new Date().toISOString();

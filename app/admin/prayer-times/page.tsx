@@ -8,6 +8,7 @@ import { PrayerTimesTable } from "@/components/admin/PrayerTimesTable";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
+import { invalidateCachePrefix } from "@/lib/data/cache";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -34,6 +35,10 @@ const emptyForm = {
   asrIqama: "",
   maghribIqama: "",
   ishaIqama: "",
+  maghribProgramEnabled: "false",
+  maghribLessonTitle: "",
+  maghribLessonDurationMinutes: "",
+  maghribCombinedIshaTime: "",
   note: "",
   published: "true",
 };
@@ -72,6 +77,10 @@ export default function AdminPrayerTimesPage() {
       asrIqama: item.asrIqama || "",
       maghribIqama: item.maghribIqama || "",
       ishaIqama: item.ishaIqama || "",
+      maghribProgramEnabled: String(item.maghribProgram?.enabled || false),
+      maghribLessonTitle: item.maghribProgram?.lessonTitle || "",
+      maghribLessonDurationMinutes: item.maghribProgram?.lessonDurationMinutes?.toString() || "",
+      maghribCombinedIshaTime: item.maghribProgram?.combinedIshaTime || "",
       note: item.note || "",
       published: String(item.published),
     });
@@ -81,6 +90,7 @@ export default function AdminPrayerTimesPage() {
   }, []);
 
   const refreshItems = useCallback(async () => {
+    invalidateCachePrefix("prayer_times");
     setItems(await getPrayerTimes(true));
   }, []);
 
@@ -157,10 +167,8 @@ export default function AdminPrayerTimesPage() {
     { key: "asr", labelKey: "prayer.asr", type: "time" },
     { key: "maghrib", labelKey: "prayer.maghrib", type: "time" },
     { key: "isha", labelKey: "prayer.isha", type: "time" },
-    { key: "fajrIqama", labelKey: "admin.fajrIqama", type: "time", optional: true },
     { key: "dhuhrIqama", labelKey: "admin.dhuhrIqama", type: "time", optional: true },
     { key: "asrIqama", labelKey: "admin.asrIqama", type: "time", optional: true },
-    { key: "maghribIqama", labelKey: "admin.maghribIqama", type: "time", optional: true },
     { key: "ishaIqama", labelKey: "admin.ishaIqama", type: "time", optional: true },
     { key: "note", labelKey: "admin.note", type: "text", optional: true },
   ];
@@ -183,6 +191,42 @@ export default function AdminPrayerTimesPage() {
                 <input type={type} required={!optional} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
               </label>
             ))}
+            <section className="grid gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] p-4 md:col-span-2">
+              <div>
+                <h3 className="font-extrabold text-[var(--color-emerald)]">{t("admin.homePrayerDisplaySettings")}</h3>
+                <p className="mt-1 text-sm font-medium text-[var(--color-muted)]">{t("admin.homePrayerDisplaySettingsHelp")}</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                  {t("prayer.salatFajr")}
+                  <input type="time" value={form.fajrIqama} onChange={(event) => setForm((current) => ({ ...current, fajrIqama: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
+                </label>
+                <label className="flex items-center gap-3 rounded-2xl bg-[var(--color-card)] p-3 text-sm font-bold text-[var(--color-emerald)]">
+                  <input type="checkbox" checked={form.maghribProgramEnabled === "true"} onChange={(event) => setForm((current) => ({ ...current, maghribProgramEnabled: String(event.target.checked) }))} disabled={!hasSupabase || isPending} className="h-5 w-5 accent-[var(--color-emerald)]" />
+                  {t("admin.enableMaghribProgram")}
+                </label>
+                {form.maghribProgramEnabled === "true" ? (
+                  <div className="grid gap-4 md:col-span-2 md:grid-cols-2">
+                    <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                      {t("prayer.salatMaghrib")}
+                      <input type="time" value={form.maghribIqama} onChange={(event) => setForm((current) => ({ ...current, maghribIqama: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                      {t("admin.lessonTitle")}
+                      <input type="text" maxLength={160} value={form.maghribLessonTitle} onChange={(event) => setForm((current) => ({ ...current, maghribLessonTitle: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                      {t("admin.lessonDurationMinutes")}
+                      <input type="number" min="1" max="240" step="1" value={form.maghribLessonDurationMinutes} onChange={(event) => setForm((current) => ({ ...current, maghribLessonDurationMinutes: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
+                    </label>
+                    <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                      {t("admin.combinedSalatIsha")}
+                      <input type="time" value={form.maghribCombinedIshaTime} onChange={(event) => setForm((current) => ({ ...current, maghribCombinedIshaTime: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
+                    </label>
+                  </div>
+                ) : null}
+              </div>
+            </section>
             <label className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3 text-sm font-bold text-[var(--color-emerald)] md:col-span-2">
               <input type="checkbox" checked={form.published === "true"} onChange={(event) => setForm((current) => ({ ...current, published: String(event.target.checked) }))} disabled={!hasSupabase || isPending} className="h-5 w-5 accent-[var(--color-emerald)]" />
               {t("admin.published")}

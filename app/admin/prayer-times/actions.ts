@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
+import { invalidateCachePrefix } from "@/lib/data/cache";
 
 function timeRegex() {
   return /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -32,7 +33,31 @@ function validatePrayerTime(data: Record<string, string>) {
     }
   }
 
+  if (data.maghribCombinedIshaTime && !timeRegex().test(data.maghribCombinedIshaTime)) {
+    errors.push("admin.errors.invalidTimeFormat");
+  }
+  if (data.maghribLessonDurationMinutes) {
+    const duration = Number(data.maghribLessonDurationMinutes);
+    if (!Number.isInteger(duration) || duration < 1 || duration > 240) {
+      errors.push("admin.errors.invalidLessonDuration");
+    }
+  }
+  if ((data.maghribLessonTitle || "").trim().length > 160) {
+    errors.push("admin.errors.invalidInput");
+  }
+
   return errors;
+}
+
+function mapPrayerDisplaySettings(data: Record<string, string>): Record<string, unknown> {
+  return {
+    maghrib_program_enabled: data.maghribProgramEnabled === "true",
+    maghrib_lesson_title: data.maghribLessonTitle?.trim() || null,
+    maghrib_lesson_duration_minutes: data.maghribLessonDurationMinutes
+      ? Number(data.maghribLessonDurationMinutes)
+      : null,
+    maghrib_combined_isha_time: data.maghribCombinedIshaTime || null,
+  };
 }
 
 export async function importPrayerTimesAction(token: string, rows: Record<string, string>[]) {
@@ -66,6 +91,7 @@ export async function importPrayerTimesAction(token: string, rows: Record<string
   }));
   const { error } = await client.from("prayer_times").upsert(payload, { onConflict: "date" });
   if (error) return { success: false, error: "admin.errors.saveFailed" };
+  invalidateCachePrefix("prayer_times");
   revalidatePath("/admin/prayer-times"); revalidatePath("/"); revalidatePath("/times");
   return { success: true, count: rows.length };
 }
@@ -112,6 +138,7 @@ export async function createPrayerTimeAction(
     asr_iqama: data.asrIqama || null,
     maghrib_iqama: data.maghribIqama || null,
     isha_iqama: data.ishaIqama || null,
+    ...mapPrayerDisplaySettings(data),
     note: data.note || null,
     published: data.published === "true",
   };
@@ -121,6 +148,7 @@ export async function createPrayerTimeAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
+  invalidateCachePrefix("prayer_times");
   revalidatePath("/admin/prayer-times");
   revalidatePath("/");
   revalidatePath("/times");
@@ -161,6 +189,7 @@ export async function updatePrayerTimeAction(
     asr_iqama: data.asrIqama || null,
     maghrib_iqama: data.maghribIqama || null,
     isha_iqama: data.ishaIqama || null,
+    ...mapPrayerDisplaySettings(data),
     note: data.note || null,
     published: data.published === "true",
   };
@@ -170,6 +199,7 @@ export async function updatePrayerTimeAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
+  invalidateCachePrefix("prayer_times");
   revalidatePath("/admin/prayer-times");
   revalidatePath("/");
   revalidatePath("/times");
@@ -188,6 +218,7 @@ export async function deletePrayerTimeAction(token: string, id: string) {
     return { success: false, error: "admin.errors.deleteFailed" };
   }
 
+  invalidateCachePrefix("prayer_times");
   revalidatePath("/admin/prayer-times");
   revalidatePath("/");
   revalidatePath("/times");
@@ -206,6 +237,7 @@ export async function togglePublishPrayerTimeAction(token: string, id: string, p
     return { success: false, error: "admin.errors.toggleFailed" };
   }
 
+  invalidateCachePrefix("prayer_times");
   const verb = published ? "published" : "unpublished";
   revalidatePath("/admin/prayer-times");
   revalidatePath("/");

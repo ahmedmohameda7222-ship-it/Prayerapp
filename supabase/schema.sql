@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS prayer_times (
   asr_iqama TEXT,
   maghrib_iqama TEXT,
   isha_iqama TEXT,
+  maghrib_program_enabled BOOLEAN NOT NULL DEFAULT false,
+  maghrib_lesson_title TEXT,
+  maghrib_lesson_duration_minutes INTEGER,
+  maghrib_combined_isha_time TEXT,
   note TEXT,
   note_ar TEXT,
   note_en TEXT,
@@ -252,6 +256,10 @@ $$;
 
 -- Multilingual content columns (safe migration / backfill)
 ALTER TABLE IF EXISTS prayer_times
+  ADD COLUMN IF NOT EXISTS maghrib_program_enabled BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS maghrib_lesson_title TEXT,
+  ADD COLUMN IF NOT EXISTS maghrib_lesson_duration_minutes INTEGER,
+  ADD COLUMN IF NOT EXISTS maghrib_combined_isha_time TEXT,
   ADD COLUMN IF NOT EXISTS note_ar TEXT,
   ADD COLUMN IF NOT EXISTS note_en TEXT,
   ADD COLUMN IF NOT EXISTS note_de TEXT,
@@ -463,6 +471,15 @@ alter table public.prayer_times
     asr ~ '^[0-2][0-9]:[0-5][0-9]$' and
     maghrib ~ '^[0-2][0-9]:[0-5][0-9]$' and
     isha ~ '^[0-2][0-9]:[0-5][0-9]$'
+  );
+
+alter table public.prayer_times
+  drop constraint if exists prayer_times_maghrib_program_format;
+alter table public.prayer_times
+  add constraint prayer_times_maghrib_program_format check (
+    (maghrib_combined_isha_time is null or maghrib_combined_isha_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')
+    and (maghrib_lesson_duration_minutes is null or maghrib_lesson_duration_minutes between 1 and 240)
+    and (maghrib_lesson_title is null or char_length(maghrib_lesson_title) <= 160)
   );
 
 alter table public.donation_campaigns

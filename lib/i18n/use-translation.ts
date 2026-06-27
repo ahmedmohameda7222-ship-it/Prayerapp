@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { useLocale } from "./context";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
@@ -13,7 +14,7 @@ export function useTranslation() {
   const { locale } = useLocale();
   const current = messages[locale] || messages.ar;
 
-  const t = (key: string, values?: Record<string, string | number>): string => {
+  const t = useCallback((key: string, values?: Record<string, string | number>): string => {
     const keys = key.split(".");
     let value: unknown = current;
     for (const k of keys) {
@@ -35,7 +36,7 @@ export function useTranslation() {
       }
     }
     return interpolate(typeof value === "string" ? value : key, values);
-  };
+  }, [current]);
 
   return { t, locale: locale as Locale };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 import { getTextDirection } from "./direction";
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "./types";
 
@@ -56,8 +56,10 @@ export function I18nProvider({ children, initialLocale = DEFAULT_LOCALE }: { chi
     setLocaleState(normalizedLocale);
   }, []);
 
+  const value = useMemo(() => ({ locale, setLocale }), [locale, setLocale]);
+
   return (
-    <I18nContext.Provider value={{ locale, setLocale }}>
+    <I18nContext.Provider value={value}>
       {children}
     </I18nContext.Provider>
   );

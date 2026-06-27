@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { AlertTriangle, Eye, EyeOff, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { AlertTriangle, Plus, Upload } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { AdminWarningCard } from "@/components/admin/AdminWarningCard";
+import { PrayerTimesTable } from "@/components/admin/PrayerTimesTable";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
@@ -47,6 +48,7 @@ export default function AdminPrayerTimesPage() {
   const [success, setSuccess] = useState("");
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
+  const accessToken = session?.access_token || "";
 
   useEffect(() => { getPrayerTimes(true).then((data) => setItems(data)).catch(() => setError(t("common.dataLoadFailed"))); }, [t]);
 
@@ -56,7 +58,7 @@ export default function AdminPrayerTimesPage() {
     setError("");
   }
 
-  function fillForm(item: PrayerTime) {
+  const fillForm = useCallback((item: PrayerTime) => {
     setForm({
       date: item.date,
       fajr: item.fajr,
@@ -76,11 +78,11 @@ export default function AdminPrayerTimesPage() {
     setEditingId(item.id);
     setError("");
     setSuccess("");
-  }
+  }, []);
 
-  async function refreshItems() {
+  const refreshItems = useCallback(async () => {
     setItems(await getPrayerTimes(true));
-  }
+  }, []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -103,31 +105,29 @@ export default function AdminPrayerTimesPage() {
     });
   }
 
-  async function handleDelete(id: string) {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm(t("admin.confirmDeletePrayerTime"))) return;
     setError("");
-    const token = session?.access_token || "";
-    if (!token) return;
+    if (!accessToken) return;
     startTransition(async () => {
-      const result = await deletePrayerTimeAction(token, id);
+      const result = await deletePrayerTimeAction(accessToken, id);
       if (!result.success) setError(t(result.error || "admin.errors.deleteFailed"));
       else {
         setSuccess(t("admin.messages.deleted"));
         await refreshItems();
       }
     });
-  }
+  }, [accessToken, refreshItems, t]);
 
-  async function handleTogglePublish(id: string, current: boolean) {
+  const handleTogglePublish = useCallback(async (id: string, current: boolean) => {
     setError("");
-    const token = session?.access_token || "";
-    if (!token) return;
+    if (!accessToken) return;
     startTransition(async () => {
-      const result = await togglePublishPrayerTimeAction(token, id, !current);
+      const result = await togglePublishPrayerTimeAction(accessToken, id, !current);
       if (!result.success) setError(t(result.error || "admin.errors.toggleFailed"));
       else await refreshItems();
     });
-  }
+  }, [accessToken, refreshItems, t]);
 
   async function handleCsvImport(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -163,12 +163,6 @@ export default function AdminPrayerTimesPage() {
     { key: "maghribIqama", labelKey: "admin.maghribIqama", type: "time", optional: true },
     { key: "ishaIqama", labelKey: "admin.ishaIqama", type: "time", optional: true },
     { key: "note", labelKey: "admin.note", type: "text", optional: true },
-  ];
-
-  const tableHeaders = [
-    "admin.date", "prayer.fajr", "prayer.sunrise", "prayer.dhuhr", "prayer.asr", "prayer.maghrib", "prayer.isha",
-    "admin.fajrIqama", "admin.dhuhrIqama", "admin.asrIqama", "admin.maghribIqama", "admin.ishaIqama",
-    "admin.note", "admin.published", "admin.actions",
   ];
 
   return (
@@ -209,40 +203,7 @@ export default function AdminPrayerTimesPage() {
           </div>
         </Card>
 
-        <div className="overflow-x-auto rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]">
-          <table className="w-full min-w-[680px] text-left text-sm">
-            <thead className="bg-[var(--color-emerald)] text-[var(--color-card)]">
-              <tr>{tableHeaders.map((key) => <th key={key} className="px-3 py-3">{t(key)}</th>)}</tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-t border-[var(--color-border)]">
-                  <td className="px-3 py-3">{item.date}</td>
-                  <td className="px-3 py-3">{item.fajr}</td>
-                  <td className="px-3 py-3">{item.sunrise}</td>
-                  <td className="px-3 py-3">{item.dhuhr}</td>
-                  <td className="px-3 py-3">{item.asr}</td>
-                  <td className="px-3 py-3">{item.maghrib}</td>
-                  <td className="px-3 py-3">{item.isha}</td>
-                  <td className="px-3 py-3">{item.fajrIqama || "-"}</td>
-                  <td className="px-3 py-3">{item.dhuhrIqama || "-"}</td>
-                  <td className="px-3 py-3">{item.asrIqama || "-"}</td>
-                  <td className="px-3 py-3">{item.maghribIqama || "-"}</td>
-                  <td className="px-3 py-3">{item.ishaIqama || "-"}</td>
-                  <td className="px-3 py-3">{item.note || "-"}</td>
-                  <td className="px-3 py-3">{item.published ? t("common.yes") : t("common.no")}</td>
-                  <td className="px-3 py-3">
-                    <div className="flex gap-1">
-                      <button onClick={() => fillForm(item)} disabled={isPending} aria-label={t("common.edit")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => handleTogglePublish(item.id, item.published)} disabled={isPending} aria-label={item.published ? t("admin.unpublish") : t("admin.publish")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]">{item.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
-                      <button onClick={() => handleDelete(item.id)} disabled={isPending} aria-label={t("common.delete")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-danger)]/10 text-[var(--color-danger)]"><Trash2 className="h-4 w-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <PrayerTimesTable items={items} disabled={isPending} onEdit={fillForm} onTogglePublish={handleTogglePublish} onDelete={handleDelete} />
       </div>
     </AdminShell>
   );

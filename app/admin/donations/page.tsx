@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { AlertTriangle, Plus } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
+import { DonationCampaignsTable } from "@/components/admin/DonationCampaignsTable";
 import { LocalizedContentFields } from "@/components/admin/LocalizedContentFields";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -10,7 +11,6 @@ import { getDonationCampaigns, getDonationSettings, getDonations, getDonationRep
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { getLocalizedField } from "@/lib/i18n/localized-content";
 import type { Donation, DonationCampaign, DonationSettings } from "@/lib/types";
 import {
   createDonationCampaignAction,
@@ -41,7 +41,7 @@ const emptyCampaignForm = {
 
 export default function AdminDonationsPage() {
   const { session } = useAdminAuth();
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const [, setSettings] = useState<DonationSettings | null>(null);
   const [campaigns, setCampaigns] = useState<DonationCampaign[]>([]);
   const [, setDonations] = useState<Donation[]>([]);
@@ -53,6 +53,7 @@ export default function AdminDonationsPage() {
   const [success, setSuccess] = useState("");
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
+  const accessToken = session?.access_token || "";
 
   useEffect(() => {
     getDonationSettings().then((settings) => {
@@ -109,7 +110,7 @@ export default function AdminDonationsPage() {
     setError("");
   }
 
-  function fillCampaignForm(campaign: DonationCampaign) {
+  const fillCampaignForm = useCallback((campaign: DonationCampaign) => {
     setCampaignForm({
       titleAr: campaign.titleAr || campaign.title,
       titleEn: campaign.titleEn || "",
@@ -129,11 +130,11 @@ export default function AdminDonationsPage() {
     setEditingCampaignId(campaign.id);
     setError("");
     setSuccess("");
-  }
+  }, []);
 
-  async function refreshCampaigns() {
+  const refreshCampaigns = useCallback(async () => {
     setCampaigns(await getDonationCampaigns(true));
-  }
+  }, []);
 
   async function handleCampaignSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -158,37 +159,34 @@ export default function AdminDonationsPage() {
     });
   }
 
-  async function handleDeleteCampaign(id: string) {
+  const handleDeleteCampaign = useCallback(async (id: string) => {
     if (!confirm(t("admin.confirmDeleteCampaign"))) return;
     setError("");
-    const token = session?.access_token || "";
     startTransition(async () => {
-      const result = await deleteDonationCampaignAction(token, id);
+      const result = await deleteDonationCampaignAction(accessToken, id);
       if (!result.success) setError(t(result.error || "admin.errors.deleteFailed"));
       else {
         setSuccess(t("admin.messages.deleted"));
         await refreshCampaigns();
       }
     });
-  }
+  }, [accessToken, refreshCampaigns, t]);
 
-  async function handleToggleActive(id: string, current: boolean) {
-    const token = session?.access_token || "";
+  const handleToggleActive = useCallback(async (id: string, current: boolean) => {
     startTransition(async () => {
-      const result = await toggleActiveCampaignAction(token, id, !current);
+      const result = await toggleActiveCampaignAction(accessToken, id, !current);
       if (!result.success) setError(t(result.error || "admin.errors.toggleFailed"));
       else await refreshCampaigns();
     });
-  }
+  }, [accessToken, refreshCampaigns, t]);
 
-  async function handleToggleFeatured(id: string, current: boolean) {
-    const token = session?.access_token || "";
+  const handleToggleFeatured = useCallback(async (id: string, current: boolean) => {
     startTransition(async () => {
-      const result = await toggleFeaturedCampaignAction(token, id, !current);
+      const result = await toggleFeaturedCampaignAction(accessToken, id, !current);
       if (!result.success) setError(t(result.error || "admin.errors.toggleFailed"));
       else await refreshCampaigns();
     });
-  }
+  }, [accessToken, refreshCampaigns, t]);
 
   return (
     <AdminShell titleKey="admin.donationsManagement">
@@ -271,26 +269,7 @@ export default function AdminDonationsPage() {
           </form>
         </Card>
 
-        <div className="overflow-x-auto rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]">
-          <table className="w-full min-w-[680px] text-left text-sm">
-            <thead className="bg-[var(--color-emerald)] text-[var(--color-card)]"><tr>{["admin.title", "donations.target", "donations.collected", "admin.active", "admin.featured", "admin.actions"].map((key) => <th key={key} className="px-3 py-3">{t(key)}</th>)}</tr></thead>
-            <tbody>
-              {campaigns.map((campaign) => (
-                <tr key={campaign.id} className="border-t border-[var(--color-border)]">
-                  <td className="px-3 py-3"><p className="font-bold">{getLocalizedField(campaign, "title", locale)}</p><p className="text-xs text-[var(--color-muted)]">{getLocalizedField(campaign, "description", locale).slice(0, 40)}...</p></td>
-                  <td className="px-3 py-3">{campaign.targetAmount}€</td>
-                  <td className="px-3 py-3">{campaign.collectedAmount}€</td>
-                  <td className="px-3 py-3"><button onClick={() => handleToggleActive(campaign.id, campaign.isActive)} disabled={isPending} className={`rounded-full px-2 py-1 text-xs font-bold ${campaign.isActive ? "bg-[var(--color-success)]/10 text-[var(--color-success)]" : "bg-[var(--color-muted)]/10 text-[var(--color-muted)]"}`}>{campaign.isActive ? t("admin.active") : t("admin.inactive")}</button></td>
-                  <td className="px-3 py-3"><button onClick={() => handleToggleFeatured(campaign.id, campaign.isFeatured)} disabled={isPending} className={`rounded-full px-2 py-1 text-xs font-bold ${campaign.isFeatured ? "bg-[var(--color-gold)]/20 text-[var(--color-gold-dark)]" : "bg-[var(--color-muted)]/10 text-[var(--color-muted)]"}`}>{campaign.isFeatured ? t("admin.featured") : "-"}</button></td>
-                  <td className="px-3 py-3"><div className="flex gap-1">
-                    <button onClick={() => fillCampaignForm(campaign)} disabled={isPending} aria-label={t("common.edit")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"><Pencil className="h-4 w-4" /></button>
-                    <button onClick={() => handleDeleteCampaign(campaign.id)} disabled={isPending} aria-label={t("common.delete")} className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--color-danger)]/10 text-[var(--color-danger)]"><Trash2 className="h-4 w-4" /></button>
-                  </div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DonationCampaignsTable campaigns={campaigns} disabled={isPending} onEdit={fillCampaignForm} onDelete={handleDeleteCampaign} onToggleActive={handleToggleActive} onToggleFeatured={handleToggleFeatured} />
       </div>
     </AdminShell>
   );

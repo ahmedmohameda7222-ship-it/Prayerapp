@@ -231,11 +231,6 @@ export const previewDonationSettings: DonationSettings = {
   defaultPurposeEn: "Donation for Masjid Deggendorf",
   defaultPurposeDe: "Spende für die Moschee Deggendorf",
   defaultPurposeTr: "Deggendorf Mescidi bağışı",
-  receiptNote: "Preview data only. Not connected to live donations.",
-  receiptNoteAr: "بيانات معاينة فقط وليست مرتبطة بتبرعات حقيقية.",
-  receiptNoteEn: "Preview data only. Not connected to live donations.",
-  receiptNoteDe: "Nur Vorschaudaten. Nicht mit echten Spenden verbunden.",
-  receiptNoteTr: "Sadece önizleme verisi. Gerçek bağışlarla bağlantılı değildir.",
 };
 
 export const previewDonationCampaigns: DonationCampaign[] = [

@@ -2,14 +2,14 @@
 
 Deggendorf Prayer is a multilingual web app for the Muslim community in Deggendorf. It publishes prayer times, mosque updates, Friday prayer details, events, news, Ramadan schedules, azkar, donation information, and basic admin workflows.
 
-The app has moved from prototype toward a usable web product: public pages now load real Supabase-backed data when configured, admin pages can manage core content, and the app includes PWA/offline support, browser notification preferences, receipt requests, tests, CI, and deployment documentation.
+The app has moved from prototype toward a usable web product: public pages now load real Supabase-backed data when configured, admin pages can manage core content, and the app includes PWA/offline support, browser notification preferences, tests, CI, and deployment documentation.
 
 ## Main features
 
 - Public prayer time schedule with today, week, and month views.
 - Prayer countdown that uses the current Europe/Berlin date and schedule.
 - News, announcements, urgent alerts, events, mosque info, Friday prayer, Ramadan, azkar, qibla, settings, privacy, and offline pages.
-- Donation page with receipt request workflow and admin-side receipt status management.
+- Donation page with bank transfer details, campaigns, and transparency report.
 - Admin dashboard and editors for prayer times, announcements, azkar, donations, events, Friday prayer, mosque settings, Ramadan, and app settings.
 - CSV import for prayer times using `public/templates/prayer-times-template.csv`.
 - Multilingual UI content in Arabic, German, English, and Turkish.
@@ -98,7 +98,7 @@ Then:
 
 5. Enable backups or PITR according to the Supabase plan, and test a restore before real launch.
 
-The migration adds production-readiness constraints, indexes, Row Level Security policies, receipt request fields, publish/active flags, admin user mapping, and donation report uniqueness rules.
+The migration adds production-readiness constraints, indexes, Row Level Security policies, publish/active flags, admin user mapping, and donation report uniqueness rules.
 
 ## Admin workflows
 
@@ -110,7 +110,6 @@ Admin users can manage:
 - Friday prayer details.
 - Mosque contact, location, social, and bank information.
 - Donation campaign/report content.
-- Donation receipt requests and statuses.
 - Ramadan daily schedule.
 - Azkar categories/items.
 - App settings.
@@ -139,7 +138,7 @@ Recommended deployment path:
 4. Apply Supabase migrations with `npx supabase db push`.
 5. Create and verify the admin user.
 6. Import real prayer times.
-7. Smoke-test the public pages, `/admin`, donation receipt requests, and `/api/health`.
+7. Smoke-test the public pages, `/admin`, and `/api/health`.
 
 ## PWA and notifications
 
@@ -147,7 +146,7 @@ The app includes a production-only service worker registration, offline page, st
 
 ## Privacy and legal notes
 
-The `/privacy` page is a practical starter template. Before collecting real personal data or donation receipt requests, review it with the mosque/admin team and adapt it to local legal requirements.
+The `/privacy` page is a practical starter template. Before collecting real personal data, review it with the mosque/admin team and adapt it to local legal requirements.
 
 Also verify public bank, contact, WhatsApp, Telegram, map, and donation campaign content before launch.
 
@@ -158,7 +157,6 @@ Also verify public bank, contact, WhatsApp, Telegram, map, and donation campaign
 - Create the allowed admin user.
 - Import verified prayer times.
 - Verify Friday prayer, Ramadan, and mosque settings.
-- Test donation receipt requests end-to-end.
 - Review Supabase RLS policies and database advisors.
 - Enable backups/PITR and monitoring.
 - Review privacy/legal wording.

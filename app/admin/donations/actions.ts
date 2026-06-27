@@ -56,7 +56,12 @@ export async function updateDonationSettingsAction(
   };
 
   const { error } = await client.from("donation_settings").upsert({ id: "1", ...db }, { onConflict: "id" });
-  if (error) return { success: false, error: "admin.errors.saveFailed" };
+  if (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[updateDonationSettingsAction] Supabase error:", error.message, error.code, error.details);
+    }
+    return { success: false, error: "admin.errors.saveFailed" };
+  }
 
   revalidatePath("/admin/donations");
   revalidatePath("/donations");

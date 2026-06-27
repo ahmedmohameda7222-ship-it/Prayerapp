@@ -13,7 +13,10 @@
     "no": "Hayır",
     "backHome": "Ana sayfaya dön",
     "notifications": "Bildirimler",
-    "appIconAlt": "Deggendorf Prayer uygulama simgesi", "retry": "Tekrar dene", "dataLoadFailed": "Güncel veriler yüklenemedi.", "privacy": "Gizlilik politikası"
+    "appIconAlt": "Deggendorf Prayer uygulama simgesi",
+    "retry": "Tekrar dene",
+    "dataLoadFailed": "Güncel veriler yüklenemedi.",
+    "privacy": "Gizlilik politikası"
   },
   "nav": {
     "ariaLabel": "Ana gezinme",
@@ -91,10 +94,12 @@
     "location": "Konum",
     "khateeb": "Hatip",
     "language": "Dil",
-    "announcements": "Cuma Duyuruları", "empty": "Yaklaşan cuma namazı henüz yayımlanmadı."
+    "announcements": "Cuma Duyuruları",
+    "empty": "Yaklaşan cuma namazı henüz yayımlanmadı."
   },
   "news": {
-    "title": "Duyurular", "empty": "Yayımlanmış duyuru yok."
+    "title": "Duyurular",
+    "empty": "Yayımlanmış duyuru yok."
   },
   "donations": {
     "title": "Bağışlar",
@@ -114,19 +119,12 @@
     "monthlyNeed": "Aylık ihtiyaç",
     "donationsReceived": "Alınan bağışlar",
     "remaining": "Kalan",
-    "receiptRequest": "Bağış Makbuzu Talebi",
-    "receiptRequestDesc": "Bağış makbuzuna mı ihtiyacınız var? Talep gönderin, cami yönetimi inceleyecektir.",
     "collected": "Toplanan",
     "target": "Hedef",
     "collectedAmount": "{amount} toplandı",
-    "goalAmount": "{amount} hedef - %{progress}", "noCampaigns": "Aktif kampanya yok.",
-    "donorName": "Ad soyad", "email": "E-posta adresi", "amount": "Bağış tutarı", "donationDate": "Bağış tarihi",
-    "postalAddress": "Makbuz için posta adresi", "transferReference": "Havale açıklaması (isteğe bağlı)",
-    "privacyConsent": "Bilgilerimin makbuz düzenlemek için işlenmesini kabul ediyorum.", "requestRejected": "Talep kabul edilemedi.",
-    "invalidName": "Adınızı ve soyadınızı girin.", "invalidEmail": "Geçerli bir e-posta girin.", "invalidAddress": "Geçerli bir posta adresi girin.",
-    "invalidDate": "Geçerli bir bağış tarihi girin.", "invalidAmount": "Geçerli bir bağış tutarı girin.", "privacyRequired": "Gizlilik onayı gereklidir.",
-    "tooManyRequests": "Çok fazla yakın tarihli talep var. Daha sonra deneyin.", "requestFailed": "Talep kaydedilemedi.",
-    "requestSent": "Makbuz talebiniz gönderildi.", "submitRequest": "Makbuz talebi gönder", "received": "Alınan"
+    "goalAmount": "{amount} hedef - %{progress}",
+    "noCampaigns": "Aktif kampanya yok.",
+    "received": "Alınan"
   },
   "azkar": {
     "title": "Zikirler",
@@ -157,7 +155,9 @@
     "target": "Hedef",
     "startDhikr": "Zikre başla",
     "repeatCount": "Tekrar sayısı",
-    "defaultTasbeeh": "Sübhanallah", "empty": "Bu kategoride yayımlanmış zikir yok.", "moreInCategory": "Bu kategoride daha fazlası"
+    "defaultTasbeeh": "Sübhanallah",
+    "empty": "Bu kategoride yayımlanmış zikir yok.",
+    "moreInCategory": "Bu kategoride daha fazlası"
   },
   "azkarCategories": {
     "Morning": "Sabah",
@@ -168,7 +168,8 @@
     "Friday": "Cuma"
   },
   "events": {
-    "title": "Etkinlikler", "empty": "Yayımlanmış yaklaşan etkinlik yok."
+    "title": "Etkinlikler",
+    "empty": "Yayımlanmış yaklaşan etkinlik yok."
   },
   "eventTypes": {
     "Class": "Ders",
@@ -188,7 +189,8 @@
     "parkingNotes": "Otopark notları",
     "communityLinks": "Topluluk bağlantıları",
     "facilityPlaceholder": "Bilgiler cami yönetimi tarafından güncellenir.",
-    "viewBankDetails": "Banka bilgilerini Bağışlar sayfasında gör", "visitorInfo": "Ziyaretçi bilgileri",
+    "viewBankDetails": "Banka bilgilerini Bağışlar sayfasında gör",
+    "visitorInfo": "Ziyaretçi bilgileri",
     "visitorInfoDesc": "Cami kurallarına uyun; erişilebilirlik, otopark veya kadınlar bölümü için yönetimle iletişime geçin."
   },
   "ramadan": {
@@ -202,15 +204,24 @@
     "announcements": "Ramazan Duyuruları",
     "announcementsPlaceholder": "Ramazan duyuruları cami yönetimi tarafından yayımlanacaktır.",
     "calendarPlaceholder": "Geçici takvim",
-    "calendarPlaceholderDesc": "Takvim yayımlandığında günlük Ramazan satırları burada görünecek.", "noSchedule": "Ramazan takvimi yayımlanmadı.",
-    "noAnnouncements": "Ramazan duyurusu yayımlanmadı.", "day": "Ramazan {day}. gün", "dayLabel": "Gün", "calendar": "Ramazan takvimi"
+    "calendarPlaceholderDesc": "Takvim yayımlandığında günlük Ramazan satırları burada görünecek.",
+    "noSchedule": "Ramazan takvimi yayımlanmadı.",
+    "noAnnouncements": "Ramazan duyurusu yayımlanmadı.",
+    "day": "Ramazan {day}. gün",
+    "dayLabel": "Gün",
+    "calendar": "Ramazan takvimi"
   },
   "qibla": {
     "title": "Kıble",
-    "comingSoon": "Kıble yönü özelliği yakında eklenecek.", "direction": "Kıble: kuzeyden {degrees}°",
-    "deggendorfEstimate": "Deggendorf merkezi için tahmini yön.", "locating": "Konumunuz bulunuyor...", "locationReady": "Yön mevcut konumunuza göre hesaplandı.",
-    "locationDenied": "Konum izni reddedildi; Deggendorf tahmini gösteriliyor.", "locationUnsupported": "Bu cihazda konum kullanılamıyor.",
-    "calibrationHelp": "Pusulayı kalibre etmek için telefonu sekiz şeklinde hareket ettirin.", "useMyLocation": "Konumumu kullan",
+    "comingSoon": "Kıble yönü özelliği yakında eklenecek.",
+    "direction": "Kıble: kuzeyden {degrees}°",
+    "deggendorfEstimate": "Deggendorf merkezi için tahmini yön.",
+    "locating": "Konumunuz bulunuyor...",
+    "locationReady": "Yön mevcut konumunuza göre hesaplandı.",
+    "locationDenied": "Konum izni reddedildi; Deggendorf tahmini gösteriliyor.",
+    "locationUnsupported": "Bu cihazda konum kullanılamıyor.",
+    "calibrationHelp": "Pusulayı kalibre etmek için telefonu sekiz şeklinde hareket ettirin.",
+    "useMyLocation": "Konumumu kullan",
     "sensorNote": "Sensör erişimi varsa ok cihaz pusulasını takip eder."
   },
   "settings": {
@@ -231,17 +242,29 @@
     "12hour": "12 saat",
     "theme": "Tema",
     "light": "Açık",
-    "darkPlaceholder": "Koyu, yakında", "dark": "Koyu", "enableBrowserNotifications": "Tarayıcı bildirimlerini aç",
-    "browserNotificationsEnabled": "Tarayıcı bildirimleri açık", "browserNotificationsUnsupported": "Tarayıcı bildirimleri desteklenmiyor"
+    "darkPlaceholder": "Koyu, yakında",
+    "dark": "Koyu",
+    "enableBrowserNotifications": "Tarayıcı bildirimlerini aç",
+    "browserNotificationsEnabled": "Tarayıcı bildirimleri açık",
+    "browserNotificationsUnsupported": "Tarayıcı bildirimleri desteklenmiyor"
   },
-  "notifications": { "empty": "Acil güncelleme yok." },
+  "notifications": {
+    "empty": "Acil güncelleme yok."
+  },
   "privacy": {
-    "title": "Gizlilik politikası", "controllerTitle": "Sorumlu kuruluş", "controllerText": "Bu siteyi işleten cami kuruluşu gönderilen kişisel verilerden sorumludur.",
-    "dataTitle": "Toplanan veriler", "dataText": "Makbuz talepleri ad, e-posta, posta adresi, bağış tarihi, tutar ve isteğe bağlı havale referansını içerir. Uygulama ayarları cihazınızda kalır.",
-    "purposeTitle": "Amaç", "purposeText": "Veriler yalnızca bağışı incelemek ve bağış makbuzu hazırlamak veya sizinle iletişime geçmek için kullanılır.",
-    "retentionTitle": "Saklama", "retentionText": "Veriler yalnızca operasyonel ve yasal olarak gerektiği sürece tutulur.",
-    "rightsTitle": "Haklarınız", "rightsText": "Yasal yükümlülüklere tabi olarak erişim, düzeltme, silme, kısıtlama veya işleme bilgisi talep edebilirsiniz.",
-    "contactTitle": "İletişim", "contactText": "Gizlilik ve makbuz soruları için Cami Bilgileri sayfasındaki iletişim bilgilerini kullanın.",
+    "title": "Gizlilik politikası",
+    "controllerTitle": "Sorumlu kuruluş",
+    "controllerText": "Bu siteyi işleten cami kuruluşu gönderilen kişisel verilerden sorumludur.",
+    "dataTitle": "Toplanan veriler",
+    "dataText": "Kişisel veriler cami güncellemeleri ve topluluk iletişimi gibi belirtilen amaçlar için kullanılır. Uygulama ayarları cihazınızda kalır.",
+    "purposeTitle": "Amaç",
+    "purposeText": "Veriler yalnızca cami güncellemeleri ve topluluk iletişimi gibi belirtilen amaçlar için kullanılır.",
+    "retentionTitle": "Saklama",
+    "retentionText": "Veriler yalnızca operasyonel ve yasal olarak gerektiği sürece tutulur.",
+    "rightsTitle": "Haklarınız",
+    "rightsText": "Yasal yükümlülüklere tabi olarak erişim, düzeltme, silme, kısıtlama veya işleme bilgisi talep edebilirsiniz.",
+    "contactTitle": "İletişim",
+    "contactText": "Gizlilik soruları için Cami Bilgileri sayfasındaki iletişim bilgilerini kullanın.",
     "reviewNotice": "Bu sayfa bir çalışma şablonudur ve herkese açık kullanımdan önce hukuki olarak incelenmelidir."
   },
   "announcementTypes": {
@@ -280,13 +303,13 @@
     "required": "zorunlu",
     "missingNextWeek": "Gelecek haftanın namaz vakitleri eksik.",
     "todayPrayerStatus": "Bugünkü Namaz Durumu",
-    "published": "Yayımlandı", "notPublished": "Yayımlanmadı",
+    "published": "Yayımlandı",
+    "notPublished": "Yayımlanmadı",
     "liveDate": "Yayımlanan tarih: {date}",
     "jumuahStatus": "Cuma Yayın Durumu",
     "fridayVisible": "Cuma detayları görünür",
     "activeCampaigns": "Aktif Bağış Kampanyaları",
     "featuredCount": "{count} tanesi herkese açık sayfada öne çıkarıldı",
-    "pendingReceipts": "Bekleyen Makbuz Talepleri",
     "manualReview": "Manuel inceleme gerekli",
     "liveCount": "{count} yayında",
     "urgentCount": "{count} acil",
@@ -334,7 +357,6 @@
     "telegramLink": "Telegram bağlantısı",
     "paypalLink": "PayPal bağlantısı",
     "defaultPurpose": "Varsayılan açıklama",
-    "receiptNote": "Makbuz notu",
     "mosqueName": "Cami adı",
     "saveSettings": "Ayarları kaydet",
     "targetAmount": "Hedef tutar",
@@ -372,10 +394,13 @@
     "maghribIqama": "Akşam kameti",
     "ishaIqama": "Yatsı kameti",
     "managedManually": "Manuel yönetilir",
-    "manualDonationsReceipts": "Manuel bağışlar ve makbuzlar",
-    "futurePhasePlaceholder": "Bu bölüm sonraki bir aşamada etkinleştirilecek.", "noReceiptRequests": "Henüz makbuz talebi yok.",
-    "status": "Durum", "donationReport": "Aylık bağış raporu", "month": "Ay",
-    "csvImportHelp": "En fazla 366 günlük satır yükleyin. Mevcut tarihler güncellenir.", "chooseCsv": "CSV dosyası seç", "downloadCsvTemplate": "CSV şablonunu indir",
+    "futurePhasePlaceholder": "Bu bölüm sonraki bir aşamada etkinleştirilecek.",
+    "status": "Durum",
+    "donationReport": "Aylık bağış raporu",
+    "month": "Ay",
+    "csvImportHelp": "En fazla 366 günlük satır yükleyin. Mevcut tarihler güncellenir.",
+    "chooseCsv": "CSV dosyası seç",
+    "downloadCsvTemplate": "CSV şablonunu indir",
     "setupRequired": "Kurulum gerekli",
     "supabaseEnvMissing": "Supabase yapılandırması eksik. Ortam değişkenlerini kontrol edin.",
     "supabaseNotConfigured": "Supabase henüz yapılandırılmadı.",
@@ -440,7 +465,8 @@
       "created": "Başarıyla oluşturuldu.",
       "updated": "Başarıyla güncellendi.",
       "deleted": "Başarıyla silindi.",
-      "settingsUpdated": "Ayarlar kaydedildi.", "csvImported": "{count} namaz vakti satırı içe aktarıldı."
+      "settingsUpdated": "Ayarlar kaydedildi.",
+      "csvImported": "{count} namaz vakti satırı içe aktarıldı."
     },
     "errors": {
       "notAuthenticated": "Lütfen önce giriş yapın.",
@@ -487,8 +513,10 @@
       "imsakRequired": "İmsak vakti zorunludur.",
       "iftarRequired": "İftar vakti zorunludur.",
       "ramadanDayPositive": "Ramazan günü numarası sıfırdan büyük olmalıdır.",
-      "repeatCountPositive": "Tekrar sayısı sıfırdan büyük olmalıdır.", "invalidInput": "Bir veya daha fazla değer geçersiz.",
-      "validHttpsUrlRequired": "Dış bağlantılar HTTPS kullanmalıdır.", "endTimeAfterStart": "Bitiş saati başlangıçtan sonra olmalıdır.",
+      "repeatCountPositive": "Tekrar sayısı sıfırdan büyük olmalıdır.",
+      "invalidInput": "Bir veya daha fazla değer geçersiz.",
+      "validHttpsUrlRequired": "Dış bağlantılar HTTPS kullanmalıdır.",
+      "endTimeAfterStart": "Bitiş saati başlangıçtan sonra olmalıdır.",
       "invalidCsv": "CSV dosyasında eksik veya geçersiz değerler var."
     }
   }

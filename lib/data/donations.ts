@@ -14,11 +14,6 @@ const DEFAULT_SETTINGS: DonationSettings = {
   defaultPurposeEn: "",
   defaultPurposeDe: "",
   defaultPurposeTr: "",
-  receiptNote: "",
-  receiptNoteAr: "",
-  receiptNoteEn: "",
-  receiptNoteDe: "",
-  receiptNoteTr: "",
 };
 
 function filterPreviewDonationCampaigns(includeInactive = false): DonationCampaign[] {
@@ -39,9 +34,7 @@ export async function getDonationSettings(): Promise<DonationSettings> {
       bic: String(record.bic),
       paypalLink: record.paypal_link ? String(record.paypal_link) : undefined,
       defaultPurpose: readDbString(record, "default_purpose"),
-      receiptNote: readDbString(record, "receipt_note"),
       ...localizedFieldsFromDb(record, "defaultPurpose", "default_purpose"),
-      ...localizedFieldsFromDb(record, "receiptNote", "receipt_note"),
     };
   });
 }
@@ -55,9 +48,7 @@ export async function updateDonationSettings(settings: Partial<DonationSettings>
   if (settings.bic) db.bic = settings.bic;
   if (settings.paypalLink !== undefined) db.paypal_link = settings.paypalLink;
   Object.assign(db, localizedFieldsToDb(settings as Record<string, unknown>, "defaultPurpose", "default_purpose", { includeLegacy: true }));
-  Object.assign(db, localizedFieldsToDb(settings as Record<string, unknown>, "receiptNote", "receipt_note", { includeLegacy: true }));
   if (settings.defaultPurpose) db.default_purpose = settings.defaultPurposeAr || settings.defaultPurpose;
-  if (settings.receiptNote) db.receipt_note = settings.receiptNoteAr || settings.receiptNote;
   const { data, error } = await client.from("donation_settings").upsert({ id: "1", ...db } as never, { onConflict: "id" }).select().single();
   if (error || !data) throw new Error("Unable to update donation settings");
   invalidateCache("donation_settings");

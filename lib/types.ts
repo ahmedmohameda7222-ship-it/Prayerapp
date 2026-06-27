@@ -94,11 +94,6 @@ export interface DonationSettings {
   defaultPurposeEn?: string;
   defaultPurposeDe?: string;
   defaultPurposeTr?: string;
-  receiptNote: string;
-  receiptNoteAr?: string;
-  receiptNoteEn?: string;
-  receiptNoteDe?: string;
-  receiptNoteTr?: string;
 }
 
 export interface DonationCampaign extends LocalizedTitleFields, LocalizedDescriptionFields {

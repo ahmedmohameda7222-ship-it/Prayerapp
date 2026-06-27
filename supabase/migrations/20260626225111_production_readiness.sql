@@ -8,12 +8,6 @@ create unique index if not exists admin_users_user_id_key
 alter table public.events add column if not exists published boolean not null default true;
 alter table public.ramadan_days add column if not exists published boolean not null default true;
 
-alter table public.donation_receipt_requests
-  add column if not exists postal_address text,
-  add column if not exists donation_date date,
-  add column if not exists transfer_reference text,
-  add column if not exists privacy_accepted_at timestamptz;
-
 alter table public.prayer_times
   drop constraint if exists prayer_times_time_format;
 alter table public.prayer_times
@@ -32,15 +26,9 @@ alter table public.donation_campaigns
   add constraint donation_campaigns_amounts_nonnegative
   check (target_amount >= 0 and collected_amount >= 0 and end_date >= start_date);
 
-alter table public.donation_receipt_requests
-  drop constraint if exists donation_receipt_status_valid;
-alter table public.donation_receipt_requests
-  add constraint donation_receipt_status_valid check (status in ('Pending', 'Reviewed', 'Sent'));
-
 create index if not exists prayer_times_date_published_idx on public.prayer_times(date, published);
 create index if not exists announcements_published_created_idx on public.announcements(published, created_at desc);
 create index if not exists events_date_published_idx on public.events(date, published);
-create index if not exists receipt_requests_status_created_idx on public.donation_receipt_requests(status, created_at desc);
 create unique index if not exists donation_reports_month_key on public.donation_reports(month);
 
 -- Public content reads.
@@ -83,8 +71,8 @@ declare
 begin
   foreach table_name in array array[
     'prayer_times', 'jumuah_times', 'announcements', 'donation_settings',
-    'donation_campaigns', 'donations', 'donation_receipt_requests',
-    'donation_reports', 'azkar_categories', 'azkar_items', 'events',
+    'donation_campaigns', 'donations', 'donation_reports',
+    'azkar_categories', 'azkar_items', 'events',
     'ramadan_days', 'mosque_settings'
   ]
   loop
@@ -97,7 +85,7 @@ begin
 end $$;
 
 -- Explicit Data API privileges. Writes remain server-only through the secret key.
-revoke all on public.admin_users, public.audit_logs, public.donations, public.donation_receipt_requests from anon;
+revoke all on public.admin_users, public.audit_logs, public.donations from anon;
 grant select on public.prayer_times, public.jumuah_times, public.announcements,
   public.donation_settings, public.donation_campaigns, public.donation_reports,
   public.azkar_categories, public.azkar_items, public.events, public.ramadan_days,

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, CalendarDays, ChevronRight, Compass, HandHeart, Landmark, Moon, Settings, ShieldCheck } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronRight, Compass, HandHeart, Landmark, Moon, Settings } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -14,7 +14,6 @@ const items = [
   ["/mosque", "mosque.title", Landmark],
   ["/qibla", "qibla.title", Compass],
   ["/settings", "settings.title", Settings],
-  ["/privacy", "privacy.title", ShieldCheck],
 ] as const;
 
 export default function MorePage() {

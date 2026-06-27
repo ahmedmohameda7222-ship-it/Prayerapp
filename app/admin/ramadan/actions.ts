@@ -3,27 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
-
-async function createAuditLog(
-  actor: string,
-  action: string,
-  entityType: string,
-  entityId?: string
-) {
-  const client = createServerClient();
-  if (!client) return;
-  try {
-    await client.from("audit_logs").insert({
-      actor,
-      action,
-      entity_type: entityType,
-      entity_id: entityId || null,
-      created_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    console.error("Audit log failed:", e);
-  }
-}
+
 
 function timeRegex() {
   return /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -74,7 +54,6 @@ export async function createRamadanDayAction(
   const { data: result, error } = await client.from("ramadan_days").insert(db).select().single();
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, `created Ramadan day ${data.ramadanDay}`, "ramadan_day", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/ramadan");
   revalidatePath("/ramadan");
   revalidatePath("/");
@@ -111,7 +90,6 @@ export async function updateRamadanDayAction(
   const { error } = await client.from("ramadan_days").update(db).eq("id", id);
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, `updated Ramadan day ${data.ramadanDay}`, "ramadan_day", id);
   revalidatePath("/admin/ramadan");
   revalidatePath("/ramadan");
   revalidatePath("/");
@@ -126,7 +104,6 @@ export async function deleteRamadanDayAction(token: string, id: string): Promise
   const { error } = await client.from("ramadan_days").delete().eq("id", id);
   if (error) return { success: false, error: "admin.errors.deleteFailed" };
 
-  await createAuditLog(email, `deleted Ramadan day ${id}`, "ramadan_day", id);
   revalidatePath("/admin/ramadan");
   revalidatePath("/ramadan");
   revalidatePath("/");

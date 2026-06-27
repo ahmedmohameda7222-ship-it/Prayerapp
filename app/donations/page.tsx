@@ -8,7 +8,6 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { BankTransferCard } from "@/components/donations/BankTransferCard";
 import { DonationCampaignCard } from "@/components/donations/DonationCampaignCard";
 import { TransparencyCard } from "@/components/donations/TransparencyCard";
-import { ReceiptRequestForm } from "@/components/donations/ReceiptRequestForm";
 import { DataError, DataLoading } from "@/components/ui/DataState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getDonationCampaigns, getDonationReport, getDonationSettings } from "@/lib/data/donations";
@@ -43,11 +42,6 @@ export default function DonationsPage() {
           <SectionTitle>{t("donations.transparency")}</SectionTitle>
           <TransparencyCard report={data.report} />
         </section>
-        <Card>
-          <h2 className="font-bold text-[var(--color-emerald)]">{t("donations.receiptRequest")}</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{t("donations.receiptRequestDesc")}</p>
-          <div className="mt-4"><ReceiptRequestForm /></div>
-        </Card>
         </> : null}
       </div>
     </AppShell>

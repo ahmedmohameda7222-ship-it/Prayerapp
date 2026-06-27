@@ -3,10 +3,9 @@ import {
   donationSettings as mockDonationSettings,
   donationCampaigns as mockDonationCampaigns,
   donations as mockDonations,
-  receiptRequests as mockReceiptRequests,
   donationReport as mockDonationReport,
 } from "@/lib/mock-data";
-import type { DonationSettings, DonationCampaign, Donation, DonationReceiptRequest, DonationReport } from "@/lib/types";
+import type { DonationSettings, DonationCampaign, Donation, DonationReport } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 export async function getDonationSettings(): Promise<DonationSettings> {
@@ -133,24 +132,6 @@ export async function getDonations(): Promise<Donation[]> {
     donorName: (row as Record<string, unknown>).donor_name ? String((row as Record<string, unknown>).donor_name) : undefined,
     receivedAt: String((row as Record<string, unknown>).received_at),
     method: String((row as Record<string, unknown>).method) as Donation["method"],
-  }));
-}
-
-export async function getDonationReceiptRequests(): Promise<DonationReceiptRequest[]> {
-  const client = createClient();
-  if (!client) return mockReceiptRequests;
-  const { data, error } = await client.from("donation_receipt_requests").select("*").order("created_at", { ascending: false });
-  if (error || !data) throw new Error("Unable to load receipt requests");
-  return data.map((row: unknown) => ({
-    id: String((row as Record<string, unknown>).id),
-    donorName: String((row as Record<string, unknown>).donor_name),
-    amount: Number((row as Record<string, unknown>).amount),
-    email: String((row as Record<string, unknown>).email),
-    postalAddress: (row as Record<string, unknown>).postal_address ? String((row as Record<string, unknown>).postal_address) : undefined,
-    donationDate: (row as Record<string, unknown>).donation_date ? String((row as Record<string, unknown>).donation_date) : undefined,
-    transferReference: (row as Record<string, unknown>).transfer_reference ? String((row as Record<string, unknown>).transfer_reference) : undefined,
-    status: String((row as Record<string, unknown>).status) as DonationReceiptRequest["status"],
-    createdAt: String((row as Record<string, unknown>).created_at),
   }));
 }
 

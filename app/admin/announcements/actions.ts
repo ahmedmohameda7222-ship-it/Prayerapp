@@ -17,27 +17,7 @@ function validateAnnouncement(data: Record<string, string>) {
   if ((data.titleAr || "").length > 200 || (data.messageAr || "").length > 5000) errors.push("admin.errors.invalidInput");
   return errors;
 }
-
-async function createAuditLog(
-  actor: string,
-  action: string,
-  entityType: string,
-  entityId?: string
-) {
-  const client = createServerClient();
-  if (!client) return;
-  try {
-    await client.from("audit_logs").insert({
-      actor,
-      action,
-      entity_type: entityType,
-      entity_id: entityId || null,
-      created_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    console.error("Audit log failed:", e);
-  }
-}
+
 
 export async function createAnnouncementAction(
   token: string,
@@ -75,7 +55,6 @@ export async function createAnnouncementAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
-  await createAuditLog(email, `created announcement "${data.titleAr.trim()}"`, "announcement", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/announcements");
   revalidatePath("/news");
   revalidatePath("/friday");
@@ -120,7 +99,6 @@ export async function updateAnnouncementAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
-  await createAuditLog(email, `updated announcement "${data.titleAr.trim()}"`, "announcement", id);
   revalidatePath("/admin/announcements");
   revalidatePath("/news");
   revalidatePath("/friday");
@@ -140,7 +118,6 @@ export async function deleteAnnouncementAction(token: string, id: string) {
     return { success: false, error: "admin.errors.deleteFailed" };
   }
 
-  await createAuditLog(email, `deleted announcement ${id}`, "announcement", id);
   revalidatePath("/admin/announcements");
   revalidatePath("/news");
   revalidatePath("/friday");
@@ -161,7 +138,6 @@ export async function togglePublishAnnouncementAction(token: string, id: string,
   }
 
   const verb = published ? "published" : "unpublished";
-  await createAuditLog(email, `${verb} announcement ${id}`, "announcement", id);
   revalidatePath("/admin/announcements");
   revalidatePath("/news");
   revalidatePath("/friday");
@@ -182,7 +158,6 @@ export async function toggleUrgentAnnouncementAction(token: string, id: string, 
   }
 
   const verb = isUrgent ? "marked urgent" : "unmarked urgent";
-  await createAuditLog(email, `${verb} announcement ${id}`, "announcement", id);
   revalidatePath("/admin/announcements");
   revalidatePath("/news");
   revalidatePath("/");

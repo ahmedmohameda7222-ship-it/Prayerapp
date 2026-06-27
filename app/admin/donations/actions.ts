@@ -4,27 +4,6 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
 
-async function createAuditLog(
-  actor: string,
-  action: string,
-  entityType: string,
-  entityId?: string
-) {
-  const client = createServerClient();
-  if (!client) return;
-  try {
-    await client.from("audit_logs").insert({
-      actor,
-      action,
-      entity_type: entityType,
-      entity_id: entityId || null,
-      created_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    console.error("Audit log failed:", e);
-  }
-}
-
 function validateDonationSettings(data: Record<string, string>): string[] {
   const errors: string[] = [];
   if (!data.accountHolder?.trim()) errors.push("admin.errors.accountHolderRequired");
@@ -74,17 +53,11 @@ export async function updateDonationSettingsAction(
     default_purpose_en: data.defaultPurposeEn?.trim() || null,
     default_purpose_de: data.defaultPurposeDe?.trim() || null,
     default_purpose_tr: data.defaultPurposeTr?.trim() || null,
-    receipt_note: data.receiptNoteAr?.trim() || "",
-    receipt_note_ar: data.receiptNoteAr?.trim() || null,
-    receipt_note_en: data.receiptNoteEn?.trim() || null,
-    receipt_note_de: data.receiptNoteDe?.trim() || null,
-    receipt_note_tr: data.receiptNoteTr?.trim() || null,
   };
 
   const { error } = await client.from("donation_settings").upsert({ id: "1", ...db }, { onConflict: "id" });
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, "updated donation settings", "donation_settings");
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
@@ -124,7 +97,6 @@ export async function createDonationCampaignAction(
   const { data: result, error } = await client.from("donation_campaigns").insert(db).select().single();
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, `created donation campaign "${data.titleAr.trim()}"`, "donation_campaign", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
@@ -165,7 +137,6 @@ export async function updateDonationCampaignAction(
   const { error } = await client.from("donation_campaigns").update(db).eq("id", id);
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, `updated donation campaign "${data.titleAr.trim()}"`, "donation_campaign", id);
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
@@ -180,7 +151,6 @@ export async function deleteDonationCampaignAction(token: string, id: string): P
   const { error } = await client.from("donation_campaigns").delete().eq("id", id);
   if (error) return { success: false, error: "admin.errors.deleteFailed" };
 
-  await createAuditLog(email, `deleted donation campaign ${id}`, "donation_campaign", id);
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
@@ -196,7 +166,6 @@ export async function toggleActiveCampaignAction(token: string, id: string, isAc
   if (error) return { success: false, error: "admin.errors.toggleFailed" };
 
   const verb = isActive ? "activated" : "deactivated";
-  await createAuditLog(email, `${verb} donation campaign ${id}`, "donation_campaign", id);
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
@@ -212,24 +181,9 @@ export async function toggleFeaturedCampaignAction(token: string, id: string, is
   if (error) return { success: false, error: "admin.errors.toggleFailed" };
 
   const verb = isFeatured ? "featured" : "unfeatured";
-  await createAuditLog(email, `${verb} donation campaign ${id}`, "donation_campaign", id);
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
-  return { success: true };
-}
-
-export async function updateReceiptStatusAction(token: string, id: string, status: string): Promise<{ success: boolean; error?: string }> {
-  const email = await requireAllowedAdmin(token);
-  if (!/^[0-9a-f-]{36}$/i.test(id) || !["Pending", "Reviewed", "Sent"].includes(status)) {
-    return { success: false, error: "admin.errors.invalidInput" };
-  }
-  const client = createServerClient();
-  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-  const { error } = await client.from("donation_receipt_requests").update({ status }).eq("id", id);
-  if (error) return { success: false, error: "admin.errors.saveFailed" };
-  await createAuditLog(email, `changed receipt request ${id} to ${status}`, "donation_receipt_request", id);
-  revalidatePath("/admin/donations");
   return { success: true };
 }
 
@@ -244,7 +198,6 @@ export async function updateDonationReportAction(token: string, data: Record<str
   if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
   const { error } = await client.from("donation_reports").upsert({ month: data.month, monthly_need: monthlyNeed, donations_received: donationsReceived, remaining: Math.max(0, monthlyNeed - donationsReceived) }, { onConflict: "month" });
   if (error) return { success: false, error: "admin.errors.saveFailed" };
-  await createAuditLog(email, `updated donation report for ${data.month}`, "donation_report", data.month);
   revalidatePath("/admin/donations"); revalidatePath("/donations");
   return { success: true };
 }

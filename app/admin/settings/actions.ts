@@ -4,27 +4,6 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
 
-async function createAuditLog(
-  actor: string,
-  action: string,
-  entityType: string,
-  entityId?: string
-) {
-  const client = createServerClient();
-  if (!client) return;
-  try {
-    await client.from("audit_logs").insert({
-      actor,
-      action,
-      entity_type: entityType,
-      entity_id: entityId || null,
-      created_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    console.error("Audit log failed:", e);
-  }
-}
-
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const urlRegex = /^https:\/\//i;
 
@@ -73,7 +52,6 @@ export async function updateMosqueSettingsAction(
   const { error } = await client.from("mosque_settings").upsert({ id: "1", ...db }, { onConflict: "id" });
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, "updated mosque settings", "mosque_settings");
   revalidatePath("/admin/settings");
   revalidatePath("/mosque");
   revalidatePath("/donations");

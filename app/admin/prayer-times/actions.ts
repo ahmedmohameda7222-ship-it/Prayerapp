@@ -66,31 +66,10 @@ export async function importPrayerTimesAction(token: string, rows: Record<string
   }));
   const { error } = await client.from("prayer_times").upsert(payload, { onConflict: "date" });
   if (error) return { success: false, error: "admin.errors.saveFailed" };
-  await createAuditLog(email, `imported ${rows.length} prayer-time rows`, "prayer_time_import");
   revalidatePath("/admin/prayer-times"); revalidatePath("/"); revalidatePath("/times");
   return { success: true, count: rows.length };
 }
-
-async function createAuditLog(
-  actor: string,
-  action: string,
-  entityType: string,
-  entityId?: string
-) {
-  const client = createServerClient();
-  if (!client) return;
-  try {
-    await client.from("audit_logs").insert({
-      actor,
-      action,
-      entity_type: entityType,
-      entity_id: entityId || null,
-      created_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    console.error("Audit log failed:", e);
-  }
-}
+
 
 async function checkDuplicateDate(client: ReturnType<typeof createServerClient>, date: string, excludeId?: string) {
   if (!client) return false;
@@ -142,7 +121,6 @@ export async function createPrayerTimeAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
-  await createAuditLog(email, `created prayer time for ${data.date}`, "prayer_time", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/prayer-times");
   revalidatePath("/");
   revalidatePath("/times");
@@ -192,7 +170,6 @@ export async function updatePrayerTimeAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
-  await createAuditLog(email, `updated prayer time for ${data.date}`, "prayer_time", id);
   revalidatePath("/admin/prayer-times");
   revalidatePath("/");
   revalidatePath("/times");
@@ -211,7 +188,6 @@ export async function deletePrayerTimeAction(token: string, id: string) {
     return { success: false, error: "admin.errors.deleteFailed" };
   }
 
-  await createAuditLog(email, `deleted prayer time ${id}`, "prayer_time", id);
   revalidatePath("/admin/prayer-times");
   revalidatePath("/");
   revalidatePath("/times");
@@ -231,7 +207,6 @@ export async function togglePublishPrayerTimeAction(token: string, id: string, p
   }
 
   const verb = published ? "published" : "unpublished";
-  await createAuditLog(email, `${verb} prayer time ${id}`, "prayer_time", id);
   revalidatePath("/admin/prayer-times");
   revalidatePath("/");
   revalidatePath("/times");

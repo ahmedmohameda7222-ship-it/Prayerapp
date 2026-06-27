@@ -26,27 +26,7 @@ function validateJumuah(data: Record<string, string>) {
   }
   return errors;
 }
-
-async function createAuditLog(
-  actor: string,
-  action: string,
-  entityType: string,
-  entityId?: string
-) {
-  const client = createServerClient();
-  if (!client) return;
-  try {
-    await client.from("audit_logs").insert({
-      actor,
-      action,
-      entity_type: entityType,
-      entity_id: entityId || null,
-      created_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    console.error("Audit log failed:", e);
-  }
-}
+
 
 export async function createJumuahAction(
   token: string,
@@ -88,7 +68,6 @@ export async function createJumuahAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
-  await createAuditLog(email, `created Jumu'ah entry for ${data.date}`, "jumuah", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/jumuah");
   revalidatePath("/friday");
   revalidatePath("/");
@@ -136,7 +115,6 @@ export async function updateJumuahAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
-  await createAuditLog(email, `updated Jumu'ah entry for ${data.date}`, "jumuah", id);
   revalidatePath("/admin/jumuah");
   revalidatePath("/friday");
   revalidatePath("/");
@@ -155,7 +133,6 @@ export async function deleteJumuahAction(token: string, id: string) {
     return { success: false, error: "admin.errors.deleteFailed" };
   }
 
-  await createAuditLog(email, `deleted Jumu'ah entry ${id}`, "jumuah", id);
   revalidatePath("/admin/jumuah");
   revalidatePath("/friday");
   revalidatePath("/");
@@ -175,7 +152,6 @@ export async function togglePublishJumuahAction(token: string, id: string, publi
   }
 
   const verb = published ? "published" : "unpublished";
-  await createAuditLog(email, `${verb} Jumu'ah entry ${id}`, "jumuah", id);
   revalidatePath("/admin/jumuah");
   revalidatePath("/friday");
   revalidatePath("/");

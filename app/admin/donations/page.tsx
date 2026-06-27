@@ -6,12 +6,12 @@ import { AdminShell } from "@/components/layout/AdminShell";
 import { LocalizedContentFields } from "@/components/admin/LocalizedContentFields";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { getDonationCampaigns, getDonationReceiptRequests, getDonationSettings, getDonations, getDonationReport } from "@/lib/data/donations";
+import { getDonationCampaigns, getDonationSettings, getDonations, getDonationReport } from "@/lib/data/donations";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
-import type { Donation, DonationCampaign, DonationReceiptRequest, DonationSettings } from "@/lib/types";
+import type { Donation, DonationCampaign, DonationSettings } from "@/lib/types";
 import {
   createDonationCampaignAction,
   deleteDonationCampaignAction,
@@ -19,7 +19,6 @@ import {
   toggleFeaturedCampaignAction,
   updateDonationCampaignAction,
   updateDonationSettingsAction,
-  updateReceiptStatusAction,
   updateDonationReportAction,
 } from "./actions";
 
@@ -46,7 +45,6 @@ export default function AdminDonationsPage() {
   const [, setSettings] = useState<DonationSettings | null>(null);
   const [campaigns, setCampaigns] = useState<DonationCampaign[]>([]);
   const [, setDonations] = useState<Donation[]>([]);
-  const [receipts, setReceipts] = useState<DonationReceiptRequest[]>([]);
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({});
   const [reportForm, setReportForm] = useState<Record<string, string>>({ month: "", monthlyNeed: "0", donationsReceived: "0" });
   const [campaignForm, setCampaignForm] = useState<Record<string, string>>({ ...emptyCampaignForm });
@@ -68,28 +66,12 @@ export default function AdminDonationsPage() {
         defaultPurposeEn: settings.defaultPurposeEn || "",
         defaultPurposeDe: settings.defaultPurposeDe || "",
         defaultPurposeTr: settings.defaultPurposeTr || "",
-        receiptNoteAr: settings.receiptNoteAr || settings.receiptNote,
-        receiptNoteEn: settings.receiptNoteEn || "",
-        receiptNoteDe: settings.receiptNoteDe || "",
-        receiptNoteTr: settings.receiptNoteTr || "",
       });
     }).catch(() => setError(t("common.dataLoadFailed")));
     getDonationCampaigns(true).then((data) => setCampaigns(data)).catch(() => setError(t("common.dataLoadFailed")));
     getDonations().then((data) => setDonations(data)).catch(() => setError(t("common.dataLoadFailed")));
-    getDonationReceiptRequests().then((data) => setReceipts(data)).catch(() => setError(t("common.dataLoadFailed")));
     getDonationReport().then((report) => setReportForm({ month: report.month, monthlyNeed: String(report.monthlyNeed), donationsReceived: String(report.donationsReceived) })).catch(() => setError(t("common.dataLoadFailed")));
   }, [t]);
-
-  function handleReceiptStatus(id: string, status: string) {
-    const token = session?.access_token || "";
-    if (!token) return setError(t("admin.errors.notAuthenticated"));
-    startTransition(async () => {
-      const result = await updateReceiptStatusAction(token, id, status);
-      if (!result.success) return setError(t(result.error || "admin.errors.saveFailed"));
-      setReceipts(await getDonationReceiptRequests());
-      setSuccess(t("admin.messages.updated"));
-    });
-  }
 
   function handleReportSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -232,7 +214,6 @@ export default function AdminDonationsPage() {
             <LocalizedContentFields
               fields={[
                 { base: "defaultPurpose", labelKey: "admin.defaultPurpose", requiredArabic: true },
-                { base: "receiptNote", labelKey: "admin.receiptNote", textarea: true },
               ]}
               form={settingsForm}
               setForm={setSettingsForm}
@@ -310,22 +291,6 @@ export default function AdminDonationsPage() {
             </tbody>
           </table>
         </div>
-
-        <section className="card overflow-x-auto p-4">
-          <h2 className="mb-3 font-bold text-[var(--color-emerald)]">{t("admin.manualDonationsReceipts")}</h2>
-          {!receipts.length ? <p className="text-sm text-[var(--color-muted)]">{t("admin.noReceiptRequests")}</p> : (
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead><tr>{["donations.donorName", "donations.amount", "donations.donationDate", "donations.email", "admin.status"].map((key) => <th key={key} className="px-3 py-2">{t(key)}</th>)}</tr></thead>
-              <tbody>{receipts.map((receipt) => <tr key={receipt.id} className="border-t border-[var(--color-border)]">
-                <td className="px-3 py-3"><p className="font-bold">{receipt.donorName}</p><p className="max-w-[240px] text-xs text-[var(--color-muted)]">{receipt.postalAddress}</p></td>
-                <td className="px-3 py-3">{receipt.amount} €</td>
-                <td className="px-3 py-3">{receipt.donationDate || "-"}</td>
-                <td className="px-3 py-3">{receipt.email}</td>
-                <td className="px-3 py-3"><select value={receipt.status} disabled={isPending} onChange={(event) => handleReceiptStatus(receipt.id, event.target.value)} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-cream)] px-2 py-2"><option>Pending</option><option>Reviewed</option><option>Sent</option></select></td>
-              </tr>)}</tbody>
-            </table>
-          )}
-        </section>
       </div>
     </AdminShell>
   );

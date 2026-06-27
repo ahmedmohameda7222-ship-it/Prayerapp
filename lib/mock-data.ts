@@ -1,11 +1,9 @@
 import type {
   Announcement,
-  AuditLog,
   AzkarCategory,
   AzkarItem,
   Donation,
   DonationCampaign,
-  DonationReceiptRequest,
   DonationReport,
   DonationSettings,
   Event,
@@ -205,11 +203,6 @@ export const donations: Donation[] = [
   { id: "don-2", amount: 20, purpose: "Masjid donation", receivedAt: "2026-06-23", method: "Cash" },
 ];
 
-export const receiptRequests: DonationReceiptRequest[] = [
-  { id: "rec-1", donorName: "Fatima K.", amount: 150, email: "fatima@example.com", status: "Pending", createdAt: "2026-06-23" },
-  { id: "rec-2", donorName: "Omar A.", amount: 80, email: "omar@example.com", status: "Reviewed", createdAt: "2026-06-21" },
-];
-
 export const donationReport: DonationReport = {
   month: "June 2026",
   monthlyNeed: 5200,
@@ -394,10 +387,4 @@ export const ramadanDays: RamadanDay[] = [
     noteTr: "Ramazan takvimi yer tutucusu.",
   },
   { id: "ram-2", date: "2026-02-19", ramadanDay: 2, imsak: "05:06", fajr: "05:16", maghrib: "17:41", iftar: "17:41", taraweeh: "19:30" },
-];
-
-export const auditLogs: AuditLog[] = [
-  { id: "log-1", actor: "Ahmed", action: "changed Asr time on 2026-07-01 from 17:20 to 17:30", createdAt: "2026-06-24 10:15" },
-  { id: "log-2", actor: "Admin", action: "created donation campaign Monthly Rent Support", createdAt: "2026-06-23 18:40" },
-  { id: "log-3", actor: "Admin", action: "published Friday location update", createdAt: "2026-06-23 09:12" },
 ];

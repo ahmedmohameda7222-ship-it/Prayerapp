@@ -3,27 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
-
-async function createAuditLog(
-  actor: string,
-  action: string,
-  entityType: string,
-  entityId?: string
-) {
-  const client = createServerClient();
-  if (!client) return;
-  try {
-    await client.from("audit_logs").insert({
-      actor,
-      action,
-      entity_type: entityType,
-      entity_id: entityId || null,
-      created_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    console.error("Audit log failed:", e);
-  }
-}
+
 
 function validateAzkar(data: Record<string, string>): string[] {
   const errors: string[] = [];
@@ -65,7 +45,6 @@ export async function createAzkarAction(
   const { data: result, error } = await client.from("azkar_items").insert(db).select().single();
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, "created azkar item", "azkar", String((result as Record<string, unknown>).id));
   revalidatePath("/admin/azkar");
   revalidatePath("/azkar");
   return { success: true };
@@ -100,7 +79,6 @@ export async function updateAzkarAction(
   const { error } = await client.from("azkar_items").update(db).eq("id", id);
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
-  await createAuditLog(email, "updated azkar item", "azkar", id);
   revalidatePath("/admin/azkar");
   revalidatePath("/azkar");
   return { success: true };
@@ -114,7 +92,6 @@ export async function deleteAzkarAction(token: string, id: string): Promise<{ su
   const { error } = await client.from("azkar_items").delete().eq("id", id);
   if (error) return { success: false, error: "admin.errors.deleteFailed" };
 
-  await createAuditLog(email, "deleted azkar item", "azkar", id);
   revalidatePath("/admin/azkar");
   revalidatePath("/azkar");
   return { success: true };
@@ -129,7 +106,6 @@ export async function togglePublishAzkarAction(token: string, id: string, isPubl
   if (error) return { success: false, error: "admin.errors.toggleFailed" };
 
   const verb = isPublished ? "published" : "unpublished";
-  await createAuditLog(email, `${verb} azkar item ${id}`, "azkar", id);
   revalidatePath("/admin/azkar");
   revalidatePath("/azkar");
   return { success: true };

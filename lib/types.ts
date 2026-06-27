@@ -122,18 +122,6 @@ export interface Donation {
   method: "Bank transfer" | "Cash" | "PayPal";
 }
 
-export interface DonationReceiptRequest {
-  id: string;
-  donorName: string;
-  amount: number;
-  email: string;
-  postalAddress?: string;
-  donationDate?: string;
-  transferReference?: string;
-  status: "Pending" | "Reviewed" | "Sent";
-  createdAt: string;
-}
-
 export interface DonationReport {
   month: string;
   monthlyNeed: number;
@@ -202,11 +190,4 @@ export interface MosqueSettings {
   accountHolder: string;
   iban: string;
   bic: string;
-}
-
-export interface AuditLog {
-  id: string;
-  actor: string;
-  action: string;
-  createdAt: string;
 }

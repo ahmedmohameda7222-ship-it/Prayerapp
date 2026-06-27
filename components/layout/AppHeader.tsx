@@ -33,7 +33,7 @@ export function AppHeader({ title = "Deggendorf Prayer" }: { title?: string }) {
 
       {/* Centered mosque logo + title + Arabic subtitle */}
       <div className="relative flex flex-col items-center px-6 pb-2">
-        <div className="relative h-24 w-24 sm:h-28 sm:w-28">
+        <div className="relative h-24 w-24 rounded-full bg-transparent sm:h-28 sm:w-28">
           <Image
             src="/assets/app-header-mosque-logo.png"
             alt="Mosque logo"
@@ -51,8 +51,8 @@ export function AppHeader({ title = "Deggendorf Prayer" }: { title?: string }) {
         </p>
       </div>
 
-      {/* Bottom info pill: location + dynamic date */}
-      <div className="relative mx-4 mb-5 mt-4 flex items-center justify-between gap-3 rounded-full border border-white/10 bg-white/10 px-4 py-2.5 backdrop-blur-md sm:mx-6">
+      {/* Bottom info row: location + date — separate, no card */}
+      <div className="relative mx-4 mb-5 mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between sm:mx-6">
         <div className="flex items-center gap-1.5 text-xs font-medium text-white/90">
           <MapPin size={14} className="shrink-0 text-[var(--color-gold)]" />
           <span>Deggendorf, Germany</span>

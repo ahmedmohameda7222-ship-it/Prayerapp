@@ -52,11 +52,11 @@ export function AppHeader({ title = "Deggendorf Prayer" }: { title?: string }) {
       <div className="absolute end-3 top-3 sm:end-4 sm:top-4">
         <NotificationButton inverted />
       </div>
-      <div aria-hidden="true" className="absolute inset-x-[12%] top-[37%] flex flex-col items-center text-center text-[var(--color-gold-soft)] sm:inset-x-[18%] sm:top-[34%]">
-        <h2 className="font-brand text-[clamp(18px,5vw,21px)] font-semibold leading-tight drop-shadow-md sm:text-[clamp(32px,3.4vw,44px)]">{title}</h2>
-        <p className="mt-1 text-[clamp(10px,2.8vw,12px)] font-bold sm:mt-1.5 sm:text-[clamp(14px,1.5vw,18px)]">مواقيت الصلاة لمدينة ديغندورف</p>
+      <div aria-hidden="true" className="absolute inset-x-[12%] top-[37%] flex flex-col items-center text-center text-[var(--color-gold-soft)] sm:inset-x-[18%] sm:top-[39%]">
+        <h2 className="font-brand text-[clamp(18px,5vw,21px)] font-semibold leading-tight drop-shadow-md sm:text-[clamp(30px,3vw,40px)]">{title}</h2>
+        <p className="mt-1 text-[clamp(10px,2.8vw,12px)] font-bold sm:mt-1.5 sm:text-[clamp(13px,1.35vw,16px)]">مواقيت الصلاة لمدينة ديغندورف</p>
         <span className="mt-2 h-px w-3/4 bg-[var(--color-gold)]/65 sm:mt-2.5 sm:w-1/2" />
-        <p className="mt-2.5 text-[clamp(12px,3.4vw,14px)] font-semibold leading-[1.55] drop-shadow-sm sm:mt-3 sm:text-[clamp(19px,2vw,25px)] sm:leading-[1.6]">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا</p>
+        <p className="mt-2.5 text-[clamp(12px,3.4vw,14px)] font-semibold leading-[1.55] drop-shadow-sm sm:mt-3 sm:text-[clamp(17px,1.75vw,22px)] sm:leading-[1.6]">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا</p>
         <p className="mt-0.5 text-[9px] font-bold text-[var(--color-gold)] sm:text-xs">النساء: 103</p>
       </div>
       <div dir="ltr" className="absolute inset-x-2 bottom-1.5 flex items-end justify-between gap-2 sm:inset-x-5 sm:bottom-3">

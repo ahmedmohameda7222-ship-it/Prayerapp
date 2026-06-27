@@ -1,7 +1,12 @@
 import { createClient } from "@/lib/supabase/client";
 import type { JumuahTime } from "@/lib/types";
+import { previewJumuahTimes } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
+
+function filterPreviewJumuahTimes(includeUnpublished = false): JumuahTime[] {
+  return previewJumuahTimes.filter((item) => includeUnpublished || item.published);
+}
 
 function mapFromDb(row: Record<string, unknown>): JumuahTime {
   return {
@@ -39,7 +44,7 @@ function mapToDb(item: Partial<JumuahTime>): Record<string, unknown> {
 
 export async function getJumuahTimes(includeUnpublished = false): Promise<JumuahTime[]> {
   const client = createClient();
-  if (!client) return [];
+  if (!client) return filterPreviewJumuahTimes(includeUnpublished);
   const key = `jumuah_times_${includeUnpublished}`;
   return getCached(key, async () => {
     let query = client

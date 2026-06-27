@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDaysIso, addMonthsIso, monthBoundsIso, startOfWeekIso, todayIso, zonedDateTime } from "@/lib/date-utils";
+import { addDaysIso, addMonthsIso, formatHijriDate, monthBoundsIso, startOfWeekIso, todayIso, zonedDateTime } from "@/lib/date-utils";
 
 describe("Berlin date utilities", () => {
   it("resolves the calendar day in Europe/Berlin", () => {
@@ -11,6 +11,10 @@ describe("Berlin date utilities", () => {
     expect(addMonthsIso("2026-01-31", 1)).toBe("2026-02-28");
     expect(monthBoundsIso("2026-02-12")).toEqual({ start: "2026-02-01", end: "2026-02-28" });
     expect(startOfWeekIso("2026-06-27")).toBe("2026-06-22");
+  });
+
+  it("formats the Umm al-Qura Hijri calendar date", () => {
+    expect(formatHijriDate("2026-06-27", "en")).toBe("12 Muharram 1448 AH");
   });
 
   it("uses German daylight-saving offsets", () => {

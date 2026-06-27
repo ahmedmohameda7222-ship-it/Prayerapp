@@ -28,7 +28,7 @@ export function PageHeader({ title, titleKey, arch = false }: { title?: string; 
       <Link href="/" aria-label={t("common.backHome")} className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-emerald)]">
         <ChevronLeft className="h-5 w-5" />
       </Link>
-      <h1 className="font-brand text-center text-3xl font-semibold text-[var(--color-emerald)]">{displayTitle}</h1>
+      <h1 className="font-brand text-center text-3xl font-semibold text-[var(--color-gold-soft)] drop-shadow-sm">{displayTitle}</h1>
       <NotificationButton />
     </header>
   );

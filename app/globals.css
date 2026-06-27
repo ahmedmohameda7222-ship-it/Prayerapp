@@ -45,18 +45,30 @@
 
 html {
   min-height: 100%;
-  background: var(--color-cream);
+  background: #005a52;
 }
 
 body {
+  position: relative;
+  isolation: isolate;
   min-height: 100%;
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(212, 175, 55, 0.08), transparent 34rem),
-    linear-gradient(135deg, rgba(14, 61, 54, 0.035) 25%, transparent 25%) 0 0 / 34px 34px,
-    var(--color-cream);
+  background: transparent;
   color: var(--color-charcoal);
   font-family: "Tajawal", "Inter", "Segoe UI", sans-serif;
+}
+
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background-color: #005a52;
+  background-image: url("/assets/app-main-background.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 a {
@@ -84,6 +96,11 @@ textarea {
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
+}
+
+.app-header-banner {
+  margin-top: -16px;
+  margin-inline: -16px;
 }
 
 .card {
@@ -163,6 +180,15 @@ textarea {
 }
 
 @media (min-width: 1024px) {
+  .app-header-banner {
+    margin-top: -24px;
+    margin-inline: -32px;
+  }
+
+  body::before {
+    background-image: url("/assets/app-main-background-desktop.png");
+  }
+
   .admin-layout {
     display: grid;
     grid-template-columns: 280px 1fr;

@@ -1,4 +1,4 @@
-const CACHE_NAME = "deggendorf-prayer-v4";
+const CACHE_NAME = "deggendorf-prayer-v7";
 const STATIC_ASSETS = [
   "/",
   "/offline",
@@ -14,6 +14,8 @@ const STATIC_ASSETS = [
   "/settings",
   "/more",
   "/assets/app-icon-main.png",
+  "/assets/app-main-background.png",
+  "/assets/app-main-background-desktop.png",
   "/assets/hero-home-mosque-night.png",
   "/assets/hero-home-mosque-night-desktop.png",
   "/assets/hero-friday-mosque-night.png",

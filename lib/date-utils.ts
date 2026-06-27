@@ -19,6 +19,12 @@ export function formatLongDate(date: string, locale: Locale = "ar") {
   }).format(atNoonUtc(date));
 }
 
+export function formatHijriDate(date: string, locale: Locale = "ar") {
+  return new Intl.DateTimeFormat(`${intlLocales[locale]}-u-ca-islamic-umalqura`, {
+    day: "numeric", month: "long", year: "numeric", timeZone: APP_TIME_ZONE,
+  }).format(atNoonUtc(date));
+}
+
 export function formatShortDate(date: string, locale: Locale = "ar") {
   return new Intl.DateTimeFormat(intlLocales[locale], {
     weekday: "short", day: "numeric", month: "short", timeZone: APP_TIME_ZONE,

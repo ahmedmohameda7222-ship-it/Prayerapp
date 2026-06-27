@@ -1,7 +1,12 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Announcement } from "@/lib/types";
+import { previewAnnouncements } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
+
+function filterPreviewAnnouncements(includeUnpublished = false): Announcement[] {
+  return previewAnnouncements.filter((item) => includeUnpublished || item.published);
+}
 
 function mapFromDb(row: Record<string, unknown>): Announcement {
   return {
@@ -33,7 +38,7 @@ function mapToDb(item: Partial<Announcement>): Record<string, unknown> {
 
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {
   const client = createClient();
-  if (!client) return [];
+  if (!client) return filterPreviewAnnouncements(includeUnpublished);
   const key = `announcements_${includeUnpublished}`;
   return getCached(key, async () => {
     let query = client

@@ -1,11 +1,16 @@
 import { createClient } from "@/lib/supabase/client";
 import type { AzkarCategory, AzkarItem } from "@/lib/types";
+import { previewAzkarCategories, previewAzkarItems } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
-import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
+import { getCached, invalidateCachePrefix } from "./cache";
+
+function filterPreviewAzkarItems(includeUnpublished = false): AzkarItem[] {
+  return previewAzkarItems.filter((item) => includeUnpublished || item.isPublished);
+}
 
 export async function getAzkarCategories(): Promise<AzkarCategory[]> {
   const client = createClient();
-  if (!client) return [];
+  if (!client) return previewAzkarCategories;
   return getCached("azkar_categories", async () => {
     const { data, error } = await client.from("azkar_categories").select("name").order("sort_order", { ascending: true });
     if (error || !data) throw new Error("Unable to load azkar categories");
@@ -15,7 +20,7 @@ export async function getAzkarCategories(): Promise<AzkarCategory[]> {
 
 export async function getAzkarItems(includeUnpublished = false): Promise<AzkarItem[]> {
   const client = createClient();
-  if (!client) return [];
+  if (!client) return filterPreviewAzkarItems(includeUnpublished);
   const key = `azkar_items_${includeUnpublished}`;
   return getCached(key, async () => {
     let query = client

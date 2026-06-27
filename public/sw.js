@@ -178,7 +178,7 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  let payload = { title: "Deggendorf Prayer", body: "New mosque update", url: "/news" };
+  let payload = { title: "Masjid El-Rahman", body: "New mosque update", url: "/news" };
   try {
     payload = { ...payload, ...event.data.json() };
   } catch {}

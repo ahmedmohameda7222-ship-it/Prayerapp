@@ -17,6 +17,9 @@ export function BankTransferCard({ settings }: { settings: DonationSettings }) {
     [t("donations.bic"), settings.bic, "bic"],
     [t("donations.reference"), defaultPurpose, "reference"],
   ];
+  const visibleRows = rows.filter(([, value]) => Boolean(value));
+
+  if (!visibleRows.length) return null;
 
   async function copy(label: string, value: string, key: string) {
     try {
@@ -32,7 +35,7 @@ export function BankTransferCard({ settings }: { settings: DonationSettings }) {
     <Card>
       <h2 className="mb-3 text-sm font-extrabold uppercase tracking-[0.04em] text-[var(--color-emerald)]">{t("donations.bankTransfer")}</h2>
       <div className="grid gap-2">
-        {rows.map(([label, value, key]) => (
+        {visibleRows.map(([label, value, key]) => (
           <div key={key} className="grid grid-cols-[1fr_44px] gap-3 rounded-2xl bg-[var(--color-cream)] p-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.04em] text-[var(--color-muted)]">{label}</p>

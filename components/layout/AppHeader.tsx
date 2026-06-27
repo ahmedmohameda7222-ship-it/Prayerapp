@@ -8,7 +8,7 @@ import { todayIso, formatHijriDate, formatLongDate } from "@/lib/date-utils";
 import { getTextDirection } from "@/lib/i18n/direction";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
-export function AppHeader({ title = "Deggendorf Prayer" }: { title?: string }) {
+export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
   const { locale } = useTranslation();
   const currentDateIso = todayIso();
   const currentDate = formatLongDate(currentDateIso, locale);

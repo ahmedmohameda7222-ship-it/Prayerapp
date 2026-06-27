@@ -217,10 +217,14 @@ textarea {
 
   .home-dashboard {
     grid-template-areas:
-      "hero prayers"
-      "smart prayers"
+      "hero hero"
+      "urgent urgent"
+      "prayers prayers"
+      "events events"
+      "donations donations"
+      "smart smart"
       "quick quick";
-    grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.65fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
   }
 
@@ -230,6 +234,21 @@ textarea {
 
   .home-prayers {
     grid-area: prayers;
+    width: 100%;
+    max-width: 720px;
+    justify-self: center;
+  }
+
+  .home-urgent-news {
+    grid-area: urgent;
+  }
+
+  .home-events {
+    grid-area: events;
+  }
+
+  .home-donations {
+    grid-area: donations;
   }
 
   .home-smart {

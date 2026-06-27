@@ -1,5 +1,11 @@
 export type PrayerName = "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
 
+export interface MaghribProgram {
+  salatMaghrib?: string;
+  khatiraMinutes?: number;
+  salatIsha?: string;
+}
+
 export interface LocalizedTitleFields {
   titleAr?: string;
   titleEn?: string;
@@ -42,6 +48,8 @@ export interface PrayerTime {
   asrIqama?: string;
   maghribIqama?: string;
   ishaIqama?: string;
+  salatFajr?: string;
+  maghribProgram?: MaghribProgram;
   note?: string;
   noteAr?: string;
   noteEn?: string;

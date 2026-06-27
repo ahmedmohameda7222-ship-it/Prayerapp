@@ -43,7 +43,7 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     setPermission(result);
     if (result === "granted") {
       const registration = await navigator.serviceWorker?.ready;
-      await registration?.showNotification("Deggendorf Prayer", { body: "Notifications are enabled.", icon: "/assets/app-icon-main.png" });
+      await registration?.showNotification("Masjid El-Rahman", { body: "Notifications are enabled.", icon: "/assets/app-icon-main.png" });
     }
   }, []);
 

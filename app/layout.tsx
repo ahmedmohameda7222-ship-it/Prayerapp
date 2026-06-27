@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = normalizeLocale(cookieStore.get("locale")?.value || DEFAULT_LOCALE);
 
   return {
-    title: "Deggendorf Prayer",
+    title: "Masjid El-Rahman",
     description: metadataDescriptions[locale],
     manifest: "/manifest.webmanifest",
     icons: {
@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     appleWebApp: {
       capable: true,
-      title: "Deggendorf Prayer",
+      title: "Masjid El-Rahman",
       statusBarStyle: "black-translucent",
     },
   };

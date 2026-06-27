@@ -36,6 +36,10 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
 ADMIN_EMAILS=
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:admin@example.com
+CRON_SECRET=
 ```
 
 Legacy variable names are still supported for compatibility:
@@ -142,7 +146,11 @@ Recommended deployment path:
 
 ## PWA and notifications
 
-The app includes a production-only service worker registration, offline page, static asset cache, and notification UI preferences. Browser permission and local notification testing are implemented. A real push delivery backend with VAPID keys/provider integration is intentionally left as a future enhancement.
+The app includes an installable PWA, offline caching, real Web Push delivery, and a prayer-reminder scheduler. Generate one VAPID key pair with `npx web-push generate-vapid-keys`, set the public/private keys and contact subject in every deployment environment, and set a strong `CRON_SECRET`.
+
+`vercel.json` invokes `/api/cron/prayer-reminders` every minute. The production hosting plan must support that frequency. On another host, configure a trusted scheduler to send a `GET` request every minute with `Authorization: Bearer <CRON_SECRET>`.
+
+Push subscriptions and prayer timing preferences are stored in Supabase. Apply the latest migration before enabling the UI in production.
 
 ## Privacy and legal notes
 
@@ -165,7 +173,6 @@ Also verify public bank, contact, WhatsApp, Telegram, map, and donation campaign
 ## Known future improvements
 
 - Stronger admin security if the app grows beyond the early phase.
-- Real push notification delivery backend.
 - More granular admin roles.
 - Audit log views and export tools.
 - More complete donation accounting integrations.

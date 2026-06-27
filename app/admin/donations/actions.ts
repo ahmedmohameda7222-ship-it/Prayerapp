@@ -3,6 +3,38 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
+import { sendAdminContentPush } from "@/lib/push/web-push";
+
+type CampaignPushRow = {
+  id: string;
+  title: string;
+  title_ar?: string | null;
+  title_en?: string | null;
+  title_de?: string | null;
+  title_tr?: string | null;
+  is_active: boolean;
+};
+
+async function notifyActiveCampaign(row: CampaignPushRow) {
+  if (!row.is_active) return;
+  try {
+    await sendAdminContentPush({
+      eventKey: `donation_campaign:${row.id}:active`,
+      notificationType: "donation_campaign",
+      sourceId: row.id,
+      url: "/donations",
+      contentTitle: {
+        fallback: row.title,
+        ar: row.title_ar,
+        en: row.title_en,
+        de: row.title_de,
+        tr: row.title_tr,
+      },
+    });
+  } catch (error) {
+    console.error("[donation campaign push] delivery failed", error);
+  }
+}
 
 function validateDonationSettings(data: Record<string, string>): string[] {
   const errors: string[] = [];
@@ -102,6 +134,8 @@ export async function createDonationCampaignAction(
   const { data: result, error } = await client.from("donation_campaigns").insert(db).select().single();
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
+  await notifyActiveCampaign(result as CampaignPushRow);
+
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
   revalidatePath("/");
@@ -119,6 +153,12 @@ export async function updateDonationCampaignAction(
 
   const errors = validateCampaign(data);
   if (errors.length > 0) return { success: false, error: errors[0] };
+
+  const { data: previous } = await client
+    .from("donation_campaigns")
+    .select("is_active")
+    .eq("id", id)
+    .maybeSingle();
 
   const db: Record<string, unknown> = {
     title: data.titleAr.trim(),
@@ -139,8 +179,10 @@ export async function updateDonationCampaignAction(
     is_featured: data.isFeatured === "true",
   };
 
-  const { error } = await client.from("donation_campaigns").update(db).eq("id", id);
+  const { data: result, error } = await client.from("donation_campaigns").update(db).eq("id", id).select().single();
   if (error) return { success: false, error: "admin.errors.saveFailed" };
+
+  if (!previous?.is_active) await notifyActiveCampaign(result as CampaignPushRow);
 
   revalidatePath("/admin/donations");
   revalidatePath("/donations");
@@ -167,8 +209,10 @@ export async function toggleActiveCampaignAction(token: string, id: string, isAc
   const client = createServerClient();
   if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
-  const { error } = await client.from("donation_campaigns").update({ is_active: isActive }).eq("id", id);
+  const { data: result, error } = await client.from("donation_campaigns").update({ is_active: isActive }).eq("id", id).select().single();
   if (error) return { success: false, error: "admin.errors.toggleFailed" };
+
+  if (isActive) await notifyActiveCampaign(result as CampaignPushRow);
 
   const verb = isActive ? "activated" : "deactivated";
   revalidatePath("/admin/donations");

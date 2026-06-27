@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "deggendorf-prayer";
-const VERSION = "v12";
+const VERSION = "v13";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${VERSION}`;
 const IMAGE_CACHE = `${CACHE_PREFIX}-images-${VERSION}`;
@@ -9,7 +9,8 @@ const PRECACHE_ASSETS = [
   "/",
   OFFLINE_URL,
   "/manifest.webmanifest",
-  "/assets/app-icon-main.png",
+  "/assets/app-icon-192.png",
+  "/assets/app-icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -178,14 +179,16 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  let payload = { title: "Masjid El-Rahman", body: "New mosque update", url: "/news" };
+  let payload = { title: "Masjid El-Rahman", body: "New mosque update", url: "/news", tag: "mosque-update" };
   try {
-    payload = { ...payload, ...event.data.json() };
+    if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {}
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: "/assets/app-icon-main.png",
+      icon: "/assets/app-icon-192.png",
+      tag: payload.tag,
+      renotify: false,
       data: { url: payload.url },
     })
   );
@@ -193,5 +196,16 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(self.clients.openWindow(event.notification.data?.url || "/news"));
+  event.waitUntil((async () => {
+    const requestedUrl = new URL(event.notification.data?.url || "/news", self.location.origin);
+    const targetUrl = requestedUrl.origin === self.location.origin ? requestedUrl.href : `${self.location.origin}/`;
+    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of clients) {
+      if ("focus" in client) {
+        if ("navigate" in client) await client.navigate(targetUrl);
+        return client.focus();
+      }
+    }
+    return self.clients.openWindow(targetUrl);
+  })());
 });

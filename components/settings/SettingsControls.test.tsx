@@ -18,4 +18,11 @@ describe("SettingsControls", () => {
     expect(document.documentElement.style.colorScheme).toBe("light");
     expect(localStorage.getItem("deggendorf-app-preferences-v1")).not.toContain('"theme"');
   });
+
+  it("offers prayer timing without notification category checkboxes", () => {
+    render(<AppPreferencesProvider><TimeFormatProvider><SettingsControls /></TimeFormatProvider></AppPreferencesProvider>);
+
+    expect(screen.getByRole("combobox", { name: "توقيت تذكير الصلاة" })).toBeInTheDocument();
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+  });
 });

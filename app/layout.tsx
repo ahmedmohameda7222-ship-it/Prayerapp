@@ -24,8 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
     description: metadataDescriptions[locale],
     manifest: "/manifest.webmanifest",
     icons: {
-      icon: "/assets/app-icon-main.png",
-      apple: "/assets/app-icon-main.png",
+      icon: "/assets/app-icon-192.png",
+      apple: "/assets/app-icon-192.png",
     },
     appleWebApp: {
       capable: true,

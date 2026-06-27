@@ -7,6 +7,11 @@ export function ServiceWorkerRegistrar() {
     if (!("serviceWorker" in navigator)) return;
 
     let registration: ServiceWorkerRegistration | undefined;
+    const captureInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      window.__pwaInstallPrompt = event as BeforeInstallPromptEvent;
+      window.dispatchEvent(new Event("pwa-install-available"));
+    };
     const warmLoadedResources = () => {
       const controller = navigator.serviceWorker.controller;
       if (!controller) return;
@@ -46,10 +51,12 @@ export function ServiceWorkerRegistrar() {
     const updateWhenOnline = () => registration?.update().catch(() => undefined);
 
     void register();
+    window.addEventListener("beforeinstallprompt", captureInstallPrompt);
     window.addEventListener("online", updateWhenOnline);
     window.addEventListener("load", warmLoadedResources);
     navigator.serviceWorker.addEventListener("controllerchange", markOfflineReadiness);
     return () => {
+      window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
       window.removeEventListener("online", updateWhenOnline);
       window.removeEventListener("load", warmLoadedResources);
       navigator.serviceWorker.removeEventListener("controllerchange", markOfflineReadiness);

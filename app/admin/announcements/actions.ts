@@ -4,8 +4,41 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
 import type { AnnouncementType } from "@/lib/types";
+import { sendAdminContentPush } from "@/lib/push/web-push";
 
 const validTypes: AnnouncementType[] = ["General", "Urgent", "Location update", "Community", "Ramadan", "Eid", "Donation"];
+
+type AnnouncementPushRow = {
+  id: string;
+  title: string;
+  title_ar?: string | null;
+  title_en?: string | null;
+  title_de?: string | null;
+  title_tr?: string | null;
+  is_urgent: boolean;
+  published: boolean;
+};
+
+async function notifyUrgentAnnouncement(row: AnnouncementPushRow) {
+  if (!row.is_urgent || !row.published) return;
+  try {
+    await sendAdminContentPush({
+      eventKey: `announcement:${row.id}:urgent-published`,
+      notificationType: "urgent_announcement",
+      sourceId: row.id,
+      url: "/news",
+      contentTitle: {
+        fallback: row.title,
+        ar: row.title_ar,
+        en: row.title_en,
+        de: row.title_de,
+        tr: row.title_tr,
+      },
+    });
+  } catch (error) {
+    console.error("[announcement push] delivery failed", error);
+  }
+}
 
 function validateAnnouncement(data: Record<string, string>) {
   const errors: string[] = [];
@@ -55,6 +88,8 @@ export async function createAnnouncementAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
+  await notifyUrgentAnnouncement(result as AnnouncementPushRow);
+
   revalidatePath("/admin/announcements");
   revalidatePath("/news");
   revalidatePath("/friday");
@@ -78,6 +113,12 @@ export async function updateAnnouncementAction(
     return { success: false, error: errors[0] };
   }
 
+  const { data: previous } = await client
+    .from("announcements")
+    .select("is_urgent, published")
+    .eq("id", id)
+    .maybeSingle();
+
   const db = {
     title: data.titleAr.trim(),
     title_ar: data.titleAr.trim(),
@@ -94,9 +135,14 @@ export async function updateAnnouncementAction(
     published: data.published === "true",
   };
 
-  const { error } = await client.from("announcements").update(db).eq("id", id).select().single();
+  const { data: result, error } = await client.from("announcements").update(db).eq("id", id).select().single();
   if (error) {
     return { success: false, error: "admin.errors.saveFailed" };
+  }
+
+
+  if (!(previous?.is_urgent && previous?.published)) {
+    await notifyUrgentAnnouncement(result as AnnouncementPushRow);
   }
 
   revalidatePath("/admin/announcements");
@@ -132,10 +178,12 @@ export async function togglePublishAnnouncementAction(token: string, id: string,
     return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
-  const { error } = await client.from("announcements").update({ published }).eq("id", id);
+  const { data: result, error } = await client.from("announcements").update({ published }).eq("id", id).select().single();
   if (error) {
     return { success: false, error: "admin.errors.toggleFailed" };
   }
+
+  if (published) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
 
   const verb = published ? "published" : "unpublished";
   revalidatePath("/admin/announcements");
@@ -152,10 +200,12 @@ export async function toggleUrgentAnnouncementAction(token: string, id: string, 
     return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
-  const { error } = await client.from("announcements").update({ is_urgent: isUrgent }).eq("id", id);
+  const { data: result, error } = await client.from("announcements").update({ is_urgent: isUrgent }).eq("id", id).select().single();
   if (error) {
     return { success: false, error: "admin.errors.toggleFailed" };
   }
+
+  if (isUrgent) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
 
   const verb = isUrgent ? "marked urgent" : "unmarked urgent";
   revalidatePath("/admin/announcements");

@@ -3,6 +3,35 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
+import { sendAdminContentPush } from "@/lib/push/web-push";
+
+type JumuahPushRow = {
+  id: string;
+  date: string;
+  location_name: string;
+  published: boolean;
+};
+
+async function notifyPublishedJumuah(row: JumuahPushRow) {
+  if (!row.published) return;
+  try {
+    await sendAdminContentPush({
+      eventKey: `jumuah:${row.id}:published`,
+      notificationType: "friday_announcement",
+      sourceId: row.id,
+      url: "/friday",
+      contentTitle: {
+        fallback: `${row.date} · ${row.location_name}`,
+        en: `Friday prayer on ${row.date} · ${row.location_name}`,
+        de: `Freitagsgebet am ${row.date} · ${row.location_name}`,
+        tr: `${row.date} Cuma namazı · ${row.location_name}`,
+        ar: `صلاة الجمعة ${row.date} · ${row.location_name}`,
+      },
+    });
+  } catch (error) {
+    console.error("[Friday announcement push] delivery failed", error);
+  }
+}
 
 function timeRegex() {
   return /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -69,6 +98,8 @@ export async function createJumuahAction(
     return { success: false, error: "admin.errors.saveFailed" };
   }
 
+  await notifyPublishedJumuah(result as JumuahPushRow);
+
   revalidatePath("/admin/jumuah");
   revalidatePath("/friday");
   revalidatePath("/");
@@ -91,6 +122,12 @@ export async function updateJumuahAction(
     return { success: false, error: errors[0] };
   }
 
+  const { data: previous } = await client
+    .from("jumuah_times")
+    .select("published")
+    .eq("id", id)
+    .maybeSingle();
+
   const db = {
     date: data.date,
     khutbah_time: data.khutbahTime,
@@ -111,10 +148,12 @@ export async function updateJumuahAction(
     published: data.published === "true",
   };
 
-  const { error } = await client.from("jumuah_times").update(db).eq("id", id).select().single();
+  const { data: result, error } = await client.from("jumuah_times").update(db).eq("id", id).select().single();
   if (error) {
     return { success: false, error: "admin.errors.saveFailed" };
   }
+
+  if (!previous?.published) await notifyPublishedJumuah(result as JumuahPushRow);
 
   revalidatePath("/admin/jumuah");
   revalidatePath("/friday");
@@ -147,10 +186,12 @@ export async function togglePublishJumuahAction(token: string, id: string, publi
     return { success: false, error: "admin.errors.supabaseNotConfigured" };
   }
 
-  const { error } = await client.from("jumuah_times").update({ published }).eq("id", id);
+  const { data: result, error } = await client.from("jumuah_times").update({ published }).eq("id", id).select().single();
   if (error) {
     return { success: false, error: "admin.errors.toggleFailed" };
   }
+
+  if (published) await notifyPublishedJumuah(result as JumuahPushRow);
 
   const verb = published ? "published" : "unpublished";
   revalidatePath("/admin/jumuah");

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
+import { sendAdminContentPush } from "@/lib/push/web-push";
 
 
 function validateEvent(data: Record<string, string>): string[] {
@@ -54,6 +55,24 @@ export async function createEventAction(
 
   const { data: result, error } = await client.from("events").insert(db).select().single();
   if (error) return { success: false, error: "admin.errors.saveFailed" };
+
+  try {
+    await sendAdminContentPush({
+      eventKey: `event:${result.id}:published`,
+      notificationType: "event",
+      sourceId: result.id,
+      url: "/events",
+      contentTitle: {
+        fallback: result.title,
+        ar: result.title_ar,
+        en: result.title_en,
+        de: result.title_de,
+        tr: result.title_tr,
+      },
+    });
+  } catch (pushError) {
+    console.error("[event push] delivery failed", pushError);
+  }
 
   revalidatePath("/admin/events");
   revalidatePath("/events");

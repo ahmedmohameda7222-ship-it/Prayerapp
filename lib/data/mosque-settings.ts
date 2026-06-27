@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import type { MosqueSettings } from "@/lib/types";
+import { previewMosqueSettings } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 import { getCached, invalidateCache } from "./cache";
 
@@ -22,7 +23,9 @@ const DEFAULT_MOSQUE_SETTINGS: MosqueSettings = {
 
 export async function getMosqueSettings(): Promise<MosqueSettings> {
   const client = createClient();
-  if (!client) return { ...DEFAULT_MOSQUE_SETTINGS };
+  if (!client) {
+    return previewMosqueSettings;
+  }
   return getCached("mosque_settings", async () => {
     const { data, error } = await client.from("mosque_settings").select("*").single();
     if (error?.code === "PGRST116") return { ...DEFAULT_MOSQUE_SETTINGS };

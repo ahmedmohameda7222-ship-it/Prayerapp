@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
 import type { PrayerTime } from "@/lib/types";
+import { previewPrayerTimes } from "./demo-data";
 import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
+
+function filterPreviewPrayerTimes(includeUnpublished = false): PrayerTime[] {
+  return previewPrayerTimes.filter((item) => includeUnpublished || item.published);
+}
 
 function mapFromDb(row: Record<string, unknown>): PrayerTime {
   return {
@@ -46,7 +51,7 @@ function mapToDb(item: Partial<PrayerTime>): Record<string, unknown> {
 
 export async function getPrayerTimes(includeUnpublished = false): Promise<PrayerTime[]> {
   const client = createClient();
-  if (!client) return [];
+  if (!client) return filterPreviewPrayerTimes(includeUnpublished);
   const key = `prayer_times_${includeUnpublished}`;
   return getCached(key, async () => {
     let query = client
@@ -62,7 +67,7 @@ export async function getPrayerTimes(includeUnpublished = false): Promise<Prayer
 
 export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | undefined> {
   const client = createClient();
-  if (!client) return undefined;
+  if (!client) return filterPreviewPrayerTimes().find((item) => item.date === date);
   return getCached(`prayer_time_${date}`, async () => {
     const { data, error } = await client
       .from("prayer_times")

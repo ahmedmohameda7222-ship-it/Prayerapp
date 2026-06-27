@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
-import { mosqueSettings as mockMosqueSettings } from "@/lib/mock-data";
 import type { MosqueSettings } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 export async function getMosqueSettings(): Promise<MosqueSettings> {
   const client = createClient();
-  if (!client) return mockMosqueSettings;
+  if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("mosque_settings").select("*").single();
   if (error || !data) throw new Error("Unable to load mosque settings");
   return {
@@ -25,7 +24,7 @@ export async function getMosqueSettings(): Promise<MosqueSettings> {
 
 export async function updateMosqueSettings(settings: Partial<MosqueSettings>): Promise<MosqueSettings> {
   const client = createClient();
-  if (!client) return { ...mockMosqueSettings, ...settings } as MosqueSettings;
+  if (!client) throw new Error("Supabase is not configured");
   const db: Record<string, unknown> = {};
   Object.assign(db, localizedFieldsToDb(settings as Record<string, unknown>, "mosqueName", "mosque_name", { includeLegacy: true }));
   if (settings.mosqueName) db.mosque_name = settings.mosqueNameAr || settings.mosqueName;

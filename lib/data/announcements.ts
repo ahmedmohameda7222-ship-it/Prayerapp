@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/client";
-import { announcements as mockAnnouncements } from "@/lib/mock-data";
 import type { Announcement } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
@@ -33,7 +32,7 @@ function mapToDb(item: Partial<Announcement>): Record<string, unknown> {
 
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {
   const client = createClient();
-  if (!client) return mockAnnouncements.filter((a) => a.published);
+  if (!client) return [];
   let query = client
     .from("announcements")
     .select("*")
@@ -46,9 +45,7 @@ export async function getAnnouncements(includeUnpublished = false): Promise<Anno
 
 export async function createAnnouncement(item: Omit<Announcement, "id" | "createdAt">): Promise<Announcement> {
   const client = createClient();
-  if (!client) {
-    return { ...item, id: `mock-${Date.now()}`, createdAt: new Date().toISOString() } as Announcement;
-  }
+  if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("announcements").insert(mapToDb(item)).select().single();
   if (error || !data) throw new Error("Failed to create announcement");
   return mapFromDb(data as Record<string, unknown>);
@@ -56,11 +53,7 @@ export async function createAnnouncement(item: Omit<Announcement, "id" | "create
 
 export async function updateAnnouncement(id: string, item: Partial<Announcement>): Promise<Announcement> {
   const client = createClient();
-  if (!client) {
-    const existing = mockAnnouncements.find((a) => a.id === id);
-    if (!existing) throw new Error("Not found");
-    return { ...existing, ...item } as Announcement;
-  }
+  if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("announcements").update(mapToDb(item)).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update announcement");
   return mapFromDb(data as Record<string, unknown>);
@@ -68,7 +61,7 @@ export async function updateAnnouncement(id: string, item: Partial<Announcement>
 
 export async function deleteAnnouncement(id: string): Promise<void> {
   const client = createClient();
-  if (!client) return;
+  if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("announcements").delete().eq("id", id);
   if (error) throw new Error("Failed to delete announcement");
 }

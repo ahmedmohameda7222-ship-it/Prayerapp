@@ -1,16 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
-import {
-  donationSettings as mockDonationSettings,
-  donationCampaigns as mockDonationCampaigns,
-  donations as mockDonations,
-  donationReport as mockDonationReport,
-} from "@/lib/mock-data";
 import type { DonationSettings, DonationCampaign, Donation, DonationReport } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 export async function getDonationSettings(): Promise<DonationSettings> {
   const client = createClient();
-  if (!client) return mockDonationSettings;
+  if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("donation_settings").select("*").single();
   if (error || !data) throw new Error("Unable to load donation settings");
   return {
@@ -27,7 +21,7 @@ export async function getDonationSettings(): Promise<DonationSettings> {
 
 export async function updateDonationSettings(settings: Partial<DonationSettings>): Promise<DonationSettings> {
   const client = createClient();
-  if (!client) return { ...mockDonationSettings, ...settings } as DonationSettings;
+  if (!client) throw new Error("Supabase is not configured");
   const db: Record<string, unknown> = {};
   if (settings.accountHolder) db.account_holder = settings.accountHolder;
   if (settings.iban) db.iban = settings.iban;
@@ -44,7 +38,7 @@ export async function updateDonationSettings(settings: Partial<DonationSettings>
 
 export async function getDonationCampaigns(includeInactive = false): Promise<DonationCampaign[]> {
   const client = createClient();
-  if (!client) return mockDonationCampaigns;
+  if (!client) return [];
   let query = client
     .from("donation_campaigns")
     .select("*")
@@ -72,7 +66,7 @@ export async function getDonationCampaigns(includeInactive = false): Promise<Don
 
 export async function createDonationCampaign(item: Omit<DonationCampaign, "id">): Promise<DonationCampaign> {
   const client = createClient();
-  if (!client) return { ...item, id: `mock-${Date.now()}` } as DonationCampaign;
+  if (!client) throw new Error("Supabase is not configured");
   const db = {
     ...localizedFieldsToDb(item as unknown as Record<string, unknown>, "title", "title", { includeLegacy: true }),
     ...localizedFieldsToDb(item as unknown as Record<string, unknown>, "description", "description", { includeLegacy: true }),
@@ -92,11 +86,7 @@ export async function createDonationCampaign(item: Omit<DonationCampaign, "id">)
 
 export async function updateDonationCampaign(id: string, item: Partial<DonationCampaign>): Promise<DonationCampaign> {
   const client = createClient();
-  if (!client) {
-    const existing = mockDonationCampaigns.find((c) => c.id === id);
-    if (!existing) throw new Error("Not found");
-    return { ...existing, ...item } as DonationCampaign;
-  }
+  if (!client) throw new Error("Supabase is not configured");
   const db: Record<string, unknown> = {};
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "title", "title", { includeLegacy: true }));
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "description", "description", { includeLegacy: true }));
@@ -115,14 +105,14 @@ export async function updateDonationCampaign(id: string, item: Partial<DonationC
 
 export async function deleteDonationCampaign(id: string): Promise<void> {
   const client = createClient();
-  if (!client) return;
+  if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("donation_campaigns").delete().eq("id", id);
   if (error) throw new Error("Failed to delete campaign");
 }
 
 export async function getDonations(): Promise<Donation[]> {
   const client = createClient();
-  if (!client) return mockDonations;
+  if (!client) return [];
   const { data, error } = await client.from("donations").select("*").order("received_at", { ascending: false });
   if (error || !data) throw new Error("Unable to load donations");
   return data.map((row: unknown) => ({
@@ -137,7 +127,7 @@ export async function getDonations(): Promise<Donation[]> {
 
 export async function getDonationReport(): Promise<DonationReport> {
   const client = createClient();
-  if (!client) return mockDonationReport;
+  if (!client) return { month: new Date().toISOString().slice(0, 7), monthlyNeed: 0, donationsReceived: 0, remaining: 0 };
   const { data, error } = await client.from("donation_reports").select("*").order("month", { ascending: false }).limit(1).single();
   if (error || !data) {
     if (error?.code === "PGRST116") return { month: new Date().toISOString().slice(0, 7), monthlyNeed: 0, donationsReceived: 0, remaining: 0 };

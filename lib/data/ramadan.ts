@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
-import { ramadanDays as mockRamadanDays } from "@/lib/mock-data";
 import type { RamadanDay } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 export async function getRamadanDays(includeUnpublished = false): Promise<RamadanDay[]> {
   const client = createClient();
-  if (!client) return mockRamadanDays;
+  if (!client) return [];
   let query = client.from("ramadan_days").select("*").order("date", { ascending: true });
   if (!includeUnpublished) query = query.eq("published", true);
   const { data, error } = await query;
@@ -30,7 +29,7 @@ export async function getRamadanDays(includeUnpublished = false): Promise<Ramada
 
 export async function createRamadanDay(item: Omit<RamadanDay, "id">): Promise<RamadanDay> {
   const client = createClient();
-  if (!client) return { ...item, id: `mock-${Date.now()}` };
+  if (!client) throw new Error("Supabase is not configured");
   const db = {
     date: item.date,
     ramadan_day: item.ramadanDay,
@@ -49,11 +48,7 @@ export async function createRamadanDay(item: Omit<RamadanDay, "id">): Promise<Ra
 
 export async function updateRamadanDay(id: string, item: Partial<RamadanDay>): Promise<RamadanDay> {
   const client = createClient();
-  if (!client) {
-    const existing = mockRamadanDays.find((d) => d.id === id);
-    if (!existing) throw new Error("Not found");
-    return { ...existing, ...item };
-  }
+  if (!client) throw new Error("Supabase is not configured");
   const db: Record<string, unknown> = {};
   if (item.date) db.date = item.date;
   if (item.ramadanDay !== undefined) db.ramadan_day = item.ramadanDay;
@@ -71,7 +66,7 @@ export async function updateRamadanDay(id: string, item: Partial<RamadanDay>): P
 
 export async function deleteRamadanDay(id: string): Promise<void> {
   const client = createClient();
-  if (!client) return;
+  if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("ramadan_days").delete().eq("id", id);
   if (error) throw new Error("Failed to delete Ramadan day");
 }

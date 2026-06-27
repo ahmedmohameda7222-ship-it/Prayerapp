@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
-import { events as mockEvents } from "@/lib/mock-data";
 import type { Event } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 export async function getEvents(includeUnpublished = false): Promise<Event[]> {
   const client = createClient();
-  if (!client) return mockEvents;
+  if (!client) return [];
   let query = client.from("events").select("*").order("date", { ascending: true });
   if (!includeUnpublished) query = query.eq("published", true);
   const { data, error } = await query;
@@ -31,7 +30,7 @@ export async function getEvents(includeUnpublished = false): Promise<Event[]> {
 
 export async function createEvent(item: Omit<Event, "id">): Promise<Event> {
   const client = createClient();
-  if (!client) return { ...item, id: `mock-${Date.now()}` };
+  if (!client) throw new Error("Supabase is not configured");
   const db = {
     ...localizedFieldsToDb(item as unknown as Record<string, unknown>, "title", "title", { includeLegacy: true }),
     ...localizedFieldsToDb(item as unknown as Record<string, unknown>, "description", "description", { includeLegacy: true }),
@@ -51,11 +50,7 @@ export async function createEvent(item: Omit<Event, "id">): Promise<Event> {
 
 export async function updateEvent(id: string, item: Partial<Event>): Promise<Event> {
   const client = createClient();
-  if (!client) {
-    const existing = mockEvents.find((e) => e.id === id);
-    if (!existing) throw new Error("Not found");
-    return { ...existing, ...item };
-  }
+  if (!client) throw new Error("Supabase is not configured");
   const db: Record<string, unknown> = {};
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "title", "title", { includeLegacy: true }));
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "description", "description", { includeLegacy: true }));
@@ -74,7 +69,7 @@ export async function updateEvent(id: string, item: Partial<Event>): Promise<Eve
 
 export async function deleteEvent(id: string): Promise<void> {
   const client = createClient();
-  if (!client) return;
+  if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("events").delete().eq("id", id);
   if (error) throw new Error("Failed to delete event");
 }

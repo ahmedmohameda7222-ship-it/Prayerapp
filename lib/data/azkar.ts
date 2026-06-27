@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
-import { azkarCategories as mockCategories, azkarItems as mockItems } from "@/lib/mock-data";
 import type { AzkarCategory, AzkarItem } from "@/lib/types";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 
 export async function getAzkarCategories(): Promise<AzkarCategory[]> {
   const client = createClient();
-  if (!client) return mockCategories;
+  if (!client) return [];
   const { data, error } = await client.from("azkar_categories").select("name").order("sort_order", { ascending: true });
   if (error || !data) throw new Error("Unable to load azkar categories");
   return data.map((row: unknown) => String((row as Record<string, unknown>).name)) as AzkarCategory[];
@@ -13,7 +12,7 @@ export async function getAzkarCategories(): Promise<AzkarCategory[]> {
 
 export async function getAzkarItems(includeUnpublished = false): Promise<AzkarItem[]> {
   const client = createClient();
-  if (!client) return mockItems.filter((i) => i.isPublished);
+  if (!client) return [];
   let query = client
     .from("azkar_items")
     .select("*")
@@ -43,7 +42,7 @@ export async function getAzkarItems(includeUnpublished = false): Promise<AzkarIt
 
 export async function createAzkarItem(item: Omit<AzkarItem, "id">): Promise<AzkarItem> {
   const client = createClient();
-  if (!client) return { ...item, id: `mock-${Date.now()}` };
+  if (!client) throw new Error("Supabase is not configured");
   const db = {
     category: item.category,
     arabic_text: item.arabicText,
@@ -65,11 +64,7 @@ export async function createAzkarItem(item: Omit<AzkarItem, "id">): Promise<Azka
 
 export async function updateAzkarItem(id: string, item: Partial<AzkarItem>): Promise<AzkarItem> {
   const client = createClient();
-  if (!client) {
-    const existing = mockItems.find((i) => i.id === id);
-    if (!existing) throw new Error("Not found");
-    return { ...existing, ...item };
-  }
+  if (!client) throw new Error("Supabase is not configured");
   const db: Record<string, unknown> = {};
   if (item.category) db.category = item.category;
   if (item.arabicText) db.arabic_text = item.arabicText;
@@ -90,7 +85,7 @@ export async function updateAzkarItem(id: string, item: Partial<AzkarItem>): Pro
 
 export async function deleteAzkarItem(id: string): Promise<void> {
   const client = createClient();
-  if (!client) return;
+  if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("azkar_items").delete().eq("id", id);
   if (error) throw new Error("Failed to delete azkar item");
 }

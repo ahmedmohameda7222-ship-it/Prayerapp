@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/client";
-import { prayerTimes as mockPrayerTimes } from "@/lib/mock-data";
 import type { PrayerTime } from "@/lib/types";
 
 function mapFromDb(row: Record<string, unknown>): PrayerTime {
@@ -46,7 +45,7 @@ function mapToDb(item: Partial<PrayerTime>): Record<string, unknown> {
 
 export async function getPrayerTimes(includeUnpublished = false): Promise<PrayerTime[]> {
   const client = createClient();
-  if (!client) return mockPrayerTimes;
+  if (!client) return [];
   let query = client
     .from("prayer_times")
     .select("*")
@@ -59,7 +58,7 @@ export async function getPrayerTimes(includeUnpublished = false): Promise<Prayer
 
 export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | undefined> {
   const client = createClient();
-  if (!client) return mockPrayerTimes.find((p) => p.date === date && p.published);
+  if (!client) return undefined;
   const { data, error } = await client
     .from("prayer_times")
     .select("*")
@@ -75,10 +74,8 @@ export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | un
 
 export async function createPrayerTime(item: Omit<PrayerTime, "id">): Promise<PrayerTime> {
   const client = createClient();
+  if (!client) throw new Error("Supabase is not configured");
   const dbItem = mapToDb(item);
-  if (!client) {
-    return { ...item, id: `mock-${Date.now()}` } as PrayerTime;
-  }
   const { data, error } = await client.from("prayer_times").insert(dbItem).select().single();
   if (error || !data) throw new Error("Failed to create prayer time");
   return mapFromDb(data as Record<string, unknown>);
@@ -86,11 +83,7 @@ export async function createPrayerTime(item: Omit<PrayerTime, "id">): Promise<Pr
 
 export async function updatePrayerTime(id: string, item: Partial<PrayerTime>): Promise<PrayerTime> {
   const client = createClient();
-  if (!client) {
-    const existing = mockPrayerTimes.find((p) => p.id === id);
-    if (!existing) throw new Error("Not found");
-    return { ...existing, ...item } as PrayerTime;
-  }
+  if (!client) throw new Error("Supabase is not configured");
   const dbItem = mapToDb(item);
   const { data, error } = await client.from("prayer_times").update(dbItem).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update prayer time");
@@ -99,7 +92,7 @@ export async function updatePrayerTime(id: string, item: Partial<PrayerTime>): P
 
 export async function deletePrayerTime(id: string): Promise<void> {
   const client = createClient();
-  if (!client) return;
+  if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("prayer_times").delete().eq("id", id);
   if (error) throw new Error("Failed to delete prayer time");
 }

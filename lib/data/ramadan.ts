@@ -1,11 +1,14 @@
 import { createClient } from "@/lib/supabase/client";
 import type { RamadanDay } from "@/lib/types";
+import { previewRamadanDays } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
 
 export async function getRamadanDays(includeUnpublished = false): Promise<RamadanDay[]> {
   const client = createClient();
-  if (!client) return [];
+  if (!client) {
+    return previewRamadanDays.filter((item) => includeUnpublished || item.published !== false);
+  }
   const key = `ramadan_days_${includeUnpublished}`;
   return getCached(key, async () => {
     let query = client.from("ramadan_days").select("*").order("date", { ascending: true });

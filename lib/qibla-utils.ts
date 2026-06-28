@@ -26,13 +26,11 @@ export function calculateNeedleRotation(qiblaBearing: number, phoneHeading: numb
 export function smoothCompassHeading(
   previousHeading: number | null,
   nextHeading: number,
-  smoothingFactor = 0.14
+  smoothingFactor = 0.24
 ): number {
   if (previousHeading === null) return normalizeDegrees(nextHeading);
 
   const shortestDelta = ((nextHeading - previousHeading + 540) % 360) - 180;
-  if (Math.abs(shortestDelta) < 1.4) return normalizeDegrees(previousHeading);
-
   return normalizeDegrees(previousHeading + shortestDelta * smoothingFactor);
 }
 

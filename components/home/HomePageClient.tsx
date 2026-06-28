@@ -95,7 +95,7 @@ export function HomePageClient({
 
       {events.length ? (
         <section className="home-events">
-          <SectionTitle>Event</SectionTitle>
+          <SectionTitle>{t("events.title")}</SectionTitle>
           <div className="grid gap-3 lg:grid-cols-2">
             {events.map((event) => <EventCard key={event.id} event={event} />)}
           </div>

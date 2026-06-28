@@ -54,7 +54,7 @@ export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
       </div>
       <div aria-hidden="true" className="absolute left-1/2 top-[46%] flex w-[68%] -translate-x-1/2 flex-col items-center text-center text-[var(--color-gold-soft)] sm:top-[47%] sm:w-[54%]">
         <h2 className="font-brand text-[clamp(17px,4.4vw,19px)] font-semibold leading-tight drop-shadow-md sm:text-[clamp(24px,2.2vw,31px)]">{title}</h2>
-        <p className="mt-1 text-[clamp(9px,2.4vw,11px)] font-bold sm:mt-1.5 sm:text-[clamp(10px,1vw,13px)]">مواقيت الصلاة لمدينة ديغندورف</p>
+        <p className="mt-1 text-[clamp(9px,2.4vw,11px)] font-bold sm:mt-1.5 sm:text-[clamp(10px,1vw,13px)]">مواقيت الصلاة وآخر أخبار جامع الرحمن</p>
         <span className="mt-1.5 h-px w-2/3 bg-[var(--color-gold)]/65 sm:mt-2 sm:w-1/2" />
         <p className="mt-2 text-[clamp(11px,2.9vw,13px)] font-semibold leading-[1.45] drop-shadow-sm sm:mt-2.5 sm:text-[clamp(13px,1.25vw,16px)] sm:leading-[1.5]">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا</p>
         <p className="mt-0.5 text-[8px] font-bold text-[var(--color-gold)] sm:text-[10px]">النساء: 103</p>

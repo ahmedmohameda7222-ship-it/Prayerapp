@@ -20,6 +20,9 @@ function SupplementalPrayerRow({ label, time, detail }: { label: string; time?: 
 
 export function PrayerTimesCard({ prayer, activePrayer }: { prayer?: PrayerTime; activePrayer?: PrayerName }) {
   const { t, locale } = useTranslation();
+  const salatFajrLabel = locale === "de" ? "Fajr-Gebet" : t("prayer.salatFajr");
+  const salatIshaLabel = locale === "de" ? "Ischa-Gebet" : t("prayer.salatIsha");
+
   if (!prayer) {
     return (
       <Card>
@@ -57,12 +60,12 @@ export function PrayerTimesCard({ prayer, activePrayer }: { prayer?: PrayerTime;
               active={name === activePrayer}
               showIqama={name !== "fajr" && name !== "maghrib"}
             />
-            {name === "fajr" && salatFajr ? <SupplementalPrayerRow label={t("prayer.salatFajr")} time={salatFajr} /> : null}
+            {name === "fajr" && salatFajr ? <SupplementalPrayerRow label={salatFajrLabel} time={salatFajr} /> : null}
             {name === "maghrib" && hasMaghribProgram ? (
               <div className="grid gap-1 border-s-2 border-[var(--color-gold)] ps-2">
                 {salatMaghrib ? <SupplementalPrayerRow label={t("prayer.salatMaghrib")} time={salatMaghrib} /> : null}
                 {lessonDetail ? <SupplementalPrayerRow label={t("prayer.khatira")} detail={lessonDetail} /> : null}
-                {maghribProgram?.combinedIshaTime ? <SupplementalPrayerRow label={t("prayer.salatIsha")} time={maghribProgram.combinedIshaTime} /> : null}
+                {maghribProgram?.combinedIshaTime ? <SupplementalPrayerRow label={salatIshaLabel} time={maghribProgram.combinedIshaTime} /> : null}
               </div>
             ) : null}
           </Fragment>

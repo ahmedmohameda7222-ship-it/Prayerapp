@@ -305,6 +305,18 @@
   "notifications": {
     "empty": "Acil güncelleme yok."
   },
+  "notificationPrompt": {
+    "title": "Cami bildirimlerini aç",
+    "body": "Namaz hatırlatmaları, acil duyurular, etkinlikler, cuma güncellemeleri ve bağış kampanyası güncellemelerini alın.",
+    "enable": "Bildirimleri aç",
+    "enabling": "Açılıyor...",
+    "later": "Daha sonra",
+    "iosTitle": "Önce uygulamayı yükleyin",
+    "iosBody": "iPhone veya iPad'de bildirimleri açmadan önce Masjid El-Rahman'ı Ana Ekran'a ekleyin.",
+    "iosSteps": "Safari → Paylaş → Ana Ekrana Ekle",
+    "gotIt": "Anladım",
+    "close": "Bildirim istemini kapat"
+  },
   "privacy": {
     "title": "Gizlilik politikası",
     "controllerTitle": "Sorumlu kuruluş",

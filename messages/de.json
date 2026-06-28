@@ -305,6 +305,18 @@
   "notifications": {
     "empty": "Es gibt keine dringenden Neuigkeiten."
   },
+  "notificationPrompt": {
+    "title": "Moschee-Benachrichtigungen aktivieren",
+    "body": "Erhalte Gebetserinnerungen, dringende Mitteilungen, Veranstaltungen, Freitags-Updates und Neuigkeiten zu Spendenaktionen.",
+    "enable": "Benachrichtigungen aktivieren",
+    "enabling": "Wird aktiviert...",
+    "later": "Später",
+    "iosTitle": "App zuerst installieren",
+    "iosBody": "Auf iPhone oder iPad musst du Masjid El-Rahman zuerst zum Home-Bildschirm hinzufügen, bevor du Benachrichtigungen aktivierst.",
+    "iosSteps": "Safari → Teilen → Zum Home-Bildschirm",
+    "gotIt": "Verstanden",
+    "close": "Benachrichtigungshinweis schließen"
+  },
   "privacy": {
     "title": "Datenschutz",
     "controllerTitle": "Verantwortliche Organisation",

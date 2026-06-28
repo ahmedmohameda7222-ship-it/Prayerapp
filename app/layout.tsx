@@ -7,6 +7,7 @@ import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/types";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
+import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
 
 const metadataDescriptions: Record<Locale, string> = {
   ar: "مواقيت الصلاة والجمعة والإعلانات والتبرعات ومعلومات المجتمع في دغندورف.",
@@ -57,6 +58,7 @@ export default async function RootLayout({
           <AppPreferencesProvider>
             <TimeFormatProvider>{children}</TimeFormatProvider>
             <ServiceWorkerRegistrar />
+            <NotificationOptInPrompt />
           </AppPreferencesProvider>
         </I18nProvider>
       </body>

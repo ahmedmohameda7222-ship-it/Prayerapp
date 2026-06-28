@@ -305,6 +305,18 @@
   "notifications": {
     "empty": "There are no urgent updates."
   },
+  "notificationPrompt": {
+    "title": "Enable mosque notifications",
+    "body": "Receive prayer reminders, urgent announcements, events, Friday updates, and donation campaign updates.",
+    "enable": "Enable notifications",
+    "enabling": "Enabling...",
+    "later": "Later",
+    "iosTitle": "Install the app first",
+    "iosBody": "On iPhone or iPad, add Masjid El-Rahman to your Home Screen before enabling notifications.",
+    "iosSteps": "Safari → Share → Add to Home Screen",
+    "gotIt": "Got it",
+    "close": "Close notification prompt"
+  },
   "privacy": {
     "title": "Privacy policy",
     "controllerTitle": "Responsible organization",

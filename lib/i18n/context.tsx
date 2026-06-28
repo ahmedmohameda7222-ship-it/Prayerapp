@@ -17,32 +17,8 @@ const I18nContext = createContext<I18nContextType>({
 const COOKIE_NAME = "locale";
 const STORAGE_NAME = "locale";
 
-function getCookieLocale(): Locale | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(^| )${COOKIE_NAME}=([^;]+)`));
-  if (match) {
-    const value = decodeURIComponent(match[2] || "");
-    const locale = normalizeLocale(value);
-    if (locale === value) return locale;
-  }
-  return null;
-}
-
-function getStoredLocale(): Locale | null {
-  if (typeof window === "undefined") return null;
-  const stored = window.localStorage.getItem(STORAGE_NAME);
-  if (!stored) return null;
-  const locale = normalizeLocale(stored);
-  return locale === stored ? locale : null;
-}
-
-function resolveInitialLocale(initialLocale?: Locale): Locale {
-  if (typeof window === "undefined") return initialLocale || DEFAULT_LOCALE;
-  return getStoredLocale() || getCookieLocale() || initialLocale || DEFAULT_LOCALE;
-}
-
 export function I18nProvider({ children, initialLocale = DEFAULT_LOCALE }: { children: React.ReactNode; initialLocale?: Locale }) {
-  const [locale, setLocaleState] = useState<Locale>(() => resolveInitialLocale(initialLocale));
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   useEffect(() => {
     document.documentElement.lang = locale;

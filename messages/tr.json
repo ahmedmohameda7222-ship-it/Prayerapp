@@ -278,7 +278,7 @@
     "pushUnavailable": "Bildirimler sunucuda henüz yapılandırılmadı.",
     "pushError": "Bildirimler güncellenemedi. Lütfen tekrar deneyin.",
     "prayerReminderTiming": "Namaz hatırlatma zamanı",
-    "prayerReminderDescription": "Beş vakit namazın tümü için tek bir zaman seçin. Arka planda iletim için bildirimlerin açık olması gerekir.",
+    "prayerReminderDescription": "Beş vakit namazın tümü için tek bir zaman seçin. Arka planda iletim için bildirimlerin ve cami zamanlayıcısının açık olması gerekir.",
     "reminderOff": "Kapalı",
     "reminderAtAzan": "Ezan vaktinde",
     "reminderBeforeMinutes": "{minutes} dakika önce"

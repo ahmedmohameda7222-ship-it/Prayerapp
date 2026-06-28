@@ -278,7 +278,7 @@
     "pushUnavailable": "لم تُضبط الإشعارات على الخادم بعد.",
     "pushError": "تعذر تحديث الإشعارات. حاول مرة أخرى.",
     "prayerReminderTiming": "توقيت تذكير الصلاة",
-    "prayerReminderDescription": "اختر توقيتاً واحداً للصلوات الخمس. يتطلب الإرسال في الخلفية تفعيل الإشعارات.",
+    "prayerReminderDescription": "اختر توقيتاً واحداً للصلوات الخمس. يتطلب الإرسال في الخلفية تفعيل الإشعارات وجدولة المسجد.",
     "reminderOff": "متوقف",
     "reminderAtAzan": "عند وقت الأذان",
     "reminderBeforeMinutes": "قبل {minutes} دقائق"

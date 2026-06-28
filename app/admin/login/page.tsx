@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
           <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-[var(--color-emerald)] text-[var(--color-gold)]">
             <Shield className="h-8 w-8" aria-hidden="true" />
           </div>
-          <h1 className="font-brand text-3xl font-semibold text-[var(--color-emerald)]">Deggendorf Prayer</h1>
+          <h1 className="font-brand text-3xl font-semibold text-[var(--color-emerald)]">Masjid El-Rahman</h1>
           <p className="mt-2 text-sm font-bold text-[var(--color-muted)]">{t("admin.mosqueAdministration")}</p>
         </div>
 

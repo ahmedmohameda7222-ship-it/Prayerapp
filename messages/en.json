@@ -278,7 +278,7 @@
     "pushUnavailable": "Notifications are not configured on the server yet.",
     "pushError": "Notifications could not be updated. Please try again.",
     "prayerReminderTiming": "Prayer reminder timing",
-    "prayerReminderDescription": "Choose one timing for all five daily prayers. Background delivery requires notifications to be enabled.",
+    "prayerReminderDescription": "Choose one timing for all five daily prayers. Background delivery requires notifications and the mosque scheduler to be enabled.",
     "reminderOff": "Off",
     "reminderAtAzan": "At Azan time",
     "reminderBeforeMinutes": "{minutes} minutes before"

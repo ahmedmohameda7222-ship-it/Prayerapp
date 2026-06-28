@@ -1,6 +1,6 @@
-# Deggendorf Prayer
+# Masjid El-Rahman
 
-Deggendorf Prayer is a multilingual web app for the Muslim community in Deggendorf. It publishes prayer times, mosque updates, Friday prayer details, events, news, Ramadan schedules, azkar, donation information, and basic admin workflows.
+Masjid El-Rahman is a multilingual web app for the Muslim community in Deggendorf. It publishes prayer times, mosque updates, Friday prayer details, events, news, Ramadan schedules, azkar, donation information, and basic admin workflows.
 
 The app has moved from prototype toward a usable web product: public pages now load real Supabase-backed data when configured, admin pages can manage core content, and the app includes PWA/offline support, browser notification preferences, tests, CI, and deployment documentation.
 
@@ -148,7 +148,7 @@ Recommended deployment path:
 
 The app includes an installable PWA, offline caching, real Web Push delivery, and a prayer-reminder scheduler. Generate one VAPID key pair with `npx web-push generate-vapid-keys`, set the public/private keys and contact subject in every deployment environment, and set a strong `CRON_SECRET`.
 
-`vercel.json` invokes `/api/cron/prayer-reminders` every minute. The production hosting plan must support that frequency. On another host, configure a trusted scheduler to send a `GET` request every minute with `Authorization: Bearer <CRON_SECRET>`.
+No Vercel cron configuration is committed because the current Hobby deployment does not support the required every-minute frequency. Configure a trusted external scheduler, or move to a hosting plan that supports the frequency, and send a `GET` request to `/api/cron/prayer-reminders` every minute with `Authorization: Bearer <CRON_SECRET>`.
 
 Push subscriptions and prayer timing preferences are stored in Supabase. Apply the latest migration before enabling the UI in production.
 

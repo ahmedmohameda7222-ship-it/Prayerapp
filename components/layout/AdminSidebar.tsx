@@ -31,7 +31,7 @@ export function AdminSidebar() {
           <MosqueIcon className="h-6 w-6" aria-hidden="true" />
         </div>
         <div>
-          <p className="font-brand text-xl">Deggendorf Prayer</p>
+          <p className="font-brand text-xl">Masjid El-Rahman</p>
           <p className="text-xs text-white/70">{t("admin.admin")}</p>
         </div>
       </div>

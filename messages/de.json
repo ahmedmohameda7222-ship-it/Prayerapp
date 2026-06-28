@@ -278,7 +278,7 @@
     "pushUnavailable": "Benachrichtigungen sind auf dem Server noch nicht eingerichtet.",
     "pushError": "Benachrichtigungen konnten nicht aktualisiert werden. Bitte versuche es erneut.",
     "prayerReminderTiming": "Zeitpunkt der Gebetserinnerung",
-    "prayerReminderDescription": "Wähle einen Zeitpunkt für alle fünf täglichen Gebete. Für die Hintergrundzustellung müssen Benachrichtigungen aktiviert sein.",
+    "prayerReminderDescription": "Wähle einen Zeitpunkt für alle fünf täglichen Gebete. Für die Hintergrundzustellung müssen Benachrichtigungen und der Moschee-Zeitplaner aktiviert sein.",
     "reminderOff": "Aus",
     "reminderAtAzan": "Zur Azan-Zeit",
     "reminderBeforeMinutes": "{minutes} Minuten vorher"

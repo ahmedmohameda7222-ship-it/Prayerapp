@@ -82,7 +82,7 @@ export function HomePageClient({
 
       {urgentAnnouncements.length ? (
         <section className="home-urgent-news">
-          <SectionTitle>Urgent News</SectionTitle>
+          <SectionTitle>{t("news.title")}</SectionTitle>
           <div className="grid gap-3 lg:grid-cols-2">
             {urgentAnnouncements.map((announcement) => (
               <AnnouncementCard key={announcement.id} announcement={announcement} />

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "deggendorf-prayer";
-const VERSION = "v14";
+const VERSION = "v15";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${VERSION}`;
 const IMAGE_CACHE = `${CACHE_PREFIX}-images-${VERSION}`;
@@ -11,6 +11,12 @@ const PRECACHE_ASSETS = [
   "/manifest.webmanifest",
   "/assets/app-icon-192.png",
   "/assets/app-icon-512.png",
+  "/assets/app-header-arch-background-mobile-v2.png",
+  "/assets/app-header-arch-background-desktop-v2.png",
+  "/assets/hero-home-mosque-night.png",
+  "/assets/hero-home-mosque-night-desktop.png",
+  "/assets/hero-friday-mosque-night.png",
+  "/assets/hero-friday-mosque-night-desktop.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -100,15 +106,15 @@ async function fetchWithTimeout(request, timeoutMs = 4000) {
 function cacheTargetForUrl(url) {
   const isImage = url.pathname.startsWith("/_next/image") || /\.(png|jpe?g|webp|svg|gif|avif)$/i.test(url.pathname);
   return isImage
-    ? { cacheName: IMAGE_CACHE, maxEntries: 24 }
-    : { cacheName: STATIC_CACHE, maxEntries: 48 };
+    ? { cacheName: IMAGE_CACHE, maxEntries: 120 }
+    : { cacheName: STATIC_CACHE, maxEntries: 120 };
 }
 
 self.addEventListener("message", (event) => {
   if (event.data?.type !== "CACHE_RESOURCES" || !Array.isArray(event.data.urls)) return;
 
   event.waitUntil((async () => {
-    const urls = event.data.urls.slice(0, 48).filter((value) => {
+    const urls = event.data.urls.slice(0, 120).filter((value) => {
       if (typeof value !== "string") return false;
       const url = new URL(value, self.location.origin);
       return url.origin === self.location.origin && (
@@ -139,7 +145,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith((async () => {
       try {
         const response = await fetchWithTimeout(request);
-        await storeResponse(PAGE_CACHE, request, response, 18);
+        await storeResponse(PAGE_CACHE, request, response, 40);
         return response;
       } catch {
         return (
@@ -159,7 +165,7 @@ self.addEventListener("fetch", (event) => {
       if (cached) return cached;
       const response = await fetch(request);
       const isImage = request.destination === "image" || url.pathname.startsWith("/_next/image");
-      await storeResponse(isImage ? IMAGE_CACHE : STATIC_CACHE, request, response, isImage ? 24 : 48);
+      await storeResponse(isImage ? IMAGE_CACHE : STATIC_CACHE, request, response, isImage ? 120 : 120);
       return response;
     })());
     return;
@@ -169,7 +175,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith((async () => {
       try {
         const response = await fetchWithTimeout(request);
-        await storeResponse(PAGE_CACHE, request, response, 18);
+        await storeResponse(PAGE_CACHE, request, response, 40);
         return response;
       } catch {
         return (await caches.match(request)) || Response.error();

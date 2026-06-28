@@ -1,3 +1,15 @@
+export const CACHE_TTL = {
+  urgentAnnouncements: 60_000,
+  announcements: 10 * 60_000,
+  prayerTimes: 12 * 60 * 60_000,
+  jumuah: 30 * 60_000,
+  events: 30 * 60_000,
+  donationSettings: 60 * 60_000,
+  donationCampaigns: 30 * 60_000,
+  donationReport: 10 * 60_000,
+  mosqueSettings: 6 * 60 * 60_000,
+};
+
 const cache = new Map<string, { data: unknown; expiry: number }>();
 const DEFAULT_TTL_MS = 30_000; // 30 seconds
 

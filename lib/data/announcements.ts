@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Announcement } from "@/lib/types";
 import { previewAnnouncements } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
-import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
+import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
+import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
 function filterPreviewAnnouncements(includeUnpublished = false): Announcement[] {
   return previewAnnouncements.filter((item) => includeUnpublished || item.published);
@@ -39,17 +40,58 @@ function mapToDb(item: Partial<Announcement>): Record<string, unknown> {
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {
   const client = createClient();
   if (!client) return filterPreviewAnnouncements(includeUnpublished);
-  const key = `announcements_${includeUnpublished}`;
-  return getCached(key, async () => {
+  if (includeUnpublished) {
     let query = client
       .from("announcements")
       .select("*")
       .order("created_at", { ascending: false });
-    if (!includeUnpublished) query = query.eq("published", true);
     const { data, error } = await query;
     if (error || !data) throw new Error("Unable to load announcements");
     return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
-  });
+  }
+  const key = `announcements_public`;
+  return getCached(key, async () => {
+    try {
+      let query = client
+        .from("announcements")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .eq("published", true);
+      const { data, error } = await query;
+      if (error || !data) throw new Error("Unable to load announcements");
+      const result = data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+      saveToPersistentCache(key, result, CACHE_TTL.announcements, 24 * 60 * 60 * 1000);
+      return result;
+    } catch (error) {
+      const stale = loadFromPersistentCacheStale<Announcement[]>(key);
+      if (stale) return stale;
+      throw error;
+    }
+  }, CACHE_TTL.announcements);
+}
+
+export async function getUrgentAnnouncements(): Promise<Announcement[]> {
+  const client = createClient();
+  if (!client) return filterPreviewAnnouncements().filter((a) => a.isUrgent);
+  const key = `announcements_urgent`;
+  return getCached(key, async () => {
+    try {
+      const { data, error } = await client
+        .from("announcements")
+        .select("*")
+        .eq("published", true)
+        .eq("is_urgent", true)
+        .order("created_at", { ascending: false });
+      if (error || !data) throw new Error("Unable to load urgent announcements");
+      const result = data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+      saveToPersistentCache(key, result, CACHE_TTL.urgentAnnouncements, 24 * 60 * 60 * 1000);
+      return result;
+    } catch (error) {
+      const stale = loadFromPersistentCacheStale<Announcement[]>(key);
+      if (stale) return stale;
+      throw error;
+    }
+  }, CACHE_TTL.urgentAnnouncements);
 }
 
 export async function createAnnouncement(item: Omit<Announcement, "id" | "createdAt">): Promise<Announcement> {
@@ -58,6 +100,7 @@ export async function createAnnouncement(item: Omit<Announcement, "id" | "create
   const { data, error } = await client.from("announcements").insert(mapToDb(item) as never).select().single();
   if (error || !data) throw new Error("Failed to create announcement");
   invalidateCachePrefix("announcements");
+  clearPersistentCachePrefix("announcements");
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -67,6 +110,7 @@ export async function updateAnnouncement(id: string, item: Partial<Announcement>
   const { data, error } = await client.from("announcements").update(mapToDb(item) as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update announcement");
   invalidateCachePrefix("announcements");
+  clearPersistentCachePrefix("announcements");
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -76,4 +120,5 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   const { error } = await client.from("announcements").delete().eq("id", id);
   if (error) throw new Error("Failed to delete announcement");
   invalidateCachePrefix("announcements");
+  clearPersistentCachePrefix("announcements");
 }

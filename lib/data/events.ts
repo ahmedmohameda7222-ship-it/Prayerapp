@@ -2,15 +2,14 @@ import { createClient } from "@/lib/supabase/client";
 import type { Event } from "@/lib/types";
 import { previewEvents } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
-import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
+import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
+import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
 export async function getEvents(includeUnpublished = false): Promise<Event[]> {
   const client = createClient();
   if (!client) return previewEvents.filter((item) => includeUnpublished || item.published !== false);
-  const key = `events_${includeUnpublished}`;
-  return getCached(key, async () => {
+  if (includeUnpublished) {
     let query = client.from("events").select("*").order("date", { ascending: true });
-    if (!includeUnpublished) query = query.eq("published", true);
     const { data, error } = await query;
     if (error || !data) throw new Error("Unable to load events");
     return data.map((row: unknown) => {
@@ -30,7 +29,38 @@ export async function getEvents(includeUnpublished = false): Promise<Event[]> {
         ...localizedFieldsFromDb(record, "location", "location"),
       };
     });
-  });
+  }
+  const key = `events_public`;
+  return getCached(key, async () => {
+    try {
+      let query = client.from("events").select("*").order("date", { ascending: true }).eq("published", true);
+      const { data, error } = await query;
+      if (error || !data) throw new Error("Unable to load events");
+      const result = data.map((row: unknown) => {
+        const record = row as Record<string, unknown>;
+        return {
+          id: String(record.id),
+          title: readDbString(record, "title"),
+          description: readDbString(record, "description"),
+          date: String(record.date),
+          startTime: String(record.start_time),
+          endTime: String(record.end_time || ""),
+          location: readDbString(record, "location"),
+          type: String(record.type),
+          published: record.published !== false,
+          ...localizedFieldsFromDb(record, "title", "title"),
+          ...localizedFieldsFromDb(record, "description", "description"),
+          ...localizedFieldsFromDb(record, "location", "location"),
+        };
+      });
+      saveToPersistentCache(key, result, CACHE_TTL.events, 3 * 24 * 60 * 60 * 1000);
+      return result;
+    } catch (error) {
+      const stale = loadFromPersistentCacheStale<Event[]>(key);
+      if (stale) return stale;
+      throw error;
+    }
+  }, CACHE_TTL.events);
 }
 
 export async function createEvent(item: Omit<Event, "id">): Promise<Event> {
@@ -51,6 +81,7 @@ export async function createEvent(item: Omit<Event, "id">): Promise<Event> {
   const { data, error } = await client.from("events").insert(db as never).select().single();
   if (error || !data) throw new Error("Failed to create event");
   invalidateCachePrefix("events");
+  clearPersistentCachePrefix("events");
   return { ...item, id: String((data as Record<string, unknown>).id) };
 }
 
@@ -71,6 +102,7 @@ export async function updateEvent(id: string, item: Partial<Event>): Promise<Eve
   const { data, error } = await client.from("events").update(db as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update event");
   invalidateCachePrefix("events");
+  clearPersistentCachePrefix("events");
   return { ...item, id: String((data as Record<string, unknown>).id) } as Event;
 }
 
@@ -80,4 +112,5 @@ export async function deleteEvent(id: string): Promise<void> {
   const { error } = await client.from("events").delete().eq("id", id);
   if (error) throw new Error("Failed to delete event");
   invalidateCachePrefix("events");
+  clearPersistentCachePrefix("events");
 }

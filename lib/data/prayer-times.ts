@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
 import type { PrayerTime } from "@/lib/types";
 import { previewPrayerTimes } from "./demo-data";
-import { getCached, invalidateCache, invalidateCachePrefix } from "./cache";
+import { CACHE_TTL, getCached, invalidateCache, invalidateCachePrefix } from "./cache";
+import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCache, clearPersistentCachePrefix } from "./persistent-public-cache";
 
 function filterPreviewPrayerTimes(includeUnpublished = false): PrayerTime[] {
   return previewPrayerTimes.filter((item) => includeUnpublished || item.published);
@@ -72,38 +73,69 @@ export async function getPrayerTimes(
 ): Promise<PrayerTime[]> {
   const client = createClient();
   if (!client) return filterPreviewPrayerTimes(includeUnpublished);
-  const key = `prayer_times_${includeUnpublished}_${startDate || "all"}_${endDate || "all"}_${limit || "all"}`;
-  return getCached(key, async () => {
+
+  if (includeUnpublished) {
     let query = client
       .from("prayer_times")
       .select("*")
       .order("date", { ascending: true });
-    if (!includeUnpublished) query = query.eq("published", true);
     if (startDate) query = query.gte("date", startDate);
     if (endDate) query = query.lte("date", endDate);
     if (limit) query = query.limit(limit);
     const { data, error } = await query;
     if (error || !data) throw new Error("Unable to load prayer times");
     return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
-  });
+  }
+
+  const key = `prayer_times_${startDate || "all"}_${endDate || "all"}_${limit || "all"}`;
+  return getCached(key, async () => {
+    try {
+      let query = client
+        .from("prayer_times")
+        .select("*")
+        .order("date", { ascending: true })
+        .eq("published", true);
+      if (startDate) query = query.gte("date", startDate);
+      if (endDate) query = query.lte("date", endDate);
+      if (limit) query = query.limit(limit);
+      const { data, error } = await query;
+      if (error || !data) throw new Error("Unable to load prayer times");
+      const result = data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+      saveToPersistentCache(key, result, CACHE_TTL.prayerTimes, 7 * 24 * 60 * 60 * 1000);
+      return result;
+    } catch (error) {
+      const stale = loadFromPersistentCacheStale<PrayerTime[]>(key);
+      if (stale) return stale;
+      throw error;
+    }
+  }, CACHE_TTL.prayerTimes);
 }
 
 export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | undefined> {
   const client = createClient();
   if (!client) return filterPreviewPrayerTimes().find((item) => item.date === date);
-  return getCached(`prayer_time_${date}`, async () => {
-    const { data, error } = await client
-      .from("prayer_times")
-      .select("*")
-      .eq("date", date)
-      .eq("published", true)
-      .single();
-    if (error || !data) {
-      if (error?.code === "PGRST116") return undefined;
-      throw new Error("Unable to load prayer time");
+  const key = `prayer_time_${date}`;
+  return getCached(key, async () => {
+    try {
+      const { data, error } = await client
+        .from("prayer_times")
+        .select("*")
+        .eq("date", date)
+        .eq("published", true)
+        .single();
+      if (error || !data) {
+        if (error?.code === "PGRST116") return undefined;
+        throw new Error("Unable to load prayer time");
+      }
+      const result = mapFromDb(data as Record<string, unknown>);
+      saveToPersistentCache(key, result, CACHE_TTL.prayerTimes, 7 * 24 * 60 * 60 * 1000);
+      return result;
+    } catch (error) {
+      const stale = loadFromPersistentCacheStale<PrayerTime>(key);
+      if (stale) return stale;
+      throw error;
     }
-    return mapFromDb(data as Record<string, unknown>);
-  });
+  }, CACHE_TTL.prayerTimes);
 }
 
 export async function createPrayerTime(item: Omit<PrayerTime, "id">): Promise<PrayerTime> {
@@ -114,6 +146,7 @@ export async function createPrayerTime(item: Omit<PrayerTime, "id">): Promise<Pr
   if (error || !data) throw new Error("Failed to create prayer time");
   invalidateCachePrefix("prayer_times");
   invalidateCache(`prayer_time_${item.date}`);
+  clearPersistentCachePrefix("prayer_times");
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -125,6 +158,7 @@ export async function updatePrayerTime(id: string, item: Partial<PrayerTime>): P
   if (error || !data) throw new Error("Failed to update prayer time");
   invalidateCachePrefix("prayer_times");
   if (item.date) invalidateCache(`prayer_time_${item.date}`);
+  clearPersistentCachePrefix("prayer_times");
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -134,4 +168,5 @@ export async function deletePrayerTime(id: string): Promise<void> {
   const { error } = await client.from("prayer_times").delete().eq("id", id);
   if (error) throw new Error("Failed to delete prayer time");
   invalidateCachePrefix("prayer_times");
+  clearPersistentCachePrefix("prayer_times");
 }

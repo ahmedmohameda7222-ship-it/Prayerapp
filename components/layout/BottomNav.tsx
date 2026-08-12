@@ -33,16 +33,18 @@ export function BottomNav() {
     ? pendingSelection.index
     : routeActiveIndex;
 
-  const physicalIndex = visualActiveIndex < 0
-    ? 0
-    : locale === "ar"
-      ? navItems.length - 1 - visualActiveIndex
-      : visualActiveIndex;
-  const trackStyle = { "--nav-active-index": physicalIndex } as CSSProperties;
+  const logicalIndex = visualActiveIndex < 0 ? 0 : visualActiveIndex;
+  const physicalIndex = locale === "ar"
+    ? navItems.length - 1 - logicalIndex
+    : logicalIndex;
+  const trackStyle = {
+    "--nav-active-index": physicalIndex,
+    "--nav-sidebar-index": logicalIndex,
+  } as CSSProperties;
 
   return (
     <nav aria-label={t("nav.ariaLabel")} className="bottom-nav-shell fixed z-50">
-      <div className="bottom-nav-track grid grid-cols-5" style={trackStyle}>
+      <div className="bottom-nav-track" style={trackStyle}>
         {visualActiveIndex >= 0 ? <span className="bottom-nav-selection" aria-hidden="true" /> : null}
         {navItems.map((item, index) => {
           const active = isActive(pathname, item.href);

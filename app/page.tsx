@@ -30,7 +30,7 @@ export default async function HomePage() {
   const donationCampaigns = donationCampaignsResult.status === "fulfilled" ? donationCampaignsResult.value : [];
 
   return (
-    <AppShell>
+    <AppShell surface="home">
       <AppHeader />
       <HomePageClient
         initialPrayerTimes={prayerTimes}

@@ -15,7 +15,7 @@ The app has moved from prototype toward a usable web product: public pages now l
 - Multilingual UI content in Arabic, German, English, and Turkish.
 - Progressive Web App service worker with offline fallback.
 - Basic health endpoint at `/api/health`.
-- GitHub Actions CI for lint, tests, service worker syntax, and production build.
+- GitHub Actions CI for lint, tests, clean Supabase migration bootstrap, and production build.
 
 ## Tech stack
 
@@ -77,16 +77,23 @@ Open `http://localhost:3000`.
 
 ## Supabase setup
 
-Initialize/link the project:
+The ordered files in `supabase/migrations/` are the only database schema authority. Do not bootstrap or repair environments from a hand-maintained schema snapshot. A clean environment must be reproducible by applying the migration history from the initial migration forward.
+
+For local verification:
+
+```bash
+supabase start
+supabase db reset --local --no-seed
+```
+
+Initialize/link the hosted project only after confirming the exact project reference:
 
 ```bash
 npx supabase link --project-ref <your-project-ref>
-```
-
-Apply the database migration:
-
-```bash
+npx supabase migration list
+npx supabase db push --dry-run
 npx supabase db push
+npx supabase migration list
 ```
 
 Then:
@@ -102,7 +109,7 @@ Then:
 
 5. Enable backups or PITR according to the Supabase plan, and test a restore before real launch.
 
-The migration adds production-readiness constraints, indexes, Row Level Security policies, publish/active flags, admin user mapping, and donation report uniqueness rules.
+The migration history includes the initial schema, production-readiness hardening, prayer display settings, push notification storage, and Phase 1 account personalization with explicit Data API privileges.
 
 ## Admin workflows
 
@@ -127,6 +134,8 @@ Run these before deploying:
 ```bash
 npm run lint
 npm test
+supabase start
+supabase db reset --local --no-seed
 npm run build
 node --check public/sw.js
 git diff --check
@@ -139,10 +148,11 @@ Recommended deployment path:
 1. Push the repository to GitHub.
 2. Import the repo into Vercel.
 3. Add all environment variables in Vercel.
-4. Apply Supabase migrations with `npx supabase db push`.
-5. Create and verify the admin user.
-6. Import real prayer times.
-7. Smoke-test the public pages, `/admin`, and `/api/health`.
+4. Confirm the exact Supabase project ref, compare migration history, dry-run, and apply pending migrations.
+5. Reconcile hosted Auth Site URL, allowed redirects, email confirmation, and SMTP before accepting account flows.
+6. Create and verify the admin user.
+7. Import real prayer times.
+8. Smoke-test the public pages, `/admin`, and `/api/health`.
 
 ## PWA and notifications
 
@@ -150,7 +160,7 @@ The app includes an installable PWA, offline caching, real Web Push delivery, an
 
 No Vercel cron configuration is committed because the current Hobby deployment does not support the required every-minute frequency. Configure a trusted external scheduler, or move to a hosting plan that supports the frequency, and send a `GET` request to `/api/cron/prayer-reminders` every minute with `Authorization: Bearer <CRON_SECRET>`.
 
-Push subscriptions and prayer timing preferences are stored in Supabase. Apply the latest migration before enabling the UI in production.
+Push subscriptions are device-scoped. Account-backed prayer reminder selections are stored per prayer and are delivered at each selected prayer's official adhan time. Apply the latest migration before enabling account-backed personalization in production.
 
 ## Privacy and legal notes
 
@@ -161,7 +171,9 @@ Also verify public bank, contact, WhatsApp, Telegram, map, and donation campaign
 ## Launch checklist
 
 - Replace all demo/sample content.
-- Apply Supabase migrations.
+- Verify a clean local migration reset.
+- Confirm the exact hosted Supabase project ref and apply pending migrations through the CLI migration flow.
+- Reconcile hosted Auth confirmation/redirect/SMTP settings.
 - Create the allowed admin user.
 - Import verified prayer times.
 - Verify Friday prayer, Ramadan, and mosque settings.

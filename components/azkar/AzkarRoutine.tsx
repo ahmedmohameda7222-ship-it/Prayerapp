@@ -8,7 +8,6 @@ import { TasbeehCounter } from "@/components/azkar/TasbeehCounter";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { useSavedAzkar } from "@/lib/hooks/use-saved-azkar";
-import { phase1Copy } from "@/lib/i18n/phase1-copy";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { AzkarCategory, AzkarItem } from "@/lib/types";
 
@@ -72,8 +71,7 @@ function readRequestedTab(categories: AzkarCategory[]): AzkarTab | undefined {
 }
 
 export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[]; items: AzkarItem[] }) {
-  const { t, locale } = useTranslation();
-  const copy = phase1Copy[locale];
+  const { t } = useTranslation();
   const [selectedTab, setSelectedTab] = useState<AzkarTab>("Morning");
   const [lastRealCategory, setLastRealCategory] = useState<AzkarCategory>("Morning");
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -191,11 +189,11 @@ export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[
         {selectedTab === "Favorites" && !user ? (
           <a href="/account/sign-in?next=%2Fazkar%3Ftab%3DFavorites" className="card flex min-h-14 items-center gap-3 p-4 font-bold text-[var(--color-emerald)]">
             <LogIn className="h-5 w-5" aria-hidden="true" />
-            {copy.accountRequired}
+            {t("phase1.accountRequired")}
           </a>
         ) : null}
         {favoriteSaveError || favoritesLoadError ? (
-          <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-800">{copy.authError}</p>
+          <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-800">{t("phase1.authError")}</p>
         ) : null}
 
         <section className="card overflow-hidden p-4 sm:p-5" aria-labelledby="azkar-progress-title">

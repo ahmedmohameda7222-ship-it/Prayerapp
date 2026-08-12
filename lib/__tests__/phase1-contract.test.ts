@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { normalizeReturnPath } from "@/lib/auth/return-url";
@@ -22,15 +22,26 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(adminAuth).toContain("ADMIN_EMAILS");
   });
 
-  it("creates own-row account tables and retires the legacy reminder timing column", () => {
-    const migration = source("supabase/migrations/20260812000000_phase_1_account_personalization.sql");
-    expect(migration).toContain("public.user_saved_azkar");
-    expect(migration).toContain("public.user_prayer_reminders");
-    expect(migration).toContain("auth.uid() = user_id");
-    expect(migration).toContain("prayer in ('fajr', 'dhuhr', 'asr', 'maghrib', 'isha')");
-    expect(migration).not.toContain("prayer in ('fajr', 'sunrise'");
-    expect(migration).toContain("add column if not exists user_id uuid references auth.users(id) on delete set null");
-    expect(migration).toContain("drop column if exists prayer_reminder_minutes");
+  it("has a migration-only bootstrap authority and forward-only Phase 1 privilege repair", () => {
+    expect(existsSync(path.join(process.cwd(), "supabase/schema.sql"))).toBe(false);
+    const initial = source("supabase/migrations/20260626000000_initial_schema.sql");
+    const originalPhase1 = source("supabase/migrations/20260812000000_phase_1_account_personalization.sql");
+    const correction = source("supabase/migrations/20260812010000_phase_1_post_merge_correction.sql");
+    expect(initial).toMatch(/create table if not exists\s+(?:public\.)?prayer_times/i);
+    expect(originalPhase1).toContain("public.user_saved_azkar");
+    expect(originalPhase1).toContain("public.user_prayer_reminders");
+    expect(originalPhase1).toContain("auth.uid() = user_id");
+    expect(originalPhase1).toContain("prayer in ('fajr', 'dhuhr', 'asr', 'maghrib', 'isha')");
+    expect(originalPhase1).toContain("drop column if exists prayer_reminder_minutes");
+    expect(correction).toContain("revoke all on public.user_saved_azkar, public.user_prayer_reminders from anon");
+    expect(correction).toContain("grant select on public.user_prayer_reminders to service_role");
+    expect(correction).not.toContain("grant all");
+  });
+
+  it("aligns repository Auth policy with eight-character passwords and email confirmation", () => {
+    const config = source("supabase/config.toml");
+    expect(config).toContain("minimum_password_length = 8");
+    expect(config).toMatch(/\[auth\.email\][\s\S]*enable_confirmations = true/);
   });
 
   it("derives push account association from a verified bearer session", () => {
@@ -86,16 +97,21 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(routine).toContain("/account/sign-in?next=");
   });
 
-  it("keeps Home focused and ordered around urgent content, prayer reminders, events, and donations", () => {
+  it("keeps Home in one source order at every breakpoint", () => {
     const home = source("components/home/HomePageClient.tsx");
+    const css = source("app/globals.css");
     const page = source("app/page.tsx");
+    const expectedSections = ["hero", "urgent", "prayer-times", "contextual-action", "events", "donations"];
+    let cursor = -1;
+    for (const section of expectedSections) {
+      const next = home.indexOf(`data-home-section=\"${section}\"`);
+      expect(next).toBeGreaterThan(cursor);
+      cursor = next;
+    }
     expect(home).not.toContain("QuickActionCard");
-    expect(home).not.toContain("home.quickActions");
-    expect(home).toContain("<AnnouncementCard key={announcement.id} announcement={announcement} home />");
-    expect(home).toContain("<HomePrayerTimesCard");
-    expect(home).toContain("<EventCard");
-    expect(home).toContain("donationCampaigns.map");
+    expect(home).toContain("<HomeEventsList events={events} />");
     expect(home).toContain('showUrl={false}');
+    expect(css).not.toContain("grid-template-areas");
     expect(page).toContain('`${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`)');
   });
 
@@ -129,9 +145,15 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(source("components/donations/BankTransferCard.tsx")).toContain('role="status"');
   });
 
-  it("ships privacy copy in all four supported locales and preserves Arabic RTL", () => {
-    const copy = source("lib/i18n/phase1-copy.ts");
-    for (const locale of ["ar", "en", "de", "tr"]) expect(copy).toContain(`${locale}: {`);
+  it("uses the canonical message dictionaries for Phase 1 in all four locales and preserves Arabic RTL", () => {
+    expect(existsSync(path.join(process.cwd(), "lib/i18n/phase1-copy.ts"))).toBe(false);
+    for (const locale of ["ar", "en", "de", "tr"]) {
+      const messages = JSON.parse(source(`messages/${locale}.json`)) as { phase1?: Record<string, unknown> };
+      expect(messages.phase1?.account).toBeTruthy();
+      expect(messages.phase1?.combinedIsha).toBeTruthy();
+      expect(messages.phase1?.paypalSupport).toBeTruthy();
+      expect(messages.phase1?.smartLabels).toBeTruthy();
+    }
     expect(getTextDirection("ar")).toBe("rtl");
     expect(getTextDirection("en")).toBe("ltr");
   });

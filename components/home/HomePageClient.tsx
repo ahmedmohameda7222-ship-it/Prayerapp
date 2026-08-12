@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PrayerCountdown } from "@/components/prayer/PrayerCountdown";
 import { HomePrayerTimesCard } from "@/components/prayer/HomePrayerTimesCard";
 import { AnnouncementCard } from "@/components/news/AnnouncementCard";
-import { EventCard } from "@/components/events/EventCard";
+import { HomeEventsList } from "@/components/events/HomeEventsList";
 import { BankTransferCard } from "@/components/donations/BankTransferCard";
 import { DonationCampaignCard } from "@/components/donations/DonationCampaignCard";
 import { PayPalCard } from "@/components/donations/PayPalCard";
@@ -15,7 +15,6 @@ import { SmartNextActionCard } from "@/components/home/SmartNextActionCard";
 import { todayIso } from "@/lib/date-utils";
 import { getSmartNextAction } from "@/lib/home-utils";
 import { getNextPrayer, getNextPrayerFromSchedule, getPrayerForDate } from "@/lib/prayer-utils";
-import { phase1Copy } from "@/lib/i18n/phase1-copy";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { Announcement, DonationCampaign, DonationSettings, Event, PrayerTime } from "@/lib/types";
 
@@ -38,8 +37,7 @@ export function HomePageClient({
   donationCampaigns,
   initialNow,
 }: HomePageClientProps) {
-  const { t, locale } = useTranslation();
-  const copy = phase1Copy[locale];
+  const { t } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
   const schedule = initialPrayerTimes || EMPTY_SCHEDULE;
   const today = getPrayerForDate(schedule, todayIso(now));
@@ -65,9 +63,9 @@ export function HomePageClient({
   const hasDonationContent = donationCampaigns.length > 0 || hasBankDetails || Boolean(donationSettings?.paypalLink);
 
   return (
-    <div className="home-dashboard grid gap-5">
-      {today ? (
-        <div className="home-hero">
+    <div className="home-dashboard grid" data-testid="home-dashboard">
+      <div data-home-section="hero">
+        {today ? (
           <HeroCard
             src="/assets/hero-home-mosque-night.png"
             desktopSrc="/assets/hero-home-mosque-night-desktop.png"
@@ -76,13 +74,13 @@ export function HomePageClient({
           >
             <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} initialNow={initialNow} />
           </HeroCard>
-        </div>
-      ) : (
-        <EmptyState message={t("prayer.notPublished")} />
-      )}
+        ) : (
+          <EmptyState message={t("prayer.notPublished")} />
+        )}
+      </div>
 
       {urgentAnnouncements.length ? (
-        <section className="home-urgent-news">
+        <section data-home-section="urgent">
           <SectionTitle>{t("news.title")}</SectionTitle>
           <div className="grid gap-3">
             {urgentAnnouncements.map((announcement) => (
@@ -92,33 +90,39 @@ export function HomePageClient({
         </section>
       ) : null}
 
-      {today ? <HomePrayerTimesCard prayer={today} activePrayer={activePrayer} /> : null}
+      {today ? (
+        <div data-home-section="prayer-times">
+          <HomePrayerTimesCard prayer={today} activePrayer={activePrayer} />
+        </div>
+      ) : null}
 
-      {smartAction ? <div className="home-smart"><SmartNextActionCard action={smartAction} /></div> : null}
+      {smartAction ? (
+        <div data-home-section="contextual-action">
+          <SmartNextActionCard action={smartAction} />
+        </div>
+      ) : null}
 
       {events.length ? (
-        <section className="home-events">
+        <section className="home-section-break" data-home-section="events">
           <SectionTitle>{t("events.title")}</SectionTitle>
-          <div className="grid gap-3">
-            {events.map((event) => <EventCard key={event.id} event={event} />)}
-          </div>
+          <HomeEventsList events={events} />
         </section>
       ) : null}
 
       {hasDonationContent ? (
-        <section className="home-donations">
+        <section className="home-section-break" data-home-section="donations">
           <SectionTitle>{t("donations.title")}</SectionTitle>
           <div className="mb-4 rounded-[24px] border border-[var(--color-gold)]/45 bg-[#fff9e8] p-5 text-center">
             <p dir="rtl" lang="ar" className="text-lg font-semibold leading-8 text-[var(--color-emerald-dark)]">لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ</p>
-            <p className="mt-1 text-xs font-extrabold text-[var(--color-gold-dark)]">{copy.donationReflectionVerse}</p>
-            <p className="mt-3 text-sm leading-6 text-[var(--color-charcoal)]">{copy.donationReflection}</p>
+            <p className="mt-1 text-xs font-extrabold text-[var(--color-gold-dark)]">{t("phase1.donationReflectionVerse")}</p>
+            <p className="mt-3 text-sm leading-6 text-[var(--color-charcoal)]">{t("phase1.donationReflection")}</p>
           </div>
           <div className="grid gap-3">
             {donationCampaigns.map((campaign) => (
               <DonationCampaignCard key={campaign.id} campaign={campaign} />
             ))}
-            {hasBankDetails && donationSettings ? <BankTransferCard settings={donationSettings} /> : null}
-            {donationSettings?.paypalLink ? <PayPalCard paypalLink={donationSettings.paypalLink} showUrl={false} /> : null}
+            {hasBankDetails && donationSettings ? <BankTransferCard settings={donationSettings} home /> : null}
+            {donationSettings?.paypalLink ? <PayPalCard paypalLink={donationSettings.paypalLink} showUrl={false} home /> : null}
           </div>
         </section>
       ) : null}

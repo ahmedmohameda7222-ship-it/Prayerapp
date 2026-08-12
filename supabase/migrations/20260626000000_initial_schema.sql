@@ -16,10 +16,6 @@ CREATE TABLE IF NOT EXISTS prayer_times (
   asr_iqama TEXT,
   maghrib_iqama TEXT,
   isha_iqama TEXT,
-  maghrib_program_enabled BOOLEAN NOT NULL DEFAULT false,
-  maghrib_lesson_title TEXT,
-  maghrib_lesson_duration_minutes INTEGER,
-  maghrib_combined_isha_time TEXT,
   note TEXT,
   note_ar TEXT,
   note_en TEXT,
@@ -84,6 +80,11 @@ CREATE TABLE IF NOT EXISTS donation_settings (
   default_purpose_en TEXT,
   default_purpose_de TEXT,
   default_purpose_tr TEXT,
+  receipt_note TEXT NOT NULL,
+  receipt_note_ar TEXT,
+  receipt_note_en TEXT,
+  receipt_note_de TEXT,
+  receipt_note_tr TEXT,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -117,6 +118,16 @@ CREATE TABLE IF NOT EXISTS donations (
   donor_name TEXT,
   received_at DATE NOT NULL,
   method TEXT NOT NULL DEFAULT 'Bank transfer',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Donation receipt requests
+CREATE TABLE IF NOT EXISTS donation_receipt_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  donor_name TEXT NOT NULL,
+  amount NUMERIC NOT NULL DEFAULT 0,
+  email TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'Pending',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -256,10 +267,6 @@ $$;
 
 -- Multilingual content columns (safe migration / backfill)
 ALTER TABLE IF EXISTS prayer_times
-  ADD COLUMN IF NOT EXISTS maghrib_program_enabled BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS maghrib_lesson_title TEXT,
-  ADD COLUMN IF NOT EXISTS maghrib_lesson_duration_minutes INTEGER,
-  ADD COLUMN IF NOT EXISTS maghrib_combined_isha_time TEXT,
   ADD COLUMN IF NOT EXISTS note_ar TEXT,
   ADD COLUMN IF NOT EXISTS note_en TEXT,
   ADD COLUMN IF NOT EXISTS note_de TEXT,
@@ -294,8 +301,13 @@ ALTER TABLE IF EXISTS donation_settings
   ADD COLUMN IF NOT EXISTS default_purpose_ar TEXT,
   ADD COLUMN IF NOT EXISTS default_purpose_en TEXT,
   ADD COLUMN IF NOT EXISTS default_purpose_de TEXT,
-  ADD COLUMN IF NOT EXISTS default_purpose_tr TEXT;
+  ADD COLUMN IF NOT EXISTS default_purpose_tr TEXT,
+  ADD COLUMN IF NOT EXISTS receipt_note_ar TEXT,
+  ADD COLUMN IF NOT EXISTS receipt_note_en TEXT,
+  ADD COLUMN IF NOT EXISTS receipt_note_de TEXT,
+  ADD COLUMN IF NOT EXISTS receipt_note_tr TEXT;
 UPDATE donation_settings SET default_purpose_ar = default_purpose WHERE default_purpose_ar IS NULL AND default_purpose IS NOT NULL;
+UPDATE donation_settings SET receipt_note_ar = receipt_note WHERE receipt_note_ar IS NULL AND receipt_note IS NOT NULL;
 
 ALTER TABLE IF EXISTS donation_campaigns
   ADD COLUMN IF NOT EXISTS title_ar TEXT,
@@ -352,6 +364,7 @@ ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE donation_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE donation_campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE donations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE donation_receipt_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE donation_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE azkar_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE azkar_items ENABLE ROW LEVEL SECURITY;
@@ -450,173 +463,3 @@ CREATE POLICY "Audit logs admin write"
 ON audit_logs
 FOR INSERT
 WITH CHECK (true);
-
--- Production-readiness hardening for the Deggendorf Prayer web app.
-
-alter table public.admin_users
-  add column if not exists user_id uuid references auth.users(id) on delete set null;
-create unique index if not exists admin_users_user_id_key
-  on public.admin_users(user_id) where user_id is not null;
-
-alter table public.events add column if not exists published boolean not null default true;
-alter table public.ramadan_days add column if not exists published boolean not null default true;
-
-alter table public.prayer_times
-  drop constraint if exists prayer_times_time_format;
-alter table public.prayer_times
-  add constraint prayer_times_time_format check (
-    fajr ~ '^[0-2][0-9]:[0-5][0-9]$' and
-    sunrise ~ '^[0-2][0-9]:[0-5][0-9]$' and
-    dhuhr ~ '^[0-2][0-9]:[0-5][0-9]$' and
-    asr ~ '^[0-2][0-9]:[0-5][0-9]$' and
-    maghrib ~ '^[0-2][0-9]:[0-5][0-9]$' and
-    isha ~ '^[0-2][0-9]:[0-5][0-9]$'
-  );
-
-alter table public.prayer_times
-  drop constraint if exists prayer_times_maghrib_program_format;
-alter table public.prayer_times
-  add constraint prayer_times_maghrib_program_format check (
-    (maghrib_combined_isha_time is null or maghrib_combined_isha_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')
-    and (maghrib_lesson_duration_minutes is null or maghrib_lesson_duration_minutes between 1 and 240)
-    and (maghrib_lesson_title is null or char_length(maghrib_lesson_title) <= 160)
-  );
-
-alter table public.donation_campaigns
-  drop constraint if exists donation_campaigns_amounts_nonnegative;
-alter table public.donation_campaigns
-  add constraint donation_campaigns_amounts_nonnegative
-  check (target_amount >= 0 and collected_amount >= 0 and end_date >= start_date);
-
-create index if not exists prayer_times_date_published_idx on public.prayer_times(date, published);
-create index if not exists announcements_published_created_idx on public.announcements(published, created_at desc);
-create index if not exists events_date_published_idx on public.events(date, published);
-create unique index if not exists donation_reports_month_key on public.donation_reports(month);
-
--- Public content reads.
-drop policy if exists "Public read events" on public.events;
-create policy "Public read published events" on public.events for select to anon, authenticated
-  using (published = true);
-
-drop policy if exists "Public read ramadan" on public.ramadan_days;
-create policy "Public read published ramadan" on public.ramadan_days for select to anon, authenticated
-  using (published = true);
-
-drop policy if exists "Public read donation reports" on public.donation_reports;
-create policy "Public read donation reports" on public.donation_reports for select to anon, authenticated
-  using (true);
-
--- Admin identity and private records are never public.
-drop policy if exists "Admin users read own" on public.admin_users;
-drop policy if exists "Admin users write super" on public.admin_users;
-create policy "Admin users read own" on public.admin_users for select to authenticated
-  using (
-    user_id = (select auth.uid())
-    or lower(email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
-  );
-
-drop policy if exists "Audit logs admin read" on public.audit_logs;
-drop policy if exists "Audit logs admin write" on public.audit_logs;
-create policy "Admins read audit logs" on public.audit_logs for select to authenticated
-  using (
-    exists (
-      select 1 from public.admin_users au
-      where au.user_id = (select auth.uid())
-         or lower(au.email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
-    )
-  );
-
--- Authenticated administrators may read drafts and private admin lists.
-do $$
-declare
-  table_name text;
-begin
-  foreach table_name in array array[
-    'prayer_times', 'jumuah_times', 'announcements', 'donation_settings',
-    'donation_campaigns', 'donations', 'donation_reports',
-    'azkar_categories', 'azkar_items', 'events',
-    'ramadan_days', 'mosque_settings'
-  ]
-  loop
-    execute format('drop policy if exists "Administrators read all" on public.%I', table_name);
-    execute format(
-      'create policy "Administrators read all" on public.%I for select to authenticated using (exists (select 1 from public.admin_users au where au.user_id = (select auth.uid()) or lower(au.email) = lower(coalesce((select auth.jwt() ->> ''email''), ''''))))',
-      table_name
-    );
-  end loop;
-end $$;
-
--- Explicit Data API privileges. Writes remain server-only through the secret key.
-revoke all on public.admin_users, public.audit_logs, public.donations from anon;
-grant select on public.prayer_times, public.jumuah_times, public.announcements,
-  public.donation_settings, public.donation_campaigns, public.donation_reports,
-  public.azkar_categories, public.azkar_items, public.events, public.ramadan_days,
-  public.mosque_settings to anon;
-grant select on all tables in schema public to authenticated;
-grant all on all tables in schema public to service_role;
-
--- Web Push subscriptions and delivery idempotency (server-only).
-create table if not exists public.push_subscriptions (
-  id uuid primary key default gen_random_uuid(),
-  endpoint text not null unique,
-  p256dh text not null,
-  auth text not null,
-  browser_id uuid not null,
-  enabled boolean not null default true,
-  locale text not null default 'en' check (locale in ('ar', 'en', 'de', 'tr')),
-  user_agent text,
-  platform text,
-  prayer_reminder_minutes integer check (
-    prayer_reminder_minutes is null
-    or prayer_reminder_minutes in (0, 5, 10, 15, 30)
-  ),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  last_seen_at timestamptz not null default now()
-);
-
-create index if not exists push_subscriptions_enabled_reminder_idx
-  on public.push_subscriptions(enabled, prayer_reminder_minutes)
-  where enabled = true;
-
-create table if not exists public.push_notification_deliveries (
-  id uuid primary key default gen_random_uuid(),
-  event_key text not null,
-  subscription_id uuid not null references public.push_subscriptions(id) on delete cascade,
-  notification_type text not null check (
-    notification_type in (
-      'urgent_announcement',
-      'event',
-      'donation_campaign',
-      'friday_announcement',
-      'prayer_reminder'
-    )
-  ),
-  source_id text,
-  status text not null default 'pending' check (status in ('pending', 'sent', 'failed')),
-  error_code text,
-  attempted_at timestamptz not null default now(),
-  sent_at timestamptz,
-  unique (event_key, subscription_id)
-);
-
-create index if not exists push_notification_deliveries_event_idx
-  on public.push_notification_deliveries(event_key);
-
-alter table public.push_subscriptions enable row level security;
-alter table public.push_notification_deliveries enable row level security;
-
-revoke all on public.push_subscriptions, public.push_notification_deliveries
-  from anon, authenticated;
-grant all on public.push_subscriptions, public.push_notification_deliveries
-  to service_role;
-
--- Safe migration: remove deprecated receipt-related columns and table
-ALTER TABLE IF EXISTS donation_settings
-  DROP COLUMN IF EXISTS receipt_note,
-  DROP COLUMN IF EXISTS receipt_note_ar,
-  DROP COLUMN IF EXISTS receipt_note_en,
-  DROP COLUMN IF EXISTS receipt_note_de,
-  DROP COLUMN IF EXISTS receipt_note_tr;
-
-DROP TABLE IF EXISTS donation_receipt_requests;

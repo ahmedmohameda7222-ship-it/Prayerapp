@@ -92,6 +92,18 @@ textarea {
   padding: 16px 16px 112px;
 }
 
+.home-page-shell {
+  background: var(--color-cream);
+}
+
+.home-page-shell .home-dashboard {
+  gap: 20px;
+}
+
+.home-page-shell .home-section-break {
+  margin-top: 6px;
+}
+
 .app-container {
   width: 100%;
   max-width: 720px;
@@ -215,47 +227,11 @@ textarea {
     padding: 24px 32px 112px;
   }
 
-  .home-dashboard {
-    grid-template-areas:
-      "hero hero"
-      "urgent urgent"
-      "prayers prayers"
-      "events events"
-      "donations donations"
-      "smart smart"
-      "quick quick";
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
+  .home-page-shell .app-container {
+    max-width: 860px;
   }
 
-  .home-hero {
-    grid-area: hero;
-  }
-
-  .home-prayers {
-    grid-area: prayers;
-    width: 100%;
-    max-width: 720px;
-    justify-self: center;
-  }
-
-  .home-urgent-news {
-    grid-area: urgent;
-  }
-
-  .home-events {
-    grid-area: events;
-  }
-
-  .home-donations {
-    grid-area: donations;
-  }
-
-  .home-smart {
-    grid-area: smart;
-  }
-
-  .home-quick-actions {
-    grid-area: quick;
+  .home-page-shell .home-dashboard {
+    gap: 24px;
   }
 }

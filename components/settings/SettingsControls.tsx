@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Bell, Clock } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { phase1Copy } from "@/lib/i18n/phase1-copy";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
@@ -15,8 +14,7 @@ const timeFormatOptions = [
 ];
 
 export function SettingsControls() {
-  const { t, locale } = useTranslation();
-  const copy = phase1Copy[locale];
+  const { t } = useTranslation();
   const { timeFormat, setTimeFormat } = useTimeFormat();
   const { pushStatus, busy, enableNotifications, disableNotifications } = useAppPreferences();
 
@@ -46,8 +44,8 @@ export function SettingsControls() {
           <Button className="mt-3 w-full" disabled={busy} onClick={() => void enableNotifications()}>{t("settings.enablePush")}</Button>
         ) : null}
         <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-          <p className="text-sm font-bold text-[var(--color-emerald)]">{copy.reminderDescription}</p>
-          <Link href="/#prayer-times" className="mt-2 inline-flex min-h-11 items-center text-sm font-bold text-[var(--color-gold-dark)]">{copy.manageReminders}</Link>
+          <p className="text-sm font-bold text-[var(--color-emerald)]">{t("phase1.reminderDescription")}</p>
+          <Link href="/#prayer-times" className="mt-2 inline-flex min-h-11 items-center text-sm font-bold text-[var(--color-gold-dark)]">{t("phase1.manageReminders")}</Link>
         </div>
       </Card>
       <Card>

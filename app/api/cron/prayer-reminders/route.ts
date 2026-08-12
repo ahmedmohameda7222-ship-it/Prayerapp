@@ -17,6 +17,15 @@ const prayerNames = {
 } as const;
 
 type ReminderPrayer = keyof typeof prayerNames;
+type PrayerScheduleRow = {
+  id: string;
+  date: string;
+  fajr: string;
+  dhuhr: string;
+  asr: string;
+  maghrib: string;
+  isha: string;
+};
 
 const reminderTitles: Record<Locale, string> = {
   ar: "تذكير الصلاة",
@@ -82,16 +91,15 @@ export async function GET(request: Request) {
   }
 
   const targets = (subscriptions || []) as PushSubscriptionRecord[];
+  const prayerSchedules = (schedules || []) as PrayerScheduleRow[];
   let due = 0;
   let sent = 0;
   let failed = 0;
   const lookbackMs = 5 * 60 * 1000;
 
-  for (const schedule of schedules || []) {
+  for (const schedule of prayerSchedules) {
     for (const prayer of Object.keys(prayerNames) as ReminderPrayer[]) {
-      const time = schedule[prayer as keyof typeof schedule];
-      if (typeof time !== "string") continue;
-
+      const time = schedule[prayer];
       const reminderAt = zonedDateTime(schedule.date, time).getTime();
       const age = now.getTime() - reminderAt;
       if (age < 0 || age > lookbackMs) continue;

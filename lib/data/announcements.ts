@@ -41,7 +41,7 @@ export async function getAnnouncements(includeUnpublished = false): Promise<Anno
   const client = createClient();
   if (!client) return filterPreviewAnnouncements(includeUnpublished);
   if (includeUnpublished) {
-    let query = client
+    const query = client
       .from("announcements")
       .select("*")
       .order("created_at", { ascending: false });
@@ -52,7 +52,7 @@ export async function getAnnouncements(includeUnpublished = false): Promise<Anno
   const key = `announcements_public`;
   return getCached(key, async () => {
     try {
-      let query = client
+      const query = client
         .from("announcements")
         .select("*")
         .order("created_at", { ascending: false })

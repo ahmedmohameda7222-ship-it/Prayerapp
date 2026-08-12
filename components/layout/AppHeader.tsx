@@ -6,13 +6,11 @@ import { NotificationButton } from "@/components/notifications/NotificationButto
 import { LanguageMenu } from "@/components/home/LanguageMenu";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { todayIso, formatHijriDate, formatLongDate } from "@/lib/date-utils";
-import { phase1Copy } from "@/lib/i18n/phase1-copy";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
-  const { locale } = useTranslation();
+  const { t, locale } = useTranslation();
   const { user } = usePublicAuth();
-  const copy = phase1Copy[locale];
   const currentDateIso = todayIso();
   const currentDate = formatLongDate(currentDateIso, locale);
   const hijriDate = formatHijriDate(currentDateIso, locale);
@@ -32,7 +30,7 @@ export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
           <NotificationButton />
           <Link
             href={user ? "/account" : "/account/sign-in"}
-            aria-label={copy.account}
+            aria-label={t("account.title")}
             className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-emerald)] shadow-[var(--shadow-soft)]"
           >
             <UserRound className="h-5 w-5" aria-hidden="true" />
@@ -52,7 +50,7 @@ export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
         <p dir="rtl" lang="ar" className="text-[15px] font-semibold leading-7 text-[var(--color-emerald-dark)] sm:text-base">
           إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
         </p>
-        <p className="mt-0.5 text-[11px] font-bold text-[var(--color-gold-dark)]">Quran 4:103</p>
+        <p dir="rtl" lang="ar" className="mt-0.5 text-[11px] font-bold text-[var(--color-gold-dark)]">النساء: 103</p>
       </div>
     </header>
   );

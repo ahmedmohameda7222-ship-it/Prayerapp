@@ -57,11 +57,12 @@ export async function POST(request: Request) {
     verifiedUserId = data.user.id;
   }
 
-  const { data: existing, error: existingError } = await client
+  const { data: existingData, error: existingError } = await client
     .from("push_subscriptions")
     .select("browser_id")
     .eq("endpoint", endpoint)
     .maybeSingle();
+  const existing = existingData as { browser_id: string } | null;
   if (existingError) return NextResponse.json({ error: "Could not validate subscription" }, { status: 500 });
   if (existing && existing.browser_id !== browserId) {
     return NextResponse.json({ error: "Subscription ownership mismatch" }, { status: 403 });
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
       platform: typeof body?.platform === "string" ? body.platform.slice(0, 120) : null,
       updated_at: now,
       last_seen_at: now,
-    },
+    } as never,
     { onConflict: "endpoint" }
   );
 
@@ -106,7 +107,7 @@ export async function DELETE(request: Request) {
 
   const { error } = await client
     .from("push_subscriptions")
-    .update({ enabled: false, user_id: null, updated_at: new Date().toISOString() })
+    .update({ enabled: false, user_id: null, updated_at: new Date().toISOString() } as never)
     .eq("endpoint", body.endpoint)
     .eq("browser_id", body.browserId);
 

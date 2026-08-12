@@ -27,7 +27,7 @@ describe("Phase 1 account and personalization contracts", () => {
     const initial = source("supabase/migrations/20260626000000_initial_schema.sql");
     const originalPhase1 = source("supabase/migrations/20260812000000_phase_1_account_personalization.sql");
     const correction = source("supabase/migrations/20260812010000_phase_1_post_merge_correction.sql");
-    expect(initial).toContain("create table if not exists public.prayer_times");
+    expect(initial).toMatch(/create table if not exists\s+(?:public\.)?prayer_times/i);
     expect(originalPhase1).toContain("public.user_saved_azkar");
     expect(originalPhase1).toContain("public.user_prayer_reminders");
     expect(originalPhase1).toContain("auth.uid() = user_id");

@@ -114,8 +114,8 @@ export function HomePageClient({
           <SectionTitle>{t("donations.title")}</SectionTitle>
           <div className="mb-4 rounded-[24px] border border-[var(--color-gold)]/45 bg-[#fff9e8] p-5 text-center">
             <p dir="rtl" lang="ar" className="text-lg font-semibold leading-8 text-[var(--color-emerald-dark)]">لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ</p>
-            <p className="mt-1 text-xs font-extrabold text-[var(--color-gold-dark)]">{t("donations.reflectionVerse")}</p>
-            <p className="mt-3 text-sm leading-6 text-[var(--color-charcoal)]">{t("donations.reflection")}</p>
+            <p className="mt-1 text-xs font-extrabold text-[var(--color-gold-dark)]">{t("phase1.donationReflectionVerse")}</p>
+            <p className="mt-3 text-sm leading-6 text-[var(--color-charcoal)]">{t("phase1.donationReflection")}</p>
           </div>
           <div className="grid gap-3">
             {donationCampaigns.map((campaign) => (

@@ -42,16 +42,27 @@ jobs:
             if not has_table_privilege('service_role', 'public.user_prayer_reminders', 'SELECT') then
               raise exception 'service_role lacks SELECT on user_prayer_reminders';
             end if;
-            if has_table_privilege('anon', 'public.user_prayer_reminders', 'SELECT,INSERT,UPDATE,DELETE') then
+            if has_table_privilege('anon', 'public.user_prayer_reminders', 'SELECT')
+              or has_table_privilege('anon', 'public.user_prayer_reminders', 'INSERT')
+              or has_table_privilege('anon', 'public.user_prayer_reminders', 'UPDATE')
+              or has_table_privilege('anon', 'public.user_prayer_reminders', 'DELETE') then
               raise exception 'anon has personal reminder table privileges';
             end if;
-            if has_table_privilege('anon', 'public.user_saved_azkar', 'SELECT,INSERT,UPDATE,DELETE') then
+            if has_table_privilege('anon', 'public.user_saved_azkar', 'SELECT')
+              or has_table_privilege('anon', 'public.user_saved_azkar', 'INSERT')
+              or has_table_privilege('anon', 'public.user_saved_azkar', 'UPDATE')
+              or has_table_privilege('anon', 'public.user_saved_azkar', 'DELETE') then
               raise exception 'anon has personal Saved Azkar table privileges';
             end if;
-            if not has_table_privilege('authenticated', 'public.user_saved_azkar', 'SELECT,INSERT,DELETE') then
+            if not has_table_privilege('authenticated', 'public.user_saved_azkar', 'SELECT')
+              or not has_table_privilege('authenticated', 'public.user_saved_azkar', 'INSERT')
+              or not has_table_privilege('authenticated', 'public.user_saved_azkar', 'DELETE') then
               raise exception 'authenticated lacks Saved Azkar privileges';
             end if;
-            if not has_table_privilege('authenticated', 'public.user_prayer_reminders', 'SELECT,INSERT,UPDATE,DELETE') then
+            if not has_table_privilege('authenticated', 'public.user_prayer_reminders', 'SELECT')
+              or not has_table_privilege('authenticated', 'public.user_prayer_reminders', 'INSERT')
+              or not has_table_privilege('authenticated', 'public.user_prayer_reminders', 'UPDATE')
+              or not has_table_privilege('authenticated', 'public.user_prayer_reminders', 'DELETE') then
               raise exception 'authenticated lacks prayer reminder privileges';
             end if;
           end

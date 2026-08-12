@@ -19,10 +19,12 @@ describe("SettingsControls", () => {
     expect(localStorage.getItem("deggendorf-app-preferences-v1")).not.toContain('"theme"');
   });
 
-  it("offers prayer timing without notification category checkboxes", () => {
+  it("retires global prayer reminder timing and points reminder management to Home", () => {
     render(<AppPreferencesProvider><TimeFormatProvider><SettingsControls /></TimeFormatProvider></AppPreferencesProvider>);
 
-    expect(screen.getByRole("combobox", { name: "توقيت تذكير الصلاة" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    const homeLink = screen.getAllByRole("link").find((link) => link.getAttribute("href") === "/#prayer-times");
+    expect(homeLink).toBeDefined();
   });
 });

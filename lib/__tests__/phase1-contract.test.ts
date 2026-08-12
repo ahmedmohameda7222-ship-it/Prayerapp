@@ -41,6 +41,13 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(route).not.toContain("reminderMinutes");
   });
 
+  it("waits for auth initialization before deciding whether a push device is guest or account-associated", () => {
+    const provider = source("components/providers/AppPreferencesProvider.tsx");
+    expect(provider).toContain("loading: authLoading");
+    expect(provider).toContain("if (authLoading) return;");
+    expect(provider).toContain("[authLoading, saveStored, syncSubscription]");
+  });
+
   it("targets only the five canonical prayers at official adhan time with idempotent delivery keys", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
     expect(cron).toContain("user_prayer_reminders");
@@ -62,6 +69,9 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(provider).toContain("detachAccount");
     expect(provider).toContain("forceGuest");
     expect(account).toContain("await detachAccount()");
+    expect(account).toContain("catch (detachError)");
+    expect(account).toContain("client.auth.signOut()");
+    expect(account.indexOf("await detachAccount()")).toBeLessThan(account.indexOf("client.auth.signOut()"));
     expect(deletion).toContain('.from("push_subscriptions")');
     expect(deletion).toContain("client.auth.admin.deleteUser(userId)");
   });

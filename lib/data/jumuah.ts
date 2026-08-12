@@ -47,7 +47,7 @@ export async function getJumuahTimes(includeUnpublished = false): Promise<Jumuah
   const client = createClient();
   if (!client) return filterPreviewJumuahTimes(includeUnpublished);
   if (includeUnpublished) {
-    let query = client
+    const query = client
       .from("jumuah_times")
       .select("*")
       .order("date", { ascending: true });
@@ -58,7 +58,7 @@ export async function getJumuahTimes(includeUnpublished = false): Promise<Jumuah
   const key = `jumuah_times_public`;
   return getCached(key, async () => {
     try {
-      let query = client
+      const query = client
         .from("jumuah_times")
         .select("*")
         .order("date", { ascending: true })

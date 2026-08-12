@@ -23,7 +23,7 @@ export function SmartNextActionCard({ action }: { action: SmartNextAction }) {
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--color-gold-dark)]">{t(`home.smartActions.${action}.label`)}</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--color-gold-dark)]">{t(`phase1.smartLabels.${action}`)}</p>
         <h3 className="font-bold text-[var(--color-emerald)]">{t(`home.smartActions.${action}.title`)}</h3>
         <p className="text-sm leading-5 text-[var(--color-muted)]">{t(`home.smartActions.${action}.description`)}</p>
       </div>

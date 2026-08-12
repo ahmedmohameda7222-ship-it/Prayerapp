@@ -62,6 +62,7 @@ function urlBase64ToUint8Array(value: string) {
 export function AppPreferencesProvider({ children }: { children: React.ReactNode }) {
   const { locale } = useLocale();
   const { session } = usePublicAuth();
+  const accessToken = session?.access_token;
   const [stored, setStored] = useState<StoredPreferences | null>(null);
   const [pushStatus, setPushStatus] = useState<PushStatus>("checking");
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
@@ -78,7 +79,7 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     forceGuest = false,
   ) => {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (!forceGuest && session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+    if (!forceGuest && accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
     const response = await fetch("/api/push/subscriptions", {
       method: "POST",
@@ -91,7 +92,7 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
       }),
     });
     if (!response.ok) throw new Error("Could not save push subscription");
-  }, [locale, session?.access_token]);
+  }, [accessToken, locale]);
 
   useEffect(() => {
     document.documentElement.removeAttribute("data-theme");

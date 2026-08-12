@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getPrayerForDate, getIqama, getNextPrayer, prayerOrder, formatCountdown } from "@/lib/prayer-utils";
+import { getPrayerForDate, getIqama, getNextPrayer, getNextPrayerFromSchedule, prayerOrder, formatCountdown } from "@/lib/prayer-utils";
 import type { PrayerTime } from "@/lib/types";
 import { getSmartNextAction } from "@/lib/home-utils";
 
@@ -23,9 +23,10 @@ const samplePrayer: PrayerTime = {
 };
 
 describe("prayer-utils", () => {
-  it("prayerOrder has 6 prayers", () => {
+  it("prayerOrder has 6 prayer-table rows including Sunrise", () => {
     expect(prayerOrder).toHaveLength(6);
     expect(prayerOrder[0]).toBe("fajr");
+    expect(prayerOrder).toContain("sunrise");
     expect(prayerOrder[5]).toBe("isha");
   });
 
@@ -61,11 +62,18 @@ describe("prayer-utils", () => {
     expect(formatCountdown(-1000)).toBe("00:00:00");
   });
 
-  it("getNextPrayer returns the next prayer after now", () => {
+  it("getNextPrayer returns the next obligatory prayer after now", () => {
     const now = new Date("2026-06-24T12:00:00+02:00");
     const next = getNextPrayer(samplePrayer, now);
     expect(next.name).toBe("dhuhr");
     expect(next.time).toBe("13:13");
+  });
+
+  it("does not treat Sunrise as the next prayer after Fajr", () => {
+    const afterFajrBeforeSunrise = new Date("2026-06-24T04:00:00+02:00");
+    const next = getNextPrayerFromSchedule([samplePrayer], afterFajrBeforeSunrise);
+    expect(next?.name).toBe("dhuhr");
+    expect(next?.time).toBe("13:13");
   });
 });
 

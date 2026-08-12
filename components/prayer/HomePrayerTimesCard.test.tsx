@@ -79,4 +79,14 @@ describe("HomePrayerTimesCard", () => {
     expect(within(maghribProgram).getByText("Combined Salat Isha")).toBeInTheDocument();
     expect(within(maghribProgram).getByText("22:40")).toBeInTheDocument();
   });
+
+  it("keeps six prayer rows and reminders only for the five obligatory prayers", () => {
+    const { container } = render(<HomePrayerTimesCard prayer={prayer} activePrayer="asr" />);
+
+    expect(container.querySelectorAll("[data-prayer-row]")).toHaveLength(6);
+    expect(screen.getAllByRole("button")).toHaveLength(5);
+    expect(container.querySelector('[data-prayer-row="sunrise"] button')).toBeNull();
+    expect(container.querySelector('[data-prayer-row="asr"]')).toHaveClass("border-s-[var(--home-brand)]");
+    expect(screen.getAllByRole("button").every((button) => button.hasAttribute("aria-pressed"))).toBe(true);
+  });
 });

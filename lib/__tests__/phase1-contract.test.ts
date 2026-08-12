@@ -117,8 +117,10 @@ describe("Phase 1 account and personalization contracts", () => {
 
   it("shows full urgent copy with an honest news link", () => {
     const announcement = source("components/news/AnnouncementCard.tsx");
-    expect(announcement).toContain('home ? <Link href="/news"');
-    expect(announcement).toContain('home ? "" : "line-clamp-2"');
+    expect(announcement).toContain("if (home)");
+    expect(announcement).toContain('<Link href="/news"');
+    expect(announcement).toContain('whitespace-pre-wrap text-sm leading-6 text-[var(--home-text-secondary)]');
+    expect(announcement).toContain('className="line-clamp-2 whitespace-pre-wrap');
   });
 
   it("provides five prayer reminder controls and excludes Sunrise", () => {

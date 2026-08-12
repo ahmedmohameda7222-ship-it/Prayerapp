@@ -23,6 +23,20 @@ export function AnnouncementCard({ announcement, home = false }: { announcement:
   const title = getLocalizedField(announcement, "title", locale);
   const message = getLocalizedField(announcement, "message", locale);
 
+  if (home) {
+    return (
+      <Link href="/news" aria-label={title} className="block py-4 first:pt-0 last:pb-0">
+        <article className={`border-s-[3px] ps-4 ${announcement.isUrgent ? "border-[var(--home-urgent)]" : "border-[var(--home-brand)]"}`}>
+          <h3 className="font-bold text-[var(--home-text)]">{title}</h3>
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[var(--home-text-secondary)]">{message}</p>
+          <p className="mt-2 text-xs font-semibold text-[var(--home-text-secondary)]">
+            {t(`announcementTypes.${announcement.type}`)} | {announcement.createdAt.slice(0, 10)}
+          </p>
+        </article>
+      </Link>
+    );
+  }
+
   const content = (
     <article className={`card flex gap-3 p-4 ${announcement.isUrgent ? "border-s-4 border-s-[var(--color-gold)] bg-[#fff9e8]" : ""}`}>
       <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${announcement.isUrgent ? "bg-[var(--color-gold)] text-[var(--color-emerald-dark)]" : "bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"}`}>
@@ -33,7 +47,7 @@ export function AnnouncementCard({ announcement, home = false }: { announcement:
           <h3 className="font-bold text-[var(--color-charcoal)]">{title}</h3>
           {announcement.isUrgent ? <Badge tone="gold">{t("admin.urgent")}</Badge> : null}
         </div>
-        <p className={`${home ? "" : "line-clamp-2"} whitespace-pre-wrap text-sm leading-6 text-[var(--color-muted)]`}>{message}</p>
+        <p className="line-clamp-2 whitespace-pre-wrap text-sm leading-6 text-[var(--color-muted)]">{message}</p>
         <p className="mt-2 text-xs font-bold text-[var(--color-gold-dark)]">
           {t(`announcementTypes.${announcement.type}`)} | {announcement.createdAt.slice(0, 10)}
         </p>
@@ -42,5 +56,5 @@ export function AnnouncementCard({ announcement, home = false }: { announcement:
     </article>
   );
 
-  return home ? <Link href="/news" aria-label={title}>{content}</Link> : content;
+  return content;
 }

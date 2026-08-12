@@ -38,6 +38,7 @@ describe("Home donation cards", () => {
     expect(within(surface).getByText("TESTDEFF")).toBeInTheDocument();
     expect(within(surface).getByText("Donation")).toBeInTheDocument();
     expect(within(surface).getAllByRole("button")).toHaveLength(4);
+    expect(surface.closest(".card")).toBeNull();
   });
 
   it("shows neutral PayPal context and hides the raw URL on Home", () => {
@@ -46,5 +47,6 @@ describe("Home donation cards", () => {
     const cta = screen.getByRole("link", { name: /Donate with PayPal/i });
     expect(cta).toHaveAttribute("href", "https://paypal.example/masjid");
     expect(screen.queryByText("https://paypal.example/masjid")).not.toBeInTheDocument();
+    expect(cta.closest(".card")).toBeNull();
   });
 });

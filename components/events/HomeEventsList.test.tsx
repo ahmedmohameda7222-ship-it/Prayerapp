@@ -50,5 +50,6 @@ describe("HomeEventsList", () => {
     expect(rows[1]).toHaveTextContent("Community room");
     expect(within(surface).queryByRole("link")).not.toBeInTheDocument();
     expect(within(surface).queryByRole("button")).not.toBeInTheDocument();
+    expect(surface.className).not.toMatch(/rounded|shadow|cream/);
   });
 });

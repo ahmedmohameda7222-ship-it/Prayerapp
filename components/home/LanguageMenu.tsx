@@ -27,23 +27,23 @@ export function LanguageMenu() {
   return (
     <details ref={menuRef} className="language-menu relative">
       <summary
-        className="flex min-h-10 cursor-pointer list-none items-center gap-1.5 rounded-full border border-[var(--color-gold)]/45 bg-[var(--color-emerald-dark)]/78 px-3 text-xs font-extrabold text-[var(--color-gold-soft)] shadow-sm backdrop-blur-md marker:hidden"
+        className="flex h-11 cursor-pointer list-none items-center gap-1.5 rounded-[10px] px-2 text-xs font-bold text-white transition-colors hover:bg-white/10 active:bg-white/10 marker:hidden"
         aria-label={t("settings.language")}
       >
         <Languages className="h-4 w-4" aria-hidden="true" />
         <span>{current.shortLabel}</span>
       </summary>
-      <div className="absolute start-0 top-[calc(100%+8px)] z-30 min-w-36 overflow-hidden rounded-2xl border border-[var(--color-gold)]/25 bg-[var(--color-card)] p-1.5 text-[var(--color-emerald-dark)] shadow-[var(--shadow-card)]">
+      <div className="absolute start-0 top-[calc(100%+8px)] z-30 min-w-36 overflow-hidden rounded-xl border border-[var(--home-divider)] bg-white p-1.5 text-[var(--home-text)] shadow-[0_10px_24px_rgba(17,24,22,0.14)]">
         {languageOptions.map((item) => (
           <button
             key={item.value}
             type="button"
             onClick={() => selectLanguage(item.value)}
             aria-pressed={locale === item.value}
-            className={`flex min-h-10 w-full items-center justify-between rounded-xl px-3 text-start text-sm font-bold transition-colors ${
+            className={`flex min-h-11 w-full items-center justify-between rounded-lg px-3 text-start text-sm font-semibold transition-colors ${
               locale === item.value
-                ? "bg-[var(--color-emerald)] text-[var(--color-card)]"
-                : "hover:bg-[var(--color-emerald-soft)]"
+                ? "bg-[var(--home-brand-soft)] text-[var(--home-brand-strong)]"
+                : "hover:bg-[var(--home-surface-subtle)]"
             }`}
           >
             <span>{item.label}</span>

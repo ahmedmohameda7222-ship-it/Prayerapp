@@ -33,10 +33,12 @@ export function PrayerCountdown({
   prayer,
   schedule,
   initialNow,
+  variant = "default",
 }: {
   prayer: PrayerTime;
   schedule?: PrayerTime[];
   initialNow: string;
+  variant?: "default" | "instrument";
 }) {
   const { t } = useTranslation();
   const effectiveSchedule = useMemo(() => schedule || [prayer], [schedule, prayer]);
@@ -50,6 +52,22 @@ export function PrayerCountdown({
   }, [effectiveSchedule]);
 
   if (!state) return null;
+
+  if (variant === "instrument") {
+    return (
+      <div className="text-[var(--home-text)]">
+        <p className="text-sm font-medium text-[var(--home-text-secondary)]">{t("prayer.nextPrayer")}</p>
+        <h2 className="mt-1 text-[30px] font-bold leading-tight text-[var(--home-brand-strong)]">{t(`prayer.${state.name}`)}</h2>
+        <p className="home-tabular mt-2 text-2xl font-bold text-[var(--home-text)]" dir="ltr">{state.time}</p>
+        <p className="home-tabular mt-1 text-[34px] font-bold leading-tight text-[var(--home-brand-strong)]" dir="ltr" aria-live="polite">{state.countdown}</p>
+        {state.iqama ? (
+          <p className="home-tabular mt-2 text-sm font-semibold text-[var(--home-text-secondary)]">
+            {t("prayer.iqama")} <span dir="ltr">{state.iqama}</span>
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <>

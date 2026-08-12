@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { HeroCard } from "@/components/ui/HeroCard";
-import { SectionTitle } from "@/components/ui/SectionTitle";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { HomeSectionTitle } from "@/components/home/HomeSectionTitle";
+import { HomeEmptyState } from "@/components/home/HomeEmptyState";
 import { PrayerCountdown } from "@/components/prayer/PrayerCountdown";
 import { HomePrayerTimesCard } from "@/components/prayer/HomePrayerTimesCard";
 import { AnnouncementCard } from "@/components/news/AnnouncementCard";
@@ -64,25 +63,20 @@ export function HomePageClient({
 
   return (
     <div className="home-dashboard grid" data-testid="home-dashboard">
-      <div data-home-section="hero">
+      <section data-home-section="hero" aria-label={t("prayer.nextPrayer")}>
         {today ? (
-          <HeroCard
-            src="/assets/hero-home-mosque-night.png"
-            desktopSrc="/assets/hero-home-mosque-night-desktop.png"
-            alt={t("home.heroAlt")}
-            priority
-          >
-            <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} initialNow={initialNow} />
-          </HeroCard>
+          <div className="border-s-[3px] border-[var(--home-brand)] py-4 ps-4">
+            <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} initialNow={initialNow} variant="instrument" />
+          </div>
         ) : (
-          <EmptyState message={t("prayer.notPublished")} />
+          <HomeEmptyState message={t("prayer.notPublished")} />
         )}
-      </div>
+      </section>
 
       {urgentAnnouncements.length ? (
         <section data-home-section="urgent">
-          <SectionTitle>{t("news.title")}</SectionTitle>
-          <div className="grid gap-3">
+          <HomeSectionTitle>{t("news.title")}</HomeSectionTitle>
+          <div className="divide-y divide-[var(--home-divider)]">
             {urgentAnnouncements.map((announcement) => (
               <AnnouncementCard key={announcement.id} announcement={announcement} home />
             ))}
@@ -104,22 +98,24 @@ export function HomePageClient({
 
       {events.length ? (
         <section className="home-section-break" data-home-section="events">
-          <SectionTitle>{t("events.title")}</SectionTitle>
+          <HomeSectionTitle>{t("events.title")}</HomeSectionTitle>
           <HomeEventsList events={events} />
         </section>
       ) : null}
 
       {hasDonationContent ? (
         <section className="home-section-break" data-home-section="donations">
-          <SectionTitle>{t("donations.title")}</SectionTitle>
-          <div className="mb-4 rounded-[24px] border border-[var(--color-gold)]/45 bg-[#fff9e8] p-5 text-center">
-            <p dir="rtl" lang="ar" className="text-lg font-semibold leading-8 text-[var(--color-emerald-dark)]">لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ</p>
-            <p className="mt-1 text-xs font-extrabold text-[var(--color-gold-dark)]">{t("phase1.donationReflectionVerse")}</p>
-            <p className="mt-3 text-sm leading-6 text-[var(--color-charcoal)]">{t("phase1.donationReflection")}</p>
+          <HomeSectionTitle>{t("donations.title")}</HomeSectionTitle>
+          <div className="mb-5 border-b border-[var(--home-divider)] pb-5 text-center">
+            <p dir="rtl" lang="ar" className="home-donation-verse text-[20px] font-semibold leading-[1.85] text-[var(--home-brand-strong)]">
+              لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ
+            </p>
+            <p className="mt-1 text-xs font-semibold text-[var(--home-text-secondary)]">{t("phase1.donationReflectionVerse")}</p>
+            <p className="mt-3 text-[15px] leading-6 text-[var(--home-text)]">{t("phase1.donationReflection")}</p>
           </div>
-          <div className="grid gap-3">
+          <div className="grid gap-5">
             {donationCampaigns.map((campaign) => (
-              <DonationCampaignCard key={campaign.id} campaign={campaign} />
+              <DonationCampaignCard key={campaign.id} campaign={campaign} home />
             ))}
             {hasBankDetails && donationSettings ? <BankTransferCard settings={donationSettings} home /> : null}
             {donationSettings?.paypalLink ? <PayPalCard paypalLink={donationSettings.paypalLink} showUrl={false} home /> : null}

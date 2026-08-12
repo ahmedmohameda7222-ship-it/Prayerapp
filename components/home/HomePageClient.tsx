@@ -20,6 +20,27 @@ import type { Announcement, DonationCampaign, DonationSettings, Event, PrayerTim
 
 const EMPTY_SCHEDULE: PrayerTime[] = [];
 
+const HOME_EMPTY_COPY = {
+  events: {
+    ar: "لا توجد فعاليات قادمة في المسجد حاليًا.",
+    en: "There are no upcoming events at the mosque right now.",
+    de: "Derzeit gibt es keine kommenden Veranstaltungen in der Moschee.",
+    tr: "Şu anda camide yaklaşan bir etkinlik bulunmuyor.",
+  },
+  donationCampaigns: {
+    ar: "لا توجد حملات تبرع نشطة حاليًا.",
+    en: "There are no active donation campaigns right now.",
+    de: "Derzeit gibt es keine aktiven Spendenkampagnen.",
+    tr: "Şu anda aktif bir bağış kampanyası bulunmuyor.",
+  },
+  donationOptions: {
+    ar: "لا توجد خيارات تبرع متاحة حاليًا.",
+    en: "There are no donation options available right now.",
+    de: "Derzeit sind keine Spendenmöglichkeiten verfügbar.",
+    tr: "Şu anda kullanılabilir bir bağış seçeneği bulunmuyor.",
+  },
+} as const;
+
 type HomePageClientProps = {
   initialPrayerTimes: PrayerTime[];
   urgentAnnouncements: Announcement[];
@@ -37,7 +58,7 @@ export function HomePageClient({
   donationCampaigns,
   initialNow,
 }: HomePageClientProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
   const schedule = initialPrayerTimes || EMPTY_SCHEDULE;
   const today = getPrayerForDate(schedule, todayIso(now));
@@ -61,6 +82,9 @@ export function HomePageClient({
     ),
   );
   const hasDonationContent = donationCampaigns.length > 0 || hasBankDetails || Boolean(donationSettings?.paypalLink);
+  const donationEmptyMessage = hasDonationContent
+    ? HOME_EMPTY_COPY.donationCampaigns[locale]
+    : HOME_EMPTY_COPY.donationOptions[locale];
 
   return (
     <div className="home-dashboard grid" data-testid="home-dashboard">
@@ -75,8 +99,10 @@ export function HomePageClient({
       </section>
 
       {urgentAnnouncements.length ? (
-        <section className="home-section-urgent" data-home-section="urgent">
-          <HomeSectionTitle>{t("news.title")}</HomeSectionTitle>
+        <section className="home-section-urgent home-section-card" data-home-section="urgent">
+          <div className="home-section-card-header">
+            <HomeSectionTitle>{t("news.title")}</HomeSectionTitle>
+          </div>
           <div className="home-urgent-surface divide-y divide-[var(--home-divider)]" data-testid="home-urgent-surface">
             {urgentAnnouncements.map((announcement) => (
               <AnnouncementCard key={announcement.id} announcement={announcement} home />
@@ -97,32 +123,40 @@ export function HomePageClient({
         </div>
       ) : null}
 
-      {events.length ? (
-        <section className="home-section-events" data-home-section="events">
+      <section className="home-section-events home-section-card" data-home-section="events">
+        <div className="home-section-card-header">
           <HomeSectionTitle>{t("events.title")}</HomeSectionTitle>
+        </div>
+        {events.length ? (
           <HomeEventsList events={events} />
-        </section>
-      ) : null}
+        ) : (
+          <p className="home-section-empty-message">{HOME_EMPTY_COPY.events[locale]}</p>
+        )}
+      </section>
 
-      {hasDonationContent ? (
-        <section className="home-section-donations" data-home-section="donations">
+      <section className="home-section-donations home-section-card" data-home-section="donations">
+        <div className="home-section-card-header">
           <HomeSectionTitle>{t("donations.title")}</HomeSectionTitle>
-          <div className="mb-4 text-center">
-            <p dir="rtl" lang="ar" className="home-donation-verse text-[20px] font-semibold leading-[1.85] text-[var(--home-brand-strong)]">
-              لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ
-            </p>
-            <p className="mt-1 text-xs font-semibold text-[var(--home-text-secondary)]">{t("phase1.donationReflectionVerse")}</p>
-            <p className="mt-3 text-[15px] leading-6 text-[var(--home-text-secondary)]">{t("phase1.donationReflection")}</p>
-          </div>
-          <div className="home-donation-stack">
-            {donationCampaigns.map((campaign) => (
+        </div>
+        <div className="home-donation-reflection text-center">
+          <p dir="rtl" lang="ar" className="home-donation-verse text-[20px] font-semibold leading-[1.85] text-[var(--home-brand-strong)]">
+            لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ
+          </p>
+          <p className="mt-1 text-xs font-semibold text-[var(--home-text-secondary)]">{t("phase1.donationReflectionVerse")}</p>
+          <p className="mt-3 text-[15px] leading-6 text-[var(--home-text-secondary)]">{t("phase1.donationReflection")}</p>
+        </div>
+        <div className="home-donation-stack">
+          {donationCampaigns.length ? (
+            donationCampaigns.map((campaign) => (
               <DonationCampaignCard key={campaign.id} campaign={campaign} home />
-            ))}
-            {hasBankDetails && donationSettings ? <BankTransferCard settings={donationSettings} home /> : null}
-            {donationSettings?.paypalLink ? <PayPalCard paypalLink={donationSettings.paypalLink} showUrl={false} home /> : null}
-          </div>
-        </section>
-      ) : null}
+            ))
+          ) : (
+            <p className="home-section-empty-message home-donation-empty-message">{donationEmptyMessage}</p>
+          )}
+          {hasBankDetails && donationSettings ? <BankTransferCard settings={donationSettings} home /> : null}
+          {donationSettings?.paypalLink ? <PayPalCard paypalLink={donationSettings.paypalLink} showUrl={false} home /> : null}
+        </div>
+      </section>
     </div>
   );
 }

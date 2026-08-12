@@ -8,7 +8,8 @@ import { todayIso, addDaysIso } from "@/lib/date-utils";
 import { HomePageClient } from "@/components/home/HomePageClient";
 
 export default async function HomePage() {
-  const today = todayIso();
+  const initialNow = new Date().toISOString();
+  const today = todayIso(new Date(initialNow));
   const startDate = addDaysIso(today, -1);
   const endDate = addDaysIso(today, 30);
   const [prayerTimesResult, urgentAnnouncementsResult, eventsResult, donationSettingsResult, donationCampaignsResult] = await Promise.allSettled([
@@ -21,7 +22,9 @@ export default async function HomePage() {
   const prayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
   const events = eventsResult.status === "fulfilled"
-    ? eventsResult.value.filter((event) => event.date >= today)
+    ? eventsResult.value
+      .filter((event) => event.date >= today)
+      .sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`))
     : [];
   const donationSettings = donationSettingsResult.status === "fulfilled" ? donationSettingsResult.value : undefined;
   const donationCampaigns = donationCampaignsResult.status === "fulfilled" ? donationCampaignsResult.value : [];
@@ -35,6 +38,7 @@ export default async function HomePage() {
         events={events}
         donationSettings={donationSettings}
         donationCampaigns={donationCampaigns}
+        initialNow={initialNow}
       />
     </AppShell>
   );

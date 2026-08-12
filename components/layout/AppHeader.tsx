@@ -8,38 +8,47 @@ import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { todayIso, formatHijriDate, formatLongDate } from "@/lib/date-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
-export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
+const localizedMosqueNames = {
+  ar: "مسجد الرحمن",
+  en: "Masjid El-Rahman",
+  de: "El-Rahman-Moschee",
+  tr: "El-Rahman Camii",
+};
+
+export function AppHeader({ title }: { title?: string }) {
   const { t, locale } = useTranslation();
   const { user } = usePublicAuth();
   const currentDateIso = todayIso();
   const currentDate = formatLongDate(currentDateIso, locale);
   const hijriDate = formatHijriDate(currentDateIso, locale);
+  const mosqueName = title || localizedMosqueNames[locale];
 
   return (
     <header className="home-app-header border-b border-[var(--home-divider)] bg-[var(--home-surface)]">
-      <div className="home-app-header-chrome bg-[var(--home-brand)] px-4 pb-4 text-white sm:px-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 pt-1">
-            <h1 className="text-[21px] font-bold leading-[1.2]">{title}</h1>
-            <p className="mt-1.5 text-[13px] font-semibold text-white/75">Deggendorf</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
+      <div className="home-app-header-chrome bg-[var(--home-brand)] px-4 pb-5 pt-2 text-white sm:px-5">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center" dir="ltr">
+          <Link
+            href={user ? "/account" : "/account/sign-in"}
+            aria-label={t("phase1.account")}
+            className="grid h-11 w-11 place-items-center justify-self-start rounded-[10px] text-white transition-colors hover:bg-white/10 active:bg-white/10"
+          >
+            <UserRound className="h-5 w-5" aria-hidden="true" />
+          </Link>
+          <span aria-hidden="true" />
+          <div className="flex shrink-0 items-center justify-self-end gap-1">
             <LanguageMenu />
             <NotificationButton home />
-            <Link
-              href={user ? "/account" : "/account/sign-in"}
-              aria-label={t("phase1.account")}
-              className="grid h-11 w-11 place-items-center rounded-[10px] text-white transition-colors hover:bg-white/10 active:bg-white/10"
-            >
-              <UserRound className="h-5 w-5" aria-hidden="true" />
-            </Link>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-semibold text-white/80">
-          <time dateTime={currentDateIso}>{currentDate}</time>
-          <span aria-hidden="true">·</span>
-          <span>{hijriDate}</span>
+        <div className="mt-1 text-center">
+          <h1 className="text-[24px] font-bold leading-tight">{mosqueName}</h1>
+          <p className="mt-1 text-[13px] font-semibold text-white/75">Deggendorf</p>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 items-center gap-4 text-[13px] font-semibold text-white/80" dir="ltr">
+          <span className="text-left" data-testid="header-hijri-date">{hijriDate}</span>
+          <time className="text-right" dateTime={currentDateIso} data-testid="header-gregorian-date">{currentDate}</time>
         </div>
       </div>
 

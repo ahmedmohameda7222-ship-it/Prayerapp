@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeReturnPath } from "@/lib/auth/return-url";
 import { phase1Copy } from "@/lib/i18n/phase1-copy";
@@ -14,6 +15,7 @@ type Mode = "sign-in" | "register" | "forgot" | "reset";
 export function AuthForm({ mode }: { mode: Mode }) {
   const { locale } = useTranslation();
   const copy = phase1Copy[locale];
+  const { user } = usePublicAuth();
   const router = useRouter();
   const params = useSearchParams();
   const next = useMemo(() => normalizeReturnPath(params.get("next"), "/account"), [params]);
@@ -22,6 +24,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (user && mode === "sign-in") {
+      router.replace(next);
+      router.refresh();
+    }
+  }, [mode, next, router, user]);
 
   const title = mode === "sign-in"
     ? copy.signIn
@@ -102,7 +111,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             {mode === "reset" ? copy.newPassword : copy.password}
             <input
               type="password"
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              autoComplete={mode === "register" || mode === "reset" ? "new-password" : "current-password"}
               minLength={8}
               required
               value={password}

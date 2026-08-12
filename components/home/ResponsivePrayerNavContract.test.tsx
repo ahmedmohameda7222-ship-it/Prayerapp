@@ -19,19 +19,24 @@ describe("Responsive Prayerapp navigation and Next Prayer contract", () => {
     expect(prayer).toContain("font-extrabold");
   });
 
-  it("keeps mobile navigation glassy and moves desktop navigation to the physical left", () => {
+  it("keeps mobile navigation glassy and makes desktop navigation a collapsible physical left sidebar", () => {
     const css = source("app/responsive-prayer-nav.css");
     const nav = source("components/layout/BottomNav.tsx");
 
     expect(css).toContain("backdrop-filter: blur(24px) saturate(1.18)");
     expect(css).toContain("@media (min-width: 1024px)");
-    expect(css).toContain("left: 0");
-    expect(css).toContain("width: 124px");
+    expect(css).toContain("width: 272px");
+    expect(css).toContain("width: 80px");
+    expect(css).toContain("data-desktop-sidebar");
+    expect(nav).toContain("desktop-sidebar-toggle");
+    expect(nav).toContain("PanelLeftClose");
+    expect(nav).toContain("PanelLeftOpen");
+    expect(nav).toContain("document.documentElement.dataset.desktopSidebar");
     expect(nav).toContain("--nav-sidebar-index");
     expect(css).toContain("var(--nav-sidebar-index, 0)");
   });
 
-  it("keeps major Home content visibly grouped into section cards on mobile and desktop", () => {
+  it("keeps major Home content visibly grouped into section cards with distinct section headers", () => {
     const home = source("components/home/HomePageClient.tsx");
     const title = source("components/home/HomeSectionTitle.tsx");
     const css = source("app/responsive-prayer-nav.css");
@@ -41,10 +46,25 @@ describe("Responsive Prayerapp navigation and Next Prayer contract", () => {
     expect(home).toContain("home-section-donations home-section-card");
     expect(home).toContain("home-section-card-header");
     expect(title).toContain("home-section-title");
-    expect(css).toContain(".home-section-card");
+    expect(css).toContain("--home-section-header: #e2ece7");
+    expect(css).toContain("--home-section-header-soft: #edf3f0");
     expect(css).toContain(".home-section-card-header");
     expect(css).toContain(".home-section-empty-message");
     expect(home).toContain("لا توجد فعاليات قادمة في المسجد حاليًا.");
     expect(home).toContain("لا توجد حملات تبرع نشطة حاليًا.");
+  });
+
+  it("uses one donation verse with a separate exact reference and a deliberate typography hierarchy", () => {
+    const home = source("components/home/HomePageClient.tsx");
+    const css = source("app/responsive-prayer-nav.css");
+
+    expect(home).toContain("لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ");
+    expect(home).toContain("آل عمران: 92");
+    expect(home).not.toContain('t("phase1.donationReflectionVerse")');
+    expect(home).toContain("home-donation-reference");
+    expect(home).toContain("home-donation-reflection-copy");
+    expect(css).toContain("font-size: 28px");
+    expect(css).toContain("font-size: 24px");
+    expect(css).toContain("font-size: 20px");
   });
 });

@@ -25,8 +25,12 @@ describe("Responsive Prayerapp navigation and Next Prayer contract", () => {
 
     expect(css).toContain("backdrop-filter: blur(24px) saturate(1.18)");
     expect(css).toContain("@media (min-width: 1024px)");
+    expect(css).toContain("padding: 0 40px 64px 304px");
+    expect(css).toContain("padding-left: 104px");
     expect(css).toContain("width: 272px");
     expect(css).toContain("width: 80px");
+    expect(css).toContain(".home-page-shell .home-app-header");
+    expect(css).toContain("margin-inline: 0");
     expect(css).toContain("data-desktop-sidebar");
     expect(nav).toContain("desktop-sidebar-toggle");
     expect(nav).toContain("PanelLeftClose");
@@ -48,6 +52,7 @@ describe("Responsive Prayerapp navigation and Next Prayer contract", () => {
     expect(title).toContain("home-section-title");
     expect(css).toContain("--home-section-header: #e2ece7");
     expect(css).toContain("--home-section-header-soft: #edf3f0");
+    expect(css).toContain("--home-section-header-text: #173d37");
     expect(css).toContain(".home-section-card-header");
     expect(css).toContain(".home-section-empty-message");
     expect(home).toContain("لا توجد فعاليات قادمة في المسجد حاليًا.");
@@ -63,6 +68,8 @@ describe("Responsive Prayerapp navigation and Next Prayer contract", () => {
     expect(home).not.toContain('t("phase1.donationReflectionVerse")');
     expect(home).toContain("home-donation-reference");
     expect(home).toContain("home-donation-reflection-copy");
+    expect(css).toContain("font-size: 44px");
+    expect(css).toContain("font-size: 30px");
     expect(css).toContain("font-size: 28px");
     expect(css).toContain("font-size: 24px");
     expect(css).toContain("font-size: 20px");

@@ -2,18 +2,29 @@ import { NextResponse } from "next/server";
 import type { Locale } from "@/lib/i18n/types";
 import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
 import { deliverPushNotifications } from "@/lib/push/web-push";
-import type { PrayerReminderMinutes, PushSubscriptionRecord } from "@/lib/push/types";
+import type { PushSubscriptionRecord } from "@/lib/push/types";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const prayerNames: Record<string, Record<Locale, string>> = {
+const prayerNames = {
   fajr: { ar: "الفجر", en: "Fajr", de: "Fajr", tr: "Sabah" },
   dhuhr: { ar: "الظهر", en: "Dhuhr", de: "Dhuhr", tr: "Öğle" },
   asr: { ar: "العصر", en: "Asr", de: "Asr", tr: "İkindi" },
   maghrib: { ar: "المغرب", en: "Maghrib", de: "Maghrib", tr: "Akşam" },
   isha: { ar: "العشاء", en: "Isha", de: "Isha", tr: "Yatsı" },
+} as const;
+
+type ReminderPrayer = keyof typeof prayerNames;
+type PrayerScheduleRow = {
+  id: string;
+  date: string;
+  fajr: string;
+  dhuhr: string;
+  asr: string;
+  maghrib: string;
+  isha: string;
 };
 
 const reminderTitles: Record<Locale, string> = {
@@ -23,21 +34,13 @@ const reminderTitles: Record<Locale, string> = {
   tr: "Namaz hatırlatması",
 };
 
-function reminderBody(locale: Locale, prayer: string, minutes: Exclude<PrayerReminderMinutes, null>) {
+function reminderBody(locale: Locale, prayer: ReminderPrayer) {
   const name = prayerNames[prayer][locale];
-  if (minutes === 0) {
-    return {
-      ar: `حان الآن وقت صلاة ${name}.`,
-      en: `It is time for ${name}.`,
-      de: `Es ist Zeit für ${name}.`,
-      tr: `${name} namazı vakti geldi.`,
-    }[locale];
-  }
   return {
-    ar: `متبقي ${minutes} دقيقة على صلاة ${name}.`,
-    en: `${name} begins in ${minutes} minutes.`,
-    de: `${name} beginnt in ${minutes} Minuten.`,
-    tr: `${name} namazına ${minutes} dakika kaldı.`,
+    ar: `حان الآن وقت صلاة ${name}.`,
+    en: `It is time for ${name}.`,
+    de: `Es ist Zeit für ${name}.`,
+    tr: `${name} namazı vakti geldi.`,
   }[locale];
 }
 
@@ -54,12 +57,11 @@ export async function GET(request: Request) {
   const now = new Date();
   const today = todayIso(now);
   const tomorrow = addDaysIso(today, 1);
-  const [{ data: subscriptions, error: subscriptionsError }, { data: schedules, error: schedulesError }] = await Promise.all([
+  const [{ data: reminders, error: remindersError }, { data: schedules, error: schedulesError }] = await Promise.all([
     client
-      .from("push_subscriptions")
-      .select("id, endpoint, p256dh, auth, locale, prayer_reminder_minutes")
-      .eq("enabled", true)
-      .not("prayer_reminder_minutes", "is", null),
+      .from("user_prayer_reminders")
+      .select("user_id, prayer")
+      .eq("enabled", true),
     client
       .from("prayer_times")
       .select("id, date, fajr, dhuhr, asr, maghrib, isha")
@@ -68,47 +70,62 @@ export async function GET(request: Request) {
       .lte("date", tomorrow),
   ]);
 
-  if (subscriptionsError || schedulesError) {
-    console.error("[prayer reminder cron] query failed", subscriptionsError?.message || schedulesError?.message);
+  if (remindersError || schedulesError) {
+    console.error("[prayer reminder cron] query failed", remindersError?.message || schedulesError?.message);
     return NextResponse.json({ error: "Could not load reminder data" }, { status: 500 });
   }
 
+  const enabledReminders = (reminders || []) as Array<{ user_id: string; prayer: ReminderPrayer }>;
+  const userIds = [...new Set(enabledReminders.map((item) => item.user_id))];
+  if (userIds.length === 0) return NextResponse.json({ success: true, due: 0, sent: 0, failed: 0 });
+
+  const { data: subscriptions, error: subscriptionsError } = await client
+    .from("push_subscriptions")
+    .select("id, endpoint, p256dh, auth, locale, user_id")
+    .eq("enabled", true)
+    .in("user_id", userIds);
+
+  if (subscriptionsError) {
+    console.error("[prayer reminder cron] subscription query failed", subscriptionsError.message);
+    return NextResponse.json({ error: "Could not load reminder subscriptions" }, { status: 500 });
+  }
+
   const targets = (subscriptions || []) as PushSubscriptionRecord[];
+  const prayerSchedules = (schedules || []) as PrayerScheduleRow[];
   let due = 0;
   let sent = 0;
   let failed = 0;
   const lookbackMs = 5 * 60 * 1000;
 
-  for (const schedule of schedules || []) {
-    for (const prayer of Object.keys(prayerNames)) {
-      const time = schedule[prayer as keyof typeof schedule];
-      if (typeof time !== "string") continue;
+  for (const schedule of prayerSchedules) {
+    for (const prayer of Object.keys(prayerNames) as ReminderPrayer[]) {
+      const time = schedule[prayer];
+      const reminderAt = zonedDateTime(schedule.date, time).getTime();
+      const age = now.getTime() - reminderAt;
+      if (age < 0 || age > lookbackMs) continue;
 
-      for (const minutes of [0, 5, 10, 15, 30] as const) {
-        const reminderAt = zonedDateTime(schedule.date, time).getTime() - minutes * 60 * 1000;
-        const age = now.getTime() - reminderAt;
-        if (age < 0 || age > lookbackMs) continue;
+      const reminderUsers = new Set(
+        enabledReminders.filter((item) => item.prayer === prayer).map((item) => item.user_id),
+      );
+      const matching = targets.filter((subscription) => subscription.user_id && reminderUsers.has(subscription.user_id));
+      if (matching.length === 0) continue;
+      due += matching.length;
 
-        const matching = targets.filter((subscription) => subscription.prayer_reminder_minutes === minutes);
-        if (matching.length === 0) continue;
-        due += matching.length;
-
-        const eventKey = `prayer:${schedule.date}:${prayer}:${time}:${minutes}`;
-        const result = await deliverPushNotifications({
-          eventKey,
-          notificationType: "prayer_reminder",
-          sourceId: schedule.id,
-          subscriptions: matching,
-          payloadForLocale: (locale) => ({
-            title: reminderTitles[locale],
-            body: reminderBody(locale, prayer, minutes),
-            url: "/times",
-            tag: eventKey,
-          }),
-        });
-        sent += result.sent;
-        failed += result.failed;
-      }
+      const eventKey = `prayer:${schedule.date}:${prayer}:${time}`;
+      const result = await deliverPushNotifications({
+        eventKey,
+        notificationType: "prayer_reminder",
+        sourceId: schedule.id,
+        subscriptions: matching,
+        payloadForLocale: (locale) => ({
+          title: reminderTitles[locale],
+          body: reminderBody(locale, prayer),
+          url: "/",
+          tag: eventKey,
+        }),
+      });
+      sent += result.sent;
+      failed += result.failed;
     }
   }
 

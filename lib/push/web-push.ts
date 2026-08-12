@@ -85,7 +85,7 @@ export async function deliverPushNotifications({
   if (!targets) {
     const { data, error } = await client
       .from("push_subscriptions")
-      .select("id, endpoint, p256dh, auth, locale, prayer_reminder_minutes")
+      .select("id, endpoint, p256dh, auth, locale, user_id")
       .eq("enabled", true);
     if (error) throw error;
     targets = (data || []) as PushSubscriptionRecord[];

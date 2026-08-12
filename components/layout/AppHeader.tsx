@@ -1,84 +1,58 @@
 "use client";
 
-import { getImageProps } from "next/image";
-import { Calendar, MapPin } from "lucide-react";
+import Link from "next/link";
+import { Calendar, MapPin, UserRound } from "lucide-react";
 import { NotificationButton } from "@/components/notifications/NotificationButton";
 import { LanguageMenu } from "@/components/home/LanguageMenu";
+import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { todayIso, formatHijriDate, formatLongDate } from "@/lib/date-utils";
-import { getTextDirection } from "@/lib/i18n/direction";
+import { phase1Copy } from "@/lib/i18n/phase1-copy";
 import { useTranslation } from "@/lib/i18n/use-translation";
-
-const headerSubtitles = {
-  ar: "مواقيت الصلاة وآخر أخبار جامع الرحمن",
-  en: "Prayer times and latest news from Masjid El-Rahman",
-  de: "Gebetszeiten und aktuelle Nachrichten der Masjid El-Rahman",
-  tr: "Masjid El-Rahman namaz vakitleri ve son haberleri",
-} as const;
 
 export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
   const { locale } = useTranslation();
+  const { user } = usePublicAuth();
+  const copy = phase1Copy[locale];
   const currentDateIso = todayIso();
   const currentDate = formatLongDate(currentDateIso, locale);
   const hijriDate = formatHijriDate(currentDateIso, locale);
-  const subtitle = headerSubtitles[locale] || headerSubtitles.en;
-  const commonImageProps = {
-    alt: "",
-    sizes: "(max-width: 639px) 100vw, (max-width: 1023px) calc(100vw - 32px), 960px",
-  };
-  const {
-    props: { srcSet: desktopSrcSet },
-  } = getImageProps({
-    ...commonImageProps,
-    src: "/assets/app-header-arch-background-desktop-v2.png",
-    width: 2020,
-    height: 779,
-  });
-  const {
-    props: { srcSet: mobileSrcSet, ...mobileImageProps },
-  } = getImageProps({
-    ...commonImageProps,
-    src: "/assets/app-header-arch-background-mobile-v2.png",
-    width: 1254,
-    height: 1254,
-  });
 
   return (
-    <header className="app-header-banner relative mb-5 overflow-hidden rounded-b-[32px] shadow-[var(--shadow-card)]">
-      <div className="sr-only">
-        <h1>{title}</h1>
-        <p>Prayer times for the city of Deggendorf.</p>
-        <p>Indeed, prayer has been decreed upon the believers at specified times. Quran 4:103.</p>
-      </div>
-      <picture>
-        <source media="(min-width: 640px)" srcSet={desktopSrcSet} />
-        <source media="(max-width: 639px)" srcSet={mobileSrcSet} />
-        <img {...mobileImageProps} alt="" className="block aspect-square h-auto w-full sm:aspect-[2020/779]" fetchPriority="high" />
-      </picture>
-      <div className="absolute start-3 top-3 sm:start-4 sm:top-4">
-        <LanguageMenu />
-      </div>
-      <div className="absolute end-3 top-3 sm:end-4 sm:top-4">
-        <NotificationButton inverted />
-      </div>
-      <div aria-hidden="true" className="absolute left-1/2 top-[46%] flex w-[68%] -translate-x-1/2 flex-col items-center text-center text-[var(--color-gold-soft)] sm:top-[47%] sm:w-[54%]">
-        <h2 className="font-brand text-[clamp(17px,4.4vw,19px)] font-semibold leading-tight drop-shadow-md sm:text-[clamp(24px,2.2vw,31px)]">{title}</h2>
-        <p className="mt-1 text-[clamp(9px,2.4vw,11px)] font-bold sm:mt-1.5 sm:text-[clamp(10px,1vw,13px)]">{subtitle}</p>
-        <span className="mt-1.5 h-px w-2/3 bg-[var(--color-gold)]/65 sm:mt-2 sm:w-1/2" />
-        <p className="mt-2 text-[clamp(11px,2.9vw,13px)] font-semibold leading-[1.45] drop-shadow-sm sm:mt-2.5 sm:text-[clamp(13px,1.25vw,16px)] sm:leading-[1.5]">إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا</p>
-        <p className="mt-0.5 text-[8px] font-bold text-[var(--color-gold)] sm:text-[10px]">النساء: 103</p>
-      </div>
-      <div dir="ltr" className="absolute inset-x-2 bottom-1.5 flex items-end justify-between gap-2 sm:inset-x-5 sm:bottom-3">
-        <div className="flex shrink-0 items-center gap-1 px-1 py-0.5 text-[9px] font-bold text-[var(--color-emerald-dark)] drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] sm:gap-1.5 sm:px-2 sm:py-1 sm:text-xs">
-          <MapPin size={13} className="shrink-0 text-[var(--color-gold-dark)] sm:h-4 sm:w-4" aria-hidden="true" />
-          <span>Deggendorf, Germany</span>
+    <header className="mb-5 overflow-hidden rounded-b-[28px] border-x border-b border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]">
+      <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-4 sm:px-5">
+        <div className="min-w-0">
+          <h1 className="font-brand text-xl font-semibold leading-tight text-[var(--color-emerald)] sm:text-2xl">{title}</h1>
+          <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-[var(--color-muted)]">
+            <MapPin className="h-3.5 w-3.5 text-[var(--color-gold-dark)]" aria-hidden="true" />
+            Deggendorf
+          </p>
         </div>
-        <div dir={getTextDirection(locale)} className="flex min-w-0 items-start gap-1 px-1 py-0.5 text-end font-bold text-[var(--color-emerald-dark)] drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] sm:gap-1.5 sm:px-2 sm:py-1">
-          <Calendar size={13} className="mt-0.5 shrink-0 text-[var(--color-gold-dark)] sm:h-4 sm:w-4" aria-hidden="true" />
-          <span className="flex min-w-0 flex-col items-end leading-tight">
-            <time dateTime={currentDateIso} className="text-[9px] sm:text-xs">{currentDate}</time>
-            <span className="mt-0.5 text-[8px] text-[var(--color-gold-dark)] sm:text-[11px]">{hijriDate}</span>
-          </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <LanguageMenu />
+          <NotificationButton />
+          <Link
+            href={user ? "/account" : "/account/sign-in"}
+            aria-label={copy.account}
+            className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-emerald)] shadow-[var(--shadow-soft)]"
+          >
+            <UserRound className="h-5 w-5" aria-hidden="true" />
+          </Link>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-y border-[var(--color-border)] bg-[var(--color-cream)] px-4 py-2 text-xs font-bold text-[var(--color-charcoal)] sm:px-5">
+        <span className="inline-flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5 text-[var(--color-gold-dark)]" aria-hidden="true" />
+          <time dateTime={currentDateIso}>{currentDate}</time>
+        </span>
+        <span className="text-[var(--color-gold-dark)]">{hijriDate}</span>
+      </div>
+
+      <div className="px-4 py-3 text-center sm:px-5">
+        <p dir="rtl" lang="ar" className="text-[15px] font-semibold leading-7 text-[var(--color-emerald-dark)] sm:text-base">
+          إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
+        </p>
+        <p className="mt-0.5 text-[11px] font-bold text-[var(--color-gold-dark)]">Quran 4:103</p>
       </div>
     </header>
   );

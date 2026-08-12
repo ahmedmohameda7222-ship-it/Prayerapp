@@ -9,7 +9,7 @@ export async function getEvents(includeUnpublished = false): Promise<Event[]> {
   const client = createClient();
   if (!client) return previewEvents.filter((item) => includeUnpublished || item.published !== false);
   if (includeUnpublished) {
-    let query = client.from("events").select("*").order("date", { ascending: true });
+    const query = client.from("events").select("*").order("date", { ascending: true });
     const { data, error } = await query;
     if (error || !data) throw new Error("Unable to load events");
     return data.map((row: unknown) => {
@@ -33,7 +33,7 @@ export async function getEvents(includeUnpublished = false): Promise<Event[]> {
   const key = `events_public`;
   return getCached(key, async () => {
     try {
-      let query = client.from("events").select("*").order("date", { ascending: true }).eq("published", true);
+      const query = client.from("events").select("*").order("date", { ascending: true }).eq("published", true);
       const { data, error } = await query;
       if (error || !data) throw new Error("Unable to load events");
       const result = data.map((row: unknown) => {

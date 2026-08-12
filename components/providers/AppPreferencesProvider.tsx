@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/lib/i18n/context";
-import type { PrayerReminderMinutes } from "@/lib/push/types";
+import { usePublicAuth } from "@/components/providers/AuthProvider";
 
 type PushStatus =
   | "checking"
@@ -16,17 +16,15 @@ type PushStatus =
 
 interface StoredPreferences {
   browserId: string;
-  prayerReminderMinutes: PrayerReminderMinutes;
 }
 
 type ContextValue = {
   pushStatus: PushStatus;
   permission: NotificationPermission | "unsupported";
-  prayerReminderMinutes: PrayerReminderMinutes;
   busy: boolean;
-  enableNotifications: () => Promise<void>;
+  enableNotifications: () => Promise<boolean>;
   disableNotifications: () => Promise<void>;
-  setPrayerReminderMinutes: (minutes: PrayerReminderMinutes) => Promise<void>;
+  detachAccount: () => Promise<void>;
 };
 
 const STORAGE_KEY = "masjid-el-rahman-push-v1";
@@ -49,15 +47,9 @@ function isSupported() {
 function readStoredPreferences(): StoredPreferences {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") as Partial<StoredPreferences> | null;
-    const allowed = [null, 0, 5, 10, 15, 30];
-    return {
-      browserId: stored?.browserId || crypto.randomUUID(),
-      prayerReminderMinutes: allowed.includes(stored?.prayerReminderMinutes ?? null)
-        ? stored?.prayerReminderMinutes ?? null
-        : null,
-    };
+    return { browserId: stored?.browserId || crypto.randomUUID() };
   } catch {
-    return { browserId: crypto.randomUUID(), prayerReminderMinutes: null };
+    return { browserId: crypto.randomUUID() };
   }
 }
 
@@ -69,6 +61,8 @@ function urlBase64ToUint8Array(value: string) {
 
 export function AppPreferencesProvider({ children }: { children: React.ReactNode }) {
   const { locale } = useLocale();
+  const { session, loading: authLoading } = usePublicAuth();
+  const accessToken = session?.access_token;
   const [stored, setStored] = useState<StoredPreferences | null>(null);
   const [pushStatus, setPushStatus] = useState<PushStatus>("checking");
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
@@ -81,23 +75,28 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
 
   const syncSubscription = useCallback(async (
     subscription: PushSubscription,
-    preferences: StoredPreferences
+    preferences: StoredPreferences,
+    forceGuest = false,
   ) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (!forceGuest && accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
     const response = await fetch("/api/push/subscriptions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         subscription: subscription.toJSON(),
         browserId: preferences.browserId,
         locale,
         platform: navigator.platform,
-        prayerReminderMinutes: preferences.prayerReminderMinutes,
       }),
     });
     if (!response.ok) throw new Error("Could not save push subscription");
-  }, [locale]);
+  }, [accessToken, locale]);
 
   useEffect(() => {
+    if (authLoading) return;
+
     document.documentElement.removeAttribute("data-theme");
     document.documentElement.style.colorScheme = "light";
     localStorage.setItem("deggendorf-app-preferences-v1", "{}");
@@ -139,39 +138,39 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
       }
       try {
         await syncSubscription(subscription, preferences);
-        setPushStatus("enabled");
+        if (active) setPushStatus("enabled");
       } catch {
-        setPushStatus("error");
+        if (active) setPushStatus("error");
       }
     };
     void initialize();
     return () => { active = false; };
-  }, [saveStored, syncSubscription]);
+  }, [authLoading, saveStored, syncSubscription]);
 
   const enableNotifications = useCallback(async () => {
-    if (!stored || busy) return;
+    if (!stored || busy || authLoading) return false;
     setBusy(true);
     try {
       if (isIos() && !isStandalone()) {
         setPushStatus("ios-install-required");
-        return;
+        return false;
       }
       if (!isSupported()) {
         setPermission("unsupported");
         setPushStatus("unsupported");
-        return;
+        return false;
       }
       const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!publicKey) {
         setPushStatus("unconfigured");
-        return;
+        return false;
       }
 
       const result = await Notification.requestPermission();
       setPermission(result);
       if (result !== "granted") {
         setPushStatus(result === "denied" ? "denied" : "disabled");
-        return;
+        return false;
       }
 
       const registration = await navigator.serviceWorker.register("/sw.js", {
@@ -185,13 +184,15 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
       });
       await syncSubscription(subscription, stored);
       setPushStatus("enabled");
+      return true;
     } catch (error) {
       console.warn("Push notification setup failed", error);
       setPushStatus("error");
+      return false;
     } finally {
       setBusy(false);
     }
-  }, [busy, stored, syncSubscription]);
+  }, [authLoading, busy, stored, syncSubscription]);
 
   const disableNotifications = useCallback(async () => {
     if (!stored || busy || !isSupported()) return;
@@ -217,40 +218,22 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     }
   }, [busy, stored]);
 
-  const setPrayerReminderMinutes = useCallback(async (minutes: PrayerReminderMinutes) => {
-    if (!stored) return;
-    const next = { ...stored, prayerReminderMinutes: minutes };
-    saveStored(next);
-
-    if (!isSupported()) return;
+  const detachAccount = useCallback(async () => {
+    if (!stored || !isSupported()) return;
     const registration = await navigator.serviceWorker.getRegistration("/");
     const subscription = await registration?.pushManager.getSubscription();
     if (!subscription) return;
-    try {
-      await syncSubscription(subscription, next);
-    } catch (error) {
-      console.warn("Prayer reminder preference save failed", error);
-      setPushStatus("error");
-    }
-  }, [saveStored, stored, syncSubscription]);
+    await syncSubscription(subscription, stored, true);
+  }, [stored, syncSubscription]);
 
   const value = useMemo<ContextValue>(() => ({
     pushStatus,
     permission,
-    prayerReminderMinutes: stored?.prayerReminderMinutes ?? null,
     busy,
     enableNotifications,
     disableNotifications,
-    setPrayerReminderMinutes,
-  }), [
-    pushStatus,
-    permission,
-    stored?.prayerReminderMinutes,
-    busy,
-    enableNotifications,
-    disableNotifications,
-    setPrayerReminderMinutes,
-  ]);
+    detachAccount,
+  }), [pushStatus, permission, busy, enableNotifications, disableNotifications, detachAccount]);
 
   return <AppPreferencesContext.Provider value={value}>{children}</AppPreferencesContext.Provider>;
 }

@@ -42,11 +42,16 @@ export function AppHeader({ title }: { title?: string }) {
         </div>
 
         <div className="mt-1 text-center">
-          <h1 className="text-[24px] font-bold leading-tight">{mosqueName}</h1>
-          <p className="mt-1 text-[13px] font-semibold text-white/75">Deggendorf</p>
+          <h1
+            lang={locale}
+            className={`${locale === "ar" ? "home-quran-text text-[32px] leading-[1.35]" : "text-[28px] leading-tight"} font-bold text-[#F2EBDD]`}
+          >
+            {mosqueName}
+          </h1>
+          <p className="mt-1 text-[13px] font-semibold text-[rgba(255,255,255,0.78)]">Deggendorf</p>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 items-center gap-4 text-[13px] font-semibold text-white/80" dir="ltr">
+        <div className="mt-4 grid grid-cols-2 items-center gap-4 text-[13px] font-semibold text-[rgba(255,255,255,0.82)]" dir="ltr">
           <span className="text-left" data-testid="header-hijri-date">{hijriDate}</span>
           <time className="text-right" dateTime={currentDateIso} data-testid="header-gregorian-date">{currentDate}</time>
         </div>

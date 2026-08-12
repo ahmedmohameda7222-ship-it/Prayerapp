@@ -111,7 +111,7 @@ export function HomePageClient({
               لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ
             </p>
             <p className="mt-1 text-xs font-semibold text-[var(--home-text-secondary)]">{t("phase1.donationReflectionVerse")}</p>
-            <p className="mt-3 text-[15px] leading-6 text-[var(--home-text)]">{t("phase1.donationReflection")}</p>
+            <p className="mt-3 text-[15px] leading-6 text-[var(--home-text-secondary)]">{t("phase1.donationReflection")}</p>
           </div>
           <div className="home-donation-stack">
             {donationCampaigns.map((campaign) => (

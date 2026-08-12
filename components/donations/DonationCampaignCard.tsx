@@ -31,7 +31,7 @@ export function DonationCampaignCard({ campaign, home = false }: { campaign: Don
           <span className="font-semibold text-[var(--home-text)]">
             {t("donations.collectedAmount", { amount: formatCurrency(campaign.collectedAmount, locale) })}
           </span>
-          <span className="text-[var(--home-text-secondary)]">
+          <span className="text-[var(--home-text)]">
             {t("donations.goalAmount", { amount: formatCurrency(campaign.targetAmount, locale), progress })}
           </span>
         </div>

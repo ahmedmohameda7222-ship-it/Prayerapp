@@ -104,8 +104,8 @@ textarea {
   --home-divider: #d8e0dd;
   --home-urgent: #b42318;
   --home-urgent-soft: #fef3f2;
-  --home-success: #167a5c;
-  --home-disabled: #8b9591;
+  --home-success: #005a52;
+  --home-disabled: #5b6662;
   --home-focus: #005a52;
   padding-top: 0;
   background: var(--home-canvas);

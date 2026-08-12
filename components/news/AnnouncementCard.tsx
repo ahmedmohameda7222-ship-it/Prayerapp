@@ -28,7 +28,7 @@ export function AnnouncementCard({ announcement, home = false }: { announcement:
     return (
       <Link href="/news" aria-label={title} className="block px-4 py-4 transition-colors hover:bg-white/35 active:bg-white/45">
         <article>
-          <h3 className="font-bold text-[var(--home-text)]">{title}</h3>
+          <h3 className="font-bold text-[var(--home-urgent)]">{title}</h3>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[var(--home-text-secondary)]">{message}</p>
           <p className="mt-2 text-xs font-semibold text-[var(--home-text-secondary)]">
             {t(`announcementTypes.${announcement.type}`)} | {formatShortDate(announcement.createdAt.slice(0, 10), locale)}

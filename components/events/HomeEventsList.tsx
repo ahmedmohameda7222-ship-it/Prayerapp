@@ -28,7 +28,7 @@ export function HomeEventsList({ events }: { events: Event[] }) {
         const date = eventDateParts(event.date, locale);
         return (
           <article key={event.id} className="grid grid-cols-[64px_minmax(0,1fr)] gap-4 py-4 sm:grid-cols-[76px_minmax(0,1fr)]" data-testid="home-event-row">
-            <time dateTime={event.date} className="home-tabular self-start text-center text-[var(--home-brand-strong)]">
+            <time dateTime={event.date} className="home-tabular self-start text-center text-[var(--home-text)]">
               <span className="block text-2xl font-bold leading-none">{date.day}</span>
               <span className="mt-1 block text-xs font-semibold text-[var(--home-text-secondary)]">{date.context}</span>
             </time>

@@ -4,11 +4,13 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import type { DonationSettings } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
+import { phase1Copy } from "@/lib/i18n/phase1-copy";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
 
 export function BankTransferCard({ settings }: { settings: DonationSettings }) {
   const { t, locale } = useTranslation();
+  const copyText = phase1Copy[locale];
   const [copied, setCopied] = useState("");
   const defaultPurpose = getLocalizedField(settings, "defaultPurpose", locale) || settings.defaultPurpose;
   const rows: [string, string, string][] = [
@@ -21,7 +23,7 @@ export function BankTransferCard({ settings }: { settings: DonationSettings }) {
 
   if (!visibleRows.length) return null;
 
-  async function copy(label: string, value: string, key: string) {
+  async function copy(value: string, key: string) {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(key);
@@ -40,10 +42,11 @@ export function BankTransferCard({ settings }: { settings: DonationSettings }) {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.04em] text-[var(--color-muted)]">{label}</p>
               <p className="break-words font-bold text-[var(--color-charcoal)]">{value}</p>
+              {copied === key ? <p role="status" className="mt-1 text-xs font-extrabold text-[var(--color-emerald)]">{copyText.copied}</p> : null}
             </div>
             <button
               aria-label={`${t("donations.copy")} ${label}`}
-              onClick={() => copy(label, value, key)}
+              onClick={() => copy(value, key)}
               className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--color-emerald)] text-[var(--color-card)]"
             >
               {copied === key ? <Check className="h-5 w-5 text-[var(--color-gold)]" aria-hidden="true" /> : <Copy className="h-5 w-5" aria-hidden="true" />}

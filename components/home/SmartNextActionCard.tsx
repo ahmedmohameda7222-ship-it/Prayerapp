@@ -18,8 +18,8 @@ export function SmartNextActionCard({ action }: { action: SmartNextAction }) {
   const { href, icon: Icon } = actionConfig[action];
 
   return (
-    <Link href={href} className="flex min-h-20 items-center gap-3 border-y border-[var(--home-divider)] py-4 transition-colors hover:bg-[var(--home-surface-subtle)] active:bg-[var(--home-brand-soft)]">
-      <Icon className="h-6 w-6 shrink-0 text-[var(--home-brand)]" />
+    <Link href={href} className="home-contextual-surface flex min-h-20 items-center gap-3 p-4 transition-colors hover:bg-[var(--home-surface-subtle)] active:bg-[var(--home-brand-soft)]" data-testid="home-contextual-surface">
+      <Icon className="h-6 w-6 shrink-0 text-[var(--home-brand)]" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <p className="text-[13px] font-semibold text-[var(--home-text-secondary)]">{t(`phase1.smartLabels.${action}`)}</p>
         <h3 className="text-base font-bold text-[var(--home-text)]">{t(`home.smartActions.${action}.title`)}</h3>

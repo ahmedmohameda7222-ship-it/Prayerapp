@@ -17,11 +17,11 @@ export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
 
   return (
     <header className="home-app-header border-b border-[var(--home-divider)] bg-[var(--home-surface)]">
-      <div className="home-app-header-chrome bg-[var(--home-brand)] px-4 pb-3 text-white sm:px-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 py-1">
-            <h1 className="text-[22px] font-bold leading-tight">{title}</h1>
-            <p className="mt-1 text-[13px] font-medium text-white/75">Deggendorf</p>
+      <div className="home-app-header-chrome bg-[var(--home-brand)] px-4 pb-4 text-white sm:px-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 pt-1">
+            <h1 className="text-[21px] font-bold leading-[1.2]">{title}</h1>
+            <p className="mt-1.5 text-[13px] font-semibold text-white/75">Deggendorf</p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <LanguageMenu />
@@ -36,14 +36,14 @@ export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
           </div>
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-semibold text-white/80">
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-semibold text-white/80">
           <time dateTime={currentDateIso}>{currentDate}</time>
           <span aria-hidden="true">·</span>
           <span>{hijriDate}</span>
         </div>
       </div>
 
-      <div className="px-4 py-4 text-center sm:px-5">
+      <div className="px-4 py-5 text-center sm:px-5">
         <p dir="rtl" lang="ar" className="home-quran-text text-[20px] font-semibold leading-[1.85] text-[var(--home-brand-strong)]">
           إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا
         </p>

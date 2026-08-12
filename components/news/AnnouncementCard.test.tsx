@@ -26,6 +26,7 @@ describe("AnnouncementCard Home variant", () => {
 
     expect(screen.getByRole("link", { name: "Urgent mosque notice" })).toHaveAttribute("href", "/news");
     expect(screen.getByText(announcement.message)).toBeInTheDocument();
+    expect(screen.queryByText(/2026-08-12/)).not.toBeInTheDocument();
     expect(container.querySelector(".card")).toBeNull();
     expect(container.querySelector("svg")).toBeNull();
   });

@@ -34,7 +34,7 @@ export function BankTransferCard({ settings, home = false }: { settings: Donatio
   const content = (
     <>
       <h2 className={home ? "mb-3 text-base font-bold text-[var(--home-text)]" : "mb-3 text-sm font-extrabold uppercase tracking-[0.04em] text-[var(--color-emerald)]"}>{t("donations.bankTransfer")}</h2>
-      <div className={home ? "divide-y divide-[var(--home-divider)]" : "grid gap-2"} data-testid={home ? "home-bank-surface" : undefined}>
+      <div className={home ? "divide-y divide-[var(--home-divider)]" : "grid gap-2"}>
         {visibleRows.map(([label, value, key]) => (
           <div key={key} className={home ? "grid grid-cols-[1fr_44px] gap-3 py-3 first:pt-0 last:pb-0" : "grid grid-cols-[1fr_44px] gap-3 rounded-2xl bg-[var(--color-cream)] p-3"}>
             <div>
@@ -55,5 +55,5 @@ export function BankTransferCard({ settings, home = false }: { settings: Donatio
     </>
   );
 
-  return home ? <section className="border-y border-[var(--home-divider)] py-4">{content}</section> : <Card>{content}</Card>;
+  return home ? <section className="home-donation-surface p-4" data-testid="home-bank-surface">{content}</section> : <Card>{content}</Card>;
 }

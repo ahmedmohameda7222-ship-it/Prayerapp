@@ -40,7 +40,8 @@ export function BottomNav() {
               aria-current={active ? "page" : undefined}
               className={`bottom-nav-link ${active ? "bottom-nav-link-active" : "bottom-nav-link-inactive"}`}
             >
-              <Icon className="h-[22px] w-[22px]" aria-hidden="true" />
+              {active ? <span className="home-nav-active-indicator" aria-hidden="true" /> : null}
+              <Icon className="h-6 w-6" aria-hidden="true" />
               {item.label}
             </Link>
           );

@@ -83,6 +83,7 @@ describe("HomePrayerTimesCard", () => {
   it("keeps six prayer rows and reminders only for the five obligatory prayers", () => {
     const { container } = render(<HomePrayerTimesCard prayer={prayer} activePrayer="asr" />);
 
+    expect(screen.getByTestId("home-prayer-board")).toHaveClass("home-prayer-board");
     expect(container.querySelectorAll("[data-prayer-row]")).toHaveLength(6);
     expect(screen.getAllByRole("button")).toHaveLength(5);
     expect(container.querySelector('[data-prayer-row="sunrise"] button')).toBeNull();

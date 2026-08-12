@@ -20,7 +20,7 @@ export function HomeEventsList({ events }: { events: Event[] }) {
   const { t, locale } = useTranslation();
 
   return (
-    <div className="divide-y divide-[var(--home-divider)] border-y border-[var(--home-divider)]" data-testid="home-events-surface">
+    <div className="home-events-surface divide-y divide-[var(--home-divider)] px-4" data-testid="home-events-surface">
       {events.map((event) => {
         const title = getLocalizedField(event, "title", locale);
         const description = getLocalizedField(event, "description", locale);

@@ -14,9 +14,9 @@ export function DonationCampaignCard({ campaign, home = false }: { campaign: Don
 
   if (home) {
     return (
-      <article className="border-b border-[var(--home-divider)] pb-5">
-        <h3 className="font-bold text-[var(--home-text)]">{title}</h3>
-        <p className="mt-1 text-sm leading-5 text-[var(--home-text-secondary)]">{description}</p>
+      <article className="home-donation-surface p-4" data-testid="home-donation-campaign-surface">
+        <h3 className="text-base font-bold text-[var(--home-text)]">{title}</h3>
+        <p className="mt-1 text-sm leading-6 text-[var(--home-text-secondary)]">{description}</p>
         <div
           className="mt-4 h-1 overflow-hidden rounded-[2px] bg-[var(--home-divider)]"
           role="progressbar"

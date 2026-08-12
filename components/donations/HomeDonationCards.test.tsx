@@ -1,8 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { BankTransferCard } from "./BankTransferCard";
+import { DonationCampaignCard } from "./DonationCampaignCard";
 import { PayPalCard } from "./PayPalCard";
-import type { DonationSettings } from "@/lib/types";
+import type { DonationCampaign, DonationSettings } from "@/lib/types";
 
 vi.mock("@/lib/i18n/use-translation", () => ({
   useTranslation: () => ({
@@ -29,7 +30,29 @@ const settings: DonationSettings = {
   paypalLink: "https://paypal.example/masjid",
 };
 
+const campaign: DonationCampaign = {
+  id: "campaign-1",
+  title: "Masjid expansion",
+  description: "A factual campaign description.",
+  targetAmount: 3000,
+  collectedAmount: 1250,
+  startDate: "2026-08-01",
+  endDate: "2026-09-01",
+  isActive: true,
+  isFeatured: true,
+};
+
 describe("Home donation cards", () => {
+  it("renders each campaign as a restrained Home surface without the legacy card", () => {
+    render(<DonationCampaignCard campaign={campaign} home />);
+    const surface = screen.getByTestId("home-donation-campaign-surface");
+    expect(surface).toHaveClass("home-donation-surface");
+    expect(surface).toHaveTextContent("Masjid expansion");
+    expect(surface).toHaveTextContent("A factual campaign description.");
+    expect(surface.className).not.toMatch(/\bcard\b/);
+    expect(within(surface).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "42");
+  });
+
   it("renders bank details as one divided surface", () => {
     render(<BankTransferCard settings={settings} home />);
     const surface = screen.getByTestId("home-bank-surface");
@@ -38,6 +61,7 @@ describe("Home donation cards", () => {
     expect(within(surface).getByText("TESTDEFF")).toBeInTheDocument();
     expect(within(surface).getByText("Donation")).toBeInTheDocument();
     expect(within(surface).getAllByRole("button")).toHaveLength(4);
+    expect(surface).toHaveClass("home-donation-surface");
     expect(surface.closest(".card")).toBeNull();
   });
 
@@ -45,8 +69,10 @@ describe("Home donation cards", () => {
     render(<PayPalCard paypalLink={settings.paypalLink} showUrl={false} home />);
     expect(screen.getByText("You can also support the mosque securely with PayPal.")).toBeInTheDocument();
     const cta = screen.getByRole("link", { name: /Donate with PayPal/i });
+    const surface = screen.getByTestId("home-paypal-surface");
     expect(cta).toHaveAttribute("href", "https://paypal.example/masjid");
     expect(screen.queryByText("https://paypal.example/masjid")).not.toBeInTheDocument();
+    expect(surface).toHaveClass("home-donation-surface");
     expect(cta.closest(".card")).toBeNull();
   });
 });

@@ -25,5 +25,5 @@ export function PayPalCard({ paypalLink, showUrl = true, home = false }: { paypa
     </>
   );
 
-  return home ? <section className="border-b border-[var(--home-divider)] pb-5">{content}</section> : <Card>{content}</Card>;
+  return home ? <section className="home-donation-surface p-4" data-testid="home-paypal-surface">{content}</section> : <Card>{content}</Card>;
 }

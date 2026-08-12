@@ -135,12 +135,12 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
   }
 
   return (
-    <section id="prayer-times" aria-labelledby="home-prayer-times-title">
-      <div className="mb-3">
+    <section id="prayer-times" aria-labelledby="home-prayer-times-title" className="home-prayer-board" data-testid="home-prayer-board">
+      <div className="p-4 pb-3">
         <h2 id="home-prayer-times-title" className="text-lg font-bold text-[var(--home-text)]">{t("prayer.todaysPrayerTimes")}</h2>
         <p className="mt-1 text-[13px] leading-5 text-[var(--home-text-secondary)]">{reminderDescription}</p>
       </div>
-      <div className="grid grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_52px] items-center gap-2 border-y border-[var(--home-divider)] bg-[var(--home-surface-subtle)] px-3 py-2 text-xs font-semibold text-[var(--home-text-secondary)] sm:px-4">
+      <div className="grid grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_52px] items-center gap-2 border-y border-[var(--home-divider)] bg-[var(--home-surface-subtle)] px-3 py-2.5 text-xs font-semibold text-[var(--home-text-secondary)] sm:px-4">
         <span>{t("prayer.prayer")}</span>
         <span>{t("prayer.azan")}</span>
         <span>{t("prayer.iqama")}</span>
@@ -152,7 +152,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
           const canRemind = name !== "sunrise";
           const isEnabled = canRemind && enabled.has(name as ReminderPrayer);
           return (
-            <div key={name} className={`border-s-[3px] ${isActive ? "border-s-[var(--home-brand)]" : "border-s-transparent"}`} data-prayer-row={name}>
+            <div key={name} className={`border-s-[3px] ${isActive ? "border-s-[var(--home-brand)] bg-[var(--home-brand-soft)]" : "border-s-transparent"}`} data-prayer-row={name} data-active={isActive ? "true" : undefined}>
               <div className="grid min-h-14 grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_52px] items-center gap-2 px-3 py-2.5 sm:px-4">
                 <span className={`min-w-0 text-[15px] font-bold ${isActive ? "text-[var(--home-brand-strong)]" : "text-[var(--home-text)]"}`}>{t(`prayer.${name}`)}</span>
                 <span className="home-tabular text-[15px] font-bold text-[var(--home-text)]">{formatTime(adhan, timeFormat)}</span>
@@ -171,7 +171,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
                 ) : <span aria-label={t("prayer.sunrise")} className="text-center text-[var(--home-text-secondary)]">—</span>}
               </div>
               {name === "maghrib" && prayer.maghribProgram?.enabled ? (
-                <div className="mb-3 ms-4 border-s border-[var(--home-divider)] ps-3 text-[var(--home-text-secondary)]" data-testid="maghrib-program">
+                <div className="border-t border-[var(--home-divider)] bg-[var(--home-surface-subtle)] px-4 text-[var(--home-text-secondary)]" data-testid="maghrib-program">
                   {prayer.maghribProgram.lessonTitle ? (
                     <p className="py-2 text-[13px] leading-5">
                       <span className="font-bold text-[var(--home-brand-strong)]">{t("prayer.khatira")}: </span>

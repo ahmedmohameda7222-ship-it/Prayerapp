@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Bell, ChevronRight, HandHeart, MapPin, Moon, Newspaper, Users } from "lucide-react";
 import type { Announcement } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
+import { formatShortDate } from "@/lib/date-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
 
@@ -25,12 +26,12 @@ export function AnnouncementCard({ announcement, home = false }: { announcement:
 
   if (home) {
     return (
-      <Link href="/news" aria-label={title} className="block py-4 first:pt-0 last:pb-0">
-        <article className={`border-s-[3px] ps-4 ${announcement.isUrgent ? "border-[var(--home-urgent)]" : "border-[var(--home-brand)]"}`}>
+      <Link href="/news" aria-label={title} className="block px-4 py-4 transition-colors hover:bg-white/35 active:bg-white/45">
+        <article>
           <h3 className="font-bold text-[var(--home-text)]">{title}</h3>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[var(--home-text-secondary)]">{message}</p>
           <p className="mt-2 text-xs font-semibold text-[var(--home-text-secondary)]">
-            {t(`announcementTypes.${announcement.type}`)} | {announcement.createdAt.slice(0, 10)}
+            {t(`announcementTypes.${announcement.type}`)} | {formatShortDate(announcement.createdAt.slice(0, 10), locale)}
           </p>
         </article>
       </Link>

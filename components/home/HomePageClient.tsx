@@ -63,9 +63,9 @@ export function HomePageClient({
 
   return (
     <div className="home-dashboard grid" data-testid="home-dashboard">
-      <section data-home-section="hero" aria-label={t("prayer.nextPrayer")}>
+      <section className="home-section-next" data-home-section="hero" aria-label={t("prayer.nextPrayer")}>
         {today ? (
-          <div className="border-s-[3px] border-[var(--home-brand)] py-4 ps-4">
+          <div className="home-next-prayer-surface" data-testid="home-next-prayer-surface">
             <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} initialNow={initialNow} variant="instrument" />
           </div>
         ) : (
@@ -74,9 +74,9 @@ export function HomePageClient({
       </section>
 
       {urgentAnnouncements.length ? (
-        <section data-home-section="urgent">
+        <section className="home-section-urgent" data-home-section="urgent">
           <HomeSectionTitle>{t("news.title")}</HomeSectionTitle>
-          <div className="divide-y divide-[var(--home-divider)]">
+          <div className="home-urgent-surface divide-y divide-[var(--home-divider)]" data-testid="home-urgent-surface">
             {urgentAnnouncements.map((announcement) => (
               <AnnouncementCard key={announcement.id} announcement={announcement} home />
             ))}
@@ -85,35 +85,35 @@ export function HomePageClient({
       ) : null}
 
       {today ? (
-        <div data-home-section="prayer-times">
+        <div className="home-section-prayer" data-home-section="prayer-times">
           <HomePrayerTimesCard prayer={today} activePrayer={activePrayer} />
         </div>
       ) : null}
 
       {smartAction ? (
-        <div data-home-section="contextual-action">
+        <div className="home-section-contextual" data-home-section="contextual-action">
           <SmartNextActionCard action={smartAction} />
         </div>
       ) : null}
 
       {events.length ? (
-        <section className="home-section-break" data-home-section="events">
+        <section className="home-section-events" data-home-section="events">
           <HomeSectionTitle>{t("events.title")}</HomeSectionTitle>
           <HomeEventsList events={events} />
         </section>
       ) : null}
 
       {hasDonationContent ? (
-        <section className="home-section-break" data-home-section="donations">
+        <section className="home-section-donations" data-home-section="donations">
           <HomeSectionTitle>{t("donations.title")}</HomeSectionTitle>
-          <div className="mb-5 border-b border-[var(--home-divider)] pb-5 text-center">
+          <div className="mb-4 text-center">
             <p dir="rtl" lang="ar" className="home-donation-verse text-[20px] font-semibold leading-[1.85] text-[var(--home-brand-strong)]">
               لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ
             </p>
             <p className="mt-1 text-xs font-semibold text-[var(--home-text-secondary)]">{t("phase1.donationReflectionVerse")}</p>
             <p className="mt-3 text-[15px] leading-6 text-[var(--home-text)]">{t("phase1.donationReflection")}</p>
           </div>
-          <div className="grid gap-5">
+          <div className="home-donation-stack">
             {donationCampaigns.map((campaign) => (
               <DonationCampaignCard key={campaign.id} campaign={campaign} home />
             ))}

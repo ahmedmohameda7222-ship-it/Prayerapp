@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import "./globals.css";
+import "./responsive-prayer-nav.css";
 import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/types";

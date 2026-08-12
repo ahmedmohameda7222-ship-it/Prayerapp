@@ -13,6 +13,7 @@ import { getIqama, prayerOrder } from "@/lib/prayer-utils";
 import type { PrayerName, PrayerTime } from "@/lib/types";
 
 type ReminderPrayer = Exclude<PrayerName, "sunrise">;
+type ReminderRow = { prayer: string; enabled: boolean };
 const reminderPrayers = new Set<ReminderPrayer>(["fajr", "dhuhr", "asr", "maghrib", "isha"]);
 
 function isReminderPrayer(value: string | null): value is ReminderPrayer {
@@ -56,7 +57,8 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
         setError(copy.reminderSaveError);
         setEnabled(new Set());
       } else {
-        setEnabled(new Set((data || []).filter((row) => row.enabled && isReminderPrayer(row.prayer)).map((row) => row.prayer as ReminderPrayer)));
+        const reminderRows = (data || []) as ReminderRow[];
+        setEnabled(new Set(reminderRows.filter((row) => row.enabled && isReminderPrayer(row.prayer)).map((row) => row.prayer as ReminderPrayer)));
       }
       setLoaded(true);
     };
@@ -83,7 +85,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
         prayer: name,
         enabled: nextEnabled,
         updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id,prayer" });
+      } as never, { onConflict: "user_id,prayer" });
       if (saveError) throw saveError;
       setEnabled((current) => {
         const next = new Set(current);

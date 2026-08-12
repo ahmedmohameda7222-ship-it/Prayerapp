@@ -22,7 +22,7 @@ const AuthContext = createContext<AuthContextValue>(fallbackAuth);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(createClient()));
 
   const refreshSession = useCallback(async () => {
     const client = createClient();
@@ -38,10 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const client = createClient();
-    if (!client) {
-      setLoading(false);
-      return;
-    }
+    if (!client) return;
 
     void refreshSession();
     const { data } = client.auth.onAuthStateChange((_event, nextSession) => {

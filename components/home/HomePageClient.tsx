@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { HomeSectionTitle } from "@/components/home/HomeSectionTitle";
 import { HomeEmptyState } from "@/components/home/HomeEmptyState";
+import { HomeNextPrayerSurface } from "@/components/home/HomeNextPrayerSurface";
 import { PrayerCountdown } from "@/components/prayer/PrayerCountdown";
 import { HomePrayerTimesCard } from "@/components/prayer/HomePrayerTimesCard";
 import { AnnouncementCard } from "@/components/news/AnnouncementCard";
@@ -65,9 +66,9 @@ export function HomePageClient({
     <div className="home-dashboard grid" data-testid="home-dashboard">
       <section className="home-section-next" data-home-section="hero" aria-label={t("prayer.nextPrayer")}>
         {today ? (
-          <div className="home-next-prayer-surface" data-testid="home-next-prayer-surface">
+          <HomeNextPrayerSurface>
             <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} initialNow={initialNow} variant="instrument" />
-          </div>
+          </HomeNextPrayerSurface>
         ) : (
           <HomeEmptyState message={t("prayer.notPublished")} />
         )}

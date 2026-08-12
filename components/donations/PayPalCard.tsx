@@ -11,7 +11,7 @@ export function PayPalCard({ paypalLink, showUrl = true, home = false }: { paypa
   return (
     <Card>
       <h3 className="text-sm font-extrabold uppercase tracking-[0.04em] text-[var(--color-emerald)]">PayPal</h3>
-      {home ? <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{t("donations.paypalSupport")}</p> : null}
+      {home ? <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{t("phase1.paypalSupport")}</p> : null}
       {showUrl ? <p className="mt-2 break-all text-sm text-[var(--color-muted)]">{paypalLink}</p> : null}
       <a
         href={paypalLink}

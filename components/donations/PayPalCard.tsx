@@ -4,13 +4,14 @@ import { ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
-export function PayPalCard({ paypalLink, showUrl = true }: { paypalLink?: string; showUrl?: boolean }) {
+export function PayPalCard({ paypalLink, showUrl = true, home = false }: { paypalLink?: string; showUrl?: boolean; home?: boolean }) {
   const { t } = useTranslation();
   if (!paypalLink) return null;
 
   return (
     <Card>
       <h3 className="text-sm font-extrabold uppercase tracking-[0.04em] text-[var(--color-emerald)]">PayPal</h3>
+      {home ? <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{t("donations.paypalSupport")}</p> : null}
       {showUrl ? <p className="mt-2 break-all text-sm text-[var(--color-muted)]">{paypalLink}</p> : null}
       <a
         href={paypalLink}

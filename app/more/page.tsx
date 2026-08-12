@@ -19,8 +19,8 @@ const items = [
 export default function MorePage() {
   const { t } = useTranslation();
   const phase1Items = [
-    { href: "/account", label: t("account.title"), Icon: UserRound },
-    { href: "/privacy", label: t("account.privacy"), Icon: Shield },
+    { href: "/account", label: t("phase1.account"), Icon: UserRound },
+    { href: "/privacy", label: t("phase1.privacy"), Icon: Shield },
   ];
 
   return (

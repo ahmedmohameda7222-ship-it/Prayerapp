@@ -6,7 +6,6 @@ import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { createClient } from "@/lib/supabase/client";
-import { phase1Copy } from "@/lib/i18n/phase1-copy";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { formatTime } from "@/lib/time-format";
 import { getIqama, prayerOrder } from "@/lib/prayer-utils";
@@ -21,8 +20,7 @@ function isReminderPrayer(value: string | null): value is ReminderPrayer {
 }
 
 export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTime; activePrayer?: PrayerName }) {
-  const { t, locale } = useTranslation();
-  const copy = phase1Copy[locale];
+  const { t } = useTranslation();
   const { timeFormat } = useTimeFormat();
   const { user } = usePublicAuth();
   const { pushStatus, enableNotifications } = useAppPreferences();
@@ -44,7 +42,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
       }
       const client = createClient();
       if (!client) {
-        setError(copy.reminderSaveError);
+        setError(t("prayer.reminderSaveError"));
         setLoaded(true);
         return;
       }
@@ -54,7 +52,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
         .eq("user_id", user.id);
       if (!active) return;
       if (queryError) {
-        setError(copy.reminderSaveError);
+        setError(t("prayer.reminderSaveError"));
         setEnabled(new Set());
       } else {
         const reminderRows = (data || []) as ReminderRow[];
@@ -64,7 +62,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
     };
     void load();
     return () => { active = false; };
-  }, [copy.reminderSaveError, user]);
+  }, [t, user]);
 
   const setReminder = useCallback(async (name: ReminderPrayer, nextEnabled: boolean) => {
     if (!user || savingPrayer) return false;
@@ -74,7 +72,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
       if (nextEnabled && pushStatus !== "enabled") {
         const notificationReady = await enableNotifications();
         if (!notificationReady) {
-          setError(copy.reminderSaveError);
+          setError(t("prayer.reminderSaveError"));
           return false;
         }
       }
@@ -95,12 +93,12 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
       });
       return true;
     } catch {
-      setError(copy.reminderSaveError);
+      setError(t("prayer.reminderSaveError"));
       return false;
     } finally {
       setSavingPrayer(null);
     }
-  }, [copy.reminderSaveError, enableNotifications, pushStatus, savingPrayer, user]);
+  }, [enableNotifications, pushStatus, savingPrayer, t, user]);
 
   useEffect(() => {
     if (!loaded || !user || handledIntent.current) return;
@@ -119,9 +117,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
   const rows = useMemo(() => prayerOrder.map((name) => {
     const canonicalIqama = name === "maghrib"
       ? prayer.maghribProgram?.maghribIqamaTime || getIqama(prayer, name)
-      : name === "isha"
-        ? prayer.maghribProgram?.combinedIshaTime || getIqama(prayer, name)
-        : getIqama(prayer, name);
+      : getIqama(prayer, name);
     return { name, adhan: prayer[name], iqama: canonicalIqama };
   }), [prayer]);
 
@@ -138,13 +134,13 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
     <section id="prayer-times" className="overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]" aria-labelledby="home-prayer-times-title">
       <div className="border-b border-[var(--color-border)] px-4 py-3">
         <h2 id="home-prayer-times-title" className="font-bold text-[var(--color-emerald)]">{t("prayer.todaysPrayerTimes")}</h2>
-        <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">{copy.reminderDescription}</p>
+        <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">{t("prayer.reminderDescription")}</p>
       </div>
       <div className="grid grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_52px] items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-cream)] px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[var(--color-muted)] sm:px-4 sm:text-xs">
         <span>{t("prayer.prayer")}</span>
         <span>{t("prayer.azan")}</span>
         <span>{t("prayer.iqama")}</span>
-        <span className="sr-only">{copy.reminderDescription}</span>
+        <span className="sr-only">{t("prayer.reminderDescription")}</span>
       </div>
       <div className="divide-y divide-[var(--color-border)]">
         {rows.map(({ name, adhan, iqama }) => {
@@ -152,7 +148,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
           const canRemind = name !== "sunrise";
           const isEnabled = canRemind && enabled.has(name as ReminderPrayer);
           return (
-            <div key={name} className={isActive ? "bg-[var(--color-emerald-soft)]/60" : ""}>
+            <div key={name} className={isActive ? "bg-[var(--color-emerald-soft)]/60" : ""} data-prayer-row={name}>
               <div className="grid min-h-14 grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_52px] items-center gap-2 px-3 py-2 sm:px-4">
                 <span className={`min-w-0 font-bold ${isActive ? "text-[var(--color-emerald)]" : "text-[var(--color-charcoal)]"}`}>{t(`prayer.${name}`)}</span>
                 <span className="font-extrabold text-[var(--color-charcoal)]">{formatTime(adhan, timeFormat)}</span>
@@ -163,17 +159,28 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
                     disabled={!loaded || savingPrayer === name}
                     onClick={() => clickReminder(name as ReminderPrayer)}
                     aria-pressed={isEnabled}
-                    aria-label={`${t(`prayer.${name}`)}: ${isEnabled ? copy.reminderOn : copy.reminderOff}`}
+                    aria-label={`${t(`prayer.${name}`)}: ${isEnabled ? t("prayer.reminderOn") : t("prayer.reminderOff")}`}
                     className={`grid h-11 w-11 place-items-center rounded-full border transition disabled:opacity-50 ${isEnabled ? "border-[var(--color-emerald)] bg-[var(--color-emerald)] text-white" : "border-[var(--color-border)] bg-transparent text-[var(--color-emerald)]"}`}
                   >
                     <Bell className={`h-5 w-5 ${isEnabled ? "fill-current" : ""}`} aria-hidden="true" />
                   </button>
                 ) : <span aria-label={t("prayer.sunrise")} className="text-center text-[var(--color-muted)]">—</span>}
               </div>
-              {name === "maghrib" && prayer.maghribProgram?.enabled && prayer.maghribProgram.lessonTitle ? (
-                <p className="px-3 pb-2 text-xs leading-5 text-[var(--color-muted)] sm:px-4">
-                  {prayer.maghribProgram.lessonTitle}{prayer.maghribProgram.lessonDurationMinutes ? ` · ${prayer.maghribProgram.lessonDurationMinutes} ${t("prayer.minutes")}` : ""}
-                </p>
+              {name === "maghrib" && prayer.maghribProgram?.enabled ? (
+                <div className="mx-3 mb-3 divide-y divide-[var(--color-border)] rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 sm:mx-4" data-testid="maghrib-program">
+                  {prayer.maghribProgram.lessonTitle ? (
+                    <p className="py-2 text-xs leading-5 text-[var(--color-muted)]">
+                      <span className="font-extrabold text-[var(--color-emerald)]">{t("prayer.khatira")}: </span>
+                      {prayer.maghribProgram.lessonTitle}{prayer.maghribProgram.lessonDurationMinutes ? ` · ${prayer.maghribProgram.lessonDurationMinutes} ${t("prayer.minutes")}` : ""}
+                    </p>
+                  ) : null}
+                  {prayer.maghribProgram.combinedIshaTime ? (
+                    <p className="flex items-center justify-between gap-3 py-2 text-xs leading-5">
+                      <span className="font-extrabold text-[var(--color-emerald)]">{t("prayer.combinedIsha")}</span>
+                      <span className="font-extrabold text-[var(--color-charcoal)]">{formatTime(prayer.maghribProgram.combinedIshaTime, timeFormat)}</span>
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           );

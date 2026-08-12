@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { Clock, Home, LayoutGrid, Newspaper } from "lucide-react";
+import { Clock, Home, LayoutGrid, Newspaper, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -12,9 +12,17 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+const SIDEBAR_TOGGLE_COPY = {
+  ar: { collapse: "طي شريط التنقل", expand: "توسيع شريط التنقل" },
+  en: { collapse: "Collapse navigation", expand: "Expand navigation" },
+  de: { collapse: "Navigation einklappen", expand: "Navigation erweitern" },
+  tr: { collapse: "Gezinmeyi daralt", expand: "Gezinmeyi genişlet" },
+} as const;
+
 export function BottomNav() {
   const pathname = usePathname();
   const { t, locale } = useTranslation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const navItems = useMemo(
     () => [
@@ -26,6 +34,13 @@ export function BottomNav() {
     ],
     [t]
   );
+
+  useEffect(() => {
+    document.documentElement.dataset.desktopSidebar = sidebarCollapsed ? "collapsed" : "expanded";
+    return () => {
+      delete document.documentElement.dataset.desktopSidebar;
+    };
+  }, [sidebarCollapsed]);
 
   const routeActiveIndex = navItems.findIndex((item) => isActive(pathname, item.href));
   const [pendingSelection, setPendingSelection] = useState<{ fromPathname: string; index: number } | null>(null);
@@ -41,9 +56,23 @@ export function BottomNav() {
     "--nav-active-index": physicalIndex,
     "--nav-sidebar-index": logicalIndex,
   } as CSSProperties;
+  const toggleCopy = SIDEBAR_TOGGLE_COPY[locale];
+  const toggleLabel = sidebarCollapsed ? toggleCopy.expand : toggleCopy.collapse;
+  const ToggleIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose;
 
   return (
-    <nav aria-label={t("nav.ariaLabel")} className="bottom-nav-shell fixed z-50">
+    <nav id="primary-navigation" aria-label={t("nav.ariaLabel")} className="bottom-nav-shell fixed z-50">
+      <button
+        type="button"
+        className="desktop-sidebar-toggle"
+        aria-controls="primary-navigation"
+        aria-expanded={!sidebarCollapsed}
+        aria-label={toggleLabel}
+        title={toggleLabel}
+        onClick={() => setSidebarCollapsed((current) => !current)}
+      >
+        <ToggleIcon className="h-5 w-5" aria-hidden="true" />
+      </button>
       <div className="bottom-nav-track" style={trackStyle}>
         {visualActiveIndex >= 0 ? <span className="bottom-nav-selection" aria-hidden="true" /> : null}
         {navItems.map((item, index) => {
@@ -55,11 +84,13 @@ export function BottomNav() {
               href={item.href}
               key={item.href}
               aria-current={active ? "page" : undefined}
+              aria-label={item.label}
+              title={sidebarCollapsed ? item.label : undefined}
               onClick={() => setPendingSelection({ fromPathname: pathname, index })}
               className={`bottom-nav-link ${visuallyActive ? "bottom-nav-link-active" : "bottom-nav-link-inactive"}`}
             >
               <Icon className="h-6 w-6" aria-hidden="true" />
-              {item.label}
+              <span className="bottom-nav-label">{item.label}</span>
             </Link>
           );
         })}

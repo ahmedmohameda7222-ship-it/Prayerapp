@@ -50,7 +50,6 @@ export function HomePageClient({
   const smartAction = useMemo(() => schedule.length ? getSmartNextAction(schedule, now) : undefined, [now, schedule]);
 
   useEffect(() => {
-    setNow(new Date());
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(timer);
   }, []);

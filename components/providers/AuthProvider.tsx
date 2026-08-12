@@ -11,7 +11,14 @@ type AuthContextValue = {
   refreshSession: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const fallbackAuth: AuthContextValue = {
+  session: null,
+  user: null,
+  loading: false,
+  refreshSession: async () => undefined,
+};
+
+const AuthContext = createContext<AuthContextValue>(fallbackAuth);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -55,7 +62,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function usePublicAuth() {
-  const value = useContext(AuthContext);
-  if (!value) throw new Error("usePublicAuth must be used inside AuthProvider");
-  return value;
+  return useContext(AuthContext);
 }

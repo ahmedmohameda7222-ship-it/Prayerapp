@@ -2,6 +2,7 @@ import type { PrayerName, PrayerTime } from "./types";
 import { addDaysIso, zonedDateTime } from "./date-utils";
 
 export const prayerOrder: PrayerName[] = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"];
+export const obligatoryPrayerOrder: Exclude<PrayerName, "sunrise">[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 
 export function getPrayerForDate(times: PrayerTime[], date: string) {
   return times.find((item) => item.date === date && item.published);
@@ -15,7 +16,7 @@ export function getIqama(prayer: PrayerTime, name: PrayerName) {
 export function getNextPrayerFromSchedule(times: PrayerTime[], now = new Date()) {
   const schedule = times.filter((item) => item.published).sort((a, b) => a.date.localeCompare(b.date));
   for (const day of schedule) {
-    for (const name of prayerOrder) {
+    for (const name of obligatoryPrayerOrder) {
       const target = zonedDateTime(day.date, day[name]);
       if (target.getTime() > now.getTime()) return { name, time: day[name], target, date: day.date };
     }

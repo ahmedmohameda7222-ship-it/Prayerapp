@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { Clock, Home, LayoutGrid, Newspaper } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -14,7 +14,7 @@ function isActive(pathname: string, href: string): boolean {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const navItems = useMemo(
     () => [
@@ -27,20 +27,35 @@ export function BottomNav() {
     [t]
   );
 
+  const routeActiveIndex = navItems.findIndex((item) => isActive(pathname, item.href));
+  const [pendingSelection, setPendingSelection] = useState<{ fromPathname: string; index: number } | null>(null);
+  const visualActiveIndex = pendingSelection?.fromPathname === pathname
+    ? pendingSelection.index
+    : routeActiveIndex;
+
+  const physicalIndex = visualActiveIndex < 0
+    ? 0
+    : locale === "ar"
+      ? navItems.length - 1 - visualActiveIndex
+      : visualActiveIndex;
+  const trackStyle = { "--nav-active-index": physicalIndex } as CSSProperties;
+
   return (
-    <nav aria-label={t("nav.ariaLabel")} className="bottom-nav-shell fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[760px] lg:max-w-[1180px]">
-      <div className="grid grid-cols-5 gap-1">
-        {navItems.map((item) => {
+    <nav aria-label={t("nav.ariaLabel")} className="bottom-nav-shell fixed z-50">
+      <div className="bottom-nav-track grid grid-cols-5" style={trackStyle}>
+        {visualActiveIndex >= 0 ? <span className="bottom-nav-selection" aria-hidden="true" /> : null}
+        {navItems.map((item, index) => {
           const active = isActive(pathname, item.href);
+          const visuallyActive = visualActiveIndex === index;
           const Icon = item.icon;
           return (
             <Link
               href={item.href}
               key={item.href}
               aria-current={active ? "page" : undefined}
-              className={`bottom-nav-link ${active ? "bottom-nav-link-active" : "bottom-nav-link-inactive"}`}
+              onClick={() => setPendingSelection({ fromPathname: pathname, index })}
+              className={`bottom-nav-link ${visuallyActive ? "bottom-nav-link-active" : "bottom-nav-link-inactive"}`}
             >
-              {active ? <span className="home-nav-active-indicator" aria-hidden="true" /> : null}
               <Icon className="h-6 w-6" aria-hidden="true" />
               {item.label}
             </Link>

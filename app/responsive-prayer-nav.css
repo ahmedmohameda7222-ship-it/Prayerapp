@@ -133,7 +133,7 @@
     margin: 0;
     overflow: hidden;
     border: 0;
-    border-inline-end: 1px solid var(--home-divider, #e5ded2);
+    border-right: 1px solid var(--home-divider, #e5ded2);
     border-radius: 0;
     background: #fffdf8;
     box-shadow: none;

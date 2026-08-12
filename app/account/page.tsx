@@ -25,10 +25,18 @@ export default function AccountPage() {
     if (busy) return;
     setBusy(true);
     setError("");
+
     try {
       await detachAccount();
+    } catch (detachError) {
+      console.warn("Push account detachment failed during sign-out", detachError);
+    }
+
+    try {
       const client = createClient();
-      await client?.auth.signOut();
+      if (!client) throw new Error("Auth client unavailable");
+      const { error: signOutError } = await client.auth.signOut();
+      if (signOutError) throw signOutError;
       router.replace("/");
       router.refresh();
     } catch {

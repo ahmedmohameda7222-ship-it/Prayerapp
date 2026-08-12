@@ -26,6 +26,11 @@
   --home-brass-soft: #f0e3cd;
 }
 
+/* The Home header uses the deepest forest tone as its stable visual anchor. */
+.home-page-shell .home-app-header-chrome {
+  background: #173f34;
+}
+
 /* Warm, low-glare surfaces with neutral section separation. */
 .home-page-shell .home-section-card,
 .home-page-shell .home-prayer-board,
@@ -75,6 +80,22 @@
 .home-page-shell .home-section-donations .home-donation-surface + .home-donation-surface,
 .home-page-shell .home-section-donations .home-donation-empty-message {
   border-color: var(--home-divider);
+}
+
+/* Force the Home PayPal CTA to retain high-contrast off-white text and icon. */
+.home-page-shell .home-paypal-surface a {
+  background: #173f34;
+  color: #fcfaf6 !important;
+}
+
+.home-page-shell .home-paypal-surface a:hover {
+  background: #245847;
+  color: #fcfaf6 !important;
+}
+
+.home-page-shell .home-paypal-surface a svg {
+  color: inherit;
+  stroke: currentColor;
 }
 
 /* Give the Arabic mosque identity a large, dignified title presence. */

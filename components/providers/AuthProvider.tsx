@@ -40,13 +40,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const client = createClient();
     if (!client) return;
 
-    void refreshSession();
     const { data } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setLoading(false);
     });
     return () => data.subscription.unsubscribe();
-  }, [refreshSession]);
+  }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,

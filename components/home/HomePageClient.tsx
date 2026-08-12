@@ -139,11 +139,11 @@ export function HomePageClient({
           <HomeSectionTitle>{t("donations.title")}</HomeSectionTitle>
         </div>
         <div className="home-donation-reflection text-center">
-          <p dir="rtl" lang="ar" className="home-donation-verse text-[20px] font-semibold leading-[1.85] text-[var(--home-brand-strong)]">
+          <p dir="rtl" lang="ar" className="home-donation-verse font-semibold leading-[1.85] text-[var(--home-brand-strong)]">
             لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ
           </p>
-          <p className="mt-1 text-xs font-semibold text-[var(--home-text-secondary)]">{t("phase1.donationReflectionVerse")}</p>
-          <p className="mt-3 text-[15px] leading-6 text-[var(--home-text-secondary)]">{t("phase1.donationReflection")}</p>
+          <p dir="rtl" lang="ar" className="home-donation-reference mt-1 font-semibold text-[var(--home-text-secondary)]">آل عمران: 92</p>
+          <p className="home-donation-reflection-copy mt-3 leading-6 text-[var(--home-text-secondary)]">{t("phase1.donationReflection")}</p>
         </div>
         <div className="home-donation-stack">
           {donationCampaigns.length ? (

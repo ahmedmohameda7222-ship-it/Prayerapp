@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { ArrowRight, BookOpenCheck, MoonStar, Sparkles, Sunrise } from "lucide-react";
+import { ArrowRight, BookOpenCheck, MoonStar, Sunrise } from "lucide-react";
 import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import type { SmartNextAction } from "@/lib/home-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 const actionConfig = {
-  afterPrayer: { href: "/azkar?tab=After Prayer", icon: Sparkles },
+  afterPrayer: { href: "/azkar?tab=After Prayer", icon: BookOpenCheck },
   morning: { href: "/azkar?tab=Morning", icon: Sunrise },
   evening: { href: "/azkar?tab=Evening", icon: BookOpenCheck },
   sleep: { href: "/azkar?tab=Sleep", icon: MoonStar },
@@ -23,9 +23,7 @@ export function SmartNextActionCard({ action }: { action: SmartNextAction }) {
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--color-gold-dark)]">
-          {t("home.nextAction")}
-        </p>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--color-gold-dark)]">{t("home.nextAction")}</p>
         <h3 className="font-bold text-[var(--color-emerald)]">{t(`home.smartActions.${action}.title`)}</h3>
         <p className="text-sm leading-5 text-[var(--color-muted)]">{t(`home.smartActions.${action}.description`)}</p>
       </div>

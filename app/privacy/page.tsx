@@ -8,14 +8,14 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 export default function PrivacyPage() {
   const { t } = useTranslation();
   const items = [
-    t("privacy.accountData"),
-    t("privacy.savedAzkar"),
-    t("privacy.reminders"),
-    t("privacy.pushData"),
-    t("privacy.dataPurpose"),
-    t("privacy.guestAccess"),
-    t("privacy.deleteAccount"),
-    t("privacy.disableNotifications"),
+    t("phase1.privacyEmail"),
+    t("phase1.privacySaved"),
+    t("phase1.privacyReminders"),
+    t("phase1.privacyPush"),
+    t("phase1.privacyPurpose"),
+    t("phase1.privacyGuest"),
+    t("phase1.privacyDelete"),
+    t("phase1.privacyDisable"),
   ];
 
   return (
@@ -26,8 +26,8 @@ export default function PrivacyPage() {
             <ShieldCheck className="h-6 w-6" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="font-brand text-3xl font-semibold text-[var(--color-emerald)]">{t("privacy.phase1Title")}</h1>
-            <p className="mt-1 text-sm text-[var(--color-muted)]">{t("privacy.intro")}</p>
+            <h1 className="font-brand text-3xl font-semibold text-[var(--color-emerald)]">{t("phase1.privacyTitle")}</h1>
+            <p className="mt-1 text-sm text-[var(--color-muted)]">{t("phase1.privacyIntro")}</p>
           </div>
         </div>
         <div className="mt-5 grid gap-3">
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             <p key={item} className="rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-4 text-sm leading-6 text-[var(--color-charcoal)]">{item}</p>
           ))}
         </div>
-        <Link href="/account" className="mt-5 inline-flex min-h-11 items-center font-bold text-[var(--color-emerald)]">{t("account.title")}</Link>
+        <Link href="/account" className="mt-5 inline-flex min-h-11 items-center font-bold text-[var(--color-emerald)]">{t("phase1.account")}</Link>
       </article>
     </AppShell>
   );

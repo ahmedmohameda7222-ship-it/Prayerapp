@@ -30,7 +30,7 @@ export function AppHeader({ title = "Masjid El-Rahman" }: { title?: string }) {
           <NotificationButton />
           <Link
             href={user ? "/account" : "/account/sign-in"}
-            aria-label={t("account.title")}
+            aria-label={t("phase1.account")}
             className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-emerald)] shadow-[var(--shadow-soft)]"
           >
             <UserRound className="h-5 w-5" aria-hidden="true" />

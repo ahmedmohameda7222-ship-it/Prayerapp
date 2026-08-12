@@ -4,7 +4,6 @@ import Link from "next/link";
 import { BookOpen, CalendarDays, ChevronRight, Compass, HandHeart, Landmark, Moon, Settings, Shield, UserRound } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { phase1Copy } from "@/lib/i18n/phase1-copy";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 const items = [
@@ -18,11 +17,10 @@ const items = [
 ] as const;
 
 export default function MorePage() {
-  const { t, locale } = useTranslation();
-  const copy = phase1Copy[locale];
+  const { t } = useTranslation();
   const phase1Items = [
-    { href: "/account", label: copy.account, Icon: UserRound },
-    { href: "/privacy", label: copy.privacy, Icon: Shield },
+    { href: "/account", label: t("account.title"), Icon: UserRound },
+    { href: "/privacy", label: t("account.privacy"), Icon: Shield },
   ];
 
   return (

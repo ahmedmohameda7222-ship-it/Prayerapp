@@ -7,12 +7,12 @@
 .home-page-shell {
   --home-brand: #245847;
   --home-brand-strong: #173f34;
-  --home-brand-soft: #e9e0d3;
+  --home-brand-soft: #e3d7c7;
   --home-canvas: #f3efe7;
   --home-surface: #fcfaf6;
   --home-surface-subtle: #f7f2ea;
-  --home-section-header: #e8dfd1;
-  --home-section-header-soft: #f0e8dc;
+  --home-section-header: #ded2c0;
+  --home-section-header-soft: #eae0d2;
   --home-section-header-text: #173f34;
   --home-text: #20231f;
   --home-text-secondary: #696860;
@@ -26,7 +26,7 @@
   --home-brass-soft: #f0e3cd;
 }
 
-/* Warm, low-glare surfaces. */
+/* Warm, low-glare surfaces with clearer section separation. */
 .home-page-shell .home-section-card,
 .home-page-shell .home-prayer-board,
 .home-page-shell .home-next-prayer-surface,
@@ -73,6 +73,18 @@
 .home-page-shell .home-section-donations .home-donation-surface + .home-donation-surface,
 .home-page-shell .home-section-donations .home-donation-empty-message {
   border-color: var(--home-divider);
+}
+
+/* Give the mosque identity a stronger but still restrained title hierarchy. */
+.home-page-shell .home-app-header-chrome h1 {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.home-page-shell .home-app-header-chrome h1[lang="ar"] {
+  font-size: 36px;
+  line-height: 1.3;
 }
 
 /* Keep the Home overlays warm instead of stark white. */
@@ -122,7 +134,7 @@
 
   .home-page-shell .bottom-nav-selection::before {
     border-color: rgba(36, 88, 71, 0.10);
-    background: rgba(233, 224, 211, 0.76);
+    background: rgba(227, 215, 199, 0.78);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
   }
 
@@ -149,6 +161,14 @@
 
   html[data-desktop-sidebar="collapsed"] .home-page-shell .home-app-header {
     margin-left: -24px;
+  }
+
+  .home-page-shell .home-app-header-chrome h1 {
+    font-size: 38px;
+  }
+
+  .home-page-shell .home-app-header-chrome h1[lang="ar"] {
+    font-size: 42px;
   }
 
   .home-page-shell .bottom-nav-shell {

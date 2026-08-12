@@ -69,7 +69,7 @@ export async function getDonationCampaigns(includeInactive = false): Promise<Don
   const client = createClient();
   if (!client) return filterPreviewDonationCampaigns(includeInactive);
   if (includeInactive) {
-    let query = client
+    const query = client
       .from("donation_campaigns")
       .select("*")
       .order("end_date", { ascending: true });
@@ -95,7 +95,7 @@ export async function getDonationCampaigns(includeInactive = false): Promise<Don
   const key = `donation_campaigns_public`;
   return getCached(key, async () => {
     try {
-      let query = client
+      const query = client
         .from("donation_campaigns")
         .select("*")
         .order("end_date", { ascending: true })

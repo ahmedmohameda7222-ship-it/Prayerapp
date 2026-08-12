@@ -58,8 +58,8 @@ export function PrayerCountdown({
       <div className="text-[var(--home-text)]">
         <p className="text-[13px] font-semibold text-[var(--home-text-secondary)]">{t("prayer.nextPrayer")}</p>
         <h2 className="mt-1 text-[26px] font-bold leading-tight text-[var(--home-brand-strong)]">{t(`prayer.${state.name}`)}</h2>
-        <p className="home-tabular mt-4 text-[32px] font-bold leading-none text-[var(--home-text)]" dir="ltr" data-testid="next-prayer-adhan">{state.time}</p>
-        <p className="home-tabular mt-2 text-[23px] font-bold leading-tight text-[var(--home-brand-strong)]" dir="ltr" aria-live="polite" data-testid="next-prayer-countdown">{state.countdown}</p>
+        <p className="home-tabular mt-4 text-[32px] font-bold leading-none text-[var(--home-text)]" data-testid="next-prayer-adhan"><span dir="ltr">{state.time}</span></p>
+        <p className="home-tabular mt-2 text-[23px] font-bold leading-tight text-[var(--home-brand-strong)]" aria-live="polite" data-testid="next-prayer-countdown"><span dir="ltr">{state.countdown}</span></p>
         {state.iqama ? (
           <p className="home-tabular mt-3 text-sm font-semibold text-[var(--home-text-secondary)]">
             {t("prayer.iqama")} <span dir="ltr">{state.iqama}</span>

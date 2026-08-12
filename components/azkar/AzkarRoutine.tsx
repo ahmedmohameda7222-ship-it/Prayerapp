@@ -189,11 +189,11 @@ export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[
         {selectedTab === "Favorites" && !user ? (
           <a href="/account/sign-in?next=%2Fazkar%3Ftab%3DFavorites" className="card flex min-h-14 items-center gap-3 p-4 font-bold text-[var(--color-emerald)]">
             <LogIn className="h-5 w-5" aria-hidden="true" />
-            {t("account.required")}
+            {t("phase1.accountRequired")}
           </a>
         ) : null}
         {favoriteSaveError || favoritesLoadError ? (
-          <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-800">{t("account.authError")}</p>
+          <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-800">{t("phase1.authError")}</p>
         ) : null}
 
         <section className="card overflow-hidden p-4 sm:p-5" aria-labelledby="azkar-progress-title">

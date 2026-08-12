@@ -61,7 +61,7 @@ function urlBase64ToUint8Array(value: string) {
 
 export function AppPreferencesProvider({ children }: { children: React.ReactNode }) {
   const { locale } = useLocale();
-  const { session } = usePublicAuth();
+  const { session, loading: authLoading } = usePublicAuth();
   const accessToken = session?.access_token;
   const [stored, setStored] = useState<StoredPreferences | null>(null);
   const [pushStatus, setPushStatus] = useState<PushStatus>("checking");
@@ -95,6 +95,8 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
   }, [accessToken, locale]);
 
   useEffect(() => {
+    if (authLoading) return;
+
     document.documentElement.removeAttribute("data-theme");
     document.documentElement.style.colorScheme = "light";
     localStorage.setItem("deggendorf-app-preferences-v1", "{}");
@@ -136,17 +138,17 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
       }
       try {
         await syncSubscription(subscription, preferences);
-        setPushStatus("enabled");
+        if (active) setPushStatus("enabled");
       } catch {
-        setPushStatus("error");
+        if (active) setPushStatus("error");
       }
     };
     void initialize();
     return () => { active = false; };
-  }, [saveStored, syncSubscription]);
+  }, [authLoading, saveStored, syncSubscription]);
 
   const enableNotifications = useCallback(async () => {
-    if (!stored || busy) return false;
+    if (!stored || busy || authLoading) return false;
     setBusy(true);
     try {
       if (isIos() && !isStandalone()) {
@@ -190,7 +192,7 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     } finally {
       setBusy(false);
     }
-  }, [busy, stored, syncSubscription]);
+  }, [authLoading, busy, stored, syncSubscription]);
 
   const disableNotifications = useCallback(async () => {
     if (!stored || busy || !isSupported()) return;

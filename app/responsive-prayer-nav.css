@@ -2,7 +2,76 @@
  * Responsive public-app polish.
  * Mobile: immersive Next Prayer background + glass bottom navigation.
  * Desktop: preserve split Next Prayer composition + physical left sidebar navigation.
+ * Home: every major content area reads as a bounded section rather than floating content.
  */
+
+.home-page-shell .home-section-card {
+  overflow: hidden;
+  border: 1px solid var(--home-divider);
+  border-radius: 16px;
+  background: var(--home-surface);
+  box-shadow: none;
+}
+
+.home-page-shell .home-section-card-header {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--home-divider);
+  background: var(--home-surface-subtle);
+}
+
+.home-page-shell .home-section-title {
+  margin: 0;
+}
+
+.home-page-shell .home-section-empty-message {
+  margin: 0;
+  padding: 18px 16px;
+  background: var(--home-surface-subtle);
+  color: var(--home-text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.home-page-shell .home-section-card .home-urgent-surface {
+  border: 0;
+  border-inline-start: 3px solid var(--home-urgent);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.home-page-shell .home-section-card .home-events-surface {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-page-shell .home-section-donations .home-donation-reflection {
+  padding: 20px 16px;
+}
+
+.home-page-shell .home-section-donations .home-donation-stack {
+  gap: 0;
+  border-top: 1px solid var(--home-divider);
+}
+
+.home-page-shell .home-section-donations .home-donation-surface {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-page-shell .home-section-donations .home-donation-surface + .home-donation-surface {
+  border-top: 1px solid var(--home-divider);
+}
+
+.home-page-shell .home-section-donations .home-donation-empty-message {
+  border-bottom: 1px solid var(--home-divider);
+}
 
 @media (max-width: 1023px) {
   .home-page-shell .home-next-prayer-surface {
@@ -121,6 +190,19 @@
 
   .home-page-shell.public-desktop-frame {
     padding-top: 0;
+  }
+
+  .home-page-shell .home-section-card-header {
+    min-height: 58px;
+    padding: 16px 20px 14px;
+  }
+
+  .home-page-shell .home-section-empty-message {
+    padding: 22px 20px;
+  }
+
+  .home-page-shell .home-section-donations .home-donation-reflection {
+    padding: 24px 20px;
   }
 
   .bottom-nav-shell {

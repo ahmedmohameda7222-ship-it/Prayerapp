@@ -5,6 +5,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/types";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
 import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
@@ -55,11 +56,13 @@ export default async function RootLayout({
     <html lang={initialLocale} dir={getTextDirection(initialLocale)} suppressHydrationWarning>
       <body>
         <I18nProvider initialLocale={initialLocale}>
-          <AppPreferencesProvider>
-            <TimeFormatProvider>{children}</TimeFormatProvider>
-            <ServiceWorkerRegistrar />
-            <NotificationOptInPrompt />
-          </AppPreferencesProvider>
+          <AuthProvider>
+            <AppPreferencesProvider>
+              <TimeFormatProvider>{children}</TimeFormatProvider>
+              <ServiceWorkerRegistrar />
+              <NotificationOptInPrompt />
+            </AppPreferencesProvider>
+          </AuthProvider>
         </I18nProvider>
       </body>
     </html>

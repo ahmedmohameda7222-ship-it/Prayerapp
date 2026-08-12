@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { Clock, Home, LayoutGrid, Newspaper } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -28,11 +28,10 @@ export function BottomNav() {
   );
 
   const routeActiveIndex = navItems.findIndex((item) => isActive(pathname, item.href));
-  const [visualActiveIndex, setVisualActiveIndex] = useState(routeActiveIndex);
-
-  useEffect(() => {
-    setVisualActiveIndex(routeActiveIndex);
-  }, [routeActiveIndex]);
+  const [pendingSelection, setPendingSelection] = useState<{ fromPathname: string; index: number } | null>(null);
+  const visualActiveIndex = pendingSelection?.fromPathname === pathname
+    ? pendingSelection.index
+    : routeActiveIndex;
 
   const physicalIndex = visualActiveIndex < 0
     ? 0
@@ -53,7 +52,7 @@ export function BottomNav() {
               href={item.href}
               key={item.href}
               aria-current={active ? "page" : undefined}
-              onClick={() => setVisualActiveIndex(index)}
+              onClick={() => setPendingSelection({ fromPathname: pathname, index })}
               className={`bottom-nav-link ${active ? "bottom-nav-link-active" : "bottom-nav-link-inactive"}`}
             >
               <Icon className="h-6 w-6" aria-hidden="true" />

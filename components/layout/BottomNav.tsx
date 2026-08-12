@@ -46,6 +46,7 @@ export function BottomNav() {
         {visualActiveIndex >= 0 ? <span className="bottom-nav-selection" aria-hidden="true" /> : null}
         {navItems.map((item, index) => {
           const active = isActive(pathname, item.href);
+          const visuallyActive = visualActiveIndex === index;
           const Icon = item.icon;
           return (
             <Link
@@ -53,7 +54,7 @@ export function BottomNav() {
               key={item.href}
               aria-current={active ? "page" : undefined}
               onClick={() => setPendingSelection({ fromPathname: pathname, index })}
-              className={`bottom-nav-link ${active ? "bottom-nav-link-active" : "bottom-nav-link-inactive"}`}
+              className={`bottom-nav-link ${visuallyActive ? "bottom-nav-link-active" : "bottom-nav-link-inactive"}`}
             >
               <Icon className="h-6 w-6" aria-hidden="true" />
               {item.label}

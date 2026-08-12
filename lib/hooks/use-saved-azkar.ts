@@ -5,6 +5,7 @@ import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 
 const LEGACY_FAVORITES_KEY = "azkar_favorites_v1";
+type SavedAzkarRow = { azkar_id: string };
 
 export function useSavedAzkar(validIds: Set<string>) {
   const { user } = usePublicAuth();
@@ -43,7 +44,7 @@ export function useSavedAzkar(validIds: Set<string>) {
 
         if (legacyIds.length) {
           const { error: importError } = await client.from("user_saved_azkar").upsert(
-            legacyIds.map((azkarId) => ({ user_id: user.id, azkar_id: azkarId })),
+            legacyIds.map((azkarId) => ({ user_id: user.id, azkar_id: azkarId })) as never,
             { onConflict: "user_id,azkar_id", ignoreDuplicates: true },
           );
           if (importError) throw importError;
@@ -56,7 +57,8 @@ export function useSavedAzkar(validIds: Set<string>) {
           .eq("user_id", user.id);
         if (queryError) throw queryError;
         if (!active) return;
-        setFavoriteIds(new Set((data || []).map((row) => row.azkar_id).filter((id) => validIds.has(id))));
+        const savedRows = (data || []) as SavedAzkarRow[];
+        setFavoriteIds(new Set(savedRows.map((row) => row.azkar_id).filter((id) => validIds.has(id))));
       } catch {
         if (active) setError(true);
       } finally {
@@ -75,7 +77,7 @@ export function useSavedAzkar(validIds: Set<string>) {
     if (saved) {
       const { error: saveError } = await client
         .from("user_saved_azkar")
-        .upsert({ user_id: user.id, azkar_id: azkarId }, { onConflict: "user_id,azkar_id" });
+        .upsert({ user_id: user.id, azkar_id: azkarId } as never, { onConflict: "user_id,azkar_id" });
       if (saveError) return "error" as const;
     } else {
       const { error: deleteError } = await client

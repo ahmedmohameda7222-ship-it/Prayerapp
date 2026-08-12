@@ -16,8 +16,48 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - uses: supabase/setup-cli@v2
+        with:
+          version: latest
+          github-token: ${{ github.token }}
       - run: git diff --check origin/main...HEAD
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - name: Verify clean Supabase migration bootstrap
+        run: |
+          supabase start
+          supabase db reset --local --no-seed
+          DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
+          test -n "$DB_CONTAINER"
+          docker exec "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          do $$
+          begin
+            if to_regclass('public.user_saved_azkar') is null then
+              raise exception 'user_saved_azkar missing after clean migration reset';
+            end if;
+            if to_regclass('public.user_prayer_reminders') is null then
+              raise exception 'user_prayer_reminders missing after clean migration reset';
+            end if;
+            if not has_table_privilege('service_role', 'public.user_prayer_reminders', 'SELECT') then
+              raise exception 'service_role lacks SELECT on user_prayer_reminders';
+            end if;
+            if has_table_privilege('anon', 'public.user_prayer_reminders', 'SELECT,INSERT,UPDATE,DELETE') then
+              raise exception 'anon has personal reminder table privileges';
+            end if;
+            if has_table_privilege('anon', 'public.user_saved_azkar', 'SELECT,INSERT,UPDATE,DELETE') then
+              raise exception 'anon has personal Saved Azkar table privileges';
+            end if;
+            if not has_table_privilege('authenticated', 'public.user_saved_azkar', 'SELECT,INSERT,DELETE') then
+              raise exception 'authenticated lacks Saved Azkar privileges';
+            end if;
+            if not has_table_privilege('authenticated', 'public.user_prayer_reminders', 'SELECT,INSERT,UPDATE,DELETE') then
+              raise exception 'authenticated lacks prayer reminder privileges';
+            end if;
+          end
+          $$;
+          SQL
       - run: npm run build
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true

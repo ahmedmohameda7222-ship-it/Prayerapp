@@ -44,8 +44,8 @@ export function SettingsControls() {
           <Button className="mt-3 w-full" disabled={busy} onClick={() => void enableNotifications()}>{t("settings.enablePush")}</Button>
         ) : null}
         <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-          <p className="text-sm font-bold text-[var(--color-emerald)]">{t("prayer.reminderDescription")}</p>
-          <Link href="/#prayer-times" className="mt-2 inline-flex min-h-11 items-center text-sm font-bold text-[var(--color-gold-dark)]">{t("account.manageReminders")}</Link>
+          <p className="text-sm font-bold text-[var(--color-emerald)]">{t("phase1.reminderDescription")}</p>
+          <Link href="/#prayer-times" className="mt-2 inline-flex min-h-11 items-center text-sm font-bold text-[var(--color-gold-dark)]">{t("phase1.manageReminders")}</Link>
         </div>
       </Card>
       <Card>

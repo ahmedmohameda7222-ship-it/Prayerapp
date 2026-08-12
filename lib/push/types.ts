@@ -1,7 +1,5 @@
 import type { Locale } from "@/lib/i18n/types";
 
-export type PrayerReminderMinutes = null | 0 | 5 | 10 | 15 | 30;
-
 export type PushNotificationType =
   | "urgent_announcement"
   | "event"
@@ -15,7 +13,7 @@ export interface PushSubscriptionRecord {
   p256dh: string;
   auth: string;
   locale: Locale;
-  prayer_reminder_minutes: PrayerReminderMinutes;
+  user_id?: string | null;
 }
 
 export interface LocalizedText {

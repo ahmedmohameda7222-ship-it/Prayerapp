@@ -30,4 +30,21 @@ describe("Responsive Prayerapp navigation and Next Prayer contract", () => {
     expect(nav).toContain("--nav-sidebar-index");
     expect(css).toContain("var(--nav-sidebar-index, 0)");
   });
+
+  it("keeps major Home content visibly grouped into section cards on mobile and desktop", () => {
+    const home = source("components/home/HomePageClient.tsx");
+    const title = source("components/home/HomeSectionTitle.tsx");
+    const css = source("app/responsive-prayer-nav.css");
+
+    expect(home).toContain("home-section-urgent home-section-card");
+    expect(home).toContain("home-section-events home-section-card");
+    expect(home).toContain("home-section-donations home-section-card");
+    expect(home).toContain("home-section-card-header");
+    expect(title).toContain("home-section-title");
+    expect(css).toContain(".home-section-card");
+    expect(css).toContain(".home-section-card-header");
+    expect(css).toContain(".home-section-empty-message");
+    expect(home).toContain("لا توجد فعاليات قادمة في المسجد حاليًا.");
+    expect(home).toContain("لا توجد حملات تبرع نشطة حاليًا.");
+  });
 });

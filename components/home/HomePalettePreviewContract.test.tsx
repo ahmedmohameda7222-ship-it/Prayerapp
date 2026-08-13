@@ -42,6 +42,13 @@ describe("Home calm palette preview contract", () => {
     expect(css).toContain("font-weight: 800");
   });
 
+  it("uses deep forest as the Home header anchor", () => {
+    const css = source("app/home-palette-preview.css");
+
+    expect(css).toContain(".home-page-shell .home-app-header-chrome");
+    expect(css).toContain("background: #173f34");
+  });
+
   it("makes the desktop Home header flush with the physical sidebar and right viewport edge", () => {
     const css = source("app/home-palette-preview.css");
 
@@ -69,11 +76,14 @@ describe("Home calm palette preview contract", () => {
     expect(css).toContain("font-weight: 800");
   });
 
-  it("uses a deep-forest Home PayPal CTA with high-contrast light text", () => {
+  it("uses a deep-forest Home PayPal CTA with enforced high-contrast light text and icon", () => {
     const paypal = source("components/donations/PayPalCard.tsx");
+    const css = source("app/home-palette-preview.css");
 
     expect(paypal).toContain("bg-[var(--home-brand-strong)]");
-    expect(paypal).toContain("text-[#FCFAF6]");
-    expect(paypal).toContain("hover:bg-[var(--home-brand)]");
+    expect(css).toContain(".home-page-shell .home-paypal-surface a");
+    expect(css).toContain("background: #173f34");
+    expect(css).toContain("color: #fcfaf6 !important");
+    expect(css).toContain("stroke: currentColor");
   });
 });

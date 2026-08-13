@@ -59,7 +59,8 @@ const COPY = {
   },
 } as const;
 
-function serviceLabel(locale: Locale, index: number) {
+function serviceLabel(locale: Locale, index: number, total: number) {
+  if (total === 1) return COPY[locale].title;
   if (locale === "ar") {
     const labels = ["الجمعة الأولى", "الجمعة الثانية", "الجمعة الثالثة"];
     return labels[index] || `الجمعة ${index + 1}`;
@@ -108,7 +109,7 @@ export function HomeJumuahCard({ schedule }: { schedule: HomeJumuahSchedule }) {
               role="listitem"
             >
               <div className="home-jumuah-time-copy">
-                <strong>{serviceLabel(locale, index)}</strong>
+                <strong>{serviceLabel(locale, index, schedule.items.length)}</strong>
                 <span>{copy.khutbah} <FormattedTime time={item.khutbahTime} /></span>
               </div>
               <div className="home-jumuah-prayer-time">

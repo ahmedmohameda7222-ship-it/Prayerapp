@@ -159,7 +159,7 @@
 
   /* Keep Quran 3:92 dignified but compact enough to read as one complete mobile line. */
   .home-page-shell .home-donation-verse {
-    font-size: clamp(16px, 5.1vw, 21px);
+    font-size: clamp(14px, 4.1vw, 18px);
     line-height: 1.45;
     white-space: nowrap;
   }

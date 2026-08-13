@@ -17,10 +17,15 @@ export function PayPalCard({ paypalLink, showUrl = true, home = false }: { paypa
         href={paypalLink}
         target="_blank"
         rel="noreferrer"
-        className={home ? "mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--home-brand)] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[var(--home-brand-strong)]" : "mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-emerald)] px-4 py-2 text-sm font-bold text-[var(--color-card)] shadow-[var(--shadow-card)] transition active:scale-[0.98]"}
+        className={home ? "mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--home-brand-strong)] px-4 py-2 text-sm font-bold transition-colors hover:bg-[var(--home-brand)]" : "mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-emerald)] px-4 py-2 text-sm font-bold text-[var(--color-card)] shadow-[var(--shadow-card)] transition active:scale-[0.98]"}
+        style={home ? { color: "#FCFAF6" } : undefined}
       >
-        {t("donations.donateWithPaypal")}
-        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+        <span style={home ? { color: "#FCFAF6" } : undefined}>{t("donations.donateWithPaypal")}</span>
+        <ExternalLink
+          className="h-4 w-4"
+          aria-hidden="true"
+          style={home ? { color: "#FCFAF6", stroke: "#FCFAF6" } : undefined}
+        />
       </a>
     </>
   );

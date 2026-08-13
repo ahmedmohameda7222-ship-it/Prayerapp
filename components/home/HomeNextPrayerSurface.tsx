@@ -6,6 +6,7 @@ export function HomeNextPrayerSurface({ children }: { children: ReactNode }) {
     alt: "",
     sizes: "(max-width: 1023px) 100vw, 34vw",
     className: "h-full w-full object-cover",
+    loading: "eager" as const,
   };
   const {
     props: { srcSet: desktopSrcSet },

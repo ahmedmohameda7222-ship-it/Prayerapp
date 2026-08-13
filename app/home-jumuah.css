@@ -1,0 +1,209 @@
+/* Home contextual Jumuah card: image creates atmosphere; schedule remains the primary content. */
+.home-page-shell .home-jumuah-card {
+  min-height: 360px;
+  background: #173f34;
+  box-shadow: none;
+  isolation: isolate;
+}
+
+.home-page-shell .home-jumuah-image {
+  background-image: url("/assets/home-jumuah-background.webp");
+  background-position: 68% center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transform: scale(1.01);
+}
+
+.home-page-shell .home-jumuah-overlay {
+  background:
+    linear-gradient(180deg, rgba(10, 31, 25, 0.44) 0%, rgba(10, 31, 25, 0.68) 100%),
+    linear-gradient(90deg, rgba(11, 37, 29, 0.78) 0%, rgba(11, 37, 29, 0.56) 58%, rgba(11, 37, 29, 0.42) 100%);
+}
+
+.home-page-shell .home-jumuah-content {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  text-shadow: 0 1px 2px rgba(8, 25, 20, 0.28);
+}
+
+.home-page-shell .home-jumuah-status {
+  color: #f0e3cd;
+  font-size: 14px;
+}
+
+.home-page-shell .home-jumuah-title {
+  margin-top: 5px;
+  color: #fcfaf6;
+  font-size: 34px;
+  line-height: 1.2;
+}
+
+.home-page-shell .home-jumuah-date {
+  margin-top: 4px;
+  color: rgba(252, 250, 246, 0.78);
+  font-size: 13px;
+}
+
+.home-page-shell .home-jumuah-description {
+  max-width: 640px;
+  color: rgba(252, 250, 246, 0.9);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.home-page-shell .home-jumuah-times {
+  border-top: 1px solid rgba(252, 250, 246, 0.26);
+  border-bottom: 1px solid rgba(252, 250, 246, 0.26);
+}
+
+.home-page-shell .home-jumuah-time-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(252, 250, 246, 0.18);
+}
+
+.home-page-shell .home-jumuah-time-row:last-child {
+  border-bottom: 0;
+}
+
+.home-page-shell .home-jumuah-time-row[data-next="true"] {
+  border-inline-start: 3px solid #f0e3cd;
+  background: rgba(252, 250, 246, 0.08);
+}
+
+.home-page-shell .home-jumuah-time-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.home-page-shell .home-jumuah-time-copy strong {
+  color: #fcfaf6;
+  font-size: 16px;
+}
+
+.home-page-shell .home-jumuah-time-copy span,
+.home-page-shell .home-jumuah-prayer-time span {
+  color: rgba(252, 250, 246, 0.72);
+  font-size: 12px;
+}
+
+.home-page-shell .home-jumuah-prayer-time {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+  white-space: nowrap;
+}
+
+[dir="rtl"] .home-page-shell .home-jumuah-prayer-time,
+.home-page-shell .home-jumuah-content[dir="rtl"] .home-jumuah-prayer-time {
+  justify-items: start;
+}
+
+.home-page-shell .home-jumuah-prayer-time strong {
+  color: #fcfaf6;
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-page-shell .home-jumuah-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: rgba(252, 250, 246, 0.78);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.home-page-shell .home-jumuah-view {
+  flex: 0 0 auto;
+  color: #f0e3cd;
+}
+
+.home-page-shell .home-jumuah-card:focus-visible {
+  outline: 3px solid #fcfaf6;
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .home-page-shell .home-jumuah-card {
+    min-height: 0;
+  }
+
+  .home-page-shell .home-jumuah-image {
+    background-position: 71% center;
+  }
+
+  .home-page-shell .home-jumuah-content {
+    gap: 14px;
+    padding: 18px 16px;
+  }
+
+  .home-page-shell .home-jumuah-title {
+    font-size: 31px;
+  }
+
+  .home-page-shell .home-jumuah-time-row {
+    gap: 12px;
+    padding: 11px 8px;
+  }
+
+  .home-page-shell .home-jumuah-prayer-time strong {
+    font-size: 22px;
+  }
+
+  .home-page-shell .home-jumuah-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-page-shell .home-jumuah-card {
+    min-height: 380px;
+  }
+
+  .home-page-shell .home-jumuah-image {
+    background-position: center;
+  }
+
+  .home-page-shell .home-jumuah-overlay {
+    background:
+      linear-gradient(90deg, rgba(10, 31, 25, 0.9) 0%, rgba(10, 31, 25, 0.78) 48%, rgba(10, 31, 25, 0.42) 77%, rgba(10, 31, 25, 0.28) 100%),
+      linear-gradient(180deg, rgba(10, 31, 25, 0.16), rgba(10, 31, 25, 0.42));
+  }
+
+  .home-page-shell .home-jumuah-content {
+    max-width: 700px;
+    gap: 18px;
+    padding: 28px 30px;
+  }
+
+  .home-page-shell .home-jumuah-title {
+    font-size: 40px;
+  }
+
+  .home-page-shell .home-jumuah-description {
+    font-size: 16px;
+  }
+
+  .home-page-shell .home-jumuah-time-row {
+    padding-block: 13px;
+  }
+
+  .home-page-shell .home-jumuah-card:hover .home-jumuah-image {
+    filter: brightness(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page-shell .home-jumuah-image {
+    transform: none;
+  }
+}

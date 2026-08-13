@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { HomeSectionTitle } from "@/components/home/HomeSectionTitle";
 import { HomeEmptyState } from "@/components/home/HomeEmptyState";
 import { HomeNextPrayerSurface } from "@/components/home/HomeNextPrayerSurface";
+import { HomeJumuahCard } from "@/components/home/HomeJumuahCard";
 import { PrayerCountdown } from "@/components/prayer/PrayerCountdown";
 import { HomePrayerTimesCard } from "@/components/prayer/HomePrayerTimesCard";
 import { AnnouncementCard } from "@/components/news/AnnouncementCard";
@@ -14,9 +15,10 @@ import { PayPalCard } from "@/components/donations/PayPalCard";
 import { SmartNextActionCard } from "@/components/home/SmartNextActionCard";
 import { todayIso } from "@/lib/date-utils";
 import { getSmartNextAction } from "@/lib/home-utils";
+import { getHomeJumuahSchedule } from "@/lib/home-jumuah";
 import { getNextPrayer, getNextPrayerFromSchedule, getPrayerForDate } from "@/lib/prayer-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import type { Announcement, DonationCampaign, DonationSettings, Event, PrayerTime } from "@/lib/types";
+import type { Announcement, DonationCampaign, DonationSettings, Event, JumuahTime, PrayerTime } from "@/lib/types";
 
 const EMPTY_SCHEDULE: PrayerTime[] = [];
 
@@ -44,6 +46,7 @@ const HOME_EMPTY_COPY = {
 type HomePageClientProps = {
   initialPrayerTimes: PrayerTime[];
   urgentAnnouncements: Announcement[];
+  jumuahTimes: JumuahTime[];
   events: Event[];
   donationSettings?: DonationSettings;
   donationCampaigns: DonationCampaign[];
@@ -53,6 +56,7 @@ type HomePageClientProps = {
 export function HomePageClient({
   initialPrayerTimes,
   urgentAnnouncements,
+  jumuahTimes,
   events,
   donationSettings,
   donationCampaigns,
@@ -67,6 +71,7 @@ export function HomePageClient({
     return next?.name || (today ? getNextPrayer(today, now).name : undefined);
   }, [now, schedule, today]);
   const smartAction = useMemo(() => schedule.length ? getSmartNextAction(schedule, now) : undefined, [now, schedule]);
+  const jumuahSchedule = useMemo(() => getHomeJumuahSchedule(jumuahTimes, now), [jumuahTimes, now]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
@@ -108,6 +113,12 @@ export function HomePageClient({
               <AnnouncementCard key={announcement.id} announcement={announcement} home />
             ))}
           </div>
+        </section>
+      ) : null}
+
+      {jumuahSchedule ? (
+        <section className="home-section-jumuah" data-home-section="jumuah">
+          <HomeJumuahCard schedule={jumuahSchedule} />
         </section>
       ) : null}
 

@@ -80,7 +80,6 @@ export function HomeJumuahCard({ schedule }: { schedule: HomeJumuahSchedule }) {
     <Link
       href="/friday"
       className={`home-jumuah-card group relative block overflow-hidden rounded-[14px] border border-[var(--home-divider)] text-[#FCFAF6] ${direction === "rtl" ? "home-jumuah-card-rtl" : ""}`}
-      aria-label={`${copy.title} — ${status}`}
       data-testid="home-jumuah-card"
     >
       <span className="home-jumuah-image absolute inset-0" aria-hidden="true" />

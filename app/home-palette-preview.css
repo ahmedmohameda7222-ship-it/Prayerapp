@@ -118,6 +118,16 @@
 
 /* Mobile Next Prayer keeps the real mosque image, with a warmer low-glare scrim. */
 @media (max-width: 1023px) {
+  /*
+   * iOS standalone mode exposes the document background through the status/safe-area.
+   * Scope the document chrome to Home so the status region joins the #173F34 header
+   * instead of exposing the legacy #005A52 page background.
+   */
+  html:has(.home-page-shell),
+  body:has(.home-page-shell) {
+    background-color: #173f34;
+  }
+
   .home-page-shell .home-next-prayer-surface,
   .home-page-shell .home-next-prayer-media {
     background: var(--home-brand-strong);
@@ -145,6 +155,13 @@
 
   .home-page-shell .home-next-prayer-iqama {
     color: rgba(252, 250, 246, 0.84);
+  }
+
+  /* Keep Quran 3:92 dignified but compact enough to read as one complete mobile line. */
+  .home-page-shell .home-donation-verse {
+    font-size: clamp(14px, 4.1vw, 18px);
+    line-height: 1.45;
+    white-space: nowrap;
   }
 
   .home-page-shell .bottom-nav-shell {

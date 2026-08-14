@@ -192,13 +192,18 @@
   }
 
   html[data-platform="android"] .root-page-header-actions summary,
-  html[data-platform="android"] .root-page-header-actions button {
+  html[data-platform="android"] .root-page-header-actions button,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome a,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome summary,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome button {
     min-width: 48px;
     min-height: 48px;
     height: 48px;
   }
 
-  html[data-platform="android"] .root-page-header-actions button {
+  html[data-platform="android"] .root-page-header-actions button,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome a,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome button {
     width: 48px;
   }
 

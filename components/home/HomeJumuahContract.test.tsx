@@ -25,11 +25,13 @@ describe("Home Jumuah integration contract", () => {
     expect(prayer).toBeGreaterThan(jumuah);
   });
 
-  it("keeps the whole contextual card linked to the canonical Friday route", () => {
+  it("keeps Home as a compact Friday summary linked to the canonical route", () => {
     const card = source("components/home/HomeJumuahCard.tsx");
     expect(card).toContain('href="/friday"');
     expect(card).toContain('data-testid="home-jumuah-card"');
-    expect(card).toContain("تُقام صلاة الجمعة في المسجد في عدة مواعيد.");
+    expect(card).toContain("<FormattedTime time={item.prayerTime} />");
+    expect(card).not.toContain("item.khutbahTime");
+    expect(card).not.toContain("تُقام صلاة الجمعة في المسجد في عدة مواعيد.");
   });
 
   it("uses the approved image as restrained Home atmosphere", () => {

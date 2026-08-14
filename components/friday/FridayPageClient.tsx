@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { formatLongDate } from "@/lib/date-utils";
@@ -8,12 +9,12 @@ import { getLocalizedField } from "@/lib/i18n/localized-content";
 import type { Locale } from "@/lib/i18n/types";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { JumuahTime } from "@/lib/types";
+import fridayImage from "@/public/assets/home-jumuah-background.webp";
 
 const COPY = {
   ar: {
     title: "صلاة الجمعة",
     schedule: "مواعيد الجمعة القادمة",
-    today: "الجمعة اليوم",
     khutbah: "الخطبة",
     prayer: "الصلاة",
     location: "الموقع",
@@ -26,7 +27,6 @@ const COPY = {
   en: {
     title: "Jumu'ah Prayer",
     schedule: "Upcoming Friday schedule",
-    today: "Jumu'ah today",
     khutbah: "Khutbah",
     prayer: "Prayer",
     location: "Location",
@@ -39,7 +39,6 @@ const COPY = {
   de: {
     title: "Freitagsgebet",
     schedule: "Nächster Freitagsplan",
-    today: "Freitagsgebet heute",
     khutbah: "Khutba",
     prayer: "Gebet",
     location: "Ort",
@@ -52,7 +51,6 @@ const COPY = {
   tr: {
     title: "Cuma Namazı",
     schedule: "Yaklaşan cuma programı",
-    today: "Cuma bugün",
     khutbah: "Hutbe",
     prayer: "Namaz",
     location: "Konum",
@@ -120,7 +118,15 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
   return (
     <div className="friday-page" dir={direction} data-testid="friday-page">
       <section className="friday-identity" aria-labelledby="friday-page-title">
-        <span className="friday-identity-image" aria-hidden="true" />
+        <Image
+          src={fridayImage}
+          alt=""
+          fill
+          unoptimized
+          loading="eager"
+          className="friday-identity-image"
+          aria-hidden="true"
+        />
         <span className="friday-identity-scrim" aria-hidden="true" />
         <div className="friday-identity-content">
           <h1 id="friday-page-title">{copy.title}</h1>
@@ -138,7 +144,6 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
               <time dateTime={schedule.date}>{formatLongDate(schedule.date, locale)}</time>
             ) : null}
           </div>
-          {schedule?.isToday ? <strong className="friday-today-status">{copy.today}</strong> : null}
         </header>
 
         {loadFailed ? (

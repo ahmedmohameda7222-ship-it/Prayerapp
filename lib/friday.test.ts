@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getUpcomingFridaySchedule } from "@/lib/friday";
+import { FRIDAY_IMMINENT_WINDOW_MS, getFridayLivePrayer, getUpcomingFridaySchedule } from "@/lib/friday";
 import type { JumuahTime } from "@/lib/types";
 
 function item(
@@ -76,5 +76,45 @@ describe("Friday schedule selection", () => {
     );
 
     expect(result).toBeUndefined();
+  });
+});
+
+describe("Friday live prayer state", () => {
+  it("uses the schedule nextIndex as the single live hero target", () => {
+    const now = new Date("2026-08-14T11:45:00.000Z");
+    const schedule = getUpcomingFridaySchedule(
+      [
+        item("one", "2026-08-14", "13:30", "13:00"),
+        item("two", "2026-08-14", "14:30", "14:00"),
+      ],
+      now,
+    );
+    const live = getFridayLivePrayer(schedule, now);
+
+    expect(live?.item.id).toBe("two");
+    expect(live?.index).toBe(1);
+    expect(live?.remainingMs).toBeGreaterThan(0);
+  });
+
+  it("marks a service imminent during the final five minutes", () => {
+    const now = new Date("2026-08-14T12:26:00.000Z");
+    const schedule = getUpcomingFridaySchedule(
+      [item("one", "2026-08-14", "14:30", "14:00")],
+      now,
+    );
+    const live = getFridayLivePrayer(schedule, now);
+
+    expect(FRIDAY_IMMINENT_WINDOW_MS).toBe(300_000);
+    expect(live?.imminent).toBe(true);
+  });
+
+  it("does not mark a distant service imminent", () => {
+    const now = new Date("2026-08-14T12:00:00.000Z");
+    const schedule = getUpcomingFridaySchedule(
+      [item("one", "2026-08-14", "14:30", "14:00")],
+      now,
+    );
+
+    expect(getFridayLivePrayer(schedule, now)?.imminent).toBe(false);
   });
 });

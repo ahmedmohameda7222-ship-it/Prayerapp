@@ -15,7 +15,6 @@ const COPY = {
   ar: {
     title: "صلاة الجمعة",
     schedule: "مواعيد الجمعة القادمة",
-    today: "الجمعة اليوم",
     khutbah: "الخطبة",
     prayer: "الصلاة",
     location: "الموقع",
@@ -28,7 +27,6 @@ const COPY = {
   en: {
     title: "Jumu'ah Prayer",
     schedule: "Upcoming Friday schedule",
-    today: "Jumu'ah today",
     khutbah: "Khutbah",
     prayer: "Prayer",
     location: "Location",
@@ -41,7 +39,6 @@ const COPY = {
   de: {
     title: "Freitagsgebet",
     schedule: "Nächster Freitagsplan",
-    today: "Freitagsgebet heute",
     khutbah: "Khutba",
     prayer: "Gebet",
     location: "Ort",
@@ -54,7 +51,6 @@ const COPY = {
   tr: {
     title: "Cuma Namazı",
     schedule: "Yaklaşan cuma programı",
-    today: "Cuma bugün",
     khutbah: "Hutbe",
     prayer: "Namaz",
     location: "Konum",
@@ -148,7 +144,6 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
               <time dateTime={schedule.date}>{formatLongDate(schedule.date, locale)}</time>
             ) : null}
           </div>
-          {schedule?.isToday ? <strong className="friday-today-status">{copy.today}</strong> : null}
         </header>
 
         {loadFailed ? (

@@ -11,50 +11,30 @@ import type { Locale } from "@/lib/i18n/types";
 const COPY = {
   ar: {
     title: "صلاة الجمعة",
-    multiple: "تُقام صلاة الجمعة في المسجد في عدة مواعيد.",
-    single: "تُقام صلاة الجمعة في المسجد في الموعد التالي.",
     today: "الجمعة اليوم",
     tomorrow: "الجمعة غدًا",
     twoDays: "الجمعة بعد يومين",
-    khutbah: "الخطبة",
-    prayer: "الصلاة",
-    arrive: "يرجى الحضور مبكرًا قبل موعد الصلاة.",
     view: "عرض تفاصيل الجمعة",
   },
   en: {
     title: "Jumu'ah Prayer",
-    multiple: "Jumu'ah prayer is held at the mosque at several times.",
-    single: "Jumu'ah prayer is held at the mosque at the following time.",
     today: "Jumu'ah today",
     tomorrow: "Jumu'ah tomorrow",
     twoDays: "Jumu'ah in two days",
-    khutbah: "Khutbah",
-    prayer: "Prayer",
-    arrive: "Please arrive early before the prayer time.",
     view: "View Friday details",
   },
   de: {
     title: "Freitagsgebet",
-    multiple: "Das Freitagsgebet findet in der Moschee zu mehreren Zeiten statt.",
-    single: "Das Freitagsgebet findet in der Moschee zu folgender Zeit statt.",
     today: "Freitagsgebet heute",
     tomorrow: "Freitagsgebet morgen",
     twoDays: "Freitagsgebet in zwei Tagen",
-    khutbah: "Khutba",
-    prayer: "Gebet",
-    arrive: "Bitte kommen Sie rechtzeitig vor dem Gebet.",
     view: "Freitagsdetails anzeigen",
   },
   tr: {
     title: "Cuma Namazı",
-    multiple: "Cuma namazı camide birden fazla saatte kılınır.",
-    single: "Cuma namazı camide aşağıdaki saatte kılınır.",
     today: "Cuma bugün",
     tomorrow: "Cuma yarın",
     twoDays: "Cuma iki gün sonra",
-    khutbah: "Hutbe",
-    prayer: "Namaz",
-    arrive: "Lütfen namaz vaktinden önce erken gelin.",
     view: "Cuma ayrıntılarını görüntüle",
   },
 } as const;
@@ -95,10 +75,6 @@ export function HomeJumuahCard({ schedule }: { schedule: HomeJumuahSchedule }) {
           <p className="home-jumuah-date font-semibold">{formatShortDate(schedule.date, locale)}</p>
         </div>
 
-        <p className="home-jumuah-description font-semibold">
-          {schedule.items.length > 1 ? copy.multiple : copy.single}
-        </p>
-
         <div className="home-jumuah-times" role="list">
           {schedule.items.map((item, index) => (
             <div
@@ -107,20 +83,13 @@ export function HomeJumuahCard({ schedule }: { schedule: HomeJumuahSchedule }) {
               data-next={index === schedule.nextIndex ? "true" : "false"}
               role="listitem"
             >
-              <div className="home-jumuah-time-copy">
-                <strong>{serviceLabel(locale, index, schedule.items.length)}</strong>
-                <span>{copy.khutbah} <FormattedTime time={item.khutbahTime} /></span>
-              </div>
-              <div className="home-jumuah-prayer-time">
-                <span>{copy.prayer}</span>
-                <strong><FormattedTime time={item.prayerTime} /></strong>
-              </div>
+              <strong className="home-jumuah-service-label">{serviceLabel(locale, index, schedule.items.length)}</strong>
+              <strong className="home-jumuah-prayer-time"><FormattedTime time={item.prayerTime} /></strong>
             </div>
           ))}
         </div>
 
         <div className="home-jumuah-footer">
-          <span>{copy.arrive}</span>
           <span className="home-jumuah-view font-bold">{copy.view}</span>
         </div>
       </div>

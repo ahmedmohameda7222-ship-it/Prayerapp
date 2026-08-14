@@ -70,11 +70,7 @@
 }
 
 .home-page-shell .friday-schedule-header {
-  display: flex;
   min-height: 76px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
   padding: 18px 20px;
   border-bottom: 1px solid #cfded8;
   background: var(--home-section-header, #e2ece7);
@@ -97,20 +93,12 @@
   line-height: 1.5;
 }
 
-.home-page-shell .friday-today-status {
-  flex: 0 0 auto;
-  color: var(--home-brand-strong);
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.4;
-}
-
 .home-page-shell .friday-service-list {
   background: var(--home-surface);
 }
 
 .home-page-shell .friday-service-row {
-  padding: 20px;
+  padding: 18px 20px;
   border-bottom: 1px solid var(--home-divider);
   background: var(--home-surface);
   transition: background-color 180ms ease;
@@ -128,7 +116,7 @@
 
 .home-page-shell .friday-service-main {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .home-page-shell .friday-service-main h3 {
@@ -142,7 +130,7 @@
 .home-page-shell .friday-service-times {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 20px;
+  gap: 12px;
   margin: 0;
 }
 
@@ -164,7 +152,7 @@
 .home-page-shell .friday-service-times dd {
   margin: 3px 0 0;
   color: var(--home-text);
-  font-size: 23px;
+  font-size: 22px;
   font-weight: 800;
   font-variant-numeric: tabular-nums lining-nums;
   line-height: 1.15;
@@ -172,31 +160,40 @@
 
 .home-page-shell .friday-service-times > div:last-child dd {
   color: var(--home-brand-strong);
-  font-size: 29px;
+  font-size: 28px;
 }
 
 .home-page-shell .friday-service-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px 22px;
-  margin: 16px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--home-divider);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 18px;
+  margin: 10px 0 0;
+}
+
+.home-page-shell .friday-service-meta > div {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.home-page-shell .friday-service-meta dt::after,
+.home-page-shell .friday-shared-details dt::after {
+  content: ":";
 }
 
 .home-page-shell .friday-service-meta dd,
 .home-page-shell .friday-shared-details dd {
-  margin: 3px 0 0;
+  margin: 0;
   overflow-wrap: anywhere;
   color: var(--home-text);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.55;
 }
 
 .home-page-shell .friday-service-note {
-  margin: 14px 0 0;
-  padding-top: 14px;
+  margin: 12px 0 0;
+  padding-top: 12px;
   border-top: 1px solid var(--home-divider);
   color: var(--home-text-secondary);
   font-size: 14px;
@@ -205,16 +202,22 @@
 }
 
 .home-page-shell .friday-shared-details {
-  padding: 18px 20px;
+  padding: 15px 20px;
   border-top: 1px solid var(--home-divider);
   background: var(--home-surface-subtle);
 }
 
 .home-page-shell .friday-shared-details dl {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
   margin: 0;
+}
+
+.home-page-shell .friday-shared-details dl > div {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
 }
 
 .home-page-shell .friday-empty-state {
@@ -282,7 +285,6 @@
   }
 
   .home-page-shell .friday-schedule-header {
-    align-items: flex-start;
     padding: 16px;
   }
 
@@ -290,13 +292,8 @@
     font-size: 20px;
   }
 
-  .home-page-shell .friday-today-status {
-    padding-top: 3px;
-    font-size: 12px;
-  }
-
   .home-page-shell .friday-service-row {
-    padding: 18px 16px;
+    padding: 16px;
   }
 
   .home-page-shell .friday-service-row[data-next="true"] {
@@ -304,37 +301,31 @@
   }
 
   .home-page-shell .friday-service-main {
-    gap: 14px;
+    gap: 12px;
   }
 
   .home-page-shell .friday-service-main h3 {
     font-size: 17px;
   }
 
-  .home-page-shell .friday-service-times {
-    gap: 12px;
-  }
-
   .home-page-shell .friday-service-times dd {
-    font-size: 21px;
+    font-size: 20px;
   }
 
   .home-page-shell .friday-service-times > div:last-child dd {
-    font-size: 26px;
+    font-size: 25px;
   }
 
   .home-page-shell .friday-service-meta {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 6px 14px;
   }
 
   .home-page-shell .friday-shared-details {
-    padding: 16px;
+    padding: 14px 16px;
   }
 
   .home-page-shell .friday-shared-details dl {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 7px 20px;
   }
 
   .home-page-shell .friday-important-note {
@@ -366,7 +357,7 @@
   }
 
   .home-page-shell .friday-schedule-header {
-    min-height: 84px;
+    min-height: 82px;
     padding: 20px 30px;
   }
 
@@ -374,8 +365,7 @@
     font-size: 25px;
   }
 
-  .home-page-shell .friday-schedule-header time,
-  .home-page-shell .friday-today-status {
+  .home-page-shell .friday-schedule-header time {
     font-size: 14px;
   }
 
@@ -390,7 +380,7 @@
   }
 
   .home-page-shell .friday-service-row {
-    padding: 24px 30px;
+    padding: 20px 30px;
   }
 
   .home-page-shell .friday-service-row[data-next="true"] {
@@ -398,40 +388,63 @@
   }
 
   .home-page-shell .friday-service-main {
-    grid-template-columns: minmax(200px, 0.72fr) minmax(420px, 1.28fr);
+    grid-template-columns: minmax(190px, 0.5fr) minmax(460px, 1.5fr);
     align-items: center;
-    gap: 36px;
+    gap: 34px;
   }
 
   .home-page-shell .friday-service-main h3 {
-    font-size: 21px;
+    font-size: 20px;
+  }
+
+  .home-page-shell .friday-service-times {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+  }
+
+  .home-page-shell .friday-service-times > div {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 9px;
+    min-width: 185px;
+  }
+
+  .home-page-shell .friday-service-times > div + div {
+    margin-inline-start: 28px;
+    padding-inline-start: 28px;
+    border-inline-start: 1px solid var(--home-divider);
   }
 
   .home-page-shell .friday-service-times dt,
-  .home-page-shell .friday-service-meta dt,
   .home-page-shell .friday-shared-details dt {
     font-size: 13px;
   }
 
   .home-page-shell .friday-service-times dd {
-    font-size: 25px;
+    margin: 0;
+    font-size: 24px;
   }
 
   .home-page-shell .friday-service-times > div:last-child dd {
-    font-size: 34px;
+    font-size: 32px;
   }
 
   .home-page-shell .friday-service-meta {
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    margin-top: 9px;
   }
 
-  .home-page-shell .friday-service-meta dd,
-  .home-page-shell .friday-shared-details dd {
-    font-size: 16px;
+  .home-page-shell .friday-service-meta dt,
+  .home-page-shell .friday-service-meta dd {
+    font-size: 12px;
   }
 
   .home-page-shell .friday-shared-details {
-    padding: 22px 30px;
+    padding: 16px 30px;
+  }
+
+  .home-page-shell .friday-shared-details dd {
+    font-size: 14px;
   }
 
   .home-page-shell .friday-important-note {

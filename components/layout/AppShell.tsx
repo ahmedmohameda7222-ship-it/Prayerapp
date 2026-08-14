@@ -1,10 +1,17 @@
 import type { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 
-export function AppShell({ children, surface = "default" }: { children: ReactNode; surface?: "default" | "home" }) {
-  const surfaceClass = surface === "home" ? " home-page-shell" : "";
+type AppShellSurface = "default" | "home" | "root";
+
+export function AppShell({ children, surface = "default" }: { children: ReactNode; surface?: AppShellSurface }) {
+  const surfaceClass = surface === "home"
+    ? " home-page-shell"
+    : surface === "root"
+      ? " root-page-shell"
+      : "";
+
   return (
-    <main className={`page-shell public-desktop-frame${surfaceClass}`}>
+    <main className={`page-shell public-desktop-frame public-app-shell${surfaceClass}`}>
       <div className="app-container">{children}</div>
       <BottomNav />
     </main>

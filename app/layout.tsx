@@ -5,12 +5,14 @@ import "./responsive-prayer-nav.css";
 import "./home-palette-preview.css";
 import "./home-jumuah.css";
 import "./friday-page.css";
+import "./public-app-shell.css";
 import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/types";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
+import { PlatformAttributes } from "@/components/providers/PlatformAttributes";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
 import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
 
@@ -45,7 +47,8 @@ export const viewport: Viewport = {
   themeColor: "#173F34",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  viewportFit: "cover",
+  colorScheme: "light",
 };
 
 export default async function RootLayout({
@@ -59,6 +62,7 @@ export default async function RootLayout({
   return (
     <html lang={initialLocale} dir={getTextDirection(initialLocale)} suppressHydrationWarning>
       <body>
+        <PlatformAttributes />
         <I18nProvider initialLocale={initialLocale}>
           <AuthProvider>
             <AppPreferencesProvider>

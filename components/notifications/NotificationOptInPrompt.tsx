@@ -80,7 +80,7 @@ export function NotificationOptInPrompt() {
   const Icon = isIosInstallPrompt ? Download : BellRing;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[94px] z-[60] px-4 sm:bottom-[98px]">
+    <div className="notification-opt-in-anchor pointer-events-none fixed inset-x-0 bottom-[94px] z-[60] px-4 sm:bottom-[98px]">
       <section
         role="dialog"
         aria-modal="false"
@@ -95,7 +95,7 @@ export function NotificationOptInPrompt() {
           type="button"
           onClick={snoozePrompt}
           aria-label={t("notificationPrompt.close")}
-          className="absolute end-3 top-3 grid h-9 w-9 place-items-center rounded-full text-[var(--color-muted)] transition hover:bg-[var(--color-emerald-soft)] hover:text-[var(--color-emerald)]"
+          className="absolute end-2 top-2 grid h-11 w-11 place-items-center rounded-full text-[var(--color-muted)] transition hover:bg-[var(--color-emerald-soft)] hover:text-[var(--color-emerald)]"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

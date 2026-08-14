@@ -24,8 +24,8 @@ describe("Home UI V2 visual contract", () => {
     expect(home).not.toMatch(/color-gold|#fff9e8|rounded-\[24px\]|font-brand/);
   });
 
-  it("keeps the Home header free of decorative AI treatment", () => {
-    const header = source("components/layout/AppHeader.tsx");
+  it("keeps the Home identity header free of decorative AI treatment", () => {
+    const header = source("components/layout/HomeIdentityHeader.tsx");
     expect(header).not.toMatch(/font-brand|color-gold|rounded-b|shadow|backdrop-blur|bg-gradient/);
     expect(header).toContain("home-app-header-chrome");
     expect(header).toContain("home-quran-text");
@@ -65,7 +65,7 @@ describe("Home UI V2 visual contract", () => {
     const contentSources = [
       source("components/home/HomePageClient.tsx"),
       source("components/home/HomeNextPrayerSurface.tsx"),
-      source("components/layout/AppHeader.tsx"),
+      source("components/layout/HomeIdentityHeader.tsx"),
       source("components/home/SmartNextActionCard.tsx"),
     ].join("\n");
     expect(contentSources).not.toMatch(/var\(--color-gold|font-brand|bg-gradient|backdrop-blur|HeroCard|hero-overlay/);

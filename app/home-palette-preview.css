@@ -1,27 +1,13 @@
 /*
- * Home-only visual palette preview.
- * This layer is intentionally scoped to .home-page-shell so the rest of Prayerapp
- * keeps its current palette until the Home direction is explicitly approved.
+ * Home-specific modifiers layered on top of the shared public app palette.
+ * Canonical brand, canvas, surface, text and divider tokens live in public-app-shell.css.
  */
 
 .home-page-shell {
-  --home-brand: #245847;
-  --home-brand-strong: #173f34;
-  --home-brand-soft: #f1f0ec;
-  --home-canvas: #f3efe7;
-  --home-surface: #fcfaf6;
-  --home-surface-subtle: #f7f2ea;
-  --home-section-header: #eceae5;
-  --home-section-header-soft: #fcfaf6;
-  --home-section-header-text: #173f34;
-  --home-text: #20231f;
-  --home-text-secondary: #696860;
-  --home-divider: #d6cdbf;
   --home-urgent: #a3463d;
   --home-urgent-soft: #f7e9e6;
   --home-success: #3a755e;
   --home-disabled: #85827a;
-  --home-focus: #245847;
   --home-brass: #8d642d;
   --home-brass-soft: #f0e3cd;
 }

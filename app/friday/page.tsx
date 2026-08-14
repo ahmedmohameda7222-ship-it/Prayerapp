@@ -1,6 +1,6 @@
 import { FridayPageClient } from "@/components/friday/FridayPageClient";
-import { AppHeader } from "@/components/layout/AppHeader";
 import { AppShell } from "@/components/layout/AppShell";
+import { RootPageHeader } from "@/components/layout/RootPageHeader";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import type { JumuahTime } from "@/lib/types";
 
@@ -16,8 +16,8 @@ export default async function FridayPage() {
   }
 
   return (
-    <AppShell surface="home">
-      <AppHeader />
+    <AppShell surface="root">
+      <RootPageHeader titleKey="nav.friday" />
       <FridayPageClient
         jumuahTimes={jumuahTimes}
         initialNow={initialNow}

@@ -40,80 +40,101 @@
   }
 
   html[data-platform="ios"] .page-shell {
-    padding-bottom: calc(124px + env(safe-area-inset-bottom));
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
   }
 
   html[data-platform="android"] .page-shell {
     padding-bottom: calc(108px + env(safe-area-inset-bottom));
   }
 
-  /* iOS: one translucent tab-bar material, tint-led selection, no wide Material pill. */
-  html[data-platform="ios"] .bottom-nav-shell {
-    left: max(8px, env(safe-area-inset-left));
-    right: max(8px, env(safe-area-inset-right));
-    bottom: max(6px, env(safe-area-inset-bottom));
+  /*
+   * iOS: a single floating Liquid-Glass-like navigation layer. Selection is
+   * communicated by tint/weight, not a Material-style tile behind one tab.
+   * The runtime class is a hydration fallback for privacy-hardened iOS UAs.
+   */
+  html[data-platform="ios"] .bottom-nav-shell,
+  .bottom-nav-shell.bottom-nav-ios {
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
     max-width: 760px;
-    border: 1px solid rgba(255, 255, 255, 0.58);
-    border-radius: 28px;
-    background: rgba(250, 249, 246, 0.72);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.48);
+    border-radius: 27px;
+    background: rgba(249, 249, 247, 0.58);
     box-shadow:
-      0 12px 36px rgba(15, 35, 31, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.72);
-    -webkit-backdrop-filter: blur(30px) saturate(1.65);
-    backdrop-filter: blur(30px) saturate(1.65);
-    padding: 4px 6px;
+      0 8px 28px rgba(18, 31, 28, 0.13),
+      inset 0 1px 0 rgba(255, 255, 255, 0.62);
+    -webkit-backdrop-filter: blur(40px) saturate(1.7) contrast(1.02);
+    backdrop-filter: blur(40px) saturate(1.7) contrast(1.02);
+    padding: 3px 5px;
   }
 
-  html[data-platform="ios"] .bottom-nav-selection {
+  html[data-platform="ios"] .bottom-nav-selection,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-selection {
     display: none;
   }
 
-  html[data-platform="ios"] .bottom-nav-link {
-    min-height: 60px;
+  html[data-platform="ios"] .bottom-nav-track,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-track {
+    align-items: stretch;
+  }
+
+  html[data-platform="ios"] .bottom-nav-link,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-link {
+    min-height: 52px;
     gap: 2px;
-    border-radius: 18px;
-    font-size: 10px;
-    font-weight: 600;
+    border-radius: 0;
+    background: transparent;
+    font-size: 10.5px;
+    font-weight: 560;
+    line-height: 1.1;
     -webkit-tap-highlight-color: transparent;
+    transition: color 140ms ease, opacity 110ms ease, transform 110ms ease;
   }
 
-  html[data-platform="ios"] .bottom-nav-link::before {
-    position: absolute;
-    z-index: -1;
-    top: 4px;
-    left: 50%;
-    width: 40px;
-    height: 32px;
-    border-radius: 999px;
-    content: "";
-    opacity: 0;
-    transform: translateX(-50%);
-    transition: opacity 160ms ease, background-color 160ms ease;
+  html[data-platform="ios"] .bottom-nav-link::before,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-link::before {
+    display: none;
+    content: none;
   }
 
-  html[data-platform="ios"] .bottom-nav-link-active {
-    color: #006b61;
-    font-weight: 700;
+  html[data-platform="ios"] .bottom-nav-link-active,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-link-active {
+    background: transparent;
+    color: #006f65;
+    font-weight: 680;
   }
 
-  html[data-platform="ios"] .bottom-nav-link-active::before {
-    background: rgba(0, 90, 82, 0.09);
-    opacity: 1;
+  html[data-platform="ios"] .bottom-nav-link-inactive,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-link-inactive {
+    color: rgba(50, 53, 51, 0.7);
   }
 
-  html[data-platform="ios"] .bottom-nav-link:active {
-    background: rgba(0, 90, 82, 0.06);
-    transform: scale(0.985);
+  html[data-platform="ios"] .bottom-nav-link:active,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-link:active {
+    background: transparent;
+    opacity: 0.58;
+    transform: scale(0.965);
   }
 
-  html[data-platform="ios"] .bottom-nav-link > svg {
+  html[data-platform="ios"] .bottom-nav-link > svg,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-link > svg {
     width: 23px;
     height: 23px;
-    stroke-width: 2;
+    stroke-width: 2.05;
+    transform: none;
+  }
+
+  html[data-platform="ios"] .bottom-nav-link-active > svg,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-link-active > svg {
+    stroke-width: 2.45;
+    transform: none;
   }
 
   /* Android: flatter edge-to-edge NavigationBar treatment with a compact active indicator. */
-  html[data-platform="android"] .bottom-nav-shell {
+  html[data-platform="android"] .bottom-nav-shell,
+  .bottom-nav-shell.bottom-nav-android {
     left: 0;
     right: 0;
     bottom: 0;
@@ -128,13 +149,15 @@
     padding: 6px max(4px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
   }
 
-  html[data-platform="android"] .bottom-nav-selection {
+  html[data-platform="android"] .bottom-nav-selection,
+  .bottom-nav-shell.bottom-nav-android .bottom-nav-selection {
     top: 6px;
     bottom: auto;
     height: 32px;
   }
 
-  html[data-platform="android"] .bottom-nav-selection::before {
+  html[data-platform="android"] .bottom-nav-selection::before,
+  .bottom-nav-shell.bottom-nav-android .bottom-nav-selection::before {
     inset: 0 12px;
     border: 0;
     border-radius: 999px;
@@ -142,7 +165,8 @@
     box-shadow: none;
   }
 
-  html[data-platform="android"] .bottom-nav-link {
+  html[data-platform="android"] .bottom-nav-link,
+  .bottom-nav-shell.bottom-nav-android .bottom-nav-link {
     min-height: 64px;
     gap: 3px;
     font-size: 11px;
@@ -150,16 +174,19 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  html[data-platform="android"] .bottom-nav-link-active {
+  html[data-platform="android"] .bottom-nav-link-active,
+  .bottom-nav-shell.bottom-nav-android .bottom-nav-link-active {
     color: #004f48;
     font-weight: 700;
   }
 
-  html[data-platform="android"] .bottom-nav-link:active {
+  html[data-platform="android"] .bottom-nav-link:active,
+  .bottom-nav-shell.bottom-nav-android .bottom-nav-link:active {
     background: rgba(0, 90, 82, 0.08);
   }
 
-  html[data-platform="android"] .bottom-nav-link > svg {
+  html[data-platform="android"] .bottom-nav-link > svg,
+  .bottom-nav-shell.bottom-nav-android .bottom-nav-link > svg {
     width: 24px;
     height: 24px;
   }
@@ -202,8 +229,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-platform="ios"] .bottom-nav-link::before,
-  html[data-platform="ios"] .bottom-nav-link {
+  html[data-platform="ios"] .bottom-nav-link,
+  .bottom-nav-shell.bottom-nav-ios .bottom-nav-link {
     transition: none;
   }
 }

@@ -34,6 +34,24 @@ describe("Friday public page contract", () => {
     expect(friday).toContain("sharedLocationAddress");
   });
 
+  it("uses temporary preview rows only when the real Friday schedule is empty", () => {
+    const page = source("app/friday/page.tsx");
+
+    expect(page).toContain("getFridayPreviewMockData");
+    expect(page).toContain("!loadFailed && jumuahTimes.length === 0");
+  });
+
+  it("keeps iOS navigation tint-led without the generic active selection tile", () => {
+    const css = source("app/native-pwa.css");
+    const nav = source("components/layout/BottomNav.tsx");
+
+    expect(css).toContain(".bottom-nav-shell.bottom-nav-ios .bottom-nav-selection");
+    expect(css).toContain("display: none");
+    expect(css).toContain("background: transparent");
+    expect(nav).toContain("detectRuntimePlatform");
+    expect(nav).toContain("classList.add(`bottom-nav-${detected}`)");
+  });
+
   it("keeps zoom available and enables safe-area viewport coverage", () => {
     const layout = source("app/layout.tsx");
 

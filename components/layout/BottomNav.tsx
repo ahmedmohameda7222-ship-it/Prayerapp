@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { Clock, Home, LayoutGrid, Newspaper, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,21 @@ const MORE_CHILD_ROUTES = [
   "/qibla",
   "/settings",
 ] as const;
+
+type RuntimePlatform = "ios" | "android" | "other";
+
+function detectRuntimePlatform(): RuntimePlatform {
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const touchPoints = navigator.maxTouchPoints || 0;
+  const ios = /iPhone|iPad|iPod/i.test(ua)
+    || (platform === "MacIntel" && touchPoints > 1)
+    || (/Macintosh/i.test(ua) && touchPoints > 1)
+    || (/AppleWebKit/i.test(ua) && touchPoints > 1 && !/Android/i.test(ua));
+  if (ios) return "ios";
+  if (/Android/i.test(ua)) return "android";
+  return "other";
+}
 
 function matchesRoute(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -40,6 +55,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const { t, locale } = useTranslation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
 
   const navItems = useMemo(
     () => [
@@ -51,6 +67,13 @@ export function BottomNav() {
     ],
     [t]
   );
+
+  useEffect(() => {
+    const detected = detectRuntimePlatform();
+    document.documentElement.dataset.platform = detected;
+    navRef.current?.classList.remove("bottom-nav-ios", "bottom-nav-android", "bottom-nav-other");
+    navRef.current?.classList.add(`bottom-nav-${detected}`);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.desktopSidebar = sidebarCollapsed ? "collapsed" : "expanded";
@@ -78,7 +101,12 @@ export function BottomNav() {
   const ToggleIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose;
 
   return (
-    <nav id="primary-navigation" aria-label={t("nav.ariaLabel")} className="bottom-nav-shell fixed z-50">
+    <nav
+      ref={navRef}
+      id="primary-navigation"
+      aria-label={t("nav.ariaLabel")}
+      className="bottom-nav-shell fixed z-50"
+    >
       <button
         type="button"
         className="desktop-sidebar-toggle"

@@ -107,6 +107,17 @@
     margin-right: calc(-1 * max(16px, env(safe-area-inset-right)));
   }
 
+  .home-page-shell .home-app-header-chrome {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .home-page-shell .home-app-header > div:last-child {
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
   html:has(.home-page-shell),
   body:has(.home-page-shell),
   html:has(.root-page-shell),
@@ -256,6 +267,14 @@
   html[data-display-mode="standalone"][data-platform="ios"] .root-page-header-inner,
   html[data-display-mode="standalone"][data-platform="android"] .root-page-header-inner {
     padding-top: max(12px, env(safe-area-inset-top));
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .home-page-shell .home-app-header-chrome,
+  .home-page-shell .home-app-header > div:last-child {
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-left: max(20px, env(safe-area-inset-left));
   }
 }
 

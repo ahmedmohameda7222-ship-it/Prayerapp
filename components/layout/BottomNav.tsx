@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { Clock, Home, LayoutGrid, Newspaper, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -55,7 +55,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const { t, locale } = useTranslation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [runtimePlatform, setRuntimePlatform] = useState<RuntimePlatform | null>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   const navItems = useMemo(
     () => [
@@ -70,8 +70,9 @@ export function BottomNav() {
 
   useEffect(() => {
     const detected = detectRuntimePlatform();
-    setRuntimePlatform(detected);
     document.documentElement.dataset.platform = detected;
+    navRef.current?.classList.remove("bottom-nav-ios", "bottom-nav-android", "bottom-nav-other");
+    navRef.current?.classList.add(`bottom-nav-${detected}`);
   }, []);
 
   useEffect(() => {
@@ -101,9 +102,10 @@ export function BottomNav() {
 
   return (
     <nav
+      ref={navRef}
       id="primary-navigation"
       aria-label={t("nav.ariaLabel")}
-      className={`bottom-nav-shell fixed z-50 ${runtimePlatform ? `bottom-nav-${runtimePlatform}` : ""}`}
+      className="bottom-nav-shell fixed z-50"
     >
       <button
         type="button"

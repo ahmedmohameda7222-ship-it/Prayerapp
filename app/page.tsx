@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { AppHeader } from "@/components/layout/AppHeader";
+import { HomeIdentityHeader } from "@/components/layout/HomeIdentityHeader";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { getUrgentAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns, getDonationSettings } from "@/lib/data/donations";
@@ -34,7 +34,7 @@ export default async function HomePage() {
 
   return (
     <AppShell surface="home">
-      <AppHeader />
+      <HomeIdentityHeader />
       <HomePageClient
         initialPrayerTimes={prayerTimes}
         urgentAnnouncements={urgentAnnouncements}

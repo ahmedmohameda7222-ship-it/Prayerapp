@@ -1,82 +1,28 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { formatLongDate } from "@/lib/date-utils";
 import { getUpcomingFridaySchedule } from "@/lib/friday";
-import { getLocalizedField } from "@/lib/i18n/localized-content";
+import { getFridayPresentation } from "@/lib/friday-presentation";
 import type { Locale } from "@/lib/i18n/types";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { JumuahTime } from "@/lib/types";
+import fridayImage from "@/public/assets/home-jumuah-background.webp";
 
-const COPY = {
-  ar: {
-    title: "صلاة الجمعة",
-    schedule: "مواعيد الجمعة القادمة",
-    today: "الجمعة اليوم",
-    khutbah: "الخطبة",
-    prayer: "الصلاة",
-    location: "الموقع",
-    address: "العنوان",
-    khateeb: "الخطيب",
-    language: "اللغة",
-    note: "ملاحظة مهمة",
-    empty: "لم يتم نشر موعد صلاة الجمعة القادمة بعد.",
-  },
-  en: {
-    title: "Jumu'ah Prayer",
-    schedule: "Upcoming Friday schedule",
-    today: "Jumu'ah today",
-    khutbah: "Khutbah",
-    prayer: "Prayer",
-    location: "Location",
-    address: "Address",
-    khateeb: "Khateeb",
-    language: "Language",
-    note: "Important note",
-    empty: "The next Friday prayer schedule has not been published yet.",
-  },
-  de: {
-    title: "Freitagsgebet",
-    schedule: "Nächster Freitagsplan",
-    today: "Freitagsgebet heute",
-    khutbah: "Khutba",
-    prayer: "Gebet",
-    location: "Ort",
-    address: "Adresse",
-    khateeb: "Khateeb",
-    language: "Sprache",
-    note: "Wichtiger Hinweis",
-    empty: "Der nächste Freitagsgebetsplan wurde noch nicht veröffentlicht.",
-  },
-  tr: {
-    title: "Cuma Namazı",
-    schedule: "Yaklaşan cuma programı",
-    today: "Cuma bugün",
-    khutbah: "Hutbe",
-    prayer: "Namaz",
-    location: "Konum",
-    address: "Adres",
-    khateeb: "Hatip",
-    language: "Dil",
-    note: "Önemli not",
-    empty: "Bir sonraki cuma namazı programı henüz yayımlanmadı.",
-  },
-} as const;
+function serviceLabel(locale: Locale, index: number, total: number, singleLabel: string) {
+  if (total === 1) return singleLabel;
 
-function serviceLabel(locale: Locale, index: number, total: number) {
-  if (total === 1) return COPY[locale].title;
   if (locale === "ar") {
     const labels = ["الجمعة الأولى", "الجمعة الثانية", "الجمعة الثالثة"];
     return labels[index] || `الجمعة ${index + 1}`;
   }
-  if (locale === "de") return `Freitagsgebet ${index + 1}`;
-  if (locale === "tr") return `Cuma ${index + 1}`;
-  return `Jumu'ah ${index + 1}`;
-}
+  if (locale === "de") return `${index + 1}. Freitagsgebet`;
+  if (locale === "tr") return `${index + 1}. Cuma`;
 
-function clean(value: string | undefined) {
-  return value?.trim() || "";
+  const labels = ["First Jumu'ah", "Second Jumu'ah", "Third Jumu'ah"];
+  return labels[index] || `Jumu'ah ${index + 1}`;
 }
 
 type FridayPageClientProps = {
@@ -89,7 +35,10 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
   const { t, locale } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
   const schedule = useMemo(() => getUpcomingFridaySchedule(jumuahTimes, now), [jumuahTimes, now]);
-  const copy = COPY[locale];
+  const presentation = useMemo(
+    () => getFridayPresentation(schedule?.items || [], locale),
+    [locale, schedule],
+  );
   const direction = locale === "ar" ? "rtl" : "ltr";
 
   useEffect(() => {
@@ -97,148 +46,122 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
     return () => window.clearInterval(timer);
   }, []);
 
-  const localizedItems = schedule?.items.map((item) => ({
-    item,
-    language: getLocalizedField(item, "language", locale),
-    note: getLocalizedField(item, "notes", locale),
-  })) || [];
-
-  const locationKeys = localizedItems.map(({ item }) => `${clean(item.locationName)}|${clean(item.locationAddress)}`);
-  const firstLocationKey = locationKeys[0] || "";
-  const hasSharedLocation = Boolean(firstLocationKey.replace("|", ""))
-    && locationKeys.every((key) => key === firstLocationKey);
-  const sharedLocationName = hasSharedLocation ? clean(localizedItems[0]?.item.locationName) : "";
-  const sharedLocationAddress = hasSharedLocation ? clean(localizedItems[0]?.item.locationAddress) : "";
-
-  const localizedNotes = localizedItems.map(({ note }) => note);
-  const sharedNote = localizedNotes.length > 0
-    && Boolean(localizedNotes[0])
-    && localizedNotes.every((note) => note === localizedNotes[0])
-    ? localizedNotes[0]
-    : "";
-
   return (
     <div className="friday-page" dir={direction} data-testid="friday-page">
-      <section className="friday-identity" aria-labelledby="friday-page-title">
-        <span className="friday-identity-image" aria-hidden="true" />
-        <span className="friday-identity-scrim" aria-hidden="true" />
-        <div className="friday-identity-content">
-          <h1 id="friday-page-title">{copy.title}</h1>
-          {schedule ? (
-            <time dateTime={schedule.date}>{formatLongDate(schedule.date, locale)}</time>
-          ) : null}
-        </div>
-      </section>
+      <div className="friday-identity" aria-hidden="true">
+        <Image
+          src={fridayImage}
+          alt=""
+          fill
+          sizes="(max-width: 1023px) 100vw, 1080px"
+          className="friday-identity-image"
+        />
+        <span className="friday-identity-scrim" />
+      </div>
 
       <section className="friday-schedule" aria-labelledby="friday-schedule-title" data-testid="friday-schedule">
         <header className="friday-schedule-header">
           <div>
-            <h2 id="friday-schedule-title">{copy.schedule}</h2>
+            <h2 id="friday-schedule-title">{t("friday.jumuahPrayer")}</h2>
             {schedule ? (
               <time dateTime={schedule.date}>{formatLongDate(schedule.date, locale)}</time>
             ) : null}
           </div>
-          {schedule?.isToday ? <strong className="friday-today-status">{copy.today}</strong> : null}
+          {schedule?.isToday ? <strong className="friday-today-status">{t("times.today")}</strong> : null}
         </header>
 
         {loadFailed ? (
-          <div className="friday-empty-state" role="status">
+          <div className="friday-empty-state" data-state="error" role="alert">
             <p>{t("common.dataLoadFailed")}</p>
           </div>
         ) : !schedule ? (
-          <div className="friday-empty-state" role="status">
-            <p>{copy.empty}</p>
+          <div className="friday-empty-state" data-state="empty" role="status">
+            <p>{t("friday.empty")}</p>
           </div>
         ) : (
           <>
-            <div className="friday-service-list" role="list">
-              {localizedItems.map(({ item, language, note }, index) => {
-                const showOwnLocation = !hasSharedLocation && Boolean(clean(item.locationName) || clean(item.locationAddress));
-                const showOwnNote = Boolean(note) && note !== sharedNote;
+            <ol className="friday-service-list">
+              {presentation.items.map((entry, index) => {
+                const { item, language, note, locationName, locationAddress, showOwnLocation, showOwnNote } = entry;
                 const isNext = schedule.isToday && index === schedule.nextIndex;
 
                 return (
-                  <article
+                  <li
                     key={item.id}
                     className="friday-service-row"
                     data-next={isNext ? "true" : "false"}
-                    role="listitem"
                   >
-                    <div className="friday-service-main">
-                      <h3>{serviceLabel(locale, index, schedule.items.length)}</h3>
+                    <article>
+                      <div className="friday-service-heading">
+                        <h3>{serviceLabel(locale, index, schedule.items.length, t("friday.jumuahPrayer"))}</h3>
+                        {isNext ? <span className="friday-next-label">{t("times.nextRange")}</span> : null}
+                      </div>
+
                       <dl className="friday-service-times">
-                        <div>
-                          <dt>{copy.khutbah}</dt>
-                          <dd><FormattedTime time={item.khutbahTime} /></dd>
-                        </div>
-                        <div>
-                          <dt>{copy.prayer}</dt>
+                        <div className="friday-time-primary">
+                          <dt>{t("prayer.prayer")}</dt>
                           <dd><FormattedTime time={item.prayerTime} /></dd>
                         </div>
+                        <div className="friday-time-secondary">
+                          <dt>{t("prayer.khutbah")}</dt>
+                          <dd><FormattedTime time={item.khutbahTime} /></dd>
+                        </div>
                       </dl>
-                    </div>
 
-                    {(showOwnLocation || item.khateebName || language) ? (
-                      <dl className="friday-service-meta">
-                        {showOwnLocation && clean(item.locationName) ? (
-                          <div>
-                            <dt>{copy.location}</dt>
-                            <dd>{clean(item.locationName)}</dd>
-                          </div>
-                        ) : null}
-                        {showOwnLocation && clean(item.locationAddress) ? (
-                          <div>
-                            <dt>{copy.address}</dt>
-                            <dd>{clean(item.locationAddress)}</dd>
-                          </div>
-                        ) : null}
-                        {item.khateebName ? (
-                          <div>
-                            <dt>{copy.khateeb}</dt>
-                            <dd>{item.khateebName}</dd>
-                          </div>
-                        ) : null}
-                        {language ? (
-                          <div>
-                            <dt>{copy.language}</dt>
-                            <dd>{language}</dd>
-                          </div>
-                        ) : null}
-                      </dl>
-                    ) : null}
+                      {(item.khateebName || language) ? (
+                        <dl className="friday-service-meta">
+                          {item.khateebName ? (
+                            <div>
+                              <dt>{t("friday.khateeb")}</dt>
+                              <dd dir="auto">{item.khateebName}</dd>
+                            </div>
+                          ) : null}
+                          {language ? (
+                            <div>
+                              <dt>{t("friday.language")}</dt>
+                              <dd dir="auto">{language}</dd>
+                            </div>
+                          ) : null}
+                        </dl>
+                      ) : null}
 
-                    {showOwnNote ? <p className="friday-service-note">{note}</p> : null}
-                  </article>
+                      {showOwnLocation ? (
+                        <div className="friday-location-row friday-service-location">
+                          <span className="friday-location-label">{t("friday.location")}</span>
+                          <div className="friday-location-value" dir="auto">
+                            {locationName ? <strong>{locationName}</strong> : null}
+                            {locationAddress ? <span>{locationAddress}</span> : null}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {showOwnNote ? (
+                        <aside className="friday-service-note">
+                          <p>{note}</p>
+                        </aside>
+                      ) : null}
+                    </article>
+                  </li>
                 );
               })}
-            </div>
+            </ol>
 
-            {hasSharedLocation ? (
-              <div className="friday-shared-details">
-                <dl>
-                  {sharedLocationName ? (
-                    <div>
-                      <dt>{copy.location}</dt>
-                      <dd>{sharedLocationName}</dd>
-                    </div>
-                  ) : null}
-                  {sharedLocationAddress ? (
-                    <div>
-                      <dt>{copy.address}</dt>
-                      <dd>{sharedLocationAddress}</dd>
-                    </div>
-                  ) : null}
-                </dl>
+            {presentation.sharedLocation ? (
+              <div className="friday-location-row friday-shared-location" data-testid="friday-shared-location">
+                <span className="friday-location-label">{t("friday.location")}</span>
+                <div className="friday-location-value" dir="auto">
+                  {presentation.sharedLocation.name ? <strong>{presentation.sharedLocation.name}</strong> : null}
+                  {presentation.sharedLocation.address ? <span>{presentation.sharedLocation.address}</span> : null}
+                </div>
               </div>
             ) : null}
           </>
         )}
       </section>
 
-      {sharedNote ? (
-        <aside className="friday-important-note" aria-label={copy.note} data-testid="friday-note">
-          <strong>{copy.note}</strong>
-          <p>{sharedNote}</p>
+      {presentation.sharedNote ? (
+        <aside className="friday-important-note" data-testid="friday-note">
+          <p>{presentation.sharedNote}</p>
         </aside>
       ) : null}
     </div>

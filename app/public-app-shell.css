@@ -1,0 +1,319 @@
+/* Shared public-app foundation. Platform attributes change presentation chrome only. */
+.public-app-shell {
+  --app-brand: #245847;
+  --app-brand-strong: #173f34;
+  --app-brand-soft: #f1f0ec;
+  --app-canvas: #f3efe7;
+  --app-surface: #fcfaf6;
+  --app-surface-subtle: #f7f2ea;
+  --app-text: #20231f;
+  --app-text-secondary: #696860;
+  --app-divider: #d6cdbf;
+  --app-focus: #245847;
+
+  /* Compatibility aliases while Home migrates to shared ownership. */
+  --home-brand: var(--app-brand);
+  --home-brand-strong: var(--app-brand-strong);
+  --home-brand-soft: var(--app-brand-soft);
+  --home-canvas: var(--app-canvas);
+  --home-surface: var(--app-surface);
+  --home-surface-subtle: var(--app-surface-subtle);
+  --home-section-header: #eceae5;
+  --home-section-header-soft: var(--app-surface);
+  --home-section-header-text: var(--app-brand-strong);
+  --home-text: var(--app-text);
+  --home-text-secondary: var(--app-text-secondary);
+  --home-divider: var(--app-divider);
+  --home-focus: var(--app-focus);
+
+  min-height: 100dvh;
+}
+
+@supports not (height: 100dvh) {
+  .public-app-shell {
+    min-height: 100vh;
+  }
+}
+
+.home-page-shell,
+.root-page-shell {
+  background: var(--app-canvas);
+  color: var(--app-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Arabic", Arial, sans-serif;
+}
+
+.root-page-shell {
+  padding-top: 0;
+}
+
+.public-app-shell :focus-visible,
+.bottom-nav-shell :focus-visible {
+  outline: 2px solid var(--app-focus, #245847);
+  outline-offset: 2px;
+}
+
+.root-page-header {
+  position: relative;
+  z-index: 20;
+  margin-bottom: 16px;
+  margin-inline: -16px;
+  border-bottom: 1px solid rgba(252, 250, 246, 0.12);
+  background: var(--app-brand-strong);
+  color: #fcfaf6;
+}
+
+.root-page-header-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 64px;
+  align-items: center;
+  gap: 12px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  padding-right: max(16px, env(safe-area-inset-right));
+  padding-bottom: 10px;
+  padding-left: max(16px, env(safe-area-inset-left));
+}
+
+.root-page-header h1 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #fcfaf6;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.root-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.root-page-header .language-menu[open] > summary {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 1023px) {
+  .public-app-shell {
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .home-page-shell .home-app-header,
+  .root-page-shell .root-page-header {
+    margin-left: calc(-1 * max(16px, env(safe-area-inset-left)));
+    margin-right: calc(-1 * max(16px, env(safe-area-inset-right)));
+  }
+
+  .home-page-shell .home-app-header-chrome {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .home-page-shell .home-app-header > div:last-child {
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  html:has(.home-page-shell),
+  body:has(.home-page-shell),
+  html:has(.root-page-shell),
+  body:has(.root-page-shell) {
+    background-color: var(--app-brand-strong, #173f34);
+  }
+
+  .bottom-nav-link {
+    min-height: 56px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .notification-opt-in-anchor {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  html[data-platform="ios"] .root-page-header {
+    background: rgba(23, 63, 52, 0.93);
+    -webkit-backdrop-filter: blur(18px) saturate(1.08);
+    backdrop-filter: blur(18px) saturate(1.08);
+  }
+
+  html[data-platform="ios"] .bottom-nav-shell {
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
+    max-width: 720px;
+    margin-inline: auto;
+    border: 1px solid rgba(214, 205, 191, 0.72);
+    border-radius: 20px;
+    background: rgba(252, 250, 246, 0.78);
+    box-shadow: 0 12px 34px rgba(32, 35, 31, 0.13);
+    -webkit-backdrop-filter: blur(22px) saturate(1.12);
+    backdrop-filter: blur(22px) saturate(1.12);
+    padding: 5px 6px;
+  }
+
+  html[data-platform="ios"] .bottom-nav-selection::before {
+    inset: 0 7px;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(241, 240, 236, 0.88);
+    box-shadow: none;
+  }
+
+  html[data-platform="ios"] .bottom-nav-link-active {
+    color: var(--app-brand-strong);
+  }
+
+  html[data-platform="ios"] .bottom-nav-link-active > svg {
+    transform: none;
+  }
+
+  html[data-platform="ios"] .bottom-nav-link:active {
+    opacity: 0.68;
+  }
+
+  html[data-platform="ios"] .notification-opt-in-anchor {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  html[data-platform="android"] .public-app-shell {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  html[data-platform="android"] .root-page-header {
+    background: var(--app-brand-strong);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  html[data-platform="android"] .root-page-header-actions summary,
+  html[data-platform="android"] .root-page-header-actions button,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome a,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome summary,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome button {
+    min-width: 48px;
+    min-height: 48px;
+    height: 48px;
+  }
+
+  html[data-platform="android"] .root-page-header-actions button,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome a,
+  html[data-platform="android"] .home-page-shell .home-app-header-chrome button {
+    width: 48px;
+  }
+
+  html[data-platform="android"] .bottom-nav-shell {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+    margin: 0;
+    overflow: hidden;
+    border: 0;
+    border-top: 1px solid var(--app-divider);
+    border-radius: 0;
+    background: var(--app-surface);
+    box-shadow: 0 -6px 18px rgba(32, 35, 31, 0.06);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    padding-top: 4px;
+    padding-right: max(8px, env(safe-area-inset-right));
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+    padding-left: max(8px, env(safe-area-inset-left));
+  }
+
+  html[data-platform="android"] .bottom-nav-track {
+    min-height: 68px;
+  }
+
+  html[data-platform="android"] .bottom-nav-selection {
+    top: 6px;
+    bottom: auto;
+    height: 32px;
+  }
+
+  html[data-platform="android"] .bottom-nav-selection::before {
+    inset: 0 14px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--app-brand-soft);
+    box-shadow: none;
+  }
+
+  html[data-platform="android"] .bottom-nav-link {
+    min-height: 64px;
+    gap: 3px;
+    border-radius: 16px;
+    color: var(--app-text-secondary);
+    transition: color 160ms ease, background-color 120ms ease;
+  }
+
+  html[data-platform="android"] .bottom-nav-link-active {
+    color: var(--app-brand-strong);
+  }
+
+  html[data-platform="android"] .bottom-nav-link-active > svg {
+    transform: none;
+  }
+
+  html[data-platform="android"] .bottom-nav-link:active {
+    background: rgba(36, 88, 71, 0.08);
+  }
+
+  html[data-platform="android"] .notification-opt-in-anchor {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  html[data-display-mode="standalone"][data-platform="ios"] .root-page-header-inner,
+  html[data-display-mode="standalone"][data-platform="android"] .root-page-header-inner {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .home-page-shell .home-app-header-chrome,
+  .home-page-shell .home-app-header > div:last-child {
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-left: max(20px, env(safe-area-inset-left));
+  }
+}
+
+@media (min-width: 1024px) {
+  .root-page-shell .app-container {
+    width: 100%;
+    max-width: none;
+  }
+
+  .root-page-shell .root-page-header {
+    margin-left: -32px;
+    margin-right: -40px;
+    margin-bottom: 22px;
+    transition: margin-left 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  html[data-desktop-sidebar="collapsed"] .root-page-shell .root-page-header {
+    margin-left: -24px;
+  }
+
+  .root-page-header-inner {
+    min-height: 74px;
+    padding: 12px 28px;
+  }
+
+  .root-page-header h1 {
+    font-size: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root-page-header,
+  .bottom-nav-link,
+  .bottom-nav-selection {
+    transition: none !important;
+  }
+}

@@ -7,25 +7,27 @@ function source(path: string) {
 }
 
 describe("Home calm palette preview contract", () => {
-  it("loads a Home-only palette layer after the existing global styles", () => {
+  it("owns the canonical public palette in the shared app shell and layers Home modifiers after it", () => {
     const layout = source("app/layout.tsx");
-    const css = source("app/home-palette-preview.css");
+    const homeCss = source("app/home-palette-preview.css");
+    const sharedCss = source("app/public-app-shell.css");
 
     expect(layout).toContain('import "./responsive-prayer-nav.css";\nimport "./home-palette-preview.css";');
-    expect(css).toContain(".home-page-shell {");
-    expect(css).toContain("--home-canvas: #f3efe7");
-    expect(css).toContain("--home-surface: #fcfaf6");
-    expect(css).toContain("--home-surface-subtle: #f7f2ea");
-    expect(css).toContain("--home-section-header: #eceae5");
-    expect(css).toContain("--home-section-header-soft: #fcfaf6");
-    expect(css).toContain("--home-divider: #d6cdbf");
-    expect(css).toContain("--home-text: #20231f");
-    expect(css).toContain("--home-text-secondary: #696860");
-    expect(css).toContain("--home-brand: #245847");
-    expect(css).toContain("--home-brand-strong: #173f34");
-    expect(css).toContain("--home-brand-soft: #f1f0ec");
-    expect(css).toContain("--home-urgent: #a3463d");
-    expect(css).toContain("--home-success: #3a755e");
+    expect(layout).toContain('import "./public-app-shell.css";');
+    expect(sharedCss).toContain(".public-app-shell {");
+    expect(sharedCss).toContain("--app-canvas: #f3efe7");
+    expect(sharedCss).toContain("--app-surface: #fcfaf6");
+    expect(sharedCss).toContain("--app-surface-subtle: #f7f2ea");
+    expect(sharedCss).toContain("--app-divider: #d6cdbf");
+    expect(sharedCss).toContain("--app-text: #20231f");
+    expect(sharedCss).toContain("--app-text-secondary: #696860");
+    expect(sharedCss).toContain("--app-brand: #245847");
+    expect(sharedCss).toContain("--app-brand-strong: #173f34");
+    expect(sharedCss).toContain("--app-brand-soft: #f1f0ec");
+    expect(sharedCss).toContain("--home-brand: var(--app-brand)");
+    expect(homeCss).not.toContain("--home-canvas:");
+    expect(homeCss).toContain("--home-urgent: #a3463d");
+    expect(homeCss).toContain("--home-success: #3a755e");
   });
 
   it("does not reintroduce rejected mint, light-blue, or caramel section bands", () => {
@@ -58,7 +60,7 @@ describe("Home calm palette preview contract", () => {
     expect(css).toContain("margin-left: -24px");
   });
 
-  it("keeps mobile navigation glassy with a neutral selected surface", () => {
+  it("keeps mobile Home navigation glassy before platform-specific shared-shell refinement", () => {
     const css = source("app/home-palette-preview.css");
 
     expect(css).toContain("background: rgba(252, 250, 246, 0.74)");

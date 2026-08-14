@@ -1,11 +1,21 @@
 import { todayIso, zonedDateTime } from "@/lib/date-utils";
 import type { JumuahTime } from "@/lib/types";
 
+export const FRIDAY_IMMINENT_WINDOW_MS = 5 * 60 * 1000;
+
 export type FridaySchedule = {
   date: string;
   items: JumuahTime[];
   nextIndex: number;
   isToday: boolean;
+};
+
+export type FridayLivePrayer = {
+  item: JumuahTime;
+  index: number;
+  target: Date;
+  remainingMs: number;
+  imminent: boolean;
 };
 
 function isFriday(date: string) {
@@ -42,4 +52,24 @@ export function getUpcomingFridaySchedule(
   }
 
   return undefined;
+}
+
+export function getFridayLivePrayer(
+  schedule: FridaySchedule | undefined,
+  now: Date,
+): FridayLivePrayer | undefined {
+  if (!schedule?.items.length) return undefined;
+
+  const index = Math.min(Math.max(schedule.nextIndex, 0), schedule.items.length - 1);
+  const item = schedule.items[index];
+  const target = zonedDateTime(schedule.date, item.prayerTime);
+  const remainingMs = Math.max(0, target.getTime() - now.getTime());
+
+  return {
+    item,
+    index,
+    target,
+    remainingMs,
+    imminent: remainingMs <= FRIDAY_IMMINENT_WINDOW_MS,
+  };
 }

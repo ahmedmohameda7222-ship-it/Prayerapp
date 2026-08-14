@@ -4,6 +4,7 @@ import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { getUrgentAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns, getDonationSettings } from "@/lib/data/donations";
 import { getEvents } from "@/lib/data/events";
+import { getJumuahTimes } from "@/lib/data/jumuah";
 import { todayIso, addDaysIso } from "@/lib/date-utils";
 import { FRIDAY_VISUAL_FIXTURE } from "@/lib/jumuah-visual-fixture";
 import { HomePageClient } from "@/components/home/HomePageClient";
@@ -16,14 +17,16 @@ export default async function HomePage() {
   const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult] = await Promise.allSettled([
     getPrayerTimes(false, startDate, endDate),
     getUrgentAnnouncements(),
-    Promise.resolve(FRIDAY_VISUAL_FIXTURE),
+    getJumuahTimes(),
     getEvents(),
     getDonationSettings(),
     getDonationCampaigns(),
   ]);
   const prayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
-  const jumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
+  const liveJumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
+  // TEMPORARY visual-QA override. Remove before merging and use liveJumuahTimes directly.
+  const jumuahTimes = FRIDAY_VISUAL_FIXTURE.length > 0 ? FRIDAY_VISUAL_FIXTURE : liveJumuahTimes;
   const events = eventsResult.status === "fulfilled"
     ? eventsResult.value
       .filter((event) => event.date >= today)

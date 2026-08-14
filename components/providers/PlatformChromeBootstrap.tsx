@@ -1,7 +1,13 @@
 const bootstrap = `(() => {
   try {
     const ua = navigator.userAgent || "";
-    const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const platform = navigator.platform || "";
+    const touchPoints = navigator.maxTouchPoints || 0;
+    const appleWebKitTouch = /AppleWebKit/i.test(ua) && touchPoints > 1 && !/Android/i.test(ua);
+    const ios = /iPhone|iPad|iPod/i.test(ua)
+      || (platform === "MacIntel" && touchPoints > 1)
+      || (/Macintosh/i.test(ua) && touchPoints > 1)
+      || appleWebKitTouch;
     const android = /Android/i.test(ua);
     const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
     const root = document.documentElement;

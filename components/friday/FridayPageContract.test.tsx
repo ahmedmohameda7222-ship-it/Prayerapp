@@ -49,7 +49,7 @@ describe("Friday public page contract", () => {
     expect(css).toContain("display: none");
     expect(css).toContain("background: transparent");
     expect(nav).toContain("detectRuntimePlatform");
-    expect(nav).toContain("bottom-nav-${runtimePlatform}");
+    expect(nav).toContain("classList.add(`bottom-nav-${detected}`)");
   });
 
   it("keeps zoom available and enables safe-area viewport coverage", () => {

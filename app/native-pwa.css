@@ -1,0 +1,209 @@
+/* Platform-adaptive public PWA chrome. The semantics remain shared; only presentation adapts. */
+
+.root-page-header {
+  position: sticky;
+  z-index: 45;
+  top: 0;
+  margin-inline: -16px;
+  background: var(--home-brand, #005a52);
+  color: #fffdf8;
+}
+
+.root-page-header-inner {
+  display: flex;
+  min-height: calc(58px + env(safe-area-inset-top));
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+}
+
+.root-page-header h1 {
+  margin: 0;
+  color: #f7f1e5;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.root-page-header-actions {
+  display: flex;
+  min-width: max-content;
+  align-items: center;
+  gap: 2px;
+}
+
+@media (max-width: 1023px) {
+  .page-shell {
+    min-height: 100dvh;
+  }
+
+  html[data-platform="ios"] .page-shell {
+    padding-bottom: calc(124px + env(safe-area-inset-bottom));
+  }
+
+  html[data-platform="android"] .page-shell {
+    padding-bottom: calc(108px + env(safe-area-inset-bottom));
+  }
+
+  /* iOS: one translucent tab-bar material, tint-led selection, no wide Material pill. */
+  html[data-platform="ios"] .bottom-nav-shell {
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(6px, env(safe-area-inset-bottom));
+    max-width: 760px;
+    border: 1px solid rgba(255, 255, 255, 0.58);
+    border-radius: 28px;
+    background: rgba(250, 249, 246, 0.72);
+    box-shadow:
+      0 12px 36px rgba(15, 35, 31, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    -webkit-backdrop-filter: blur(30px) saturate(1.65);
+    backdrop-filter: blur(30px) saturate(1.65);
+    padding: 4px 6px;
+  }
+
+  html[data-platform="ios"] .bottom-nav-selection {
+    display: none;
+  }
+
+  html[data-platform="ios"] .bottom-nav-link {
+    min-height: 60px;
+    gap: 2px;
+    border-radius: 18px;
+    font-size: 10px;
+    font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html[data-platform="ios"] .bottom-nav-link::before {
+    position: absolute;
+    z-index: -1;
+    top: 4px;
+    left: 50%;
+    width: 40px;
+    height: 32px;
+    border-radius: 999px;
+    content: "";
+    opacity: 0;
+    transform: translateX(-50%);
+    transition: opacity 160ms ease, background-color 160ms ease;
+  }
+
+  html[data-platform="ios"] .bottom-nav-link-active {
+    color: #006b61;
+    font-weight: 700;
+  }
+
+  html[data-platform="ios"] .bottom-nav-link-active::before {
+    background: rgba(0, 90, 82, 0.09);
+    opacity: 1;
+  }
+
+  html[data-platform="ios"] .bottom-nav-link:active {
+    background: rgba(0, 90, 82, 0.06);
+    transform: scale(0.985);
+  }
+
+  html[data-platform="ios"] .bottom-nav-link > svg {
+    width: 23px;
+    height: 23px;
+    stroke-width: 2;
+  }
+
+  /* Android: flatter edge-to-edge NavigationBar treatment with a compact active indicator. */
+  html[data-platform="android"] .bottom-nav-shell {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+    border: 0;
+    border-top: 1px solid rgba(207, 222, 216, 0.9);
+    border-radius: 0;
+    background: rgba(255, 253, 248, 0.96);
+    box-shadow: 0 -4px 20px rgba(23, 26, 24, 0.07);
+    -webkit-backdrop-filter: blur(14px) saturate(1.05);
+    backdrop-filter: blur(14px) saturate(1.05);
+    padding: 6px max(4px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+  }
+
+  html[data-platform="android"] .bottom-nav-selection {
+    top: 6px;
+    bottom: auto;
+    height: 32px;
+  }
+
+  html[data-platform="android"] .bottom-nav-selection::before {
+    inset: 0 12px;
+    border: 0;
+    border-radius: 999px;
+    background: #d8e9e4;
+    box-shadow: none;
+  }
+
+  html[data-platform="android"] .bottom-nav-link {
+    min-height: 64px;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html[data-platform="android"] .bottom-nav-link-active {
+    color: #004f48;
+    font-weight: 700;
+  }
+
+  html[data-platform="android"] .bottom-nav-link:active {
+    background: rgba(0, 90, 82, 0.08);
+  }
+
+  html[data-platform="android"] .bottom-nav-link > svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  html[data-platform="ios"] .root-page-header-inner {
+    min-height: calc(56px + env(safe-area-inset-top));
+    padding-bottom: 11px;
+  }
+
+  html[data-platform="ios"] .root-page-header h1 {
+    font-size: 23px;
+    font-weight: 750;
+  }
+
+  html[data-platform="android"] .root-page-header-inner {
+    min-height: calc(64px + env(safe-area-inset-top));
+    padding-bottom: 14px;
+  }
+
+  html[data-platform="android"] .root-page-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+  }
+}
+
+@media (min-width: 1024px) {
+  .root-page-header {
+    position: relative;
+    margin-inline: 0;
+  }
+
+  .root-page-header-inner {
+    min-height: 68px;
+    padding: 16px 24px;
+  }
+
+  .root-page-header h1 {
+    font-size: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-platform="ios"] .bottom-nav-link::before,
+  html[data-platform="ios"] .bottom-nav-link {
+    transition: none;
+  }
+}

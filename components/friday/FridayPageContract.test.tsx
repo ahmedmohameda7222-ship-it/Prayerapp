@@ -1,0 +1,43 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+function source(path: string) {
+  return readFileSync(join(process.cwd(), path), "utf8");
+}
+
+describe("Friday public page contract", () => {
+  it("uses a root-page header instead of the Home mosque identity header", () => {
+    const page = source("app/friday/page.tsx");
+
+    expect(page).toContain("RootPageHeader");
+    expect(page).toContain('titleKey="friday.title"');
+    expect(page).not.toContain("<AppHeader");
+  });
+
+  it("makes the image a live next-prayer surface using prayerTime only", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("getFridayLivePrayer");
+    expect(friday).toContain("friday-live-countdown");
+    expect(friday).toContain("livePrayer.item.prayerTime");
+    expect(friday).not.toContain("item.khutbahTime");
+    expect(friday).not.toContain("item.khateebName");
+  });
+
+  it("keeps multiple published services dynamic and exposes the shared location inside the schedule", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("schedule.items.length");
+    expect(friday).toContain("localizedItems.map");
+    expect(friday).toContain("friday-shared-details");
+    expect(friday).toContain("sharedLocationAddress");
+  });
+
+  it("keeps zoom available and enables safe-area viewport coverage", () => {
+    const layout = source("app/layout.tsx");
+
+    expect(layout).toContain('viewportFit: "cover"');
+    expect(layout).not.toContain("maximumScale");
+  });
+});

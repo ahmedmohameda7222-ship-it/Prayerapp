@@ -5,6 +5,7 @@ import "./responsive-prayer-nav.css";
 import "./home-palette-preview.css";
 import "./home-jumuah.css";
 import "./friday-page.css";
+import "./native-pwa.css";
 import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/types";
@@ -12,6 +13,7 @@ import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
+import { PlatformChromeBootstrap } from "@/components/providers/PlatformChromeBootstrap";
 import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
 
 const metadataDescriptions: Record<Locale, string> = {
@@ -42,10 +44,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#173F34",
+  themeColor: "#005a52",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
@@ -59,6 +61,7 @@ export default async function RootLayout({
   return (
     <html lang={initialLocale} dir={getTextDirection(initialLocale)} suppressHydrationWarning>
       <body>
+        <PlatformChromeBootstrap />
         <I18nProvider initialLocale={initialLocale}>
           <AuthProvider>
             <AppPreferencesProvider>

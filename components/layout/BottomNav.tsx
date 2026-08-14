@@ -7,9 +7,26 @@ import { usePathname } from "next/navigation";
 import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
+const MORE_CHILD_ROUTES = [
+  "/account",
+  "/privacy",
+  "/donations",
+  "/azkar",
+  "/ramadan",
+  "/events",
+  "/mosque",
+  "/qibla",
+  "/settings",
+] as const;
+
+function matchesRoute(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
+  if (href === "/more") return matchesRoute(pathname, href) || MORE_CHILD_ROUTES.some((route) => matchesRoute(pathname, route));
+  return matchesRoute(pathname, href);
 }
 
 const SIDEBAR_TOGGLE_COPY = {

@@ -1,7 +1,7 @@
 /* Friday V2: one root-app schedule, not a stack of legacy cards. */
 .home-page-shell .friday-page {
   display: grid;
-  width: min(100%, 1080px);
+  width: min(100%, 1240px);
   margin-inline: auto;
   gap: 20px;
 }
@@ -20,17 +20,17 @@
 .home-page-shell .friday-identity-image {
   position: absolute;
   inset: 0;
-  background-image: url("/assets/home-jumuah-background.webp");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  transform: scale(1.02);
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
 .home-page-shell .friday-identity-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(8, 31, 25, 0.04) 8%, rgba(8, 31, 25, 0.76) 100%);
+  background: linear-gradient(180deg, rgba(8, 31, 25, 0.02) 22%, rgba(8, 31, 25, 0.64) 100%);
 }
 
 .home-page-shell .friday-identity-content {
@@ -269,10 +269,6 @@
     min-height: 200px;
   }
 
-  .home-page-shell .friday-identity-image {
-    background-position: 66% center;
-  }
-
   .home-page-shell .friday-identity-content {
     padding: 20px 16px;
   }
@@ -349,20 +345,20 @@
 @media (min-width: 1024px) {
   .home-page-shell .friday-page {
     gap: 24px;
-    padding-block: 4px 8px;
+    padding-block: 8px 12px;
   }
 
   .home-page-shell .friday-identity,
   .home-page-shell .friday-identity-content {
-    min-height: 260px;
+    min-height: 320px;
   }
 
   .home-page-shell .friday-identity-content {
-    padding: 34px 32px;
+    padding: 36px;
   }
 
   .home-page-shell .friday-identity-content h1 {
-    font-size: 42px;
+    font-size: 46px;
   }
 
   .home-page-shell .friday-identity-content time {
@@ -370,12 +366,12 @@
   }
 
   .home-page-shell .friday-schedule-header {
-    min-height: 88px;
-    padding: 22px 28px;
+    min-height: 84px;
+    padding: 20px 30px;
   }
 
   .home-page-shell .friday-schedule-header h2 {
-    font-size: 26px;
+    font-size: 25px;
   }
 
   .home-page-shell .friday-schedule-header time,
@@ -383,22 +379,32 @@
     font-size: 14px;
   }
 
+  .home-page-shell .friday-empty-state {
+    min-height: 154px;
+    padding: 32px 30px;
+  }
+
+  .home-page-shell .friday-empty-state p {
+    max-width: 620px;
+    font-size: 17px;
+  }
+
   .home-page-shell .friday-service-row {
-    padding: 24px 28px;
+    padding: 24px 30px;
   }
 
   .home-page-shell .friday-service-row[data-next="true"] {
-    padding-inline-start: 25px;
+    padding-inline-start: 27px;
   }
 
   .home-page-shell .friday-service-main {
-    grid-template-columns: minmax(180px, 0.7fr) minmax(360px, 1.3fr);
+    grid-template-columns: minmax(200px, 0.72fr) minmax(420px, 1.28fr);
     align-items: center;
-    gap: 30px;
+    gap: 36px;
   }
 
   .home-page-shell .friday-service-main h3 {
-    font-size: 20px;
+    font-size: 21px;
   }
 
   .home-page-shell .friday-service-times dt,
@@ -408,7 +414,7 @@
   }
 
   .home-page-shell .friday-service-times dd {
-    font-size: 24px;
+    font-size: 25px;
   }
 
   .home-page-shell .friday-service-times > div:last-child dd {
@@ -416,7 +422,7 @@
   }
 
   .home-page-shell .friday-service-meta {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   }
 
   .home-page-shell .friday-service-meta dd,
@@ -425,7 +431,7 @@
   }
 
   .home-page-shell .friday-shared-details {
-    padding: 22px 28px;
+    padding: 22px 30px;
   }
 
   .home-page-shell .friday-important-note {
@@ -438,10 +444,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-page-shell .friday-identity-image {
-    transform: none;
-  }
-
   .home-page-shell .friday-service-row {
     transition: none;
   }

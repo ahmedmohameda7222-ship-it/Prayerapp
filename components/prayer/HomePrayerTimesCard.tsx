@@ -19,7 +19,15 @@ function isReminderPrayer(value: string | null): value is ReminderPrayer {
   return Boolean(value && reminderPrayers.has(value as ReminderPrayer));
 }
 
-export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTime; activePrayer?: PrayerName }) {
+export function HomePrayerTimesCard({
+  prayer,
+  activePrayer,
+  preview = false,
+}: {
+  prayer: PrayerTime;
+  activePrayer?: PrayerName;
+  preview?: boolean;
+}) {
   const { t } = useTranslation();
   const { timeFormat } = useTimeFormat();
   const { user } = usePublicAuth();
@@ -39,7 +47,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
     const load = async () => {
       setLoaded(false);
       setError("");
-      if (!user) {
+      if (preview || !user) {
         setEnabled(new Set());
         setLoaded(true);
         return;
@@ -66,10 +74,10 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
     };
     void load();
     return () => { active = false; };
-  }, [reminderSaveError, user]);
+  }, [preview, reminderSaveError, user]);
 
   const setReminder = useCallback(async (name: ReminderPrayer, nextEnabled: boolean) => {
-    if (!user || savingPrayer) return false;
+    if (preview || !user || savingPrayer) return false;
     setSavingPrayer(name);
     setError("");
     try {
@@ -102,10 +110,10 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
     } finally {
       setSavingPrayer(null);
     }
-  }, [enableNotifications, pushStatus, reminderSaveError, savingPrayer, user]);
+  }, [enableNotifications, preview, pushStatus, reminderSaveError, savingPrayer, user]);
 
   useEffect(() => {
-    if (!loaded || !user || handledIntent.current) return;
+    if (preview || !loaded || !user || handledIntent.current) return;
     const url = new URL(window.location.href);
     const requested = url.searchParams.get("reminder");
     if (!isReminderPrayer(requested)) return;
@@ -116,7 +124,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     };
     void completeIntent();
-  }, [enabled, loaded, setReminder, user]);
+  }, [enabled, loaded, preview, setReminder, user]);
 
   const rows = useMemo(() => prayerOrder.map((name) => {
     const canonicalIqama = name === "maghrib"
@@ -126,6 +134,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
   }), [prayer]);
 
   function clickReminder(name: ReminderPrayer) {
+    if (preview) return;
     if (!user) {
       const next = `/?reminder=${name}#prayer-times`;
       window.location.assign(`/account/sign-in?next=${encodeURIComponent(next)}`);
@@ -149,7 +158,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
       <div className="divide-y divide-[var(--home-divider)]">
         {rows.map(({ name, adhan, iqama }) => {
           const isActive = name === activePrayer;
-          const canRemind = name !== "sunrise";
+          const canRemind = !preview && name !== "sunrise";
           const isEnabled = canRemind && enabled.has(name as ReminderPrayer);
           return (
             <div key={name} className={`border-s-[3px] ${isActive ? "border-s-[var(--home-brand)] bg-[var(--home-brand-soft)]" : "border-s-transparent"}`} data-prayer-row={name} data-active={isActive ? "true" : undefined}>
@@ -168,7 +177,7 @@ export function HomePrayerTimesCard({ prayer, activePrayer }: { prayer: PrayerTi
                   >
                     <Bell className={`h-5 w-5 ${isEnabled ? "fill-current" : ""}`} aria-hidden="true" />
                   </button>
-                ) : <span aria-label={t("prayer.sunrise")} className="text-center text-[var(--home-text-secondary)]">—</span>}
+                ) : <span aria-hidden="true" className="text-center text-[var(--home-text-secondary)]">—</span>}
               </div>
               {name === "maghrib" && prayer.maghribProgram?.enabled ? (
                 <div className="border-t border-[var(--home-divider)] bg-[var(--home-surface-subtle)] px-4 text-[var(--home-text-secondary)]" data-testid="maghrib-program">

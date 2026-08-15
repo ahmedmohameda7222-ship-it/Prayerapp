@@ -7,7 +7,7 @@ import { getEvents } from "@/lib/data/events";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { todayIso, addDaysIso } from "@/lib/date-utils";
 import { getFridayPreviewMockData } from "@/lib/friday-preview-mock";
-import { getPrayerPreviewMockData } from "@/lib/prayer-preview-mock";
+import { getHardcodedPrayerWeekData, getPrayerPreviewMockData } from "@/lib/prayer-preview-mock";
 import { HomePageClient } from "@/components/home/HomePageClient";
 
 export default async function HomePage() {
@@ -24,11 +24,18 @@ export default async function HomePage() {
     getDonationSettings(),
     getDonationCampaigns(),
   ]);
+
   const realPrayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
-  const prayerPreview = prayerTimesResult.status === "fulfilled" && realPrayerTimes.length === 0;
-  const prayerTimes = prayerPreview
-    ? getPrayerPreviewMockData(startDate, endDate, initialDate)
-    : realPrayerTimes;
+  const hardcodedPrayerWeek = getHardcodedPrayerWeekData(startDate, endDate);
+  const forceHardcodedPrayerWeek = hardcodedPrayerWeek.some((item) => item.date === today);
+  const dynamicPrayerPreview = prayerTimesResult.status === "fulfilled" && realPrayerTimes.length === 0;
+  const prayerPreview = forceHardcodedPrayerWeek || dynamicPrayerPreview;
+  const prayerTimes = forceHardcodedPrayerWeek
+    ? hardcodedPrayerWeek
+    : dynamicPrayerPreview
+      ? getPrayerPreviewMockData(startDate, endDate, initialDate)
+      : realPrayerTimes;
+
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
   const realJumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
   const jumuahPreview = jumuahTimesResult.status === "fulfilled" && realJumuahTimes.length === 0;

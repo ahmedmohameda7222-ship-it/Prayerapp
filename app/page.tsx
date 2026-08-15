@@ -6,14 +6,13 @@ import { getDonationCampaigns, getDonationSettings } from "@/lib/data/donations"
 import { getEvents } from "@/lib/data/events";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { todayIso, addDaysIso } from "@/lib/date-utils";
-import { getFridayPreviewMockData } from "@/lib/friday-preview-mock";
-import { getHardcodedPrayerWeekData, getPrayerPreviewMockData } from "@/lib/prayer-preview-mock";
 import { HomePageClient } from "@/components/home/HomePageClient";
+
+const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 
 export default async function HomePage() {
   const initialNow = new Date().toISOString();
-  const initialDate = new Date(initialNow);
-  const today = todayIso(initialDate);
+  const today = todayIso(new Date(initialNow));
   const startDate = addDaysIso(today, -1);
   const endDate = addDaysIso(today, 30);
   const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult] = await Promise.allSettled([
@@ -25,23 +24,11 @@ export default async function HomePage() {
     getDonationCampaigns(),
   ]);
 
-  const realPrayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
-  const hardcodedPrayerWeek = getHardcodedPrayerWeekData(startDate, endDate);
-  const forceHardcodedPrayerWeek = hardcodedPrayerWeek.some((item) => item.date === today);
-  const dynamicPrayerPreview = prayerTimesResult.status === "fulfilled" && realPrayerTimes.length === 0;
-  const prayerPreview = forceHardcodedPrayerWeek || dynamicPrayerPreview;
-  const prayerTimes = forceHardcodedPrayerWeek
-    ? hardcodedPrayerWeek
-    : dynamicPrayerPreview
-      ? getPrayerPreviewMockData(startDate, endDate, initialDate)
-      : realPrayerTimes;
-
+  const prayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
+  // QA rows now live in Supabase. Keep reminder interactions inert for those rows.
+  const prayerPreview = prayerTimes.some((item) => item.note === QA_MOCK_MARKER);
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
-  const realJumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
-  const jumuahPreview = jumuahTimesResult.status === "fulfilled" && realJumuahTimes.length === 0;
-  const jumuahTimes = jumuahPreview
-    ? getFridayPreviewMockData(initialDate)
-    : realJumuahTimes;
+  const jumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
   const events = eventsResult.status === "fulfilled"
     ? eventsResult.value
       .filter((event) => event.date >= today)
@@ -58,7 +45,7 @@ export default async function HomePage() {
         prayerPreview={prayerPreview}
         urgentAnnouncements={urgentAnnouncements}
         jumuahTimes={jumuahTimes}
-        jumuahPreview={jumuahPreview}
+        allowAnyFutureJumuah
         events={events}
         donationSettings={donationSettings}
         donationCampaigns={donationCampaigns}

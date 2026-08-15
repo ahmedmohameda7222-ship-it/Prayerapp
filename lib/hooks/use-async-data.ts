@@ -21,7 +21,14 @@ export function useAsyncData<T>(loader: () => Promise<T>, key?: string) {
 
   useEffect(() => {
     let active = true;
-    loaderRef.current()
+    Promise.resolve()
+      .then(() => {
+        if (active) {
+          setLoading(true);
+          setError(null);
+        }
+        return loaderRef.current();
+      })
       .then((result) => { if (active) setData(result); })
       .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "Unable to load data"); })
       .finally(() => { if (active) setLoading(false); });

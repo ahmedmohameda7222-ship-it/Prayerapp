@@ -17,7 +17,6 @@ const COPY = {
     tomorrow: "الجمعة غدًا",
     twoDays: "الجمعة بعد يومين",
     upcoming: "الجمعة القادمة",
-    khutbah: "الخطبة",
     prayer: "الصلاة",
     arrive: "يرجى الحضور مبكرًا قبل موعد الصلاة.",
     view: "عرض تفاصيل الجمعة",
@@ -30,7 +29,6 @@ const COPY = {
     tomorrow: "Jumu'ah tomorrow",
     twoDays: "Jumu'ah in two days",
     upcoming: "Upcoming Jumu'ah",
-    khutbah: "Khutbah",
     prayer: "Prayer",
     arrive: "Please arrive early before the prayer time.",
     view: "View Friday details",
@@ -43,7 +41,6 @@ const COPY = {
     tomorrow: "Freitagsgebet morgen",
     twoDays: "Freitagsgebet in zwei Tagen",
     upcoming: "Nächstes Freitagsgebet",
-    khutbah: "Khutba",
     prayer: "Gebet",
     arrive: "Bitte kommen Sie rechtzeitig vor dem Gebet.",
     view: "Freitagsdetails anzeigen",
@@ -56,7 +53,6 @@ const COPY = {
     tomorrow: "Cuma yarın",
     twoDays: "Cuma iki gün sonra",
     upcoming: "Yaklaşan Cuma",
-    khutbah: "Hutbe",
     prayer: "Namaz",
     arrive: "Lütfen namaz vaktinden önce erken gelin.",
     view: "Cuma ayrıntılarını görüntüle",
@@ -119,7 +115,6 @@ export function HomeJumuahCard({ schedule }: { schedule: HomeJumuahSchedule }) {
             >
               <div className="home-jumuah-time-copy">
                 <strong>{serviceLabel(locale, index, schedule.items.length)}</strong>
-                <span>{copy.khutbah} <FormattedTime time={item.khutbahTime} /></span>
               </div>
               <div className="home-jumuah-prayer-time">
                 <span>{copy.prayer}</span>

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Bell, ChevronRight, HandHeart, MapPin, Moon, Newspaper, Users } from "lucide-react";
 import type { Announcement } from "@/lib/types";
-import { Badge } from "@/components/ui/Badge";
 import { formatShortDate } from "@/lib/date-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
@@ -20,7 +19,6 @@ const iconMap = {
 
 export function AnnouncementCard({ announcement, home = false }: { announcement: Announcement; home?: boolean }) {
   const { t, locale } = useTranslation();
-  const Icon = iconMap[announcement.type];
   const title = getLocalizedField(announcement, "title", locale);
   const message = getLocalizedField(announcement, "message", locale);
 
@@ -38,24 +36,23 @@ export function AnnouncementCard({ announcement, home = false }: { announcement:
     );
   }
 
-  const content = (
-    <article className={`card flex gap-3 p-4 ${announcement.isUrgent ? "border-s-4 border-s-[var(--color-gold)] bg-[#fff9e8]" : ""}`}>
-      <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${announcement.isUrgent ? "bg-[var(--color-gold)] text-[var(--color-emerald-dark)]" : "bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]"}`}>
-        <Icon className="h-6 w-6" aria-hidden="true" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <h3 className="font-bold text-[var(--color-charcoal)]">{title}</h3>
-          {announcement.isUrgent ? <Badge tone="gold">{t("admin.urgent")}</Badge> : null}
+  const Icon = iconMap[announcement.type];
+
+  return (
+    <article className="native-feed-item" data-urgent={announcement.isUrgent ? "true" : undefined}>
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-[var(--app-brand-soft)] text-[var(--app-brand)]" aria-hidden="true">
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="native-feed-item-title">{title}</h2>
+          <p className="native-feed-item-copy whitespace-pre-wrap">{message}</p>
+          <p className="native-feed-item-meta">
+            {t(`announcementTypes.${announcement.type}`)} · {formatShortDate(announcement.createdAt.slice(0, 10), locale)}
+          </p>
         </div>
-        <p className="line-clamp-2 whitespace-pre-wrap text-sm leading-6 text-[var(--color-muted)]">{message}</p>
-        <p className="mt-2 text-xs font-bold text-[var(--color-gold-dark)]">
-          {t(`announcementTypes.${announcement.type}`)} | {announcement.createdAt.slice(0, 10)}
-        </p>
+        <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
       </div>
-      <ChevronRight className="mt-3 h-5 w-5 shrink-0 text-[var(--color-muted)] rtl:rotate-180" aria-hidden="true" />
     </article>
   );
-
-  return content;
 }

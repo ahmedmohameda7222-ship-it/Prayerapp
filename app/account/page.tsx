@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, BookHeart, LogOut, Settings, Shield, Trash2 } from "lucide-react";
+import { Bell, BookHeart, ChevronRight, LogOut, Settings, Shield, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
@@ -65,56 +66,64 @@ export default function AccountPage() {
     }
   }
 
+  const accountLinks = [
+    ["/azkar?tab=Favorites", t("phase1.savedAzkar"), BookHeart],
+    ["/#prayer-times", t("phase1.manageReminders"), Bell],
+    ["/settings", t("settings.title"), Settings],
+    ["/privacy", t("phase1.privacy"), Shield],
+  ] as const;
+
   return (
     <AppShell>
-      <section className="mx-auto max-w-xl py-5">
-        <h1 className="font-brand text-3xl font-semibold text-[var(--color-emerald)]">{t("phase1.account")}</h1>
-        <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{t("phase1.accountSubtitle")}</p>
+      <div className="account-screen">
+        <PageHeader titleKey="phase1.account" backHref="/more" />
+        <p className="account-subtitle">{t("phase1.accountSubtitle")}</p>
 
-        {loading ? <div className="mt-5 h-28 animate-pulse rounded-[24px] bg-[var(--color-cream-deep)]" /> : null}
+        {loading ? <div className="mt-5 h-28 animate-pulse rounded-[18px] bg-[var(--app-surface-soft)]" /> : null}
 
         {!loading && !user ? (
-          <div className="mt-5 grid gap-3 rounded-[24px] border border-[var(--color-border)] bg-[var(--color-card)] p-5">
-            <p className="text-sm text-[var(--color-muted)]">{t("phase1.noAccountNeeded")}</p>
-            <Link href="/account/sign-in" className="inline-flex min-h-11 items-center justify-center rounded-[14px] bg-[var(--color-emerald)] px-4 text-sm font-bold text-[var(--color-card)]">{t("phase1.signIn")}</Link>
-            <Link href="/account/register" className="inline-flex min-h-11 items-center justify-center rounded-[14px] border border-[var(--color-border)] px-4 text-sm font-bold text-[var(--color-emerald)]">{t("phase1.createAccount")}</Link>
-          </div>
+          <section className="mt-5 rounded-[18px] border border-[var(--app-divider)] bg-[var(--app-surface)] p-5">
+            <p className="text-sm leading-6 text-[var(--app-text-secondary)]">{t("phase1.noAccountNeeded")}</p>
+            <div className="mt-4 grid gap-2">
+              <Link href="/account/sign-in" className="inline-flex min-h-12 items-center justify-center rounded-[14px] bg-[var(--app-brand)] px-4 text-sm font-bold text-white">{t("phase1.signIn")}</Link>
+              <Link href="/account/register" className="inline-flex min-h-12 items-center justify-center rounded-[14px] border border-[var(--app-divider)] px-4 text-sm font-bold text-[var(--app-brand)]">{t("phase1.createAccount")}</Link>
+            </div>
+          </section>
         ) : null}
 
         {user ? (
           <div className="mt-5 grid gap-4">
-            <div className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-card)] p-5">
-              <p className="text-xs font-extrabold uppercase tracking-[0.08em] text-[var(--color-gold-dark)]">{t("phase1.signedInAs")}</p>
-              <p className="mt-1 break-all font-bold text-[var(--color-charcoal)]">{user.email}</p>
+            <section className="rounded-[18px] border border-[var(--app-divider)] bg-[var(--app-surface)] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--app-text-secondary)]">{t("phase1.signedInAs")}</p>
+              <p className="mt-1 break-all font-semibold text-[var(--app-text)]">{user.email}</p>
+            </section>
+
+            <div className="account-actions">
+              {accountLinks.map(([href, label, Icon]) => (
+                <Link key={href} href={href} className="account-action-row">
+                  <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">{label}</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
+                </Link>
+              ))}
             </div>
-            <Link href="/azkar?tab=Favorites" className="card flex min-h-16 items-center gap-3 p-4 font-bold text-[var(--color-emerald)]">
-              <BookHeart className="h-5 w-5 text-[var(--color-gold-dark)]" aria-hidden="true" />
-              {t("phase1.savedAzkar")}
-            </Link>
-            <Link href="/#prayer-times" className="card flex min-h-16 items-center gap-3 p-4 font-bold text-[var(--color-emerald)]">
-              <Bell className="h-5 w-5 text-[var(--color-gold-dark)]" aria-hidden="true" />
-              {t("phase1.manageReminders")}
-            </Link>
-            <Link href="/settings" className="card flex min-h-16 items-center gap-3 p-4 font-bold text-[var(--color-emerald)]">
-              <Settings className="h-5 w-5 text-[var(--color-gold-dark)]" aria-hidden="true" />
-              {t("settings.title")}
-            </Link>
-            <Link href="/privacy" className="card flex min-h-16 items-center gap-3 p-4 font-bold text-[var(--color-emerald)]">
-              <Shield className="h-5 w-5 text-[var(--color-gold-dark)]" aria-hidden="true" />
-              {t("phase1.privacy")}
-            </Link>
-            {error ? <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-800">{error}</p> : null}
+
+            {error ? <p role="alert" className="rounded-[14px] bg-red-50 p-3 text-sm font-semibold text-red-800">{error}</p> : null}
+
             <Button disabled={busy} variant="ghost" onClick={() => void signOut()}>
               <LogOut className="h-4 w-4" aria-hidden="true" />
               {t("phase1.signOut")}
             </Button>
-            <Button disabled={busy} variant="ghost" className="border-red-200 text-red-800" onClick={() => void deleteAccount()}>
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-              {t("phase1.deleteAccount")}
-            </Button>
+
+            <div className="border-t border-[var(--app-divider)] pt-4">
+              <Button disabled={busy} variant="ghost" className="w-full border-red-200 text-red-800" onClick={() => void deleteAccount()}>
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                {t("phase1.deleteAccount")}
+              </Button>
+            </div>
           </div>
         ) : null}
-      </section>
+      </div>
     </AppShell>
   );
 }

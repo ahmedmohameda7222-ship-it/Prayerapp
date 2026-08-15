@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
-
 
 function timeRegex() {
   return /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -29,7 +28,7 @@ export async function createRamadanDayAction(
   token: string,
   data: Record<string, string>
 ): Promise<{ success: boolean; error?: string }> {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
@@ -49,9 +48,10 @@ export async function createRamadanDayAction(
     note_en: data.noteEn?.trim() || null,
     note_de: data.noteDe?.trim() || null,
     note_tr: data.noteTr?.trim() || null,
+    published: true,
   };
 
-  const { data: result, error } = await client.from("ramadan_days").insert(db).select().single();
+  const { error } = await client.from("ramadan_days").insert(db).select().single();
   if (error) return { success: false, error: "admin.errors.saveFailed" };
 
   revalidatePath("/admin/ramadan");
@@ -65,7 +65,7 @@ export async function updateRamadanDayAction(
   id: string,
   data: Record<string, string>
 ): Promise<{ success: boolean; error?: string }> {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
@@ -85,6 +85,7 @@ export async function updateRamadanDayAction(
     note_en: data.noteEn?.trim() || null,
     note_de: data.noteDe?.trim() || null,
     note_tr: data.noteTr?.trim() || null,
+    published: true,
   };
 
   const { error } = await client.from("ramadan_days").update(db).eq("id", id);
@@ -97,7 +98,7 @@ export async function updateRamadanDayAction(
 }
 
 export async function deleteRamadanDayAction(token: string, id: string): Promise<{ success: boolean; error?: string }> {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 

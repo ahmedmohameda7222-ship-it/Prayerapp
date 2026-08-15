@@ -1,4 +1,13 @@
 /* Home contextual Jumuah card: image creates atmosphere; schedule remains the primary content. */
+.home-page-shell .home-section-jumuah {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.home-page-shell .home-section-events {
+  margin-top: 28px;
+}
+
 .home-page-shell .home-jumuah-card {
   min-height: 360px;
   background: #173f34;
@@ -131,6 +140,15 @@
 }
 
 @media (max-width: 520px) {
+  .home-page-shell .home-section-jumuah {
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+
+  .home-page-shell .home-section-events {
+    margin-top: 24px;
+  }
+
   .home-page-shell .home-jumuah-card {
     min-height: 0;
   }
@@ -165,6 +183,15 @@
 }
 
 @media (min-width: 1024px) {
+  .home-page-shell .home-section-jumuah {
+    margin-top: 28px;
+    margin-bottom: 28px;
+  }
+
+  .home-page-shell .home-section-events {
+    margin-top: 32px;
+  }
+
   .home-page-shell .home-jumuah-card {
     min-height: 380px;
   }

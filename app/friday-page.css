@@ -9,7 +9,7 @@
 
 .home-page-shell .friday-live-hero {
   position: relative;
-  min-height: 238px;
+  min-height: clamp(238px, 52vw, 420px);
   overflow: hidden;
   isolation: isolate;
   border: 1px solid var(--home-divider);
@@ -21,11 +21,12 @@
 .home-page-shell .friday-live-image {
   position: absolute;
   inset: 0;
-  background-image: url("/assets/home-jumuah-background.webp");
-  background-position: 64% center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  transform: scale(1.01);
+  background-image:
+    url("/assets/home-jumuah-background.webp"),
+    url("/assets/home-jumuah-background.webp");
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-size: contain, cover;
 }
 
 .home-page-shell .friday-live-scrim {
@@ -39,7 +40,7 @@
   position: relative;
   z-index: 1;
   display: flex;
-  min-height: 238px;
+  min-height: clamp(238px, 52vw, 420px);
   align-items: flex-end;
   padding: 22px 18px;
 }
@@ -333,11 +334,7 @@
 
   .home-page-shell .friday-live-hero,
   .home-page-shell .friday-live-content {
-    min-height: 224px;
-  }
-
-  .home-page-shell .friday-live-image {
-    background-position: 66% center;
+    min-height: clamp(224px, 64vw, 300px);
   }
 
   .home-page-shell .friday-live-content {
@@ -434,7 +431,7 @@
 
   .home-page-shell .friday-live-hero,
   .home-page-shell .friday-live-content {
-    min-height: 256px;
+    min-height: clamp(420px, 42vw, 520px);
   }
 
   .home-page-shell .friday-live-content {
@@ -501,10 +498,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-page-shell .friday-live-image {
-    transform: none;
-  }
-
   .home-page-shell .friday-service-row {
     transition: none;
   }

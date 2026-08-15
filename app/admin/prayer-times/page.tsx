@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { invalidateCachePrefix } from "@/lib/data/cache";
+import { addDaysIso, todayIso } from "@/lib/date-utils";
+import { getMissingPublishedPrayerDates } from "@/lib/prayer-coverage";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -47,6 +49,7 @@ export default function AdminPrayerTimesPage() {
   const { session } = useAdminAuth();
   const { t } = useTranslation();
   const [items, setItems] = useState<PrayerTime[]>([]);
+  const [itemsLoaded, setItemsLoaded] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({ ...emptyForm });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -54,8 +57,20 @@ export default function AdminPrayerTimesPage() {
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
   const accessToken = session?.access_token || "";
+  const nextWeekStart = addDaysIso(todayIso(), 1);
+  const nextWeekMissing = getMissingPublishedPrayerDates(items, nextWeekStart, 7).length > 0;
 
-  useEffect(() => { getPrayerTimes(true).then((data) => setItems(data)).catch(() => setError(t("common.dataLoadFailed"))); }, [t]);
+  useEffect(() => {
+    getPrayerTimes(true)
+      .then((data) => {
+        setItems(data);
+        setItemsLoaded(true);
+      })
+      .catch(() => {
+        setItemsLoaded(true);
+        setError(t("common.dataLoadFailed"));
+      });
+  }, [t]);
 
   function resetForm() {
     setForm({ ...emptyForm });
@@ -92,6 +107,7 @@ export default function AdminPrayerTimesPage() {
   const refreshItems = useCallback(async () => {
     invalidateCachePrefix("prayer_times");
     setItems(await getPrayerTimes(true));
+    setItemsLoaded(true);
   }, []);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -176,7 +192,7 @@ export default function AdminPrayerTimesPage() {
   return (
     <AdminShell titleKey="admin.prayerTimesManagement">
       <div className="grid gap-5">
-        <AdminWarningCard message={t("admin.missingNextWeek")} />
+        {itemsLoaded && nextWeekMissing ? <AdminWarningCard message={t("admin.missingNextWeek")} /> : null}
 
         {!hasSupabase ? <Card className="flex items-center gap-3 p-4 text-sm font-bold text-[var(--color-warning)]"><AlertTriangle className="h-5 w-5" aria-hidden="true" /> {t("admin.supabaseNotConfigured")}</Card> : null}
         {error ? <Card className="p-4 text-sm font-bold text-[var(--color-danger)]">{error}</Card> : null}

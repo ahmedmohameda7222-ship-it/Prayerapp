@@ -31,31 +31,31 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--color-cream)] p-4">
+    <main className="flex min-h-dvh items-center justify-center bg-[#f7f3ea] p-4 [padding-top:max(16px,env(safe-area-inset-top))] [padding-bottom:max(16px,env(safe-area-inset-bottom))]">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-[var(--color-emerald)] text-[var(--color-gold)]">
-            <Shield className="h-8 w-8" aria-hidden="true" />
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]">
+            <Shield className="h-6 w-6" aria-hidden="true" />
           </div>
-          <h1 className="font-brand text-3xl font-semibold text-[var(--color-emerald)]">Masjid El-Rahman</h1>
-          <p className="mt-2 text-sm font-bold text-[var(--color-muted)]">{t("admin.mosqueAdministration")}</p>
+          <h1 className="text-2xl font-semibold text-[var(--color-charcoal)]">Masjid El-Rahman</h1>
+          <p className="mt-1 text-sm font-medium text-[var(--color-muted)]">{t("admin.mosqueAdministration")}</p>
         </div>
 
         {!hasSupabase ? (
-          <div className="mb-5 rounded-2xl border border-[var(--color-warning)] bg-[var(--color-gold-soft)] p-4 text-sm font-bold text-[var(--color-warning)]">
-            <div className="mb-2 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+          <div className="mb-4 rounded-[14px] border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/8 p-4 text-sm text-[var(--color-warning)]">
+            <div className="mb-1.5 flex items-center gap-2 font-semibold">
+              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
               {t("admin.setupRequired")}
             </div>
-            <p className="font-normal">{t("admin.supabaseEnvMissing")}</p>
+            <p>{t("admin.supabaseEnvMissing")}</p>
           </div>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="card p-6">
-          <h2 className="mb-5 font-brand text-xl font-semibold text-[var(--color-emerald)]">{t("admin.signIn")}</h2>
+        <form onSubmit={handleSubmit} className="rounded-[18px] border border-[#e4ddd2] bg-[#fffdf8] p-5 shadow-none sm:p-6">
+          <h2 className="mb-5 text-xl font-semibold text-[var(--color-charcoal)]">{t("admin.signIn")}</h2>
           <div className="grid gap-4">
             <div>
-              <label htmlFor="email" className="mb-1 block text-sm font-bold text-[var(--color-emerald)]">{t("admin.email")}</label>
+              <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-[var(--color-charcoal)]">{t("admin.email")}</label>
               <input
                 id="email"
                 type="email"
@@ -63,12 +63,12 @@ export default function AdminLoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-4 py-3 text-sm font-bold text-[var(--color-charcoal)] outline-none focus:border-[var(--color-emerald)]"
+                className="min-h-12 w-full rounded-[12px] border border-[#e4ddd2] bg-white px-4 text-sm text-[var(--color-charcoal)] outline-none focus:border-[var(--color-emerald)]"
                 placeholder="admin@example.com"
               />
             </div>
             <div>
-              <label htmlFor="password" className="mb-1 block text-sm font-bold text-[var(--color-emerald)]">{t("admin.password")}</label>
+              <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-[var(--color-charcoal)]">{t("admin.password")}</label>
               <input
                 id="password"
                 type="password"
@@ -76,17 +76,17 @@ export default function AdminLoginPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-4 py-3 text-sm font-bold text-[var(--color-charcoal)] outline-none focus:border-[var(--color-emerald)]"
+                className="min-h-12 w-full rounded-[12px] border border-[#e4ddd2] bg-white px-4 text-sm text-[var(--color-charcoal)] outline-none focus:border-[var(--color-emerald)]"
                 placeholder="••••••••"
               />
             </div>
-            {error ? <p className="rounded-2xl bg-[var(--color-danger)]/10 p-3 text-sm font-bold text-[var(--color-danger)]">{error}</p> : null}
+            {error ? <p role="alert" className="rounded-[12px] bg-red-50 p-3 text-sm font-semibold text-red-800">{error}</p> : null}
             <button
               type="submit"
               disabled={submitting || authLoading}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--color-emerald)] text-sm font-bold text-[var(--color-card)] transition active:scale-[0.98] disabled:opacity-50"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-[12px] bg-[var(--color-emerald)] text-sm font-semibold text-white active:scale-[0.99] disabled:opacity-50"
             >
-              <LogIn className="h-5 w-5" aria-hidden="true" />
+              <LogIn className="h-4 w-4" aria-hidden="true" />
               {submitting ? t("admin.signingIn") : t("admin.signIn")}
             </button>
           </div>

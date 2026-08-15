@@ -73,6 +73,12 @@ function invalidatePrayerCaches(date?: string) {
   }
 }
 
+function selectedDate(row: unknown) {
+  if (!row || typeof row !== "object") return undefined;
+  const value = (row as Record<string, unknown>).date;
+  return typeof value === "string" ? value : undefined;
+}
+
 export async function getPrayerTimes(
   includeUnpublished = false,
   startDate?: string,
@@ -160,11 +166,12 @@ export async function updatePrayerTime(id: string, item: Partial<PrayerTime>): P
   const client = createClient();
   if (!client) throw new Error("Supabase is not configured");
   const { data: previous } = await client.from("prayer_times").select("date").eq("id", id).maybeSingle();
+  const previousDate = selectedDate(previous);
   const dbItem = mapToDb(item);
   const { data, error } = await client.from("prayer_times").update(dbItem as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update prayer time");
-  invalidatePrayerCaches(item.date || (previous?.date ? String(previous.date) : undefined));
-  if (previous?.date && item.date && previous.date !== item.date) invalidatePrayerCaches(String(previous.date));
+  invalidatePrayerCaches(item.date || previousDate);
+  if (previousDate && item.date && previousDate !== item.date) invalidatePrayerCaches(previousDate);
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -172,7 +179,8 @@ export async function deletePrayerTime(id: string): Promise<void> {
   const client = createClient();
   if (!client) throw new Error("Supabase is not configured");
   const { data: previous } = await client.from("prayer_times").select("date").eq("id", id).maybeSingle();
+  const previousDate = selectedDate(previous);
   const { error } = await client.from("prayer_times").delete().eq("id", id);
   if (error) throw new Error("Failed to delete prayer time");
-  invalidatePrayerCaches(previous?.date ? String(previous.date) : undefined);
+  invalidatePrayerCaches(previousDate);
 }

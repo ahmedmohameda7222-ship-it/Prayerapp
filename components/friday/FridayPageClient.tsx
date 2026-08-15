@@ -84,6 +84,10 @@ function clean(value: string | undefined) {
   return value?.trim() || "";
 }
 
+function mapsHref(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
 function formatDays(days: number, locale: Locale) {
   if (locale === "ar") {
     if (days === 1) return "يوم واحد";
@@ -201,7 +205,8 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
           <>
             <div className="friday-service-list" role="list">
               {localizedItems.map(({ item, language, note }, index) => {
-                const showOwnLocation = !hasSharedLocation && Boolean(clean(item.locationName) || clean(item.locationAddress));
+                const ownAddress = clean(item.locationAddress);
+                const showOwnLocation = !hasSharedLocation && Boolean(clean(item.locationName) || ownAddress);
                 const showOwnNote = Boolean(note) && note !== sharedNote;
                 const isNext = index === schedule.nextIndex;
 
@@ -239,10 +244,14 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
                             <dd>{clean(item.locationName)}</dd>
                           </div>
                         ) : null}
-                        {showOwnLocation && clean(item.locationAddress) ? (
+                        {showOwnLocation && ownAddress ? (
                           <div>
                             <dt>{copy.address}</dt>
-                            <dd>{clean(item.locationAddress)}</dd>
+                            <dd>
+                              <a href={mapsHref(ownAddress)} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                                {ownAddress}
+                              </a>
+                            </dd>
                           </div>
                         ) : null}
                       </dl>
@@ -266,7 +275,11 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
                   {sharedLocationAddress ? (
                     <div>
                       <dt>{copy.address}</dt>
-                      <dd>{sharedLocationAddress}</dd>
+                      <dd>
+                        <a href={mapsHref(sharedLocationAddress)} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                          {sharedLocationAddress}
+                        </a>
+                      </dd>
                     </div>
                   ) : null}
                 </dl>

@@ -4,8 +4,17 @@ import { previewPrayerTimes } from "./demo-data";
 import { CACHE_TTL, getCached, invalidateCache, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCache, clearPersistentCachePrefix } from "./persistent-public-cache";
 
-function filterPreviewPrayerTimes(includeUnpublished = false): PrayerTime[] {
-  return previewPrayerTimes.filter((item) => includeUnpublished || item.published);
+function filterPreviewPrayerTimes(
+  includeUnpublished = false,
+  startDate?: string,
+  endDate?: string,
+  limit?: number,
+): PrayerTime[] {
+  let rows = previewPrayerTimes.filter((item) => includeUnpublished || item.published);
+  if (startDate) rows = rows.filter((item) => item.date >= startDate);
+  if (endDate) rows = rows.filter((item) => item.date <= endDate);
+  if (limit) rows = rows.slice(0, limit);
+  return rows;
 }
 
 function mapFromDb(row: Record<string, unknown>): PrayerTime {
@@ -72,7 +81,7 @@ export async function getPrayerTimes(
   limit?: number,
 ): Promise<PrayerTime[]> {
   const client = createClient();
-  if (!client) return filterPreviewPrayerTimes(includeUnpublished);
+  if (!client) return filterPreviewPrayerTimes(includeUnpublished, startDate, endDate, limit);
 
   if (includeUnpublished) {
     let query = client
@@ -113,7 +122,7 @@ export async function getPrayerTimes(
 
 export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | undefined> {
   const client = createClient();
-  if (!client) return filterPreviewPrayerTimes().find((item) => item.date === date);
+  if (!client) return filterPreviewPrayerTimes(false, date, date, 1)[0];
   const key = `prayer_time_${date}`;
   return getCached(key, async () => {
     try {

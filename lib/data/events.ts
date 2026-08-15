@@ -1,13 +1,12 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Event } from "@/lib/types";
-import { previewEvents } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
 export async function getEvents(includeUnpublished = false): Promise<Event[]> {
   const client = createClient();
-  if (!client) return previewEvents.filter((item) => includeUnpublished || item.published !== false);
+  if (!client) return [];
   if (includeUnpublished) {
     const query = client.from("events").select("*").order("date", { ascending: true });
     const { data, error } = await query;

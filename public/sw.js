@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "deggendorf-prayer";
-const VERSION = "v15";
+const VERSION = "v16";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${VERSION}`;
 const IMAGE_CACHE = `${CACHE_PREFIX}-images-${VERSION}`;
@@ -62,8 +62,14 @@ function isStaticAsset(request) {
     ["font", "image", "script", "style"].includes(request.destination) ||
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/_next/image") ||
+    url.pathname.startsWith("/assets/") ||
     url.pathname === "/manifest.webmanifest"
   );
+}
+
+function isImmutableStaticAsset(request) {
+  const url = new URL(request.url);
+  return url.pathname.startsWith("/_next/static/");
 }
 
 function isNextPageRequest(request) {
@@ -110,6 +116,16 @@ function cacheTargetForUrl(url) {
     : { cacheName: STATIC_CACHE, maxEntries: 120 };
 }
 
+async function networkFirstAsset(request, target) {
+  try {
+    const response = await fetchWithTimeout(request, 3500);
+    await storeResponse(target.cacheName, request, response, target.maxEntries);
+    return response;
+  } catch {
+    return (await caches.match(request)) || Response.error();
+  }
+}
+
 self.addEventListener("message", (event) => {
   if (event.data?.type !== "CACHE_RESOURCES" || !Array.isArray(event.data.urls)) return;
 
@@ -127,9 +143,7 @@ self.addEventListener("message", (event) => {
     await Promise.allSettled(urls.map(async (value) => {
       const url = new URL(value, self.location.origin);
       const target = cacheTargetForUrl(url);
-      const cache = await caches.open(target.cacheName);
       const request = new Request(url.href, { credentials: "same-origin" });
-      if (await cache.match(request)) return;
       const response = await fetch(request);
       await storeResponse(target.cacheName, request, response, target.maxEntries);
     }));
@@ -160,14 +174,22 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (isStaticAsset(request)) {
-    event.respondWith((async () => {
-      const cached = await caches.match(request);
-      if (cached) return cached;
-      const response = await fetch(request);
-      const isImage = request.destination === "image" || url.pathname.startsWith("/_next/image");
-      await storeResponse(isImage ? IMAGE_CACHE : STATIC_CACHE, request, response, isImage ? 120 : 120);
-      return response;
-    })());
+    const target = cacheTargetForUrl(url);
+    if (isImmutableStaticAsset(request)) {
+      event.respondWith((async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        const response = await fetch(request);
+        await storeResponse(target.cacheName, request, response, target.maxEntries);
+        return response;
+      })());
+      return;
+    }
+
+    // Assets under /assets, optimized images and the manifest have stable URLs
+    // across deploys. Prefer the network so a new production deploy cannot be
+    // masked indefinitely by an older PWA cache; retain cache as offline fallback.
+    event.respondWith(networkFirstAsset(request, target));
     return;
   }
 

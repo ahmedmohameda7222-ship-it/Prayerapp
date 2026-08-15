@@ -10,6 +10,7 @@ import { getDonationCampaigns } from "@/lib/data/donations";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { todayIso, addDaysIso } from "@/lib/date-utils";
+import { getMissingPublishedPrayerDates } from "@/lib/prayer-coverage";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
@@ -17,7 +18,10 @@ export default function AdminDashboardPage() {
   const { t } = useTranslation();
   const { data, loading, error, reload } = useAsyncData(loadDashboard);
   const today = todayIso();
-  const nextWeekMissing = data ? !data.prayerTimes.some((item) => item.date >= today && item.date <= addDaysIso(today, 7) && item.published) : false;
+  const nextWeekStart = addDaysIso(today, 1);
+  const nextWeekMissing = data
+    ? getMissingPublishedPrayerDates(data.prayerTimes, nextWeekStart, 7).length > 0
+    : false;
 
   return (
     <AdminShell titleKey="admin.dashboard">

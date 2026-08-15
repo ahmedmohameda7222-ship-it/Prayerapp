@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
-
 
 function validateEvent(data: Record<string, string>): string[] {
   const errors: string[] = [];
@@ -24,7 +23,7 @@ export async function createEventAction(
   token: string,
   data: Record<string, string>
 ): Promise<{ success: boolean; error?: string }> {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
@@ -51,6 +50,7 @@ export async function createEventAction(
     location_de: data.locationDe?.trim() || null,
     location_tr: data.locationTr?.trim() || null,
     type: data.type.trim(),
+    published: true,
   };
 
   const { data: result, error } = await client.from("events").insert(db).select().single();
@@ -85,7 +85,7 @@ export async function updateEventAction(
   id: string,
   data: Record<string, string>
 ): Promise<{ success: boolean; error?: string }> {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
@@ -112,6 +112,7 @@ export async function updateEventAction(
     location_de: data.locationDe?.trim() || null,
     location_tr: data.locationTr?.trim() || null,
     type: data.type.trim(),
+    published: true,
   };
 
   const { error } = await client.from("events").update(db).eq("id", id);
@@ -124,7 +125,7 @@ export async function updateEventAction(
 }
 
 export async function deleteEventAction(token: string, id: string): Promise<{ success: boolean; error?: string }> {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 

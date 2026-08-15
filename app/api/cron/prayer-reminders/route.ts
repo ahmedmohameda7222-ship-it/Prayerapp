@@ -8,6 +8,8 @@ import { createServerClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
+
 const prayerNames = {
   fajr: { ar: "الفجر", en: "Fajr", de: "Fajr", tr: "Sabah" },
   dhuhr: { ar: "الظهر", en: "Dhuhr", de: "Dhuhr", tr: "Öğle" },
@@ -25,6 +27,7 @@ type PrayerScheduleRow = {
   asr: string;
   maghrib: string;
   isha: string;
+  note: string | null;
 };
 
 const reminderTitles: Record<Locale, string> = {
@@ -44,15 +47,29 @@ function reminderBody(locale: Locale, prayer: ReminderPrayer) {
   }[locale];
 }
 
-export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "Cron is not configured" }, { status: 503 });
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+async function isAuthorizedCron(
+  request: Request,
+  client: NonNullable<ReturnType<typeof createServerClient>>,
+) {
+  const configuredSecret = process.env.CRON_SECRET;
+  if (configuredSecret && request.headers.get("authorization") === `Bearer ${configuredSecret}`) {
+    return true;
   }
 
+  const databaseToken = request.headers.get("x-cron-token");
+  if (!databaseToken || databaseToken.length > 256) return false;
+  const { data, error } = await client.rpc("verify_prayer_reminder_cron_token", {
+    candidate: databaseToken,
+  });
+  return !error && data === true;
+}
+
+export async function GET(request: Request) {
   const client = createServerClient();
   if (!client) return NextResponse.json({ error: "Supabase is not configured" }, { status: 503 });
+  if (!(await isAuthorizedCron(request, client))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const now = new Date();
   const today = todayIso(now);
@@ -64,7 +81,7 @@ export async function GET(request: Request) {
       .eq("enabled", true),
     client
       .from("prayer_times")
-      .select("id, date, fajr, dhuhr, asr, maghrib, isha")
+      .select("id, date, fajr, dhuhr, asr, maghrib, isha, note")
       .eq("published", true)
       .gte("date", today)
       .lte("date", tomorrow),
@@ -91,7 +108,8 @@ export async function GET(request: Request) {
   }
 
   const targets = (subscriptions || []) as PushSubscriptionRecord[];
-  const prayerSchedules = (schedules || []) as PrayerScheduleRow[];
+  const prayerSchedules = ((schedules || []) as PrayerScheduleRow[])
+    .filter((schedule) => schedule.note !== QA_MOCK_MARKER);
   let due = 0;
   let sent = 0;
   let failed = 0;

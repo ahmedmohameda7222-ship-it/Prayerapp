@@ -54,7 +54,7 @@ export default function AdminJumuahPage() {
   const fillForm = useCallback((item: JumuahTime) => {
     setForm({
       date: item.date,
-      khutbahTime: item.khutbahTime,
+      khutbahTime: item.khutbahTime || "",
       prayerTime: item.prayerTime,
       locationName: item.locationName || "",
       locationAddress: item.locationAddress || "",
@@ -137,7 +137,7 @@ export default function AdminJumuahPage() {
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
             {[
               { key: "date", labelKey: "admin.date", type: "date" },
-              { key: "khutbahTime", labelKey: "friday.khutbahTime", type: "time" },
+              { key: "khutbahTime", labelKey: "friday.khutbahTime", type: "time", optional: true },
               { key: "prayerTime", labelKey: "friday.jumuahPrayer", type: "time" },
               { key: "locationName", labelKey: "admin.locationName", type: "text", optional: true },
               { key: "locationAddress", labelKey: "admin.locationAddress", type: "text", optional: true },

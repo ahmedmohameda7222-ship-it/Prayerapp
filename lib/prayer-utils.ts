@@ -1,5 +1,5 @@
 import type { PrayerName, PrayerTime } from "./types";
-import { addDaysIso, zonedDateTime } from "./date-utils";
+import { zonedDateTime } from "./date-utils";
 
 export const prayerOrder: PrayerName[] = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"];
 export const obligatoryPrayerOrder: Exclude<PrayerName, "sunrise">[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
@@ -24,11 +24,11 @@ export function getNextPrayerFromSchedule(times: PrayerTime[], now = new Date())
   return undefined;
 }
 
+// This helper intentionally does not invent tomorrow's Fajr from today's row.
+// Callers that need rollover behavior must pass a multi-day schedule to
+// getNextPrayerFromSchedule so tomorrow's actual published time is used.
 export function getNextPrayer(prayer: PrayerTime, now = new Date()) {
-  const next = getNextPrayerFromSchedule([prayer], now);
-  if (next) return next;
-  const target = zonedDateTime(addDaysIso(prayer.date, 1), prayer.fajr);
-  return { name: "fajr" as PrayerName, time: prayer.fajr, target, date: addDaysIso(prayer.date, 1) };
+  return getNextPrayerFromSchedule([prayer], now);
 }
 
 export function formatCountdown(ms: number) {

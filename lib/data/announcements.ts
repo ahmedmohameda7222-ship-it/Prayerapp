@@ -18,7 +18,7 @@ function mapFromDb(row: Record<string, unknown>): Announcement {
   };
 }
 
-function mapToDb(item: Partial<Announcement>): Record<string, unknown> {
+function mapToDb(item: Partial<Announcement>, includeCreatedAt = false): Record<string, unknown> {
   const db: Record<string, unknown> = {};
   if (item.id) db.id = item.id;
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "title", "title", { includeLegacy: true }));
@@ -28,7 +28,7 @@ function mapToDb(item: Partial<Announcement>): Record<string, unknown> {
   if (item.type) db.type = item.type;
   if (item.isUrgent !== undefined) db.is_urgent = item.isUrgent;
   if (item.published !== undefined) db.published = item.published;
-  db.created_at = new Date().toISOString();
+  if (includeCreatedAt) db.created_at = new Date().toISOString();
   return db;
 }
 
@@ -92,7 +92,7 @@ export async function getUrgentAnnouncements(): Promise<Announcement[]> {
 export async function createAnnouncement(item: Omit<Announcement, "id" | "createdAt">): Promise<Announcement> {
   const client = createClient();
   if (!client) throw new Error("Supabase is not configured");
-  const { data, error } = await client.from("announcements").insert(mapToDb(item) as never).select().single();
+  const { data, error } = await client.from("announcements").insert(mapToDb(item, true) as never).select().single();
   if (error || !data) throw new Error("Failed to create announcement");
   invalidateCachePrefix("announcements");
   clearPersistentCachePrefix("announcements");

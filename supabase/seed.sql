@@ -1,0 +1,4 @@
+-- Intentionally empty.
+-- Production content is managed through the connected Supabase project and the
+-- mosque Admin UI. Keeping this file present makes local `supabase db reset`
+-- deterministic without injecting preview or mock content.

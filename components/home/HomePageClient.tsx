@@ -13,7 +13,8 @@ import { BankTransferCard } from "@/components/donations/BankTransferCard";
 import { DonationCampaignCard } from "@/components/donations/DonationCampaignCard";
 import { PayPalCard } from "@/components/donations/PayPalCard";
 import { SmartNextActionCard } from "@/components/home/SmartNextActionCard";
-import { todayIso } from "@/lib/date-utils";
+import { addDaysIso, todayIso } from "@/lib/date-utils";
+import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { getSmartNextAction } from "@/lib/home-utils";
 import { getHomeJumuahSchedule } from "@/lib/home-jumuah";
 import { getNextPrayer, getNextPrayerFromSchedule, getPrayerForDate } from "@/lib/prayer-utils";
@@ -21,6 +22,7 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import type { Announcement, DonationCampaign, DonationSettings, Event, JumuahTime, PrayerTime } from "@/lib/types";
 
 const EMPTY_SCHEDULE: PrayerTime[] = [];
+const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 
 const HOME_EMPTY_COPY = {
   events: {
@@ -45,7 +47,6 @@ const HOME_EMPTY_COPY = {
 
 type HomePageClientProps = {
   initialPrayerTimes: PrayerTime[];
-  prayerPreview?: boolean;
   urgentAnnouncements: Announcement[];
   jumuahTimes: JumuahTime[];
   allowAnyFutureJumuah?: boolean;
@@ -57,7 +58,6 @@ type HomePageClientProps = {
 
 export function HomePageClient({
   initialPrayerTimes,
-  prayerPreview = false,
   urgentAnnouncements,
   jumuahTimes,
   allowAnyFutureJumuah = false,
@@ -68,11 +68,12 @@ export function HomePageClient({
 }: HomePageClientProps) {
   const { t, locale } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
-  const schedule = initialPrayerTimes || EMPTY_SCHEDULE;
+  const [schedule, setSchedule] = useState<PrayerTime[]>(initialPrayerTimes || EMPTY_SCHEDULE);
   const today = getPrayerForDate(schedule, todayIso(now));
+  const prayerPreview = today?.note === QA_MOCK_MARKER;
   const activePrayer = useMemo(() => {
     const next = getNextPrayerFromSchedule(schedule, now);
-    return next?.name || (today ? getNextPrayer(today, now).name : undefined);
+    return next?.name || (today ? getNextPrayer(today, now)?.name : undefined);
   }, [now, schedule, today]);
   const smartAction = useMemo(() => schedule.length ? getSmartNextAction(schedule, now) : undefined, [now, schedule]);
   const jumuahSchedule = useMemo(
@@ -83,6 +84,32 @@ export function HomePageClient({
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const refreshPrayerSchedule = async () => {
+      const currentToday = todayIso(new Date());
+      try {
+        const latest = await getPrayerTimes(false, addDaysIso(currentToday, -1), addDaysIso(currentToday, 30));
+        if (active) setSchedule(latest);
+      } catch {
+        // Keep the last verified schedule. The data layer only permits a very short stale fallback.
+      }
+    };
+    const onFocus = () => { void refreshPrayerSchedule(); };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void refreshPrayerSchedule();
+    };
+    const timer = window.setInterval(() => { void refreshPrayerSchedule(); }, 60_000);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   const hasBankDetails = Boolean(

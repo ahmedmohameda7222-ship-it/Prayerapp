@@ -8,24 +8,27 @@ import { sendAdminContentPush } from "@/lib/push/web-push";
 type JumuahPushRow = {
   id: string;
   date: string;
-  location_name: string;
+  location_name: string | null;
   published: boolean;
 };
 
 async function notifyPublishedJumuah(row: JumuahPushRow) {
   if (!row.published) return;
+  const location = row.location_name?.trim() || "Masjid El-Rahman";
   try {
     await sendAdminContentPush({
-      eventKey: `jumuah:${row.id}:published`,
+      // All services on the same Friday share one delivery key. Publishing a
+      // second or third service cannot create duplicate Friday notifications.
+      eventKey: `jumuah:${row.date}:published`,
       notificationType: "friday_announcement",
-      sourceId: row.id,
+      sourceId: row.date,
       url: "/friday",
       contentTitle: {
-        fallback: `${row.date} · ${row.location_name}`,
-        en: `Friday prayer on ${row.date} · ${row.location_name}`,
-        de: `Freitagsgebet am ${row.date} · ${row.location_name}`,
-        tr: `${row.date} Cuma namazı · ${row.location_name}`,
-        ar: `صلاة الجمعة ${row.date} · ${row.location_name}`,
+        fallback: `${row.date} · ${location}`,
+        en: `Friday prayer on ${row.date} · ${location}`,
+        de: `Freitagsgebet am ${row.date} · ${location}`,
+        tr: `${row.date} Cuma namazı · ${location}`,
+        ar: `صلاة الجمعة ${row.date} · ${location}`,
       },
     });
   } catch (error) {
@@ -40,7 +43,6 @@ function timeRegex() {
 function validateJumuah(data: Record<string, string>) {
   const errors: string[] = [];
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date || "")) errors.push("admin.errors.dateRequired");
-  if (!data.khutbahTime) errors.push("admin.errors.khutbahTimeRequired");
   if (!data.prayerTime) errors.push("admin.errors.prayerTimeRequired");
   if (!data.languageAr) errors.push("admin.errors.arabicLanguageRequired");
   if (data.locationName && data.locationName.length > 160) errors.push("admin.errors.invalidInput");
@@ -56,13 +58,11 @@ function validateJumuah(data: Record<string, string>) {
   return errors;
 }
 
-
-
 export async function createJumuahAction(
   token: string,
   data: Record<string, string>
 ) {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
     return { success: false, error: "admin.errors.supabaseNotConfigured" };
@@ -75,11 +75,11 @@ export async function createJumuahAction(
 
   const db = {
     date: data.date,
-    khutbah_time: data.khutbahTime,
+    khutbah_time: data.khutbahTime?.trim() || null,
     prayer_time: data.prayerTime,
-    location_name: data.locationName,
-    location_address: data.locationAddress,
-    khateeb_name: data.khateebName,
+    location_name: data.locationName?.trim() || "",
+    location_address: data.locationAddress?.trim() || "",
+    khateeb_name: data.khateebName?.trim() || null,
     language: data.languageAr,
     language_ar: data.languageAr,
     language_en: data.languageEn?.trim() || null,
@@ -111,7 +111,7 @@ export async function updateJumuahAction(
   id: string,
   data: Record<string, string>
 ) {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
     return { success: false, error: "admin.errors.supabaseNotConfigured" };
@@ -130,11 +130,11 @@ export async function updateJumuahAction(
 
   const db = {
     date: data.date,
-    khutbah_time: data.khutbahTime,
+    khutbah_time: data.khutbahTime?.trim() || null,
     prayer_time: data.prayerTime,
-    location_name: data.locationName,
-    location_address: data.locationAddress,
-    khateeb_name: data.khateebName,
+    location_name: data.locationName?.trim() || "",
+    location_address: data.locationAddress?.trim() || "",
+    khateeb_name: data.khateebName?.trim() || null,
     language: data.languageAr,
     language_ar: data.languageAr,
     language_en: data.languageEn?.trim() || null,
@@ -162,7 +162,7 @@ export async function updateJumuahAction(
 }
 
 export async function deleteJumuahAction(token: string, id: string) {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
     return { success: false, error: "admin.errors.supabaseNotConfigured" };
@@ -180,7 +180,7 @@ export async function deleteJumuahAction(token: string, id: string) {
 }
 
 export async function togglePublishJumuahAction(token: string, id: string, published: boolean) {
-  const email = await requireAllowedAdmin(token);
+  await requireAllowedAdmin(token);
   const client = createServerClient();
   if (!client) {
     return { success: false, error: "admin.errors.supabaseNotConfigured" };
@@ -193,7 +193,6 @@ export async function togglePublishJumuahAction(token: string, id: string, publi
 
   if (published) await notifyPublishedJumuah(result as JumuahPushRow);
 
-  const verb = published ? "published" : "unpublished";
   revalidatePath("/admin/jumuah");
   revalidatePath("/friday");
   revalidatePath("/");

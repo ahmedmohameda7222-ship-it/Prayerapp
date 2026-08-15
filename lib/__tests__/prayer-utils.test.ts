@@ -65,8 +65,22 @@ describe("prayer-utils", () => {
   it("getNextPrayer returns the next obligatory prayer after now", () => {
     const now = new Date("2026-06-24T12:00:00+02:00");
     const next = getNextPrayer(samplePrayer, now);
-    expect(next.name).toBe("dhuhr");
-    expect(next.time).toBe("13:13");
+    expect(next?.name).toBe("dhuhr");
+    expect(next?.time).toBe("13:13");
+  });
+
+  it("does not fabricate tomorrow Fajr from today's row after Isha", () => {
+    const afterIsha = new Date("2026-06-24T23:30:00+02:00");
+    expect(getNextPrayer(samplePrayer, afterIsha)).toBeUndefined();
+  });
+
+  it("uses tomorrow's actual published Fajr when a multi-day schedule is available", () => {
+    const tomorrow = { ...samplePrayer, id: "pt-2", date: "2026-06-25", fajr: "03:21" };
+    const afterIsha = new Date("2026-06-24T23:30:00+02:00");
+    const next = getNextPrayerFromSchedule([samplePrayer, tomorrow], afterIsha);
+    expect(next?.name).toBe("fajr");
+    expect(next?.time).toBe("03:21");
+    expect(next?.date).toBe("2026-06-25");
   });
 
   it("does not treat Sunrise as the next prayer after Fajr", () => {

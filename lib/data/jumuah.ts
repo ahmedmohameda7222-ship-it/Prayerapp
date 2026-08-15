@@ -8,7 +8,7 @@ function mapFromDb(row: Record<string, unknown>): JumuahTime {
   return {
     id: String(row.id),
     date: String(row.date),
-    khutbahTime: String(row.khutbah_time),
+    khutbahTime: row.khutbah_time ? String(row.khutbah_time) : "",
     prayerTime: String(row.prayer_time),
     locationName: row.location_name ? String(row.location_name) : undefined,
     locationAddress: row.location_address ? String(row.location_address) : undefined,
@@ -25,10 +25,10 @@ function mapToDb(item: Partial<JumuahTime>): Record<string, unknown> {
   const db: Record<string, unknown> = {};
   if (item.id) db.id = item.id;
   if (item.date) db.date = item.date;
-  if (item.khutbahTime) db.khutbah_time = item.khutbahTime;
+  if (item.khutbahTime !== undefined) db.khutbah_time = item.khutbahTime?.trim() || null;
   if (item.prayerTime) db.prayer_time = item.prayerTime;
-  db.location_name = item.locationName || null;
-  db.location_address = item.locationAddress || null;
+  db.location_name = item.locationName || "";
+  db.location_address = item.locationAddress || "";
   db.khateeb_name = item.khateebName || null;
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "language", "language", { includeLegacy: true }));
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "notes", "notes", { includeLegacy: true }));
@@ -61,7 +61,7 @@ export async function getJumuahTimes(includeUnpublished = false): Promise<Jumuah
       const { data, error } = await query;
       if (error || !data) throw new Error("Unable to load Jumu'ah times");
       const result = data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
-      saveToPersistentCache(key, result, CACHE_TTL.jumuah, 3 * 24 * 60 * 60 * 1000);
+      saveToPersistentCache(key, result, CACHE_TTL.jumuah, 30 * 60_000);
       return result;
     } catch (error) {
       const stale = loadFromPersistentCacheStale<JumuahTime[]>(key);

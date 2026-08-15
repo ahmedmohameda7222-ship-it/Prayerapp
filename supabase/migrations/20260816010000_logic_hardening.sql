@@ -14,21 +14,21 @@ alter table public.jumuah_times alter column khateeb_name drop not null;
 -- The database is the final line of defence for prayer time correctness.
 alter table public.prayer_times drop constraint if exists prayer_times_time_format;
 alter table public.prayer_times add constraint prayer_times_time_format check (
-  fajr ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$' and
-  sunrise ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$' and
-  dhuhr ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$' and
-  asr ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$' and
-  maghrib ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$' and
-  isha ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'
+  fajr ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' and
+  sunrise ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' and
+  dhuhr ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' and
+  asr ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' and
+  maghrib ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' and
+  isha ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'
 );
 
 alter table public.prayer_times drop constraint if exists prayer_times_iqama_time_format;
 alter table public.prayer_times add constraint prayer_times_iqama_time_format check (
-  (fajr_iqama is null or fajr_iqama ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$') and
-  (dhuhr_iqama is null or dhuhr_iqama ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$') and
-  (asr_iqama is null or asr_iqama ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$') and
-  (maghrib_iqama is null or maghrib_iqama ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$') and
-  (isha_iqama is null or isha_iqama ~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$')
+  (fajr_iqama is null or fajr_iqama ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$') and
+  (dhuhr_iqama is null or dhuhr_iqama ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$') and
+  (asr_iqama is null or asr_iqama ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$') and
+  (maghrib_iqama is null or maghrib_iqama ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$') and
+  (isha_iqama is null or isha_iqama ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')
 );
 
 -- Restrict Data API privileges to the minimum required surface. RLS remains in

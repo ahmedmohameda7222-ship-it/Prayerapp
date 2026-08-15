@@ -15,6 +15,7 @@ export default function MosquePage() {
   const { t, locale } = useTranslation();
   const { data: settings, error, loading, reload } = useAsyncData(getMosqueSettings);
   const mosqueName = settings ? getLocalizedField(settings, "mosqueName", locale) || settings.mosqueName : "";
+  const hasMapLink = Boolean(settings?.googleMapsLink?.startsWith("https://"));
 
   return (
     <AppShell>
@@ -27,10 +28,18 @@ export default function MosquePage() {
             <div className="mosque-profile-identity">
               <h2 className="mosque-profile-name">{mosqueName}</h2>
             </div>
-            <div className="mosque-contact-row">
-              <MapPin className="h-5 w-5" aria-hidden="true" />
-              <span>{settings.address}</span>
-            </div>
+            {hasMapLink ? (
+              <a className="mosque-contact-row" href={settings.googleMapsLink} target="_blank" rel="noreferrer">
+                <MapPin className="h-5 w-5" aria-hidden="true" />
+                <span>{settings.address}</span>
+                <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
+              </a>
+            ) : (
+              <div className="mosque-contact-row">
+                <MapPin className="h-5 w-5" aria-hidden="true" />
+                <span>{settings.address}</span>
+              </div>
+            )}
             {settings.phone ? (
               <a className="mosque-contact-row" href={`tel:${settings.phone}`}>
                 <Phone className="h-5 w-5" aria-hidden="true" />
@@ -45,7 +54,7 @@ export default function MosquePage() {
                 <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
               </a>
             ) : null}
-            {settings.googleMapsLink.startsWith("https://") ? (
+            {hasMapLink ? (
               <a className="mosque-action-row" href={settings.googleMapsLink} target="_blank" rel="noreferrer">
                 <MapPin className="h-5 w-5" aria-hidden="true" />
                 <span>{t("mosque.googleMaps")}</span>

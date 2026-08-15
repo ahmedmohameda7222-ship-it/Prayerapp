@@ -3,6 +3,8 @@ import type { PrayerTime } from "@/lib/types";
 import { CACHE_TTL, getCached, invalidateCache, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCache, clearPersistentCachePrefix } from "./persistent-public-cache";
 
+const PRAYER_STALE_FALLBACK_MS = 5 * 60_000;
+
 function mapFromDb(row: Record<string, unknown>): PrayerTime {
   const maghribIqama = row.maghrib_iqama ? String(row.maghrib_iqama) : undefined;
   return {
@@ -60,6 +62,17 @@ function mapToDb(item: Partial<PrayerTime>): Record<string, unknown> {
   return db;
 }
 
+function invalidatePrayerCaches(date?: string) {
+  invalidateCachePrefix("prayer_times");
+  invalidateCachePrefix("prayer_time_");
+  clearPersistentCachePrefix("prayer_times");
+  clearPersistentCachePrefix("prayer_time_");
+  if (date) {
+    invalidateCache(`prayer_time_${date}`);
+    clearPersistentCache(`prayer_time_${date}`);
+  }
+}
+
 export async function getPrayerTimes(
   includeUnpublished = false,
   startDate?: string,
@@ -96,7 +109,7 @@ export async function getPrayerTimes(
       const { data, error } = await query;
       if (error || !data) throw new Error("Unable to load prayer times");
       const result = data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
-      saveToPersistentCache(key, result, CACHE_TTL.prayerTimes, 7 * 24 * 60 * 60 * 1000);
+      saveToPersistentCache(key, result, CACHE_TTL.prayerTimes, PRAYER_STALE_FALLBACK_MS);
       return result;
     } catch (error) {
       const stale = loadFromPersistentCacheStale<PrayerTime[]>(key);
@@ -123,7 +136,7 @@ export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | un
         throw new Error("Unable to load prayer time");
       }
       const result = mapFromDb(data as Record<string, unknown>);
-      saveToPersistentCache(key, result, CACHE_TTL.prayerTimes, 7 * 24 * 60 * 60 * 1000);
+      saveToPersistentCache(key, result, CACHE_TTL.prayerTimes, PRAYER_STALE_FALLBACK_MS);
       return result;
     } catch (error) {
       const stale = loadFromPersistentCacheStale<PrayerTime>(key);
@@ -139,29 +152,27 @@ export async function createPrayerTime(item: Omit<PrayerTime, "id">): Promise<Pr
   const dbItem = mapToDb(item);
   const { data, error } = await client.from("prayer_times").insert(dbItem as never).select().single();
   if (error || !data) throw new Error("Failed to create prayer time");
-  invalidateCachePrefix("prayer_times");
-  invalidateCache(`prayer_time_${item.date}`);
-  clearPersistentCachePrefix("prayer_times");
+  invalidatePrayerCaches(item.date);
   return mapFromDb(data as Record<string, unknown>);
 }
 
 export async function updatePrayerTime(id: string, item: Partial<PrayerTime>): Promise<PrayerTime> {
   const client = createClient();
   if (!client) throw new Error("Supabase is not configured");
+  const { data: previous } = await client.from("prayer_times").select("date").eq("id", id).maybeSingle();
   const dbItem = mapToDb(item);
   const { data, error } = await client.from("prayer_times").update(dbItem as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update prayer time");
-  invalidateCachePrefix("prayer_times");
-  if (item.date) invalidateCache(`prayer_time_${item.date}`);
-  clearPersistentCachePrefix("prayer_times");
+  invalidatePrayerCaches(item.date || (previous?.date ? String(previous.date) : undefined));
+  if (previous?.date && item.date && previous.date !== item.date) invalidatePrayerCaches(String(previous.date));
   return mapFromDb(data as Record<string, unknown>);
 }
 
 export async function deletePrayerTime(id: string): Promise<void> {
   const client = createClient();
   if (!client) throw new Error("Supabase is not configured");
+  const { data: previous } = await client.from("prayer_times").select("date").eq("id", id).maybeSingle();
   const { error } = await client.from("prayer_times").delete().eq("id", id);
   if (error) throw new Error("Failed to delete prayer time");
-  invalidateCachePrefix("prayer_times");
-  clearPersistentCachePrefix("prayer_times");
+  invalidatePrayerCaches(previous?.date ? String(previous.date) : undefined);
 }

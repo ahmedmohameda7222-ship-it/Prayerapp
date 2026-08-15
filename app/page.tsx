@@ -7,11 +7,13 @@ import { getEvents } from "@/lib/data/events";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { todayIso, addDaysIso } from "@/lib/date-utils";
 import { getFridayPreviewMockData } from "@/lib/friday-preview-mock";
+import { getPrayerPreviewMockData } from "@/lib/prayer-preview-mock";
 import { HomePageClient } from "@/components/home/HomePageClient";
 
 export default async function HomePage() {
   const initialNow = new Date().toISOString();
-  const today = todayIso(new Date(initialNow));
+  const initialDate = new Date(initialNow);
+  const today = todayIso(initialDate);
   const startDate = addDaysIso(today, -1);
   const endDate = addDaysIso(today, 30);
   const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult] = await Promise.allSettled([
@@ -22,12 +24,16 @@ export default async function HomePage() {
     getDonationSettings(),
     getDonationCampaigns(),
   ]);
-  const prayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
+  const realPrayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
+  const prayerPreview = prayerTimesResult.status === "fulfilled" && realPrayerTimes.length === 0;
+  const prayerTimes = prayerPreview
+    ? getPrayerPreviewMockData(startDate, endDate, initialDate)
+    : realPrayerTimes;
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
   const realJumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
   const jumuahPreview = jumuahTimesResult.status === "fulfilled" && realJumuahTimes.length === 0;
   const jumuahTimes = jumuahPreview
-    ? getFridayPreviewMockData(new Date(initialNow))
+    ? getFridayPreviewMockData(initialDate)
     : realJumuahTimes;
   const events = eventsResult.status === "fulfilled"
     ? eventsResult.value
@@ -42,6 +48,7 @@ export default async function HomePage() {
       <AppHeader />
       <HomePageClient
         initialPrayerTimes={prayerTimes}
+        prayerPreview={prayerPreview}
         urgentAnnouncements={urgentAnnouncements}
         jumuahTimes={jumuahTimes}
         jumuahPreview={jumuahPreview}

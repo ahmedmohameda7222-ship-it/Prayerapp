@@ -5,7 +5,7 @@ import { PrayerTimesBrowser } from "@/components/prayer/PrayerTimesBrowser";
 export default function TimesPage() {
   return (
     <AppShell>
-      <PageHeader titleKey="times.title" arch />
+      <PageHeader titleKey="times.title" arch backHref={null} />
       <PrayerTimesBrowser />
     </AppShell>
   );

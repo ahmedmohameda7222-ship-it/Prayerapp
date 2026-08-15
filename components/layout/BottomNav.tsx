@@ -79,12 +79,12 @@ export function BottomNav() {
   const router = useRouter();
   const { t, locale } = useTranslation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [runtimePlatform, setRuntimePlatform] = useState<RuntimePlatform>("other");
   const [pendingSelection, setPendingSelection] = useState<{ fromPathname: string; index: number } | null>(null);
   const [dragPosition, setDragPosition] = useState<number | null>(null);
   const [dragCandidateIndex, setDragCandidateIndex] = useState<number | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const runtimePlatformRef = useRef<RuntimePlatform>("other");
   const dragStateRef = useRef<DragState | null>(null);
   const suppressNextClickRef = useRef(false);
   const suppressClickTimerRef = useRef<number | null>(null);
@@ -102,7 +102,7 @@ export function BottomNav() {
 
   useEffect(() => {
     const detected = detectRuntimePlatform();
-    setRuntimePlatform(detected);
+    runtimePlatformRef.current = detected;
     document.documentElement.dataset.platform = detected;
     navRef.current?.classList.remove("bottom-nav-ios", "bottom-nav-android", "bottom-nav-other");
     navRef.current?.classList.add(`bottom-nav-${detected}`);
@@ -120,10 +120,6 @@ export function BottomNav() {
       delete document.documentElement.dataset.desktopSidebar;
     };
   }, [sidebarCollapsed]);
-
-  useEffect(() => {
-    setPendingSelection(null);
-  }, [pathname]);
 
   useEffect(() => () => {
     if (suppressClickTimerRef.current !== null) {
@@ -154,7 +150,7 @@ export function BottomNav() {
   const ToggleIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose;
 
   function isIosMobileDragEnabled() {
-    return runtimePlatform === "ios" && window.matchMedia("(max-width: 1023px)").matches;
+    return runtimePlatformRef.current === "ios" && window.matchMedia("(max-width: 1023px)").matches;
   }
 
   function physicalToLogicalIndex(physicalIndex: number) {

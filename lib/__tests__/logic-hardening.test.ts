@@ -101,7 +101,7 @@ describe("logic hardening", () => {
   });
 
   it("aligns nullable fields, time checks, and data-api grants in the database migration", () => {
-    const migration = source("supabase/migrations/20260816010000_logic_hardening.sql");
+    const migration = source("supabase/migrations/20260815225756_logic_hardening.sql");
     expect(migration).toContain("events alter column end_time drop not null");
     expect(migration).toContain("ramadan_days alter column taraweeh drop not null");
     expect(migration).toContain("jumuah_times alter column khutbah_time drop not null");

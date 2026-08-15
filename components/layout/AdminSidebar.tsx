@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, BookOpen, CalendarDays, ChevronDown, Clock, HandHeart, LayoutDashboard, LogOut, Settings } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, Clock, HandHeart, LayoutDashboard, LogOut, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
@@ -13,7 +13,6 @@ const items = [
   { href: "/admin/jumuah", labelKey: "admin.jumuah", icon: MosqueIcon },
   { href: "/admin/announcements", labelKey: "admin.announcements", icon: Bell },
   { href: "/admin/donations", labelKey: "admin.donations", icon: HandHeart },
-  { href: "/admin/azkar", labelKey: "admin.azkar", icon: BookOpen },
   { href: "/admin/events", labelKey: "admin.events", icon: CalendarDays },
   { href: "/admin/ramadan", labelKey: "admin.ramadan", icon: CalendarDays },
   { href: "/admin/settings", labelKey: "admin.settings", icon: Settings },

@@ -6,7 +6,6 @@ import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { addDaysIso, addMonthsIso, formatDateRange, monthBoundsIso, startOfWeekIso, todayIso } from "@/lib/date-utils";
 import { getPrayerForDate } from "@/lib/prayer-utils";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
-import { Card } from "@/components/ui/Card";
 import { DataError, DataLoading } from "@/components/ui/DataState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -26,7 +25,6 @@ export function PrayerTimesBrowser() {
   );
   const [tab, setTab] = useState<RangeTab>("week");
   const [cursor, setCursor] = useState(today);
-  const actualToday = today;
   const effectivePrayerTimes = prayerTimes || [];
 
   const tabs = useMemo(
@@ -66,28 +64,35 @@ export function PrayerTimesBrowser() {
   const selected = getPrayerForDate(effectivePrayerTimes, cursor);
 
   return (
-    <div className="grid gap-5">
-      <SegmentedControl options={tabs} value={tab} onChange={(value) => setTab(value as RangeTab)} />
-      <Card className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm font-bold text-[var(--color-emerald)]">
-          <MapPin className="h-5 w-5 text-[var(--color-gold-dark)]" />
-          {t("times.location")}
+    <div className="prayer-browser">
+      <div className="prayer-range-control">
+        <SegmentedControl options={tabs} value={tab} onChange={(value) => setTab(value as RangeTab)} />
+      </div>
+
+      <section className="prayer-range-meta" aria-label={t("times.location")}>
+        <div className="prayer-range-location">
+          <MapPin className="h-4 w-4" aria-hidden="true" />
+          <span>{t("times.location")}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
-          <button type="button" onClick={() => moveRange(-1)} aria-label={t("times.previousRange")} className="grid h-9 w-9 place-items-center rounded-full border border-[var(--color-border)]">
-            <ChevronLeft className="h-4 w-4" />
+        <div className="prayer-range-nav">
+          <button type="button" onClick={() => moveRange(-1)} aria-label={t("times.previousRange")}>
+            <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
           </button>
-          <CalendarDays className="h-4 w-4" />
-          <span>{formatDateRange(range.start, range.end, locale)}</span>
-          <button type="button" onClick={() => moveRange(1)} aria-label={t("times.nextRange")} className="grid h-9 w-9 place-items-center rounded-full border border-[var(--color-border)]">
-            <ChevronRight className="h-4 w-4" />
+          <div className="prayer-range-label">
+            <CalendarDays className="me-1 inline h-4 w-4" aria-hidden="true" />
+            <span>{formatDateRange(range.start, range.end, locale)}</span>
+          </div>
+          <button type="button" onClick={() => moveRange(1)} aria-label={t("times.nextRange")}>
+            <ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
           </button>
         </div>
-      </Card>
+      </section>
+
       {tab === "today" && selected ? <PrayerTimesCard prayer={selected} /> : null}
-      {tab !== "today" && visibleTimes.length ? <WeeklyPrayerTable times={visibleTimes} selectedDate={actualToday} /> : null}
+      {tab !== "today" && visibleTimes.length ? <WeeklyPrayerTable times={visibleTimes} selectedDate={today} /> : null}
       {(tab === "today" ? !selected : visibleTimes.length === 0) ? <EmptyState message={t("prayer.notPublished")} /> : null}
-      <p className="rounded-2xl bg-[var(--color-emerald-soft)] p-4 text-center text-sm font-bold text-[var(--color-emerald)]">
+
+      <p className="rounded-[14px] bg-[var(--app-brand-soft)] p-3 text-center text-xs font-semibold text-[var(--app-brand-strong)]">
         {t("prayer.publishedBy")}
       </p>
     </div>

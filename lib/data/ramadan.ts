@@ -22,7 +22,7 @@ export async function getRamadanDays(includeUnpublished = false): Promise<Ramada
         fajr: String(record.fajr),
         maghrib: String(record.maghrib),
         iftar: String(record.iftar),
-        taraweeh: String(record.taraweeh),
+        taraweeh: record.taraweeh ? String(record.taraweeh) : "",
         note: readDbString(record, "note") || undefined,
         published: record.published !== false,
         ...localizedFieldsFromDb(record, "note", "note"),
@@ -41,8 +41,9 @@ export async function createRamadanDay(item: Omit<RamadanDay, "id">): Promise<Ra
     fajr: item.fajr,
     maghrib: item.maghrib,
     iftar: item.iftar,
-    taraweeh: item.taraweeh,
+    taraweeh: item.taraweeh || null,
     note: item.noteAr || item.note,
+    published: item.published !== false,
     ...localizedFieldsToDb(item as unknown as Record<string, unknown>, "note", "note", { includeLegacy: true }),
   };
   const { data, error } = await client.from("ramadan_days").insert(db as never).select().single();
@@ -61,7 +62,8 @@ export async function updateRamadanDay(id: string, item: Partial<RamadanDay>): P
   if (item.fajr) db.fajr = item.fajr;
   if (item.maghrib) db.maghrib = item.maghrib;
   if (item.iftar) db.iftar = item.iftar;
-  if (item.taraweeh) db.taraweeh = item.taraweeh;
+  if (item.taraweeh !== undefined) db.taraweeh = item.taraweeh || null;
+  if (item.published !== undefined) db.published = item.published;
   Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "note", "note", { includeLegacy: true }));
   if (item.note !== undefined) db.note = item.noteAr || item.note;
   const { data, error } = await client.from("ramadan_days").update(db as never).eq("id", id).select().single();

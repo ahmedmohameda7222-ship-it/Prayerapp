@@ -27,30 +27,33 @@ export default async function DonationsPage() {
 
   return (
     <AppShell>
-      <PageHeader titleKey="donations.title" />
-      <div className="grid gap-5">
-        <HeroCard
-          src="/assets/hero-donations-charity.png"
-          desktopSrc="/assets/hero-donations-charity-desktop.png"
-          alt={t("donations.heroAlt")}
-        >
-          <h2 className="font-brand text-4xl font-semibold">{t("donations.supportMasjid")}</h2>
-          <p className="mt-3 max-w-sm text-base leading-7 text-white/86">{t("donations.supportMasjidDesc")}</p>
-        </HeroCard>
-        <section>
-          <SectionTitle>{t("donations.activeCampaigns")}</SectionTitle>
-          <div className="grid gap-3 lg:grid-cols-2">
-            {donationCampaigns.map((campaign) => (
-              <DonationCampaignCard key={campaign.id} campaign={campaign} />
-            ))}
-            {!donationCampaigns.length ? <EmptyState message={t("donations.noCampaigns")} /> : null}
-          </div>
-        </section>
-        {settings ? <BankTransferCard settings={settings} /> : null}
-        <section>
-          <SectionTitle>{t("donations.transparency")}</SectionTitle>
-          <TransparencyCard report={donationReport} />
-        </section>
+      <div className="donations-screen">
+        <PageHeader titleKey="donations.title" backHref="/more" />
+        <div className="grid gap-6">
+          <HeroCard
+            src="/assets/hero-donations-charity.png"
+            desktopSrc="/assets/hero-donations-charity-desktop.png"
+            alt={t("donations.heroAlt")}
+            className="donation-hero"
+          >
+            <h2 className="font-semibold">{t("donations.supportMasjid")}</h2>
+            <p className="mt-3 max-w-sm text-base leading-7">{t("donations.supportMasjidDesc")}</p>
+          </HeroCard>
+          <section>
+            <SectionTitle>{t("donations.activeCampaigns")}</SectionTitle>
+            <div className="grid gap-3 lg:grid-cols-2">
+              {donationCampaigns.map((campaign) => (
+                <DonationCampaignCard key={campaign.id} campaign={campaign} />
+              ))}
+              {!donationCampaigns.length ? <EmptyState message={t("donations.noCampaigns")} /> : null}
+            </div>
+          </section>
+          {settings ? <BankTransferCard settings={settings} /> : null}
+          <section>
+            <SectionTitle>{t("donations.transparency")}</SectionTitle>
+            <TransparencyCard report={donationReport} />
+          </section>
+        </div>
       </div>
     </AppShell>
   );

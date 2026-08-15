@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -87,55 +88,59 @@ export function AuthForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <section className="mx-auto max-w-md rounded-[24px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[var(--shadow-card)] sm:p-6">
-      <h1 className="font-brand text-2xl font-semibold text-[var(--color-emerald)]">{title}</h1>
-      <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{t("phase1.accountSubtitle")}</p>
-      <form onSubmit={submit} className="mt-5 grid gap-4">
-        {mode !== "reset" ? (
-          <label className="grid gap-1.5 text-sm font-bold text-[var(--color-emerald)]">
-            {t("phase1.email")}
-            <input
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="min-h-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-4 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold-dark)]"
-            />
-          </label>
-        ) : null}
-        {mode !== "forgot" ? (
-          <label className="grid gap-1.5 text-sm font-bold text-[var(--color-emerald)]">
-            {mode === "reset" ? t("phase1.newPassword") : t("phase1.password")}
-            <input
-              type="password"
-              autoComplete={mode === "register" || mode === "reset" ? "new-password" : "current-password"}
-              minLength={8}
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="min-h-12 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-4 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold-dark)]"
-            />
-          </label>
-        ) : null}
-        {error ? <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-800">{error}</p> : null}
-        {message ? <p role="status" className="rounded-2xl bg-[var(--color-emerald-soft)] p-3 text-sm font-bold text-[var(--color-emerald)]">{message}</p> : null}
-        <Button type="submit" disabled={busy} className="w-full">
-          {mode === "forgot" ? t("phase1.sendReset") : title}
-        </Button>
-      </form>
-      <div className="mt-5 grid gap-2 text-center text-sm font-bold text-[var(--color-emerald)]">
-        {mode === "sign-in" ? (
-          <>
-            <Link href={`/account/register?next=${encodeURIComponent(next)}`}>{t("phase1.createAccount")}</Link>
-            <Link href={`/account/forgot-password?next=${encodeURIComponent(next)}`}>{t("phase1.forgotPassword")}</Link>
-          </>
-        ) : null}
-        {mode === "register" || mode === "forgot" ? (
-          <Link href={`/account/sign-in?next=${encodeURIComponent(next)}`}>{t("phase1.signIn")}</Link>
-        ) : null}
-        <Link href="/">Masjid El-Rahman</Link>
-      </div>
-    </section>
+    <div className="auth-screen">
+      <Link href="/account" aria-label={t("phase1.account")} className="mb-4 grid h-11 w-11 place-items-center rounded-full text-[var(--app-brand)]">
+        <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
+      </Link>
+      <section className="auth-surface px-0 py-2 sm:px-2">
+        <h1>{title}</h1>
+        <p className="mt-2 text-sm leading-6">{t("phase1.accountSubtitle")}</p>
+        <form onSubmit={submit} className="mt-6 grid gap-4">
+          {mode !== "reset" ? (
+            <label className="grid gap-1.5 text-sm font-semibold text-[var(--app-text)]">
+              {t("phase1.email")}
+              <input
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="border border-[var(--app-divider)] px-4 text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+              />
+            </label>
+          ) : null}
+          {mode !== "forgot" ? (
+            <label className="grid gap-1.5 text-sm font-semibold text-[var(--app-text)]">
+              {mode === "reset" ? t("phase1.newPassword") : t("phase1.password")}
+              <input
+                type="password"
+                autoComplete={mode === "register" || mode === "reset" ? "new-password" : "current-password"}
+                minLength={8}
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="border border-[var(--app-divider)] px-4 text-[var(--app-text)] outline-none focus:border-[var(--app-brand)]"
+              />
+            </label>
+          ) : null}
+          {error ? <p role="alert" className="rounded-[14px] bg-red-50 p-3 text-sm font-semibold text-red-800">{error}</p> : null}
+          {message ? <p role="status" className="rounded-[14px] bg-[var(--app-brand-soft)] p-3 text-sm font-semibold text-[var(--app-brand-strong)]">{message}</p> : null}
+          <Button type="submit" disabled={busy} className="min-h-12 w-full">
+            {mode === "forgot" ? t("phase1.sendReset") : title}
+          </Button>
+        </form>
+        <div className="mt-6 grid gap-3 text-center text-sm font-semibold text-[var(--app-brand)]">
+          {mode === "sign-in" ? (
+            <>
+              <Link href={`/account/register?next=${encodeURIComponent(next)}`}>{t("phase1.createAccount")}</Link>
+              <Link href={`/account/forgot-password?next=${encodeURIComponent(next)}`}>{t("phase1.forgotPassword")}</Link>
+            </>
+          ) : null}
+          {mode === "register" || mode === "forgot" ? (
+            <Link href={`/account/sign-in?next=${encodeURIComponent(next)}`}>{t("phase1.signIn")}</Link>
+          ) : null}
+        </div>
+      </section>
+    </div>
   );
 }

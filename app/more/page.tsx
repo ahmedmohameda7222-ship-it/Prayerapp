@@ -7,38 +7,37 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 const items = [
-  ["/donations", "donations.title", HandHeart],
-  ["/azkar", "azkar.title", BookOpen],
-  ["/ramadan", "ramadan.title", Moon],
-  ["/events", "events.title", CalendarDays],
-  ["/mosque", "mosque.title", Landmark],
-  ["/qibla", "qibla.title", Compass],
-  ["/settings", "settings.title", Settings],
+  ["/azkar", "azkar.title", BookOpen, false],
+  ["/ramadan", "ramadan.title", Moon, false],
+  ["/qibla", "qibla.title", Compass, false],
+  ["/events", "events.title", CalendarDays, true],
+  ["/donations", "donations.title", HandHeart, false],
+  ["/mosque", "mosque.title", Landmark, true],
+  ["/account", "phase1.account", UserRound, true],
+  ["/settings", "settings.title", Settings, false],
+  ["/privacy", "phase1.privacy", Shield, false],
 ] as const;
 
 export default function MorePage() {
   const { t } = useTranslation();
-  const phase1Items = [
-    { href: "/account", label: t("phase1.account"), Icon: UserRound },
-    { href: "/privacy", label: t("phase1.privacy"), Icon: Shield },
-  ];
 
   return (
     <AppShell>
-      <PageHeader titleKey="nav.more" />
-      <div className="grid gap-3 lg:grid-cols-2">
-        {phase1Items.map(({ href, label, Icon }) => (
-          <Link key={href} href={href} className="card flex min-h-16 items-center gap-3 p-4">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--color-emerald)] text-[var(--color-gold)]"><Icon className="h-6 w-6" /></div>
-            <span className="flex-1 font-bold text-[var(--color-emerald)]">{label}</span>
-            <ChevronRight className="h-5 w-5 text-[var(--color-muted)] rtl:rotate-180" />
-          </Link>
-        ))}
-        {items.map(([href, labelKey, Icon]) => (
-          <Link key={href} href={href} className="card flex min-h-16 items-center gap-3 p-4">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--color-emerald)] text-[var(--color-gold)]"><Icon className="h-6 w-6" /></div>
-            <span className="flex-1 font-bold text-[var(--color-emerald)]">{t(labelKey)}</span>
-            <ChevronRight className="h-5 w-5 text-[var(--color-muted)] rtl:rotate-180" />
+      <PageHeader titleKey="nav.more" backHref={null} />
+      <div className="native-list-group" role="list">
+        {items.map(([href, labelKey, Icon, groupStart]) => (
+          <Link
+            key={href}
+            href={href}
+            className="native-list-row"
+            data-group-start={groupStart ? "true" : undefined}
+            role="listitem"
+          >
+            <span className="native-list-row-icon" aria-hidden="true">
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="native-list-row-title">{t(labelKey)}</span>
+            <ChevronRight className="native-list-row-chevron h-5 w-5 rtl:rotate-180" aria-hidden="true" />
           </Link>
         ))}
       </div>

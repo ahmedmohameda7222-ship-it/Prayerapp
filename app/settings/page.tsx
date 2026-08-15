@@ -6,10 +6,12 @@ import { InstallAppCard } from "@/components/settings/InstallAppCard";
 export default function SettingsPage() {
   return (
     <AppShell>
-      <PageHeader titleKey="settings.title" />
-      <div className="grid gap-5">
-        <InstallAppCard />
-        <SettingsControls />
+      <div className="settings-screen">
+        <PageHeader titleKey="settings.title" backHref="/more" />
+        <div className="grid gap-4">
+          <InstallAppCard />
+          <SettingsControls />
+        </div>
       </div>
     </AppShell>
   );

@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Clock } from "lucide-react";
-import { Card } from "@/components/ui/Card";
+import { Bell, ChevronRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
@@ -30,42 +29,47 @@ export function SettingsControls() {
   }[pushStatus];
 
   return (
-    <div className="grid gap-5">
-      <Card>
-        <h2 className="mb-2 flex items-center gap-2 font-bold text-[var(--color-emerald)]">
-          <Bell className="h-5 w-5" aria-hidden="true" />
+    <div className="settings-group">
+      <section className="settings-section">
+        <h2 className="flex items-center gap-2">
+          <Bell className="h-4 w-4 text-[var(--app-brand)]" aria-hidden="true" />
           {t("settings.notifications")}
         </h2>
-        <p className="text-sm leading-6 text-[var(--color-text-muted)]">{t("settings.automaticContentNotifications")}</p>
-        <p className="mt-3 rounded-2xl bg-[var(--color-cream)] p-3 text-sm font-bold text-[var(--color-emerald)]" role="status">{t(statusKey)}</p>
+        <p className="mt-1 text-sm leading-6">{t("settings.automaticContentNotifications")}</p>
+        <p className="mt-3 rounded-[12px] bg-[var(--app-surface-soft)] p-3 text-sm font-semibold text-[var(--app-brand-strong)]" role="status">
+          {t(statusKey)}
+        </p>
         {pushStatus === "enabled" ? (
           <Button variant="ghost" className="mt-3 w-full" disabled={busy} onClick={() => void disableNotifications()}>{t("settings.disablePush")}</Button>
         ) : pushStatus === "disabled" || pushStatus === "error" ? (
           <Button className="mt-3 w-full" disabled={busy} onClick={() => void enableNotifications()}>{t("settings.enablePush")}</Button>
         ) : null}
-        <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-          <p className="text-sm font-bold text-[var(--color-emerald)]">{t("phase1.reminderDescription")}</p>
-          <Link href="/#prayer-times" className="mt-2 inline-flex min-h-11 items-center text-sm font-bold text-[var(--color-gold-dark)]">{t("phase1.manageReminders")}</Link>
-        </div>
-      </Card>
-      <Card>
-        <h2 className="mb-3 flex items-center gap-2 font-bold text-[var(--color-emerald)]">
-          <Clock className="h-5 w-5" aria-hidden="true" />
+      </section>
+
+      <Link href="/#prayer-times" className="settings-section flex min-h-14 items-center gap-3">
+        <Bell className="h-4 w-4 shrink-0 text-[var(--app-brand)]" aria-hidden="true" />
+        <span className="min-w-0 flex-1 text-sm font-semibold text-[var(--app-text)]">{t("phase1.manageReminders")}</span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
+      </Link>
+
+      <section className="settings-section">
+        <h2 className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-[var(--app-brand)]" aria-hidden="true" />
           {t("settings.timeFormat")}
         </h2>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2 rounded-[14px] bg-[var(--app-surface-soft)] p-1.5">
           {timeFormatOptions.map((item) => (
             <button
               key={item.value}
               onClick={() => setTimeFormat(item.value)}
               aria-pressed={timeFormat === item.value}
-              className={`min-h-11 rounded-2xl border text-sm font-bold transition ${timeFormat === item.value ? "border-[var(--color-gold)] bg-[var(--color-gold)] text-[var(--color-emerald-dark)]" : "border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-emerald)]"}`}
+              className={`min-h-11 rounded-[11px] px-3 text-sm font-semibold ${timeFormat === item.value ? "bg-[var(--app-surface)] text-[var(--app-brand-strong)] shadow-sm" : "text-[var(--app-text-secondary)]"}`}
             >
               {t(item.labelKey)}
             </button>
           ))}
         </div>
-      </Card>
+      </section>
     </div>
   );
 }

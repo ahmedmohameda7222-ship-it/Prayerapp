@@ -13,11 +13,13 @@ export default async function EventsPage() {
 
   return (
     <AppShell>
-      <PageHeader titleKey="events.title" />
+      <PageHeader titleKey="events.title" backHref="/more" />
       {!events.length ? <EmptyState message={t("events.empty")} /> : null}
-      <div className="grid gap-3">
-        {events.map((event) => <EventCard key={event.id} event={event} />)}
-      </div>
+      {events.length ? (
+        <div className="native-feed">
+          {events.map((event) => <EventCard key={event.id} event={event} />)}
+        </div>
+      ) : null}
     </AppShell>
   );
 }

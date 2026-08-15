@@ -158,15 +158,16 @@ export function HomePrayerTimesCard({
       <div className="divide-y divide-[var(--home-divider)]">
         {rows.map(({ name, adhan, iqama }) => {
           const isActive = name === activePrayer;
-          const canRemind = !preview && name !== "sunrise";
-          const isEnabled = canRemind && enabled.has(name as ReminderPrayer);
+          const canRemind = name !== "sunrise";
+          const reminderInteractive = canRemind && !preview;
+          const isEnabled = reminderInteractive && enabled.has(name as ReminderPrayer);
           return (
             <div key={name} className={`border-s-[3px] ${isActive ? "border-s-[var(--home-brand)] bg-[var(--home-brand-soft)]" : "border-s-transparent"}`} data-prayer-row={name} data-active={isActive ? "true" : undefined}>
               <div className="grid min-h-14 grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_52px] items-center gap-2 px-3 py-2.5 sm:px-4">
                 <span className={`min-w-0 text-[15px] font-bold ${isActive ? "text-[var(--home-brand-strong)]" : "text-[var(--home-text)]"}`}>{t(`prayer.${name}`)}</span>
                 <span className="home-tabular text-[15px] font-bold text-[var(--home-text)]">{formatTime(adhan, timeFormat)}</span>
                 <span className="home-tabular text-[15px] font-bold text-[var(--home-text-secondary)]">{iqama ? formatTime(iqama, timeFormat) : "—"}</span>
-                {canRemind ? (
+                {reminderInteractive ? (
                   <button
                     type="button"
                     disabled={!loaded || savingPrayer === name}

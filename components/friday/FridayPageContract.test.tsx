@@ -41,14 +41,17 @@ describe("Friday public page contract", () => {
     expect(page).toContain("!loadFailed && jumuahTimes.length === 0");
   });
 
-  it("keeps iOS navigation tint-led without the generic active selection tile", () => {
+  it("uses a moving iOS glass selection with optimistic route motion", () => {
     const css = source("app/native-pwa.css");
     const nav = source("components/layout/BottomNav.tsx");
 
     expect(css).toContain(".bottom-nav-shell.bottom-nav-ios .bottom-nav-selection");
-    expect(css).toContain("display: none");
-    expect(css).toContain("background: transparent");
-    expect(nav).toContain("detectRuntimePlatform");
+    expect(css).toContain("display: block");
+    expect(css).toContain("translateX(calc(var(--nav-active-index, 0) * 100%))");
+    expect(css).toContain("cubic-bezier(0.2, 1.28, 0.35, 1)");
+    expect(css).toContain("prefers-reduced-motion");
+    expect(nav).toContain("setPendingSelection");
+    expect(nav).toContain("--nav-active-index");
     expect(nav).toContain("classList.add(`bottom-nav-${detected}`)");
   });
 

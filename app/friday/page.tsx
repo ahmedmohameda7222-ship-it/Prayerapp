@@ -2,7 +2,6 @@ import { FridayPageClient } from "@/components/friday/FridayPageClient";
 import { RootPageHeader } from "@/components/layout/RootPageHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { getJumuahTimes } from "@/lib/data/jumuah";
-import { getFridayPreviewMockData } from "@/lib/friday-preview-mock";
 import type { JumuahTime } from "@/lib/types";
 
 export default async function FridayPage() {
@@ -14,11 +13,6 @@ export default async function FridayPage() {
     jumuahTimes = await getJumuahTimes();
   } catch {
     loadFailed = true;
-  }
-
-  // Temporary pre-release preview only. Real published rows always win.
-  if (!loadFailed && jumuahTimes.length === 0) {
-    jumuahTimes = getFridayPreviewMockData(new Date(initialNow));
   }
 
   return (

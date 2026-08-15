@@ -16,7 +16,6 @@ import { SmartNextActionCard } from "@/components/home/SmartNextActionCard";
 import { todayIso } from "@/lib/date-utils";
 import { getSmartNextAction } from "@/lib/home-utils";
 import { getHomeJumuahSchedule } from "@/lib/home-jumuah";
-import { getPrayerPreviewNotice } from "@/lib/prayer-preview-mock";
 import { getNextPrayer, getNextPrayerFromSchedule, getPrayerForDate } from "@/lib/prayer-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { Announcement, DonationCampaign, DonationSettings, Event, JumuahTime, PrayerTime } from "@/lib/types";
@@ -49,7 +48,7 @@ type HomePageClientProps = {
   prayerPreview?: boolean;
   urgentAnnouncements: Announcement[];
   jumuahTimes: JumuahTime[];
-  jumuahPreview?: boolean;
+  allowAnyFutureJumuah?: boolean;
   events: Event[];
   donationSettings?: DonationSettings;
   donationCampaigns: DonationCampaign[];
@@ -61,7 +60,7 @@ export function HomePageClient({
   prayerPreview = false,
   urgentAnnouncements,
   jumuahTimes,
-  jumuahPreview = false,
+  allowAnyFutureJumuah = false,
   events,
   donationSettings,
   donationCampaigns,
@@ -77,8 +76,8 @@ export function HomePageClient({
   }, [now, schedule, today]);
   const smartAction = useMemo(() => schedule.length ? getSmartNextAction(schedule, now) : undefined, [now, schedule]);
   const jumuahSchedule = useMemo(
-    () => getHomeJumuahSchedule(jumuahTimes, now, { allowAnyFutureFriday: jumuahPreview }),
-    [jumuahPreview, jumuahTimes, now],
+    () => getHomeJumuahSchedule(jumuahTimes, now, { allowAnyFutureFriday: allowAnyFutureJumuah }),
+    [allowAnyFutureJumuah, jumuahTimes, now],
   );
 
   useEffect(() => {
@@ -103,16 +102,9 @@ export function HomePageClient({
     <div className="home-dashboard grid" data-testid="home-dashboard">
       <section className="home-section-next" data-home-section="hero" aria-label={t("prayer.nextPrayer")}>
         {today ? (
-          <>
-            <HomeNextPrayerSurface>
-              <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} initialNow={initialNow} variant="instrument" />
-            </HomeNextPrayerSurface>
-            {prayerPreview ? (
-              <p className="mt-2 px-1 text-center text-xs font-semibold leading-5 text-[var(--home-text-secondary)]" data-testid="prayer-preview-notice">
-                {getPrayerPreviewNotice(locale)}
-              </p>
-            ) : null}
-          </>
+          <HomeNextPrayerSurface>
+            <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} initialNow={initialNow} variant="instrument" />
+          </HomeNextPrayerSurface>
         ) : (
           <HomeEmptyState message={t("prayer.notPublished")} />
         )}

@@ -6,18 +6,13 @@ vi.mock("@/lib/supabase/client", () => ({
 
 import { getPrayerTimeByDate, getPrayerTimes } from "@/lib/data/prayer-times";
 
-describe("prayer-times preview fallback range behavior", () => {
-  it("returns no stale built-in preview rows for a current range that does not contain them", async () => {
-    const rows = await getPrayerTimes(false, "2026-08-14", "2026-08-20");
-    expect(rows).toEqual([]);
+describe("prayer-times source behavior", () => {
+  it("does not synthesize prayer rows when Supabase is unavailable", async () => {
+    expect(await getPrayerTimes(false, "2026-08-15", "2026-08-21")).toEqual([]);
+    expect(await getPrayerTimes(false, "2026-06-27", "2026-06-29", 2)).toEqual([]);
   });
 
-  it("still returns built-in preview rows when the requested range actually contains them", async () => {
-    const rows = await getPrayerTimes(false, "2026-06-27", "2026-06-29", 2);
-    expect(rows.map((row) => row.date)).toEqual(["2026-06-27", "2026-06-28"]);
-  });
-
-  it("does not return a different preview date for an exact-date lookup", async () => {
+  it("does not synthesize an exact-date prayer row when Supabase is unavailable", async () => {
     expect(await getPrayerTimeByDate("2026-08-15")).toBeUndefined();
   });
 });

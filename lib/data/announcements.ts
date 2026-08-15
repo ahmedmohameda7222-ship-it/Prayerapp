@@ -1,13 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Announcement } from "@/lib/types";
-import { previewAnnouncements } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
-
-function filterPreviewAnnouncements(includeUnpublished = false): Announcement[] {
-  return previewAnnouncements.filter((item) => includeUnpublished || item.published);
-}
 
 function mapFromDb(row: Record<string, unknown>): Announcement {
   return {
@@ -39,7 +34,7 @@ function mapToDb(item: Partial<Announcement>): Record<string, unknown> {
 
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {
   const client = createClient();
-  if (!client) return filterPreviewAnnouncements(includeUnpublished);
+  if (!client) return [];
   if (includeUnpublished) {
     const query = client
       .from("announcements")
@@ -72,7 +67,7 @@ export async function getAnnouncements(includeUnpublished = false): Promise<Anno
 
 export async function getUrgentAnnouncements(): Promise<Announcement[]> {
   const client = createClient();
-  if (!client) return filterPreviewAnnouncements().filter((a) => a.isUrgent);
+  if (!client) return [];
   const key = `announcements_urgent`;
   return getCached(key, async () => {
     try {

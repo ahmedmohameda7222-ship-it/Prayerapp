@@ -1,7 +1,6 @@
 "use client";
 
 import { CalendarDays, MapPin } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
 import { FormattedTimeRange } from "@/components/ui/FormattedTime";
 import { formatShortDate } from "@/lib/date-utils";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
@@ -15,21 +14,30 @@ export function EventCard({ event }: { event: Event }) {
   const location = getLocalizedField(event, "location", locale);
 
   return (
-    <article className="card p-4">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="font-bold text-[var(--color-emerald)]">{title}</h2>
-        <Badge tone="gold">{t(`eventTypes.${event.type}`)}</Badge>
-      </div>
-      <p className="text-sm leading-6 text-[var(--color-muted)]">{description}</p>
-      <div className="mt-3 grid gap-2 text-sm font-bold text-[var(--color-charcoal)]">
-        <p className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-[var(--color-gold-dark)]" aria-hidden="true" />
-          {formatShortDate(event.date, locale)} | <FormattedTimeRange start={event.startTime} end={event.endTime} />
-        </p>
-        <p className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-[var(--color-gold-dark)]" aria-hidden="true" />
-          {location}
-        </p>
+    <article className="native-feed-item">
+      <div className="flex items-start gap-3">
+        <div className="min-w-[58px] shrink-0 text-center">
+          <CalendarDays className="mx-auto h-4 w-4 text-[var(--app-brand)]" aria-hidden="true" />
+          <time className="mt-1 block text-xs font-semibold leading-4 text-[var(--app-text-secondary)]" dateTime={event.date}>
+            {formatShortDate(event.date, locale)}
+          </time>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <h2 className="native-feed-item-title">{title}</h2>
+            <span className="text-xs font-semibold text-[var(--app-brand)]">{t(`eventTypes.${event.type}`)}</span>
+          </div>
+          <p className="native-feed-item-meta mt-1">
+            <FormattedTimeRange start={event.startTime} end={event.endTime} />
+          </p>
+          {description ? <p className="native-feed-item-copy">{description}</p> : null}
+          {location ? (
+            <p className="native-feed-item-meta flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{location}</span>
+            </p>
+          ) : null}
+        </div>
       </div>
     </article>
   );

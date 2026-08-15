@@ -4,8 +4,12 @@ import type { JumuahTime } from "@/lib/types";
 export type HomeJumuahSchedule = {
   date: string;
   items: JumuahTime[];
-  daysUntil: 0 | 1 | 2;
+  daysUntil: number;
   nextIndex: number;
+};
+
+type HomeJumuahOptions = {
+  allowAnyFutureFriday?: boolean;
 };
 
 function dayDiff(from: string, to: string) {
@@ -18,29 +22,35 @@ function isFriday(date: string) {
   return new Date(`${date}T12:00:00Z`).getUTCDay() === 5;
 }
 
-export function getHomeJumuahSchedule(jumuahTimes: JumuahTime[], now: Date): HomeJumuahSchedule | undefined {
+export function getHomeJumuahSchedule(
+  jumuahTimes: JumuahTime[],
+  now: Date,
+  options: HomeJumuahOptions = {},
+): HomeJumuahSchedule | undefined {
   const today = todayIso(now);
   const published = jumuahTimes
     .filter((item) => item.published && item.date >= today && isFriday(item.date))
     .sort((a, b) => `${a.date}T${a.prayerTime}`.localeCompare(`${b.date}T${b.prayerTime}`));
+  const candidateDates = [...new Set(published.map((item) => item.date))]
+    .filter((date) => {
+      const diff = dayDiff(today, date);
+      return diff >= 0 && (options.allowAnyFutureFriday || diff <= 2);
+    });
 
-  const candidateDate = published.find((item) => {
-    const diff = dayDiff(today, item.date);
-    return diff >= 0 && diff <= 2;
-  })?.date;
+  for (const candidateDate of candidateDates) {
+    const items = published
+      .filter((item) => item.date === candidateDate)
+      .sort((a, b) => a.prayerTime.localeCompare(b.prayerTime));
+    const daysUntil = dayDiff(today, candidateDate);
 
-  if (!candidateDate) return undefined;
+    if (daysUntil === 0) {
+      const nextIndex = items.findIndex((item) => zonedDateTime(candidateDate, item.prayerTime).getTime() >= now.getTime());
+      if (nextIndex === -1) continue;
+      return { date: candidateDate, items, daysUntil, nextIndex };
+    }
 
-  const items = published
-    .filter((item) => item.date === candidateDate)
-    .sort((a, b) => a.prayerTime.localeCompare(b.prayerTime));
-  const daysUntil = dayDiff(today, candidateDate) as 0 | 1 | 2;
-
-  if (daysUntil === 0) {
-    const nextIndex = items.findIndex((item) => zonedDateTime(candidateDate, item.prayerTime).getTime() >= now.getTime());
-    if (nextIndex === -1) return undefined;
-    return { date: candidateDate, items, daysUntil, nextIndex };
+    return { date: candidateDate, items, daysUntil, nextIndex: 0 };
   }
 
-  return { date: candidateDate, items, daysUntil, nextIndex: 0 };
+  return undefined;
 }

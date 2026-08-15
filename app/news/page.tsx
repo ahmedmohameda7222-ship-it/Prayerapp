@@ -12,13 +12,15 @@ export default async function NewsPage() {
 
   return (
     <AppShell>
-      <PageHeader titleKey="news.title" />
+      <PageHeader titleKey="news.title" backHref={null} />
       {!announcements.length ? <EmptyState message={t("news.empty")} /> : null}
-      <div className="grid gap-3 lg:grid-cols-2">
-        {announcements.map((item) => (
-          <AnnouncementCard key={item.id} announcement={item} />
-        ))}
-      </div>
+      {announcements.length ? (
+        <div className="native-feed">
+          {announcements.map((item) => (
+            <AnnouncementCard key={item.id} announcement={item} />
+          ))}
+        </div>
+      ) : null}
     </AppShell>
   );
 }

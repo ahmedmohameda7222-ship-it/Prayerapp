@@ -38,13 +38,8 @@ const event = (overrides: Partial<Event> = {}): Event => ({
 describe("logic hardening", () => {
   it("checks every day in the upcoming seven-day prayer window", () => {
     const rows = [
-      prayer("2026-08-17"),
-      prayer("2026-08-18"),
-      prayer("2026-08-19"),
-      prayer("2026-08-20"),
-      prayer("2026-08-21"),
-      prayer("2026-08-22"),
-      prayer("2026-08-23"),
+      prayer("2026-08-17"), prayer("2026-08-18"), prayer("2026-08-19"),
+      prayer("2026-08-20"), prayer("2026-08-21"), prayer("2026-08-22"), prayer("2026-08-23"),
     ];
     expect(getMissingPublishedPrayerDates(rows, "2026-08-17", 7)).toEqual([]);
     expect(getMissingPublishedPrayerDates(rows.slice(0, 6), "2026-08-17", 7)).toEqual(["2026-08-23"]);
@@ -82,13 +77,15 @@ describe("logic hardening", () => {
     expect(push).toContain('row?.status === "sent"');
   });
 
-  it("uses Europe/Berlin for Azkar daily state while keeping Azkar hard-coded", () => {
+  it("uses Europe/Berlin for Azkar daily state while keeping Azkar hard-coded and read-only", () => {
     const routine = source("components/azkar/AzkarRoutine.tsx");
-    const page = source("app/azkar/page.tsx");
+    const azkarData = source("lib/data/azkar.ts");
     expect(routine).toContain("APP_TIME_ZONE");
     expect(routine).toContain("todayIso(date)");
-    expect(page).toContain("getHardcodedAzkarCategories");
-    expect(page).toContain("getHardcodedAzkarItems");
+    expect(azkarData).toContain("hardcodedAzkarCategories");
+    expect(azkarData).toContain("hardcodedAzkarItems");
+    expect(azkarData).not.toContain("createAzkarItem");
+    expect(azkarData).not.toContain('from("azkar_items")');
   });
 
   it("removes Admin-managed Azkar from the product", () => {

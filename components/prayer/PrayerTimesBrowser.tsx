@@ -5,7 +5,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { addDaysIso, addMonthsIso, formatDateRange, monthBoundsIso, startOfWeekIso, todayIso } from "@/lib/date-utils";
 import { getPrayerForDate } from "@/lib/prayer-utils";
-import { getPrayerPreviewMockData, getPrayerPreviewNotice } from "@/lib/prayer-preview-mock";
+import { getHardcodedPrayerWeekData, getPrayerPreviewMockData, getPrayerPreviewNotice } from "@/lib/prayer-preview-mock";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { Card } from "@/components/ui/Card";
 import { DataError, DataLoading } from "@/components/ui/DataState";
@@ -28,11 +28,24 @@ export function PrayerTimesBrowser() {
   const [tab, setTab] = useState<RangeTab>("week");
   const [cursor, setCursor] = useState(today);
   const actualToday = today;
-  const prayerPreview = !loading && !error && Boolean(prayerTimes) && prayerTimes?.length === 0;
-  const effectivePrayerTimes = useMemo(
-    () => prayerPreview ? getPrayerPreviewMockData(startDate, endDate) : (prayerTimes || []),
-    [endDate, prayerPreview, prayerTimes, startDate],
+
+  const hardcodedPrayerWeek = useMemo(
+    () => getHardcodedPrayerWeekData(startDate, endDate),
+    [endDate, startDate],
   );
+  const forceHardcodedPrayerWeek = hardcodedPrayerWeek.some((item) => item.date === today);
+  const prayerPreview = forceHardcodedPrayerWeek || (!loading && !error && Boolean(prayerTimes) && prayerTimes?.length === 0);
+
+  const effectivePrayerTimes = useMemo(() => {
+    if (forceHardcodedPrayerWeek) {
+      const previewRange = getPrayerPreviewMockData(startDate, endDate);
+      const byDate = new Map(previewRange.map((item) => [item.date, item]));
+      hardcodedPrayerWeek.forEach((item) => byDate.set(item.date, item));
+      return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+    }
+    return prayerPreview ? getPrayerPreviewMockData(startDate, endDate) : (prayerTimes || []);
+  }, [endDate, forceHardcodedPrayerWeek, hardcodedPrayerWeek, prayerPreview, prayerTimes, startDate]);
+
   const tabs = useMemo(
     () => [
       { value: "today", label: t("times.today") },
@@ -64,8 +77,8 @@ export function PrayerTimesBrowser() {
     });
   }
 
-  if (loading) return <DataLoading />;
-  if (error) return <DataError message={error} retry={reload} />;
+  if (loading && !forceHardcodedPrayerWeek) return <DataLoading />;
+  if (error && !forceHardcodedPrayerWeek) return <DataError message={error} retry={reload} />;
 
   const selected = getPrayerForDate(effectivePrayerTimes, cursor);
 

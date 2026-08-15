@@ -1,21 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import type { PrayerTime } from "@/lib/types";
-import { previewPrayerTimes } from "./demo-data";
 import { CACHE_TTL, getCached, invalidateCache, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCache, clearPersistentCachePrefix } from "./persistent-public-cache";
-
-function filterPreviewPrayerTimes(
-  includeUnpublished = false,
-  startDate?: string,
-  endDate?: string,
-  limit?: number,
-): PrayerTime[] {
-  let rows = previewPrayerTimes.filter((item) => includeUnpublished || item.published);
-  if (startDate) rows = rows.filter((item) => item.date >= startDate);
-  if (endDate) rows = rows.filter((item) => item.date <= endDate);
-  if (limit) rows = rows.slice(0, limit);
-  return rows;
-}
 
 function mapFromDb(row: Record<string, unknown>): PrayerTime {
   const maghribIqama = row.maghrib_iqama ? String(row.maghrib_iqama) : undefined;
@@ -81,7 +67,7 @@ export async function getPrayerTimes(
   limit?: number,
 ): Promise<PrayerTime[]> {
   const client = createClient();
-  if (!client) return filterPreviewPrayerTimes(includeUnpublished, startDate, endDate, limit);
+  if (!client) return [];
 
   if (includeUnpublished) {
     let query = client
@@ -122,7 +108,7 @@ export async function getPrayerTimes(
 
 export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | undefined> {
   const client = createClient();
-  if (!client) return filterPreviewPrayerTimes(false, date, date, 1)[0];
+  if (!client) return undefined;
   const key = `prayer_time_${date}`;
   return getCached(key, async () => {
     try {

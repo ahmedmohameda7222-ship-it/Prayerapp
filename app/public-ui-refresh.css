@@ -1,0 +1,892 @@
+/*
+ * Calm, platform-minded public UI refresh.
+ * Intentionally excludes .home-page-shell, so Home and Friday remain unchanged.
+ */
+
+.page-shell:not(.home-page-shell) {
+  --app-canvas: #f7f3ea;
+  --app-surface: #fffdf8;
+  --app-surface-soft: #f2ede4;
+  --app-divider: #e4ddd2;
+  --app-text: #171a18;
+  --app-text-secondary: #626761;
+  --app-brand: #005a52;
+  --app-brand-strong: #00463f;
+  --app-brand-soft: #e7f0ec;
+  --app-danger: #a6362b;
+  min-height: 100dvh;
+  padding-top: 0;
+  background: var(--app-canvas);
+  color: var(--app-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Arabic", Arial, sans-serif;
+}
+
+.page-shell:not(.home-page-shell) .app-container {
+  width: min(100%, 860px);
+  margin-inline: auto;
+}
+
+.page-shell:not(.home-page-shell) .card {
+  border: 1px solid var(--app-divider);
+  border-radius: 18px;
+  background: var(--app-surface);
+  box-shadow: none;
+}
+
+.page-shell:not(.home-page-shell) .font-brand {
+  font-family: inherit;
+}
+
+.page-shell:not(.home-page-shell) :where(button, a, input, select, textarea) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.page-shell:not(.home-page-shell) :where(button, a):active {
+  transition-duration: 80ms;
+}
+
+.page-shell:not(.home-page-shell) input,
+.page-shell:not(.home-page-shell) select,
+.page-shell:not(.home-page-shell) textarea {
+  border-radius: 12px;
+  background: var(--app-surface);
+}
+
+.page-shell:not(.home-page-shell) :focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-brand) 24%, transparent);
+  outline-offset: 2px;
+}
+
+/* Shared page header */
+.page-shell:not(.home-page-shell) .app-page-header {
+  position: sticky;
+  z-index: 40;
+  top: 0;
+  margin-inline: -16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-divider) 88%, transparent);
+  background: color-mix(in srgb, var(--app-canvas) 90%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+  backdrop-filter: blur(24px) saturate(1.25);
+}
+
+.page-shell:not(.home-page-shell) .app-page-header-inner {
+  display: grid;
+  min-height: calc(56px + env(safe-area-inset-top));
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: end;
+  gap: 8px;
+  padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+}
+
+.page-shell:not(.home-page-shell) .app-page-header h1 {
+  overflow: hidden;
+  margin: 0;
+  color: var(--app-text);
+  font-size: 20px;
+  font-weight: 720;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-shell:not(.home-page-shell) .app-page-header-prominent h1 {
+  font-size: 21px;
+}
+
+.page-shell:not(.home-page-shell) .app-page-header-control,
+.page-shell:not(.home-page-shell) .app-page-header-spacer,
+.page-shell:not(.home-page-shell) .app-page-header-actions {
+  width: 44px;
+  height: 44px;
+}
+
+.page-shell:not(.home-page-shell) .app-page-header-control {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--app-brand);
+}
+
+.page-shell:not(.home-page-shell) .app-page-header-control:active {
+  background: var(--app-brand-soft);
+  transform: scale(0.96);
+}
+
+.page-shell:not(.home-page-shell) .app-page-header-actions {
+  display: grid;
+  place-items: center;
+}
+
+/* Generic section hierarchy */
+.page-shell:not(.home-page-shell) h2,
+.page-shell:not(.home-page-shell) h3 {
+  text-wrap: balance;
+}
+
+.page-shell:not(.home-page-shell) .section-title,
+.page-shell:not(.home-page-shell) [data-section-title] {
+  color: var(--app-text);
+}
+
+/* Native grouped list */
+.native-list-group {
+  overflow: hidden;
+  border: 1px solid var(--app-divider);
+  border-radius: 18px;
+  background: var(--app-surface);
+}
+
+.native-list-row {
+  position: relative;
+  display: grid;
+  min-height: 58px;
+  grid-template-columns: 34px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  color: var(--app-text);
+}
+
+.native-list-row + .native-list-row::before {
+  position: absolute;
+  top: 0;
+  inset-inline: 60px 0;
+  height: 1px;
+  content: "";
+  background: var(--app-divider);
+}
+
+.native-list-row[data-group-start="true"] {
+  margin-top: 14px;
+  border-top: 1px solid var(--app-divider);
+}
+
+.native-list-row-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--app-brand-soft);
+  color: var(--app-brand);
+}
+
+.native-list-row-title {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.native-list-row-chevron {
+  color: color-mix(in srgb, var(--app-text-secondary) 72%, transparent);
+}
+
+.native-list-row:active {
+  background: var(--app-surface-soft);
+}
+
+/* Feed / agenda */
+.native-feed {
+  overflow: hidden;
+  border: 1px solid var(--app-divider);
+  border-radius: 18px;
+  background: var(--app-surface);
+}
+
+.native-feed > * + * {
+  border-top: 1px solid var(--app-divider);
+}
+
+.native-feed-item {
+  padding: 16px;
+  background: transparent;
+}
+
+.native-feed-item[data-urgent="true"] {
+  border-inline-start: 3px solid var(--app-danger);
+  background: color-mix(in srgb, #fdf1ee 58%, var(--app-surface));
+}
+
+.native-feed-item-title {
+  color: var(--app-text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.native-feed-item-copy {
+  margin-top: 5px;
+  color: var(--app-text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.native-feed-item-meta {
+  margin-top: 9px;
+  color: var(--app-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Prayer Times */
+.prayer-browser {
+  display: grid;
+  gap: 14px;
+}
+
+.prayer-browser .prayer-range-control {
+  position: sticky;
+  z-index: 22;
+  top: calc(56px + env(safe-area-inset-top));
+  padding-block: 2px 8px;
+  background: linear-gradient(var(--app-canvas) 74%, transparent);
+}
+
+.prayer-browser .prayer-range-meta {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-divider);
+  border-radius: 16px;
+  background: var(--app-surface);
+}
+
+.prayer-browser .prayer-range-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-text-secondary);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.prayer-browser .prayer-range-nav {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.prayer-browser .prayer-range-nav button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--app-brand);
+}
+
+.prayer-browser .prayer-range-nav button:active {
+  background: var(--app-brand-soft);
+}
+
+.prayer-browser .prayer-range-label {
+  overflow: hidden;
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 650;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-prayer-days {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-prayer-day {
+  overflow: hidden;
+  border: 1px solid var(--app-divider);
+  border-radius: 16px;
+  background: var(--app-surface);
+}
+
+.mobile-prayer-day[data-today="true"] {
+  border-color: color-mix(in srgb, var(--app-brand) 36%, var(--app-divider));
+}
+
+.mobile-prayer-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--app-divider);
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mobile-prayer-day[data-today="true"] .mobile-prayer-day-header {
+  background: var(--app-brand-soft);
+  color: var(--app-brand-strong);
+}
+
+.mobile-prayer-day-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mobile-prayer-cell {
+  min-width: 0;
+  padding: 11px 14px;
+}
+
+.mobile-prayer-cell:nth-child(odd) {
+  border-inline-end: 1px solid var(--app-divider);
+}
+
+.mobile-prayer-cell:nth-child(n + 3) {
+  border-top: 1px solid var(--app-divider);
+}
+
+.mobile-prayer-cell-name {
+  color: var(--app-text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.mobile-prayer-cell-time {
+  margin-top: 2px;
+  color: var(--app-text);
+  font-size: 16px;
+  font-weight: 720;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-prayer-cell-iqama {
+  margin-top: 1px;
+  color: var(--app-text-secondary);
+  font-size: 11px;
+}
+
+.desktop-prayer-table {
+  display: none;
+}
+
+/* Donations */
+.donations-screen .donation-hero {
+  min-height: 240px;
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.donations-screen .donation-hero img {
+  filter: saturate(0.78) contrast(0.96) brightness(0.78);
+}
+
+.donations-screen .donation-hero .hero-overlay {
+  background: linear-gradient(180deg, rgba(0, 41, 36, 0.04), rgba(0, 33, 29, 0.78));
+}
+
+.donations-screen .donation-hero h2 {
+  max-width: 13ch;
+  font-size: clamp(28px, 8vw, 40px);
+  line-height: 1.08;
+}
+
+.donations-screen .donation-hero p {
+  color: rgba(255, 253, 248, 0.88);
+}
+
+/* Mosque */
+.mosque-profile {
+  overflow: hidden;
+  border: 1px solid var(--app-divider);
+  border-radius: 18px;
+  background: var(--app-surface);
+}
+
+.mosque-profile-identity {
+  padding: 18px 16px;
+}
+
+.mosque-profile-name {
+  color: var(--app-text);
+  font-size: 24px;
+  font-weight: 730;
+  line-height: 1.2;
+}
+
+.mosque-contact-row,
+.mosque-action-row {
+  position: relative;
+  display: grid;
+  min-height: 56px;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 620;
+}
+
+.mosque-contact-row::before,
+.mosque-action-row::before {
+  position: absolute;
+  top: 0;
+  inset-inline: 54px 0;
+  height: 1px;
+  content: "";
+  background: var(--app-divider);
+}
+
+.mosque-contact-row svg,
+.mosque-action-row svg {
+  color: var(--app-brand);
+}
+
+.mosque-action-row:active {
+  background: var(--app-surface-soft);
+}
+
+/* Ramadan */
+.ramadan-screen .ramadan-day-summary {
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--app-brand) 20%, var(--app-divider));
+  border-radius: 18px;
+  background: var(--app-brand-strong);
+  color: #fffdf8;
+}
+
+.ramadan-screen .ramadan-day-summary h2 {
+  font-size: 28px;
+  font-weight: 720;
+}
+
+.ramadan-screen .ramadan-today-grid {
+  overflow: hidden;
+  border: 1px solid var(--app-divider);
+  border-radius: 18px;
+  background: var(--app-surface);
+}
+
+.ramadan-screen .ramadan-time-cell {
+  padding: 14px;
+  border-bottom: 1px solid var(--app-divider);
+}
+
+.ramadan-screen .ramadan-time-cell:last-child {
+  border-bottom: 0;
+}
+
+.ramadan-screen .ramadan-time-label {
+  color: var(--app-text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ramadan-screen .ramadan-time-value {
+  margin-top: 2px;
+  color: var(--app-text);
+  font-size: 22px;
+  font-weight: 720;
+  font-variant-numeric: tabular-nums;
+}
+
+.ramadan-mobile-calendar {
+  display: grid;
+  gap: 8px;
+}
+
+.ramadan-mobile-day {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) repeat(4, minmax(0, 0.8fr));
+  align-items: center;
+  gap: 6px;
+  padding: 11px 12px;
+  border: 1px solid var(--app-divider);
+  border-radius: 14px;
+  background: var(--app-surface);
+  font-size: 11px;
+}
+
+.ramadan-mobile-day[data-today="true"] {
+  border-color: color-mix(in srgb, var(--app-brand) 36%, var(--app-divider));
+  background: var(--app-brand-soft);
+}
+
+.ramadan-mobile-day strong {
+  font-size: 13px;
+}
+
+.ramadan-mobile-day span:not(:first-child) {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ramadan-desktop-calendar {
+  display: none;
+}
+
+/* Azkar */
+.azkar-screen {
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+.azkar-screen .azkar-reading-intro {
+  margin-bottom: 14px;
+  color: var(--app-text-secondary);
+  text-align: center;
+}
+
+.azkar-screen .azkar-progress-surface {
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+
+.azkar-screen .azkar-progress-surface [role="progressbar"] {
+  height: 5px;
+  background: var(--app-divider);
+}
+
+.azkar-screen .azkar-progress-surface [role="progressbar"] > div {
+  background: var(--app-brand);
+}
+
+.azkar-screen [id^="azkar-"] {
+  box-shadow: none;
+}
+
+/* Qibla */
+.qibla-screen .qibla-start,
+.qibla-screen .qibla-state,
+.qibla-screen .qibla-live {
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.qibla-screen .qibla-start {
+  padding-block: 34px;
+}
+
+.qibla-screen .qibla-live {
+  padding-block: 22px;
+}
+
+.qibla-screen .qibla-instrument {
+  width: min(72vw, 292px);
+  height: min(72vw, 292px);
+}
+
+.qibla-screen .qibla-readouts {
+  margin-top: 14px;
+  border: 1px solid var(--app-divider);
+  border-radius: 16px;
+  background: var(--app-surface-soft);
+}
+
+/* Settings */
+.settings-screen .settings-group {
+  overflow: hidden;
+  border: 1px solid var(--app-divider);
+  border-radius: 18px;
+  background: var(--app-surface);
+}
+
+.settings-screen .settings-section {
+  padding: 16px;
+}
+
+.settings-screen .settings-section + .settings-section {
+  border-top: 1px solid var(--app-divider);
+}
+
+.settings-screen .settings-section h2 {
+  color: var(--app-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.settings-screen .settings-section p {
+  color: var(--app-text-secondary);
+}
+
+/* Account and auth */
+.account-screen,
+.auth-screen,
+.privacy-screen {
+  width: min(100%, 620px);
+  margin-inline: auto;
+}
+
+.account-screen .account-title,
+.privacy-screen .privacy-title {
+  color: var(--app-text);
+  font-size: 28px;
+  font-weight: 740;
+  line-height: 1.2;
+}
+
+.account-screen .account-subtitle,
+.privacy-screen .privacy-intro {
+  margin-top: 6px;
+  color: var(--app-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.account-screen .account-actions {
+  overflow: hidden;
+  border: 1px solid var(--app-divider);
+  border-radius: 18px;
+  background: var(--app-surface);
+}
+
+.account-screen .account-action-row {
+  position: relative;
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 16px;
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.account-screen .account-action-row + .account-action-row::before {
+  position: absolute;
+  top: 0;
+  inset-inline: 48px 0;
+  height: 1px;
+  content: "";
+  background: var(--app-divider);
+}
+
+.account-screen .account-action-row svg {
+  color: var(--app-brand);
+}
+
+.auth-screen {
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+
+.auth-screen .auth-surface {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.auth-screen .auth-surface h1 {
+  color: var(--app-text);
+  font-size: 30px;
+  font-weight: 740;
+}
+
+.auth-screen .auth-surface > p {
+  color: var(--app-text-secondary);
+}
+
+.auth-screen input {
+  min-height: 52px;
+  background: var(--app-surface);
+}
+
+/* Privacy */
+.privacy-screen .privacy-body {
+  margin-top: 22px;
+  color: var(--app-text);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.privacy-screen .privacy-body p + p {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--app-divider);
+}
+
+/* Error / offline */
+.system-state-screen {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  background: var(--app-canvas, #f7f3ea);
+}
+
+.system-state-screen section {
+  width: min(100%, 420px);
+  text-align: center;
+}
+
+.system-state-screen h1 {
+  margin-top: 12px;
+  color: #171a18;
+  font-size: 27px;
+  font-weight: 740;
+}
+
+.system-state-screen p {
+  margin-top: 8px;
+  color: #626761;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.system-state-screen a,
+.system-state-screen button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  border: 0;
+  border-radius: 14px;
+  background: #005a52;
+  padding: 0 18px;
+  color: #fffdf8;
+  font-weight: 700;
+}
+
+/* Admin: mobile first, operational rather than decorative. */
+@media (max-width: 1023px) {
+  .admin-layout {
+    background: #f7f3ea;
+  }
+
+  .admin-mobile-menu {
+    position: sticky;
+    z-index: 45;
+    top: 0;
+    border-bottom: 1px solid #e4ddd2;
+    background: rgba(247, 243, 234, 0.94);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+  }
+
+  .admin-mobile-menu summary {
+    display: flex;
+    min-height: calc(56px + env(safe-area-inset-top));
+    cursor: pointer;
+    list-style: none;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
+    padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+    color: #171a18;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .admin-mobile-menu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .admin-mobile-menu nav {
+    max-height: min(72dvh, 620px);
+    overflow-y: auto;
+    padding: 4px 12px 14px;
+  }
+
+  .admin-mobile-menu a,
+  .admin-mobile-menu button {
+    min-height: 48px;
+  }
+
+  .admin-desktop-sidebar {
+    display: none;
+  }
+
+  .admin-layout > section {
+    padding: 18px 14px 48px;
+  }
+
+  .admin-layout .card {
+    border-radius: 16px;
+    box-shadow: none;
+  }
+}
+
+@media (min-width: 700px) {
+  .page-shell:not(.home-page-shell) .app-container {
+    width: min(100%, 960px);
+  }
+
+  .ramadan-screen .ramadan-today-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .ramadan-screen .ramadan-time-cell {
+    border-bottom: 0;
+    border-inline-end: 1px solid var(--app-divider);
+  }
+
+  .ramadan-screen .ramadan-time-cell:last-child {
+    border-inline-end: 0;
+  }
+}
+
+@media (min-width: 820px) {
+  .mobile-prayer-days,
+  .ramadan-mobile-calendar {
+    display: none;
+  }
+
+  .desktop-prayer-table,
+  .ramadan-desktop-calendar {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-shell:not(.home-page-shell) .app-page-header {
+    position: relative;
+    margin-inline: 0;
+    border: 0;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .page-shell:not(.home-page-shell) .app-page-header-inner {
+    min-height: 72px;
+    padding: 16px 0 14px;
+  }
+
+  .page-shell:not(.home-page-shell) .app-page-header h1 {
+    font-size: 26px;
+  }
+
+  .page-shell:not(.home-page-shell) .app-container {
+    width: min(100%, 1120px);
+  }
+
+  .page-shell:not(.home-page-shell) .card {
+    border-radius: 16px;
+  }
+
+  .donations-screen .donation-hero {
+    min-height: 0;
+    border-radius: 18px;
+  }
+
+  .admin-mobile-menu {
+    display: none;
+  }
+
+  .admin-desktop-sidebar {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-shell:not(.home-page-shell) *,
+  .page-shell:not(.home-page-shell) *::before,
+  .page-shell:not(.home-page-shell) *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

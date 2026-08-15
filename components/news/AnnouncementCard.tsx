@@ -46,7 +46,7 @@ export function AnnouncementCard({ announcement, home = false }: { announcement:
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="native-feed-item-title">{title}</h2>
-          <p className="native-feed-item-copy whitespace-pre-wrap">{message}</p>
+          <p className="line-clamp-2 whitespace-pre-wrap native-feed-item-copy">{message}</p>
           <p className="native-feed-item-meta">
             {t(`announcementTypes.${announcement.type}`)} · {formatShortDate(announcement.createdAt.slice(0, 10), locale)}
           </p>

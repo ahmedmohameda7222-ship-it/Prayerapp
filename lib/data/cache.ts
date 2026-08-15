@@ -1,8 +1,10 @@
 export const CACHE_TTL = {
   urgentAnnouncements: 60_000,
   announcements: 10 * 60_000,
-  prayerTimes: 12 * 60 * 60_000,
-  jumuah: 30 * 60_000,
+  // Prayer schedules are operational data. Keep the in-memory window short so
+  // an admin correction propagates quickly across fresh requests.
+  prayerTimes: 60_000,
+  jumuah: 2 * 60_000,
   events: 30 * 60_000,
   donationSettings: 60 * 60_000,
   donationCampaigns: 30 * 60_000,

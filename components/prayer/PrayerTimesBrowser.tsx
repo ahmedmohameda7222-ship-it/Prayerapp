@@ -18,13 +18,23 @@ type RangeTab = "today" | "week" | "month";
 export function PrayerTimesBrowser() {
   const { t, locale } = useTranslation();
   const today = todayIso();
-  const startDate = addDaysIso(today, -30);
-  const endDate = addDaysIso(today, 90);
-  const { data: prayerTimes, error, loading, reload } = useAsyncData(
-    () => getPrayerTimes(false, startDate, endDate)
-  );
   const [tab, setTab] = useState<RangeTab>("week");
   const [cursor, setCursor] = useState(today);
+
+  const range = useMemo(() => {
+    if (tab === "today") return { start: cursor, end: cursor };
+    if (tab === "week") {
+      const start = startOfWeekIso(cursor);
+      return { start, end: addDaysIso(start, 6) };
+    }
+    return monthBoundsIso(cursor);
+  }, [cursor, tab]);
+
+  const rangeKey = `${range.start}:${range.end}`;
+  const { data: prayerTimes, error, loading, reload } = useAsyncData(
+    () => getPrayerTimes(false, range.start, range.end),
+    rangeKey,
+  );
   const effectivePrayerTimes = prayerTimes || [];
 
   const tabs = useMemo(
@@ -35,15 +45,6 @@ export function PrayerTimesBrowser() {
     ],
     [t]
   );
-
-  const range = useMemo(() => {
-    if (tab === "today") return { start: cursor, end: cursor };
-    if (tab === "week") {
-      const start = startOfWeekIso(cursor);
-      return { start, end: addDaysIso(start, 6) };
-    }
-    return monthBoundsIso(cursor);
-  }, [cursor, tab]);
 
   const visibleTimes = useMemo(
     () => effectivePrayerTimes.filter((item) => item.date >= range.start && item.date <= range.end),

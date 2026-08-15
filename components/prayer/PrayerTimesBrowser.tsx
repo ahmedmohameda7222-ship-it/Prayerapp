@@ -5,6 +5,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { addDaysIso, addMonthsIso, formatDateRange, monthBoundsIso, startOfWeekIso, todayIso } from "@/lib/date-utils";
 import { getPrayerForDate } from "@/lib/prayer-utils";
+import { getPrayerPreviewMockData, getPrayerPreviewNotice } from "@/lib/prayer-preview-mock";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { Card } from "@/components/ui/Card";
 import { DataError, DataLoading } from "@/components/ui/DataState";
@@ -27,6 +28,11 @@ export function PrayerTimesBrowser() {
   const [tab, setTab] = useState<RangeTab>("week");
   const [cursor, setCursor] = useState(today);
   const actualToday = today;
+  const prayerPreview = !loading && !error && Boolean(prayerTimes) && prayerTimes?.length === 0;
+  const effectivePrayerTimes = useMemo(
+    () => prayerPreview ? getPrayerPreviewMockData(startDate, endDate) : (prayerTimes || []),
+    [endDate, prayerPreview, prayerTimes, startDate],
+  );
   const tabs = useMemo(
     () => [
       { value: "today", label: t("times.today") },
@@ -46,8 +52,8 @@ export function PrayerTimesBrowser() {
   }, [cursor, tab]);
 
   const visibleTimes = useMemo(
-    () => (prayerTimes || []).filter((item) => item.date >= range.start && item.date <= range.end),
-    [prayerTimes, range]
+    () => effectivePrayerTimes.filter((item) => item.date >= range.start && item.date <= range.end),
+    [effectivePrayerTimes, range]
   );
 
   function moveRange(direction: -1 | 1) {
@@ -61,10 +67,15 @@ export function PrayerTimesBrowser() {
   if (loading) return <DataLoading />;
   if (error) return <DataError message={error} retry={reload} />;
 
-  const selected = getPrayerForDate(prayerTimes || [], cursor);
+  const selected = getPrayerForDate(effectivePrayerTimes, cursor);
 
   return (
     <div className="grid gap-5">
+      {prayerPreview ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-bold leading-5 text-amber-900" data-testid="prayer-preview-notice">
+          {getPrayerPreviewNotice(locale)}
+        </p>
+      ) : null}
       <SegmentedControl options={tabs} value={tab} onChange={(value) => setTab(value as RangeTab)} />
       <Card className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm font-bold text-[var(--color-emerald)]">

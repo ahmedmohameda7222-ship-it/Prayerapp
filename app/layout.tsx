@@ -15,6 +15,7 @@ import { AppPreferencesProvider } from "@/components/providers/AppPreferencesPro
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
 import { PlatformChromeBootstrap } from "@/components/providers/PlatformChromeBootstrap";
 import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
+import { PublicNavigation } from "@/components/layout/PublicNavigation";
 
 const metadataDescriptions: Record<Locale, string> = {
   ar: "مواقيت الصلاة والجمعة والإعلانات والتبرعات ومعلومات المجتمع في دغندورف.",
@@ -65,7 +66,10 @@ export default async function RootLayout({
         <I18nProvider initialLocale={initialLocale}>
           <AuthProvider>
             <AppPreferencesProvider>
-              <TimeFormatProvider>{children}</TimeFormatProvider>
+              <TimeFormatProvider>
+                {children}
+                <PublicNavigation />
+              </TimeFormatProvider>
               <ServiceWorkerRegistrar />
               <NotificationOptInPrompt />
             </AppPreferencesProvider>

@@ -169,12 +169,12 @@ export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <PageHeader titleKey="azkar.title" />
+    <div className="azkar-screen">
+      <PageHeader titleKey="azkar.title" backHref="/more" />
 
-      <header className="mb-5 text-center text-[var(--color-card)]">
-        <p className="text-sm leading-6 text-white/80">{t("azkar.subtitle")}</p>
-        <p className="mt-2 text-sm font-bold text-[var(--color-gold-soft)]">
+      <header className="azkar-reading-intro">
+        <p className="text-sm leading-6">{t("azkar.subtitle")}</p>
+        <p className="mt-1 text-xs font-semibold text-[var(--app-brand)]">
           {t(selectedTab === "Favorites" ? "azkar.favoritesStatus" : "azkar.categoryStatus", {
             category: localizedTab,
             completed: completedCount,
@@ -187,39 +187,36 @@ export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[
         <AzkarCategoryChips categories={categories} selected={selectedTab} onSelect={selectTab} />
 
         {selectedTab === "Favorites" && !user ? (
-          <a href="/account/sign-in?next=%2Fazkar%3Ftab%3DFavorites" className="card flex min-h-14 items-center gap-3 p-4 font-bold text-[var(--color-emerald)]">
+          <a href="/account/sign-in?next=%2Fazkar%3Ftab%3DFavorites" className="card flex min-h-14 items-center gap-3 p-4 font-semibold text-[var(--app-brand)]">
             <LogIn className="h-5 w-5" aria-hidden="true" />
             {t("phase1.accountRequired")}
           </a>
         ) : null}
         {favoriteSaveError || favoritesLoadError ? (
-          <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-800">{t("phase1.authError")}</p>
+          <p role="alert" className="rounded-[14px] bg-red-50 p-3 text-sm font-semibold text-red-800">{t("phase1.authError")}</p>
         ) : null}
 
-        <section className="card overflow-hidden p-4 sm:p-5" aria-labelledby="azkar-progress-title">
+        <section className="card azkar-progress-surface" aria-labelledby="azkar-progress-title">
           {completedCount > 0 ? (
-            <div className="mb-4 flex items-center gap-3 rounded-2xl bg-[var(--color-emerald-soft)] p-3 text-[var(--color-emerald)]">
-              <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" />
-              <div>
-                <p className="font-extrabold">
-                  {completedCount === totalCount
-                    ? t(selectedTab === "Favorites" ? "azkar.favoritesCompleted" : "azkar.categoryCompleted", { category: localizedTab })
-                    : t(selectedTab === "Favorites" ? "azkar.continueFavorites" : "azkar.continueCategory", { category: localizedTab })}
-                </p>
-                <p className="text-xs font-bold opacity-70">{completedCount} / {totalCount}</p>
-              </div>
+            <div className="mb-3 flex items-center gap-2 text-[var(--app-brand)]">
+              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <p className="text-sm font-semibold">
+                {completedCount === totalCount
+                  ? t(selectedTab === "Favorites" ? "azkar.favoritesCompleted" : "azkar.categoryCompleted", { category: localizedTab })
+                  : t(selectedTab === "Favorites" ? "azkar.continueFavorites" : "azkar.continueCategory", { category: localizedTab })}
+              </p>
             </div>
           ) : null}
 
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p id="azkar-progress-title" className="text-xs font-extrabold uppercase tracking-[0.08em] text-[var(--color-gold-dark)]">{t("azkar.dailyProgress")}</p>
-              <p className="mt-1 font-bold text-[var(--color-emerald)]">{t("azkar.progressSummary", { completed: completedCount, total: totalCount })}</p>
+              <p id="azkar-progress-title" className="text-xs font-semibold text-[var(--app-text-secondary)]">{t("azkar.dailyProgress")}</p>
+              <p className="mt-1 text-sm font-semibold text-[var(--app-text)]">{t("azkar.progressSummary", { completed: completedCount, total: totalCount })}</p>
             </div>
-            <p className="text-2xl font-extrabold text-[var(--color-emerald)]">{Math.round(progressPercent)}%</p>
+            <p className="text-lg font-bold text-[var(--app-brand)]">{Math.round(progressPercent)}%</p>
           </div>
-          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[var(--color-cream-deep)]" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(totalCount, 1)} aria-valuenow={completedCount} aria-label={t("azkar.dailyProgress")}>
-            <div className="h-full rounded-full bg-gradient-to-r from-[var(--color-gold-dark)] to-[var(--color-gold)] transition-[width] duration-300" style={{ width: `${progressPercent}%` }} />
+          <div className="mt-3 overflow-hidden rounded-full" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(totalCount, 1)} aria-valuenow={completedCount} aria-label={t("azkar.dailyProgress")}>
+            <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${progressPercent}%` }} />
           </div>
         </section>
 
@@ -239,7 +236,7 @@ export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[
               />
             ))}
             {visibleItems.length === 0 ? (
-              <div className="card border-dashed p-6 text-center text-sm text-[var(--color-muted)]">
+              <div className="card border-dashed p-6 text-center text-sm text-[var(--app-text-secondary)]">
                 {t(selectedTab === "Favorites" ? "azkar.noFavorites" : "azkar.empty")}
               </div>
             ) : null}

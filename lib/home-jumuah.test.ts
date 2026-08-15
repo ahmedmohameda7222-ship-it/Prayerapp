@@ -31,6 +31,18 @@ describe("Home Jumuah visibility", () => {
     expect(getHomeJumuahSchedule(schedule, new Date("2026-08-11T08:00:00.000Z"))).toBeUndefined();
   });
 
+  it("allows the temporary preview to show the next Friday outside the normal two-day window", () => {
+    const result = getHomeJumuahSchedule(
+      schedule,
+      new Date("2026-08-08T08:00:00.000Z"),
+      { allowAnyFutureFriday: true },
+    );
+
+    expect(result?.date).toBe("2026-08-14");
+    expect(result?.daysUntil).toBe(6);
+    expect(result?.items).toHaveLength(3);
+  });
+
   it("keeps the Friday card visible after an earlier service and advances the next service", () => {
     const result = getHomeJumuahSchedule(schedule, new Date("2026-08-14T12:50:00.000Z"));
     expect(result?.daysUntil).toBe(0);

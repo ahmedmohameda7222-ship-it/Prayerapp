@@ -16,6 +16,7 @@ const COPY = {
     today: "الجمعة اليوم",
     tomorrow: "الجمعة غدًا",
     twoDays: "الجمعة بعد يومين",
+    upcoming: "الجمعة القادمة",
     khutbah: "الخطبة",
     prayer: "الصلاة",
     arrive: "يرجى الحضور مبكرًا قبل موعد الصلاة.",
@@ -28,6 +29,7 @@ const COPY = {
     today: "Jumu'ah today",
     tomorrow: "Jumu'ah tomorrow",
     twoDays: "Jumu'ah in two days",
+    upcoming: "Upcoming Jumu'ah",
     khutbah: "Khutbah",
     prayer: "Prayer",
     arrive: "Please arrive early before the prayer time.",
@@ -40,6 +42,7 @@ const COPY = {
     today: "Freitagsgebet heute",
     tomorrow: "Freitagsgebet morgen",
     twoDays: "Freitagsgebet in zwei Tagen",
+    upcoming: "Nächstes Freitagsgebet",
     khutbah: "Khutba",
     prayer: "Gebet",
     arrive: "Bitte kommen Sie rechtzeitig vor dem Gebet.",
@@ -52,6 +55,7 @@ const COPY = {
     today: "Cuma bugün",
     tomorrow: "Cuma yarın",
     twoDays: "Cuma iki gün sonra",
+    upcoming: "Yaklaşan Cuma",
     khutbah: "Hutbe",
     prayer: "Namaz",
     arrive: "Lütfen namaz vaktinden önce erken gelin.",
@@ -73,7 +77,13 @@ function serviceLabel(locale: Locale, index: number, total: number) {
 export function HomeJumuahCard({ schedule }: { schedule: HomeJumuahSchedule }) {
   const { locale } = useTranslation();
   const copy = COPY[locale];
-  const status = schedule.daysUntil === 0 ? copy.today : schedule.daysUntil === 1 ? copy.tomorrow : copy.twoDays;
+  const status = schedule.daysUntil === 0
+    ? copy.today
+    : schedule.daysUntil === 1
+      ? copy.tomorrow
+      : schedule.daysUntil === 2
+        ? copy.twoDays
+        : copy.upcoming;
   const direction = locale === "ar" ? "rtl" : "ltr";
 
   return (

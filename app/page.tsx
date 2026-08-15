@@ -6,6 +6,7 @@ import { getDonationCampaigns, getDonationSettings } from "@/lib/data/donations"
 import { getEvents } from "@/lib/data/events";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { todayIso, addDaysIso } from "@/lib/date-utils";
+import { getFridayPreviewMockData } from "@/lib/friday-preview-mock";
 import { HomePageClient } from "@/components/home/HomePageClient";
 
 export default async function HomePage() {
@@ -23,7 +24,11 @@ export default async function HomePage() {
   ]);
   const prayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
-  const jumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
+  const realJumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
+  const jumuahPreview = jumuahTimesResult.status === "fulfilled" && realJumuahTimes.length === 0;
+  const jumuahTimes = jumuahPreview
+    ? getFridayPreviewMockData(new Date(initialNow))
+    : realJumuahTimes;
   const events = eventsResult.status === "fulfilled"
     ? eventsResult.value
       .filter((event) => event.date >= today)
@@ -39,6 +44,7 @@ export default async function HomePage() {
         initialPrayerTimes={prayerTimes}
         urgentAnnouncements={urgentAnnouncements}
         jumuahTimes={jumuahTimes}
+        jumuahPreview={jumuahPreview}
         events={events}
         donationSettings={donationSettings}
         donationCampaigns={donationCampaigns}

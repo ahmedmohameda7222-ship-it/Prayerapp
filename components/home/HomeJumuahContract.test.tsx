@@ -7,11 +7,21 @@ function source(path: string) {
 }
 
 describe("Home Jumuah integration contract", () => {
-  it("uses the existing Friday authority instead of a duplicate data source", () => {
+  it("uses the existing Friday authority instead of a duplicate production data source", () => {
     const page = source("app/page.tsx");
     expect(page).toContain('import { getJumuahTimes } from "@/lib/data/jumuah"');
     expect(page).toContain("getJumuahTimes()");
     expect(page).toContain("jumuahTimes={jumuahTimes}");
+  });
+
+  it("uses temporary Friday preview rows only when the real Home Jumuah query succeeds empty", () => {
+    const page = source("app/page.tsx");
+    const home = source("components/home/HomePageClient.tsx");
+
+    expect(page).toContain("getFridayPreviewMockData");
+    expect(page).toContain('jumuahTimesResult.status === "fulfilled" && realJumuahTimes.length === 0');
+    expect(page).toContain("jumuahPreview={jumuahPreview}");
+    expect(home).toContain("allowAnyFutureFriday: jumuahPreview");
   });
 
   it("places Jumuah after urgent announcements and before prayer times", () => {
@@ -30,6 +40,14 @@ describe("Home Jumuah integration contract", () => {
     expect(card).toContain('href="/friday"');
     expect(card).toContain('data-testid="home-jumuah-card"');
     expect(card).toContain("تُقام صلاة الجمعة في المسجد في عدة مواعيد.");
+  });
+
+  it("labels farther preview Fridays as upcoming instead of claiming they are two days away", () => {
+    const card = source("components/home/HomeJumuahCard.tsx");
+
+    expect(card).toContain('upcoming: "Upcoming Jumu\'ah"');
+    expect(card).toContain("schedule.daysUntil === 2");
+    expect(card).toContain(": copy.upcoming");
   });
 
   it("uses the approved image as restrained Home atmosphere", () => {

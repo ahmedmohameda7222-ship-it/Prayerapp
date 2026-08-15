@@ -47,6 +47,7 @@ type HomePageClientProps = {
   initialPrayerTimes: PrayerTime[];
   urgentAnnouncements: Announcement[];
   jumuahTimes: JumuahTime[];
+  jumuahPreview?: boolean;
   events: Event[];
   donationSettings?: DonationSettings;
   donationCampaigns: DonationCampaign[];
@@ -57,6 +58,7 @@ export function HomePageClient({
   initialPrayerTimes,
   urgentAnnouncements,
   jumuahTimes,
+  jumuahPreview = false,
   events,
   donationSettings,
   donationCampaigns,
@@ -71,7 +73,10 @@ export function HomePageClient({
     return next?.name || (today ? getNextPrayer(today, now).name : undefined);
   }, [now, schedule, today]);
   const smartAction = useMemo(() => schedule.length ? getSmartNextAction(schedule, now) : undefined, [now, schedule]);
-  const jumuahSchedule = useMemo(() => getHomeJumuahSchedule(jumuahTimes, now), [jumuahTimes, now]);
+  const jumuahSchedule = useMemo(
+    () => getHomeJumuahSchedule(jumuahTimes, now, { allowAnyFutureFriday: jumuahPreview }),
+    [jumuahPreview, jumuahTimes, now],
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);

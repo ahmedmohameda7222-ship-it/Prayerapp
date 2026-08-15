@@ -26,9 +26,9 @@ export function AdminShell({ children, title, titleKey }: { children: ReactNode;
 
   if (loading) {
     return (
-      <main className="admin-layout min-h-screen bg-[var(--color-cream)]">
-        <div className="flex items-center justify-center p-8">
-          <p className="text-sm font-bold text-[var(--color-muted)]">{t("common.loading")}</p>
+      <main className="admin-layout min-h-screen bg-[#f7f3ea]">
+        <div className="flex min-h-[45vh] items-center justify-center p-8">
+          <p className="text-sm font-semibold text-[var(--color-muted)]">{t("common.loading")}</p>
         </div>
       </main>
     );
@@ -39,12 +39,12 @@ export function AdminShell({ children, title, titleKey }: { children: ReactNode;
   }
 
   return (
-    <main className="admin-layout min-h-screen bg-[var(--color-cream)]">
+    <main className="admin-layout min-h-screen bg-[#f7f3ea]">
       <AdminSidebar />
       <section className="p-4 lg:p-8">
-        <div className="mb-6">
-          <p className="text-sm font-bold uppercase tracking-[0.08em] text-[var(--color-gold-dark)]">{t("admin.mosqueAdministration")}</p>
-          <h1 className="font-brand text-3xl font-semibold text-[var(--color-emerald)]">{displayTitle}</h1>
+        <div className="mb-5 border-b border-[#e4ddd2] pb-4 lg:mb-6 lg:pb-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--color-muted)]">{t("admin.mosqueAdministration")}</p>
+          <h1 className="mt-1 text-2xl font-semibold leading-tight text-[var(--color-charcoal)] lg:text-3xl">{displayTitle}</h1>
         </div>
         {children}
       </section>

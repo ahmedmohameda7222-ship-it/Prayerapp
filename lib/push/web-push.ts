@@ -67,6 +67,67 @@ interface DeliveryRequest {
   subscriptions?: PushSubscriptionRecord[];
 }
 
+type DeliveryRow = {
+  id: string;
+  status: "pending" | "sent" | "failed";
+  attempted_at: string;
+};
+
+async function reserveDelivery(
+  client: NonNullable<ReturnType<typeof createServerClient>>,
+  eventKey: string,
+  subscription: PushSubscriptionRecord,
+  notificationType: PushNotificationType,
+  sourceId?: string,
+) {
+  const { data: existing, error: existingError } = await client
+    .from("push_notification_deliveries")
+    .select("id, status, attempted_at")
+    .eq("event_key", eventKey)
+    .eq("subscription_id", subscription.id)
+    .maybeSingle();
+  if (existingError) throw existingError;
+
+  const row = existing as DeliveryRow | null;
+  if (row?.status === "sent") return null;
+
+  if (row) {
+    const stalePendingBefore = new Date(Date.now() - 2 * 60_000).toISOString();
+    if (row.status === "pending" && row.attempted_at >= stalePendingBefore) return null;
+
+    let retryQuery = client
+      .from("push_notification_deliveries")
+      .update({
+        status: "pending",
+        attempted_at: new Date().toISOString(),
+        sent_at: null,
+        error_code: null,
+      })
+      .eq("id", row.id);
+    if (row.status === "failed") retryQuery = retryQuery.eq("status", "failed");
+    else retryQuery = retryQuery.eq("status", "pending").lt("attempted_at", stalePendingBefore);
+
+    const { data: retried, error: retryError } = await retryQuery.select("id").maybeSingle();
+    if (retryError) throw retryError;
+    return retried ? { id: String(retried.id) } : null;
+  }
+
+  const { data: delivery, error: reserveError } = await client
+    .from("push_notification_deliveries")
+    .insert({
+      event_key: eventKey,
+      subscription_id: subscription.id,
+      notification_type: notificationType,
+      source_id: sourceId || null,
+    })
+    .select("id")
+    .single();
+
+  if (reserveError?.code === "23505") return null;
+  if (reserveError || !delivery) throw reserveError || new Error("Could not reserve push delivery");
+  return { id: String(delivery.id) };
+}
+
 export async function deliverPushNotifications({
   eventKey,
   notificationType,
@@ -93,33 +154,32 @@ export async function deliverPushNotifications({
 
   const results = await Promise.all(
     targets.map(async (subscription) => {
-      const { data: delivery, error: reserveError } = await client
-        .from("push_notification_deliveries")
-        .insert({
-          event_key: eventKey,
-          subscription_id: subscription.id,
-          notification_type: notificationType,
-          source_id: sourceId || null,
-        })
-        .select("id")
-        .single();
-
-      if (reserveError?.code === "23505") return "skipped" as const;
-      if (reserveError || !delivery) throw reserveError || new Error("Could not reserve push delivery");
+      const delivery = await reserveDelivery(
+        client,
+        eventKey,
+        subscription,
+        notificationType,
+        sourceId,
+      );
+      if (!delivery) return "skipped" as const;
 
       try {
+        const isPrayerReminder = notificationType === "prayer_reminder";
         await webpush.sendNotification(
           {
             endpoint: subscription.endpoint,
             keys: { p256dh: subscription.p256dh, auth: subscription.auth },
           },
           JSON.stringify(payloadForLocale(subscription.locale)),
-          { TTL: 60 * 60 * 24, urgency: notificationType === "urgent_announcement" ? "high" : "normal" }
+          {
+            TTL: isPrayerReminder ? 10 * 60 : 60 * 60 * 24,
+            urgency: notificationType === "urgent_announcement" || isPrayerReminder ? "high" : "normal",
+          }
         );
 
         await client
           .from("push_notification_deliveries")
-          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .update({ status: "sent", sent_at: new Date().toISOString(), error_code: null })
           .eq("id", delivery.id);
         return "sent" as const;
       } catch (error) {

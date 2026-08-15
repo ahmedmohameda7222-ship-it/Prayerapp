@@ -34,11 +34,14 @@ describe("Friday public page contract", () => {
     expect(friday).toContain("sharedLocationAddress");
   });
 
-  it("uses temporary preview rows only when the real Friday schedule is empty", () => {
+  it("uses Supabase Jumuah rows directly and preserves real empty/load-failure states", () => {
     const page = source("app/friday/page.tsx");
+    const data = source("lib/data/jumuah.ts");
 
-    expect(page).toContain("getFridayPreviewMockData");
-    expect(page).toContain("!loadFailed && jumuahTimes.length === 0");
+    expect(page).toContain("getJumuahTimes()");
+    expect(page).not.toContain("getFridayPreviewMockData");
+    expect(data).not.toContain("previewJumuahTimes");
+    expect(data).toContain("if (!client) return []");
   });
 
   it("uses a moving iOS glass selection with optimistic route motion", () => {

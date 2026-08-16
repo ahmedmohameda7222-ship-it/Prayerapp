@@ -4,6 +4,7 @@ import Link from "next/link";
 import { UserRound } from "lucide-react";
 import { NotificationButton } from "@/components/notifications/NotificationButton";
 import { LanguageMenu } from "@/components/home/LanguageMenu";
+import { HomeInstallAction } from "@/components/home/HomeInstallAction";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { todayIso, formatHijriDate, formatLongDate } from "@/lib/date-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -36,6 +37,7 @@ export function AppHeader({ title }: { title?: string }) {
           </Link>
           <span aria-hidden="true" />
           <div className="flex shrink-0 items-center justify-self-end gap-1">
+            <HomeInstallAction />
             <LanguageMenu />
             <NotificationButton home />
           </div>

@@ -1,33 +1,57 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bell, Check, X } from "lucide-react";
+import { Bell, Check, Play, Square, X } from "lucide-react";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
+import { useAdhanAudio } from "@/components/providers/AdhanAudioProvider";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { formatTime } from "@/lib/time-format";
 import { getIqama, prayerOrder } from "@/lib/prayer-utils";
+import {
+  defaultAdhanSoundIdForPrayer,
+  getAdhanSoundLabel,
+  getAdhanSoundsForPrayer,
+  normalizeAdhanSoundId,
+  type AdhanSoundId,
+} from "@/lib/adhan-audio";
 import type { Locale } from "@/lib/i18n/types";
 import type { PrayerName, PrayerTime } from "@/lib/types";
 
 type ReminderPrayer = Exclude<PrayerName, "sunrise">;
 type ReminderLeadMinutes = 0 | 5 | 10 | 15;
-type ReminderPreference = { enabled: boolean; leadMinutes: ReminderLeadMinutes };
-type ReminderRow = { prayer: string; enabled: boolean; lead_minutes: number | null };
+type ReminderPreference = {
+  enabled: boolean;
+  leadMinutes: ReminderLeadMinutes;
+  adhanSoundId: AdhanSoundId;
+};
+type ReminderRow = {
+  prayer: string;
+  enabled: boolean;
+  lead_minutes: number | null;
+  adhan_sound_id: string | null;
+};
 
 const reminderPrayers = new Set<ReminderPrayer>(["fajr", "dhuhr", "asr", "maghrib", "isha"]);
-const reminderOptions: Array<ReminderLeadMinutes | null> = [15, 10, 5, 0, null];
+const reminderOptions: ReminderLeadMinutes[] = [15, 10, 5, 0];
 
 const REMINDER_COPY: Record<Locale, {
   title: string;
-  description: string;
+  timing: string;
+  chooseAdhan: string;
   off: string;
-  adhanOnly: string;
-  before: (minutes: number) => string;
-  plusAdhan: string;
+  atAdhan: string;
+  minutes: (minutes: number) => string;
+  preview: string;
+  stop: string;
+  select: string;
+  selected: string;
+  save: string;
+  saving: string;
   close: string;
+  playbackError: string;
   notificationFailed: string;
   notificationDenied: string;
   installRequired: string;
@@ -38,13 +62,20 @@ const REMINDER_COPY: Record<Locale, {
   maghribProgram: string;
 }> = {
   ar: {
-    title: "تذكير الصلاة",
-    description: "اختر متى تريد التذكير. عند تفعيل تذكير مسبق سيصلك إشعار آخر عند وقت الأذان.",
-    off: "إيقاف التذكير",
-    adhanOnly: "عند الأذان فقط",
-    before: (minutes) => `قبل الأذان بـ ${minutes} دقيقة`,
-    plusAdhan: "+ إشعار عند الأذان",
+    title: "إعداد الصلاة",
+    timing: "موعد التنبيه",
+    chooseAdhan: "اختار الأذان",
+    off: "إيقاف التنبيه",
+    atAdhan: "وقت الأذان",
+    minutes: (minutes) => `${minutes} د`,
+    preview: "استماع",
+    stop: "إيقاف",
+    select: "اختيار",
+    selected: "مختار",
+    save: "حفظ",
+    saving: "جارٍ الحفظ…",
     close: "إغلاق",
+    playbackError: "تعذر تشغيل الأذان. حاول مرة أخرى.",
     notificationFailed: "تعذر تفعيل إشعارات الجهاز. تحقق من إذن الإشعارات وحاول مرة أخرى.",
     notificationDenied: "إذن الإشعارات محظور. فعّله من إعدادات الجهاز أو المتصفح ثم حاول مرة أخرى.",
     installRequired: "على iPhone أو iPad، ثبّت التطبيق من Safari وافتحه من الشاشة الرئيسية أولًا.",
@@ -55,13 +86,20 @@ const REMINDER_COPY: Record<Locale, {
     maghribProgram: "برنامج المغرب",
   },
   en: {
-    title: "Prayer reminder",
-    description: "Choose when to be reminded. A pre-prayer reminder also includes another notification at Adhan time.",
+    title: "Prayer settings",
+    timing: "Reminder time",
+    chooseAdhan: "Choose Adhan",
     off: "Turn reminder off",
-    adhanOnly: "At Adhan only",
-    before: (minutes) => `${minutes} minutes before Adhan`,
-    plusAdhan: "+ notification at Adhan",
+    atAdhan: "At Adhan",
+    minutes: (minutes) => `${minutes} min`,
+    preview: "Preview",
+    stop: "Stop",
+    select: "Select",
+    selected: "Selected",
+    save: "Save",
+    saving: "Saving…",
     close: "Close",
+    playbackError: "Could not play this Adhan. Try again.",
     notificationFailed: "Could not enable device notifications. Check notification permission and try again.",
     notificationDenied: "Notifications are blocked. Enable them in device or browser settings and try again.",
     installRequired: "On iPhone or iPad, install the app from Safari and open it from the Home Screen first.",
@@ -72,13 +110,20 @@ const REMINDER_COPY: Record<Locale, {
     maghribProgram: "Maghrib program",
   },
   de: {
-    title: "Gebetserinnerung",
-    description: "Wähle den Zeitpunkt. Bei einer Vorab-Erinnerung erhältst du zusätzlich eine Benachrichtigung zur Adhan-Zeit.",
+    title: "Gebetseinstellungen",
+    timing: "Erinnerungszeit",
+    chooseAdhan: "Adhan auswählen",
     off: "Erinnerung ausschalten",
-    adhanOnly: "Nur zum Adhan",
-    before: (minutes) => `${minutes} Minuten vor dem Adhan`,
-    plusAdhan: "+ Benachrichtigung zum Adhan",
+    atAdhan: "Zum Adhan",
+    minutes: (minutes) => `${minutes} Min.`,
+    preview: "Anhören",
+    stop: "Stoppen",
+    select: "Auswählen",
+    selected: "Ausgewählt",
+    save: "Speichern",
+    saving: "Speichern…",
     close: "Schließen",
+    playbackError: "Der Adhan konnte nicht abgespielt werden. Versuche es erneut.",
     notificationFailed: "Gerätebenachrichtigungen konnten nicht aktiviert werden. Prüfe die Berechtigung und versuche es erneut.",
     notificationDenied: "Benachrichtigungen sind blockiert. Aktiviere sie in den Geräte- oder Browser-Einstellungen.",
     installRequired: "Installiere die App auf iPhone oder iPad zuerst über Safari und öffne sie vom Home-Bildschirm.",
@@ -89,13 +134,20 @@ const REMINDER_COPY: Record<Locale, {
     maghribProgram: "Maghrib-Programm",
   },
   tr: {
-    title: "Namaz hatırlatıcısı",
-    description: "Hatırlatma zamanını seçin. Önceden hatırlatma seçerseniz ezan vaktinde bir bildirim daha gelir.",
+    title: "Namaz ayarları",
+    timing: "Hatırlatma zamanı",
+    chooseAdhan: "Ezan seç",
     off: "Hatırlatıcıyı kapat",
-    adhanOnly: "Sadece ezan vaktinde",
-    before: (minutes) => `Ezandan ${minutes} dakika önce`,
-    plusAdhan: "+ ezan vaktinde bildirim",
+    atAdhan: "Ezan vaktinde",
+    minutes: (minutes) => `${minutes} dk`,
+    preview: "Dinle",
+    stop: "Durdur",
+    select: "Seç",
+    selected: "Seçili",
+    save: "Kaydet",
+    saving: "Kaydediliyor…",
     close: "Kapat",
+    playbackError: "Ezan oynatılamadı. Tekrar deneyin.",
     notificationFailed: "Cihaz bildirimleri etkinleştirilemedi. Bildirim iznini kontrol edip tekrar deneyin.",
     notificationDenied: "Bildirimler engellenmiş. Cihaz veya tarayıcı ayarlarından etkinleştirin.",
     installRequired: "iPhone veya iPad'de uygulamayı önce Safari'den yükleyip Ana Ekrandan açın.",
@@ -127,14 +179,22 @@ export function HomePrayerTimesCard({
   const { timeFormat } = useTimeFormat();
   const { user } = usePublicAuth();
   const { pushStatus, enableNotifications } = useAppPreferences();
+  const {
+    playbackStatus,
+    activeSoundId,
+    setPrayerSound,
+    previewSound,
+    stopAudio,
+  } = useAdhanAudio();
   const [preferences, setPreferences] = useState<Map<ReminderPrayer, ReminderPreference>>(() => new Map());
   const [loaded, setLoaded] = useState(false);
   const [savingPrayer, setSavingPrayer] = useState<ReminderPrayer | null>(null);
   const [editingPrayer, setEditingPrayer] = useState<ReminderPrayer | null>(null);
+  const [draftLeadMinutes, setDraftLeadMinutes] = useState<ReminderLeadMinutes | null>(null);
+  const [draftSoundId, setDraftSoundId] = useState<AdhanSoundId>(defaultAdhanSoundIdForPrayer("dhuhr"));
   const [error, setError] = useState("");
   const handledIntent = useRef(false);
   const reminderSaveError = t("phase1.reminderSaveError");
-  const reminderDescription = t("phase1.reminderDescription");
   const reminderOn = t("phase1.reminderOn");
   const reminderOff = t("phase1.reminderOff");
 
@@ -156,7 +216,7 @@ export function HomePrayerTimesCard({
       }
       const { data, error: queryError } = await client
         .from("user_prayer_reminders")
-        .select("prayer, enabled, lead_minutes")
+        .select("prayer, enabled, lead_minutes, adhan_sound_id")
         .eq("user_id", user.id);
       if (!active) return;
       if (queryError) {
@@ -170,6 +230,7 @@ export function HomePrayerTimesCard({
           next.set(row.prayer, {
             enabled: row.enabled,
             leadMinutes: normalizeLeadMinutes(row.lead_minutes),
+            adhanSoundId: normalizeAdhanSoundId(row.adhan_sound_id, row.prayer),
           });
         }
         setPreferences(next);
@@ -188,10 +249,30 @@ export function HomePrayerTimesCard({
     return copy.notificationFailed;
   }, [copy, pushStatus]);
 
-  const saveReminder = useCallback(async (name: ReminderPrayer, option: ReminderLeadMinutes | null) => {
+  const closeEditor = useCallback(() => {
+    stopAudio();
+    setEditingPrayer(null);
+    setError("");
+  }, [stopAudio]);
+
+  const openEditor = useCallback((name: ReminderPrayer) => {
+    const current = preferences.get(name);
+    setDraftLeadMinutes(current?.enabled ? current.leadMinutes : null);
+    setDraftSoundId(normalizeAdhanSoundId(current?.adhanSoundId, name));
+    setError("");
+    stopAudio();
+    setEditingPrayer(name);
+  }, [preferences, stopAudio]);
+
+  const saveReminder = useCallback(async (
+    name: ReminderPrayer,
+    leadMinutes: ReminderLeadMinutes | null,
+    requestedSoundId: AdhanSoundId,
+  ) => {
     if (!user || savingPrayer) return false;
-    const nextEnabled = option !== null;
-    const leadMinutes = option ?? 0;
+    const nextEnabled = leadMinutes !== null;
+    const normalizedLeadMinutes = leadMinutes ?? 0;
+    const adhanSoundId = normalizeAdhanSoundId(requestedSoundId, name);
     setSavingPrayer(name);
     setError("");
 
@@ -210,16 +291,23 @@ export function HomePrayerTimesCard({
         user_id: user.id,
         prayer: name,
         enabled: nextEnabled,
-        lead_minutes: leadMinutes,
+        lead_minutes: normalizedLeadMinutes,
+        adhan_sound_id: adhanSoundId,
         updated_at: new Date().toISOString(),
       } as never, { onConflict: "user_id,prayer" });
       if (saveError) throw saveError;
 
       setPreferences((current) => {
         const next = new Map(current);
-        next.set(name, { enabled: nextEnabled, leadMinutes });
+        next.set(name, {
+          enabled: nextEnabled,
+          leadMinutes: normalizedLeadMinutes,
+          adhanSoundId,
+        });
         return next;
       });
+      setPrayerSound(name, adhanSoundId);
+      stopAudio();
       setEditingPrayer(null);
       return true;
     } catch (saveError) {
@@ -229,7 +317,7 @@ export function HomePrayerTimesCard({
     } finally {
       setSavingPrayer(null);
     }
-  }, [enableNotifications, notificationError, pushStatus, reminderSaveError, savingPrayer, user]);
+  }, [enableNotifications, notificationError, pushStatus, reminderSaveError, savingPrayer, setPrayerSound, stopAudio, user]);
 
   useEffect(() => {
     if (!loaded || !user || handledIntent.current) return;
@@ -237,11 +325,13 @@ export function HomePrayerTimesCard({
     const requested = url.searchParams.get("reminder");
     if (!isReminderPrayer(requested)) return;
     handledIntent.current = true;
-    const timer = window.setTimeout(() => setEditingPrayer(requested), 0);
+    const timer = window.setTimeout(() => openEditor(requested), 0);
     url.searchParams.delete("reminder");
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     return () => window.clearTimeout(timer);
-  }, [loaded, user]);
+  }, [loaded, openEditor, user]);
+
+  useEffect(() => () => stopAudio(), [stopAudio]);
 
   const rows = useMemo(() => prayerOrder.map((name) => {
     const canonicalIqama = name === "maghrib"
@@ -256,18 +346,16 @@ export function HomePrayerTimesCard({
       window.location.assign(`/account/sign-in?next=${encodeURIComponent(next)}`);
       return;
     }
-    setError("");
-    setEditingPrayer(name);
+    openEditor(name);
   }
 
-  const editingPreference = editingPrayer ? preferences.get(editingPrayer) : undefined;
-  const selectedOption = editingPreference?.enabled ? editingPreference.leadMinutes : null;
+  const soundOptions = editingPrayer ? getAdhanSoundsForPrayer(editingPrayer) : [];
+  const audioFailed = playbackStatus === "blocked" || playbackStatus === "error";
 
   return (
     <section id="prayer-times" aria-labelledby="home-prayer-times-title" className="home-prayer-board" data-testid="home-prayer-board">
       <div className="p-4 pb-3">
         <h2 id="home-prayer-times-title" className="text-lg font-bold text-[var(--home-text)]">{t("prayer.todaysPrayerTimes")}</h2>
-        <p className="mt-1 text-[13px] leading-5 text-[var(--home-text-secondary)]">{reminderDescription}</p>
       </div>
       <div className="grid grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_60px] items-center gap-2 border-y border-[var(--home-divider)] bg-[var(--home-surface-subtle)] px-3 py-2.5 text-xs font-semibold text-[var(--home-text-secondary)] sm:px-4">
         <span>{t("prayer.prayer")}</span>
@@ -330,42 +418,98 @@ export function HomePrayerTimesCard({
         })}
       </div>
 
-      {error ? <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">{error}</p> : null}
+      {error && !editingPrayer ? <p role="alert" className="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">{error}</p> : null}
 
       {editingPrayer ? (
         <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center" data-testid="prayer-reminder-dialog">
-          <button type="button" aria-label={copy.close} className="absolute inset-0 bg-black/35" onClick={() => setEditingPrayer(null)} />
-          <div role="dialog" aria-modal="true" aria-labelledby="prayer-reminder-dialog-title" className="relative z-10 w-full max-w-md rounded-t-[22px] border border-[var(--home-divider)] bg-[var(--home-surface)] p-4 pb-[calc(18px+env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[22px] sm:pb-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p id="prayer-reminder-dialog-title" className="text-lg font-extrabold text-[var(--home-text)]">{copy.title} · {t(`prayer.${editingPrayer}`)}</p>
-                <p className="mt-1 text-[13px] leading-5 text-[var(--home-text-secondary)]">{copy.description}</p>
-              </div>
-              <button type="button" aria-label={copy.close} onClick={() => setEditingPrayer(null)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--home-surface-subtle)] text-[var(--home-text-secondary)]">
+          <button type="button" aria-label={copy.close} className="absolute inset-0 bg-black/35" onClick={closeEditor} />
+          <div role="dialog" aria-modal="true" aria-labelledby="prayer-reminder-dialog-title" className="relative z-10 flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[22px] border border-[var(--home-divider)] bg-[var(--home-surface)] shadow-2xl sm:max-h-[82dvh] sm:rounded-[22px]">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--home-divider)] px-4 py-3.5">
+              <p id="prayer-reminder-dialog-title" className="min-w-0 text-lg font-extrabold text-[var(--home-text)]">{copy.title} · {t(`prayer.${editingPrayer}`)}</p>
+              <button type="button" aria-label={copy.close} onClick={closeEditor} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--home-surface-subtle)] text-[var(--home-text-secondary)]">
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
 
-            <div className="mt-4 overflow-hidden rounded-[16px] border border-[var(--home-divider)]">
-              {reminderOptions.map((option, index) => {
-                const selected = selectedOption === option;
-                const label = option === null ? copy.off : option === 0 ? copy.adhanOnly : copy.before(option);
-                return (
-                  <button
-                    key={option === null ? "off" : option}
-                    type="button"
-                    disabled={savingPrayer === editingPrayer}
-                    onClick={() => void saveReminder(editingPrayer, option)}
-                    className={`flex min-h-[58px] w-full items-center gap-3 px-4 text-start disabled:opacity-60 ${index ? "border-t border-[var(--home-divider)]" : ""} ${selected ? "bg-[var(--home-brand-soft)]" : "bg-[var(--home-surface)]"}`}
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className={`block text-sm font-bold ${selected ? "text-[var(--home-brand-strong)]" : "text-[var(--home-text)]"}`}>{label}</span>
-                      {option !== null && option > 0 ? <span className="mt-0.5 block text-[11px] font-semibold text-[var(--home-text-secondary)]">{copy.plusAdhan}</span> : null}
-                    </span>
-                    {selected ? <Check className="h-5 w-5 shrink-0 text-[var(--home-brand)]" aria-hidden="true" /> : null}
-                  </button>
-                );
-              })}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+              <section aria-labelledby="reminder-timing-title">
+                <h3 id="reminder-timing-title" className="text-sm font-extrabold text-[var(--home-text)]">{copy.timing}</h3>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {reminderOptions.map((option) => {
+                    const selected = draftLeadMinutes === option;
+                    const label = option === 0 ? copy.atAdhan : copy.minutes(option);
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setDraftLeadMinutes(option)}
+                        className={`flex min-h-12 items-center justify-center gap-2 rounded-[13px] border px-3 text-sm font-bold ${selected ? "border-[var(--home-brand)] bg-[var(--home-brand-soft)] text-[var(--home-brand-strong)]" : "border-[var(--home-divider)] bg-[var(--home-surface)] text-[var(--home-text)]"}`}
+                      >
+                        {selected ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  aria-pressed={draftLeadMinutes === null}
+                  onClick={() => setDraftLeadMinutes(null)}
+                  className={`mt-2 min-h-11 w-full rounded-[13px] border px-3 text-sm font-bold ${draftLeadMinutes === null ? "border-[var(--home-brand)] bg-[var(--home-brand-soft)] text-[var(--home-brand-strong)]" : "border-[var(--home-divider)] bg-[var(--home-surface)] text-[var(--home-text-secondary)]"}`}
+                >
+                  {copy.off}
+                </button>
+              </section>
+
+              <section aria-labelledby="prayer-adhan-title" className="mt-6">
+                <h3 id="prayer-adhan-title" className="text-sm font-extrabold text-[var(--home-text)]">{copy.chooseAdhan}</h3>
+                <div className="mt-3 overflow-hidden rounded-[16px] border border-[var(--home-divider)]" data-testid="per-prayer-adhan-options">
+                  {soundOptions.map((sound, index) => {
+                    const selected = draftSoundId === sound.id;
+                    const playing = playbackStatus === "playing" && activeSoundId === sound.id;
+                    return (
+                      <div key={sound.id} className={`bg-[var(--home-surface)] px-3 py-3 ${index ? "border-t border-[var(--home-divider)]" : ""}`}>
+                        <p className={`text-sm font-bold ${selected ? "text-[var(--home-brand-strong)]" : "text-[var(--home-text)]"}`}>{getAdhanSoundLabel(sound.id, locale)}</p>
+                        <div className="mt-2.5 grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => playing ? stopAudio() : void previewSound(sound.id)}
+                            className="flex min-h-11 items-center justify-center gap-2 rounded-[11px] border border-[var(--home-divider)] px-3 text-xs font-bold text-[var(--home-brand-strong)]"
+                            aria-label={`${playing ? copy.stop : copy.preview}: ${getAdhanSoundLabel(sound.id, locale)}`}
+                          >
+                            {playing ? <Square className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> : <Play className="h-4 w-4 fill-current" aria-hidden="true" />}
+                            {playing ? copy.stop : copy.preview}
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => setDraftSoundId(sound.id)}
+                            className={`flex min-h-11 items-center justify-center gap-2 rounded-[11px] border px-3 text-xs font-bold ${selected ? "border-[var(--home-brand)] bg-[var(--home-brand-soft)] text-[var(--home-brand-strong)]" : "border-[var(--home-divider)] text-[var(--home-text)]"}`}
+                          >
+                            {selected ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+                            {selected ? copy.selected : copy.select}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {audioFailed ? <p role="alert" className="mt-3 rounded-[12px] bg-red-50 p-3 text-xs font-semibold text-red-800">{copy.playbackError}</p> : null}
+              {error ? <p role="alert" className="mt-3 rounded-[12px] bg-red-50 p-3 text-xs font-semibold text-red-800">{error}</p> : null}
+            </div>
+
+            <div className="border-t border-[var(--home-divider)] bg-[var(--home-surface)] px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 sm:pb-4">
+              <button
+                type="button"
+                disabled={savingPrayer === editingPrayer}
+                onClick={() => void saveReminder(editingPrayer, draftLeadMinutes, draftSoundId)}
+                className="min-h-12 w-full rounded-[14px] bg-[var(--home-brand)] px-4 text-sm font-extrabold text-white disabled:opacity-60"
+              >
+                {savingPrayer === editingPrayer ? copy.saving : copy.save}
+              </button>
             </div>
           </div>
         </div>

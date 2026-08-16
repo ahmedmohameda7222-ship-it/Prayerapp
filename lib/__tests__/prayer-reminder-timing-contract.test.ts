@@ -17,6 +17,23 @@ describe("prayer reminder timing contract", () => {
     expect(card).toContain("option === 0 ? copy.adhanOnly");
   });
 
+  it("stores a separate Adhan choice for every prayer", () => {
+    const migration = source("supabase/migrations/20260816023654_per_prayer_adhan_sound.sql");
+    const card = source("components/prayer/HomePrayerTimesCard.tsx");
+    const audio = source("lib/adhan-audio.ts");
+    const provider = source("components/providers/AdhanAudioProvider.tsx");
+
+    expect(migration).toContain("adhan_sound_id");
+    expect(migration).toContain("'egyptian', 'fajr', 'makkah', 'madinah'");
+    expect(card).toContain("adhan_sound_id: adhanSoundId");
+    expect(card).toContain("copy.adhanTitle");
+    expect(card).toContain("previewSound(sound.id)");
+    expect(card).toContain("setDraftSoundId(sound.id)");
+    expect(audio).toContain('fajr: "fajr"');
+    expect(audio).toContain('dhuhr: "egyptian"');
+    expect(provider).toContain("prayerSounds[data.prayer]");
+  });
+
   it("sends a pre-Adhan push only for selected lead times and always sends an Adhan push", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
 

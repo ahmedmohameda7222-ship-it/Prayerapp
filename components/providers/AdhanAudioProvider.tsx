@@ -19,6 +19,56 @@ type AdhanAudioContextValue = {
   stopAudio: () => void;
 };
 
+type PlaybackCallbacks = {
+  onEnded: () => void;
+  onError: () => void;
+};
+
+class AdhanAudioController {
+  private audio: HTMLAudioElement | null = null;
+  private sourceUrl = "";
+
+  async play(sourceUrl: string, callbacks: PlaybackCallbacks) {
+    if (!this.audio || this.sourceUrl !== sourceUrl) {
+      this.dispose();
+      const nextAudio = new Audio(sourceUrl);
+      nextAudio.preload = "auto";
+      nextAudio.addEventListener("ended", callbacks.onEnded);
+      nextAudio.addEventListener("error", callbacks.onError);
+      this.audio = nextAudio;
+      this.sourceUrl = sourceUrl;
+    }
+
+    const audio = this.audio;
+    audio.pause();
+    try {
+      audio.currentTime = 0;
+    } catch {
+      // The media source may not have metadata yet.
+    }
+    await audio.play();
+  }
+
+  stop() {
+    if (!this.audio) return;
+    this.audio.pause();
+    try {
+      this.audio.currentTime = 0;
+    } catch {
+      // The media source may not have metadata yet.
+    }
+  }
+
+  dispose() {
+    if (!this.audio) return;
+    this.audio.pause();
+    this.audio.removeAttribute("src");
+    this.audio.load();
+    this.audio = null;
+    this.sourceUrl = "";
+  }
+}
+
 const AdhanAudioContext = createContext<AdhanAudioContextValue | null>(null);
 
 function readStoredSound(): AdhanSoundId {
@@ -34,19 +84,16 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
   const [soundId, setSoundIdState] = useState<AdhanSoundId>("system-only");
   const [playbackStatus, setPlaybackStatus] = useState<AdhanPlaybackStatus>("idle");
   const [activeSoundId, setActiveSoundId] = useState<AdhanSoundId | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const controllerRef = useRef<AdhanAudioController | null>(null);
   const lastAdhanEventRef = useRef("");
 
+  const getController = useCallback(() => {
+    if (!controllerRef.current) controllerRef.current = new AdhanAudioController();
+    return controllerRef.current;
+  }, []);
+
   const stopAudio = useCallback(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-      try {
-        audio.currentTime = 0;
-      } catch {
-        // The media source may not have metadata yet.
-      }
-    }
+    controllerRef.current?.stop();
     setPlaybackStatus("idle");
     setActiveSoundId(null);
   }, []);
@@ -55,32 +102,18 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
     const sound = getAdhanSound(requestedSoundId);
     if (!sound.audioUrl) return false;
 
-    let audio = audioRef.current;
-    if (!audio) {
-      audio = new Audio();
-      audio.preload = "auto";
-      audioRef.current = audio;
-      audio.addEventListener("ended", () => {
-        setPlaybackStatus("idle");
-        setActiveSoundId(null);
-      });
-      audio.addEventListener("error", () => {
-        setPlaybackStatus("error");
-        setActiveSoundId(null);
-      });
-    }
-
-    if (audio.src !== sound.audioUrl) audio.src = sound.audioUrl;
-    audio.pause();
-    try {
-      audio.currentTime = 0;
-    } catch {
-      // Reset again after metadata loads if the browser does not allow it yet.
-    }
-
     setActiveSoundId(requestedSoundId);
     try {
-      await audio.play();
+      await getController().play(sound.audioUrl, {
+        onEnded: () => {
+          setPlaybackStatus("idle");
+          setActiveSoundId(null);
+        },
+        onError: () => {
+          setPlaybackStatus("error");
+          setActiveSoundId(null);
+        },
+      });
       setPlaybackStatus("playing");
       return true;
     } catch (error) {
@@ -89,7 +122,7 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
       setActiveSoundId(null);
       return false;
     }
-  }, []);
+  }, [getController]);
 
   const setSoundId = useCallback((nextSoundId: AdhanSoundId) => {
     setSoundIdState(nextSoundId);
@@ -128,11 +161,7 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
   }, [playSound, soundId]);
 
   useEffect(() => () => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-      audio.src = "";
-    }
+    controllerRef.current?.dispose();
   }, []);
 
   const value = useMemo<AdhanAudioContextValue>(() => ({

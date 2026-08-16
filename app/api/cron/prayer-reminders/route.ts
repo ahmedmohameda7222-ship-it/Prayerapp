@@ -176,8 +176,11 @@ export async function GET(request: Request) {
           payloadForLocale: (locale) => ({
             title: reminderTitles[locale],
             body: beforeReminderBody(locale, prayer, leadMinutes),
-            url: "/",
+            url: "/#prayer-times",
             tag: eventKey,
+            kind: "prayer-reminder",
+            prayer,
+            date: schedule.date,
           }),
         });
         sent += result.sent;
@@ -199,8 +202,11 @@ export async function GET(request: Request) {
         payloadForLocale: (locale) => ({
           title: reminderTitles[locale],
           body: adhanReminderBody(locale, prayer),
-          url: "/",
+          url: "/#prayer-times",
           tag: eventKey,
+          kind: "adhan",
+          prayer,
+          date: schedule.date,
         }),
       });
       sent += result.sent;

@@ -95,9 +95,26 @@ describe("logic hardening", () => {
 
   it("makes mutable PWA assets network-first after a new deploy", () => {
     const sw = source("public/sw.js");
-    expect(sw).toContain('const VERSION = "v16"');
+    expect(sw).toContain('const VERSION = "v17"');
     expect(sw).toContain("networkFirstAsset(request, target)");
     expect(sw).toContain('url.pathname.startsWith("/_next/static/")');
+  });
+
+  it("bridges Adhan-time push to full audio only while the app is open", () => {
+    const cron = source("app/api/cron/prayer-reminders/route.ts");
+    const sw = source("public/sw.js");
+    const provider = source("components/providers/AdhanAudioProvider.tsx");
+    const sounds = source("lib/adhan-audio.ts");
+
+    expect(cron).toContain('kind: "adhan"');
+    expect(cron).toContain('url: "/#prayer-times"');
+    expect(sw).toContain('type: "ADHAN_DUE"');
+    expect(sw).toContain("broadcastAdhanToOpenApp(payload)");
+    expect(provider).toContain('document.visibilityState !== "visible"');
+    expect(provider).toContain('data?.type !== "ADHAN_DUE"');
+    expect(sounds).toContain("Muslim_calling_to_prayer.ogg");
+    expect(sounds).toContain("Beautiful_adhan.ogg");
+    expect(sounds).toContain("Wikimedia Commons · CC0");
   });
 
   it("aligns nullable fields, time checks, and data-api grants in the database migration", () => {

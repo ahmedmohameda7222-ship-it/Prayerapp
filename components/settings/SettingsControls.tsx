@@ -29,7 +29,7 @@ export function SettingsControls() {
   }[pushStatus];
 
   return (
-    <div className="settings-group">
+    <div id="prayer-reminders" className="settings-group scroll-mt-24">
       <section className="settings-section">
         <h2 className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-[var(--app-brand)]" aria-hidden="true" />

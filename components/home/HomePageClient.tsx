@@ -22,7 +22,6 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import type { Announcement, DonationCampaign, DonationSettings, Event, JumuahTime, PrayerTime } from "@/lib/types";
 
 const EMPTY_SCHEDULE: PrayerTime[] = [];
-const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 
 const HOME_EMPTY_COPY = {
   events: {
@@ -70,7 +69,6 @@ export function HomePageClient({
   const [now, setNow] = useState(() => new Date(initialNow));
   const [schedule, setSchedule] = useState<PrayerTime[]>(initialPrayerTimes || EMPTY_SCHEDULE);
   const today = getPrayerForDate(schedule, todayIso(now));
-  const prayerPreview = today?.note === QA_MOCK_MARKER;
   const activePrayer = useMemo(() => {
     const next = getNextPrayerFromSchedule(schedule, now);
     return next?.name || (today ? getNextPrayer(today, now)?.name : undefined);
@@ -158,7 +156,7 @@ export function HomePageClient({
 
       {today ? (
         <div className="home-section-prayer" data-home-section="prayer-times">
-          <HomePrayerTimesCard prayer={today} activePrayer={activePrayer} preview={prayerPreview} />
+          <HomePrayerTimesCard prayer={today} activePrayer={activePrayer} />
         </div>
       ) : null}
 

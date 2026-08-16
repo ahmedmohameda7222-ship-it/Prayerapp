@@ -39,8 +39,6 @@ export function InstallAppCard() {
     };
   }, []);
 
-  if (!installed && !isIos && !prompt) return null;
-
   const install = async () => {
     if (!prompt) return;
     await prompt.prompt();
@@ -51,7 +49,7 @@ export function InstallAppCard() {
   };
 
   return (
-    <section className="settings-group">
+    <section id="install-app" className="settings-group scroll-mt-24">
       <div className="settings-section">
         <h2 className="flex items-center gap-2">
           {installed ? <CheckCircle2 className="h-4 w-4 text-[var(--app-brand)]" aria-hidden="true" /> : <Download className="h-4 w-4 text-[var(--app-brand)]" aria-hidden="true" />}
@@ -71,9 +69,9 @@ export function InstallAppCard() {
           </Button>
         ) : null}
         {!installed && isIos ? (
-          <div className="mt-3 flex items-center gap-2 rounded-[12px] bg-[var(--app-surface-soft)] p-3 text-sm font-semibold text-[var(--app-brand-strong)]">
-            <Share2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>{t("settings.iosInstallInstructions")}</span>
+          <div className="mt-3 flex items-start gap-2 rounded-[12px] bg-[var(--app-surface-soft)] p-3 text-sm font-semibold text-[var(--app-brand-strong)]">
+            <Share2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>{t("notificationPrompt.iosSteps")}</span>
           </div>
         ) : null}
       </div>

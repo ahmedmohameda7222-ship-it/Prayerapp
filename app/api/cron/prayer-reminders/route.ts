@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
+const supportedLeadMinutes = [5, 10, 15] as const;
 
 const prayerNames = {
   fajr: { ar: "الفجر", en: "Fajr", de: "Fajr", tr: "Sabah" },
@@ -19,6 +20,12 @@ const prayerNames = {
 } as const;
 
 type ReminderPrayer = keyof typeof prayerNames;
+type ReminderLeadMinutes = 0 | 5 | 10 | 15;
+type ReminderPreferenceRow = {
+  user_id: string;
+  prayer: ReminderPrayer;
+  lead_minutes: ReminderLeadMinutes | null;
+};
 type PrayerScheduleRow = {
   id: string;
   date: string;
@@ -37,14 +44,33 @@ const reminderTitles: Record<Locale, string> = {
   tr: "Namaz hatırlatması",
 };
 
-function reminderBody(locale: Locale, prayer: ReminderPrayer) {
+function adhanReminderBody(locale: Locale, prayer: ReminderPrayer) {
   const name = prayerNames[prayer][locale];
   return {
-    ar: `حان الآن وقت صلاة ${name}.`,
-    en: `It is time for ${name}.`,
-    de: `Es ist Zeit für ${name}.`,
-    tr: `${name} namazı vakti geldi.`,
+    ar: `حان الآن موعد أذان ${name}.`,
+    en: `It is now time for the ${name} Adhan.`,
+    de: `Jetzt ist die Adhan-Zeit für ${name}.`,
+    tr: `${name} ezanı vakti geldi.`,
   }[locale];
+}
+
+function beforeReminderBody(locale: Locale, prayer: ReminderPrayer, minutes: number) {
+  const name = prayerNames[prayer][locale];
+  return {
+    ar: `تبقّى ${minutes} دقيقة على أذان ${name}.`,
+    en: `${name} Adhan is in ${minutes} minutes.`,
+    de: `Der Adhan für ${name} ist in ${minutes} Minuten.`,
+    tr: `${name} ezanına ${minutes} dakika kaldı.`,
+  }[locale];
+}
+
+function normalizeLeadMinutes(value: number | null): ReminderLeadMinutes {
+  return value === 5 || value === 10 || value === 15 ? value : 0;
+}
+
+function isDue(nowMs: number, targetMs: number, lookbackMs: number) {
+  const age = nowMs - targetMs;
+  return age >= 0 && age <= lookbackMs;
 }
 
 async function isAuthorizedCron(
@@ -72,12 +98,13 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
+  const nowMs = now.getTime();
   const today = todayIso(now);
   const tomorrow = addDaysIso(today, 1);
   const [{ data: reminders, error: remindersError }, { data: schedules, error: schedulesError }] = await Promise.all([
     client
       .from("user_prayer_reminders")
-      .select("user_id, prayer")
+      .select("user_id, prayer, lead_minutes")
       .eq("enabled", true),
     client
       .from("prayer_times")
@@ -92,7 +119,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Could not load reminder data" }, { status: 500 });
   }
 
-  const enabledReminders = (reminders || []) as Array<{ user_id: string; prayer: ReminderPrayer }>;
+  const enabledReminders = ((reminders || []) as ReminderPreferenceRow[]).map((item) => ({
+    ...item,
+    lead_minutes: normalizeLeadMinutes(item.lead_minutes),
+  }));
   const userIds = [...new Set(enabledReminders.map((item) => item.user_id))];
   if (userIds.length === 0) return NextResponse.json({ success: true, due: 0, sent: 0, failed: 0 });
 
@@ -113,23 +143,54 @@ export async function GET(request: Request) {
   let due = 0;
   let sent = 0;
   let failed = 0;
-  const lookbackMs = 5 * 60 * 1000;
+  const adhanLookbackMs = 5 * 60 * 1000;
+  const prePrayerLookbackMs = 2 * 60 * 1000;
 
   for (const schedule of prayerSchedules) {
     for (const prayer of Object.keys(prayerNames) as ReminderPrayer[]) {
       const time = schedule[prayer];
-      const reminderAt = zonedDateTime(schedule.date, time).getTime();
-      const age = now.getTime() - reminderAt;
-      if (age < 0 || age > lookbackMs) continue;
+      const adhanAt = zonedDateTime(schedule.date, time).getTime();
+      const prayerPreferences = enabledReminders.filter((item) => item.prayer === prayer);
+      if (prayerPreferences.length === 0) continue;
 
-      const reminderUsers = new Set(
-        enabledReminders.filter((item) => item.prayer === prayer).map((item) => item.user_id),
-      );
-      const matching = targets.filter((subscription) => subscription.user_id && reminderUsers.has(subscription.user_id));
+      for (const leadMinutes of supportedLeadMinutes) {
+        const prePrayerAt = adhanAt - leadMinutes * 60 * 1000;
+        if (nowMs >= adhanAt || !isDue(nowMs, prePrayerAt, prePrayerLookbackMs)) continue;
+
+        const reminderUsers = new Set(
+          prayerPreferences
+            .filter((item) => item.lead_minutes === leadMinutes)
+            .map((item) => item.user_id),
+        );
+        if (reminderUsers.size === 0) continue;
+        const matching = targets.filter((subscription) => subscription.user_id && reminderUsers.has(subscription.user_id));
+        if (matching.length === 0) continue;
+        due += matching.length;
+
+        const eventKey = `prayer:${schedule.date}:${prayer}:${time}:before:${leadMinutes}`;
+        const result = await deliverPushNotifications({
+          eventKey,
+          notificationType: "prayer_reminder",
+          sourceId: schedule.id,
+          subscriptions: matching,
+          payloadForLocale: (locale) => ({
+            title: reminderTitles[locale],
+            body: beforeReminderBody(locale, prayer, leadMinutes),
+            url: "/",
+            tag: eventKey,
+          }),
+        });
+        sent += result.sent;
+        failed += result.failed;
+      }
+
+      if (!isDue(nowMs, adhanAt, adhanLookbackMs)) continue;
+      const adhanUsers = new Set(prayerPreferences.map((item) => item.user_id));
+      const matching = targets.filter((subscription) => subscription.user_id && adhanUsers.has(subscription.user_id));
       if (matching.length === 0) continue;
       due += matching.length;
 
-      const eventKey = `prayer:${schedule.date}:${prayer}:${time}`;
+      const eventKey = `prayer:${schedule.date}:${prayer}:${time}:adhan`;
       const result = await deliverPushNotifications({
         eventKey,
         notificationType: "prayer_reminder",
@@ -137,7 +198,7 @@ export async function GET(request: Request) {
         subscriptions: matching,
         payloadForLocale: (locale) => ({
           title: reminderTitles[locale],
-          body: reminderBody(locale, prayer),
+          body: adhanReminderBody(locale, prayer),
           url: "/",
           tag: eventKey,
         }),

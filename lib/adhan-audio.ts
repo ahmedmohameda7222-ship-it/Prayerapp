@@ -1,41 +1,55 @@
-export type AdhanSoundId = "system-only" | "adhan-1" | "adhan-2";
+export type AdhanSoundId = "egyptian" | "fajr" | "makkah" | "madinah";
+export type AdhanPrayer = "fajr" | "dhuhr" | "asr" | "maghrib" | "isha";
 
-export const ADHAN_SOUND_STORAGE_KEY = "masjid-el-rahman-adhan-sound-v1";
+export const ADHAN_PRAYER_SOUND_STORAGE_KEY = "masjid-el-rahman-prayer-adhan-sounds-v2";
 
 export type AdhanSound = {
   id: AdhanSoundId;
-  audioUrl: string | null;
-  durationLabel: string | null;
-  sourceLabel: string | null;
-  sourceUrl: string | null;
+  audioUrl: string;
+  durationLabel: string;
 };
 
 export const ADHAN_SOUNDS: readonly AdhanSound[] = [
   {
-    id: "system-only",
-    audioUrl: null,
-    durationLabel: null,
-    sourceLabel: null,
-    sourceUrl: null,
+    id: "egyptian",
+    audioUrl: "https://www.repository.cam.ac.uk/bitstreams/e71f4998-5000-477a-9ae5-a19bc951db09/download",
+    durationLabel: "كامل",
   },
   {
-    id: "adhan-1",
-    audioUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Muslim_calling_to_prayer.ogg",
-    durationLabel: "1:42",
-    sourceLabel: "Wikimedia Commons · CC0",
-    sourceUrl: "https://commons.wikimedia.org/wiki/File:Muslim_calling_to_prayer.ogg",
+    id: "fajr",
+    audioUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Eid%20al-Fitr%20Fajr%20azan%20at%20Malm%C3%B6%20Mosque%20-%2019%20August%202012.webm",
+    durationLabel: "4:08",
   },
   {
-    id: "adhan-2",
-    audioUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Beautiful_adhan.ogg",
-    durationLabel: "2:34",
-    sourceLabel: "Wikimedia Commons · CC0",
-    sourceUrl: "https://commons.wikimedia.org/wiki/File:Beautiful_adhan.ogg",
+    id: "makkah",
+    audioUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Adhan%2C%20Great%20Mosque%20of%20Mecca%20-%20Jan%2021%2C%202013.webm",
+    durationLabel: "3:17",
+  },
+  {
+    id: "madinah",
+    audioUrl: "https://commons.wikimedia.org/wiki/Special:Redirect/file/33937%20ejaz215%20call-to-prayer-from-the-prophet-s-mo.ogg",
+    durationLabel: "3:07",
   },
 ] as const;
 
+export const DEFAULT_ADHAN_SOUNDS: Record<AdhanPrayer, AdhanSoundId> = {
+  fajr: "fajr",
+  dhuhr: "egyptian",
+  asr: "egyptian",
+  maghrib: "egyptian",
+  isha: "egyptian",
+};
+
 export function isAdhanSoundId(value: unknown): value is AdhanSoundId {
-  return value === "system-only" || value === "adhan-1" || value === "adhan-2";
+  return value === "egyptian" || value === "fajr" || value === "makkah" || value === "madinah";
+}
+
+export function isAdhanPrayer(value: unknown): value is AdhanPrayer {
+  return value === "fajr" || value === "dhuhr" || value === "asr" || value === "maghrib" || value === "isha";
+}
+
+export function defaultAdhanSoundForPrayer(prayer: AdhanPrayer): AdhanSoundId {
+  return DEFAULT_ADHAN_SOUNDS[prayer];
 }
 
 export function getAdhanSound(id: AdhanSoundId) {

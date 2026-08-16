@@ -15,7 +15,7 @@ type AdhanAudioContextValue = {
   playbackStatus: AdhanPlaybackStatus;
   activeSoundId: AdhanSoundId | null;
   setSoundId: (soundId: AdhanSoundId) => void;
-  previewSound: (soundId: Exclude<AdhanSoundId, "system-only">) => Promise<boolean>;
+  previewSound: (soundId: AdhanSoundId) => Promise<boolean>;
   stopAudio: () => void;
 };
 
@@ -134,8 +134,9 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
     if (nextSoundId === "system-only") stopAudio();
   }, [stopAudio]);
 
-  const previewSound = useCallback(async (requestedSoundId: Exclude<AdhanSoundId, "system-only">) => {
+  const previewSound = useCallback(async (requestedSoundId: AdhanSoundId) => {
     setSoundId(requestedSoundId);
+    if (requestedSoundId === "system-only") return false;
     return playSound(requestedSoundId);
   }, [playSound, setSoundId]);
 

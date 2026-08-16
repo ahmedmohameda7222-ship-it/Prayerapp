@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import type { Locale } from "@/lib/i18n/types";
 import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
-import { deliverPushNotifications } from "@/lib/push/web-push";
+import {
+  deliverPrayerReminderEvent,
+  prayerNames,
+  type ReminderLeadMinutes,
+  type ReminderPrayer,
+} from "@/lib/prayer-reminder-delivery";
 import type { PushSubscriptionRecord } from "@/lib/push/types";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -11,16 +15,6 @@ export const dynamic = "force-dynamic";
 const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 const supportedLeadMinutes = [5, 10, 15] as const;
 
-const prayerNames = {
-  fajr: { ar: "الفجر", en: "Fajr", de: "Fajr", tr: "Sabah" },
-  dhuhr: { ar: "الظهر", en: "Dhuhr", de: "Dhuhr", tr: "Öğle" },
-  asr: { ar: "العصر", en: "Asr", de: "Asr", tr: "İkindi" },
-  maghrib: { ar: "المغرب", en: "Maghrib", de: "Maghrib", tr: "Akşam" },
-  isha: { ar: "العشاء", en: "Isha", de: "Isha", tr: "Yatsı" },
-} as const;
-
-type ReminderPrayer = keyof typeof prayerNames;
-type ReminderLeadMinutes = 0 | 5 | 10 | 15;
 type ReminderPreferenceRow = {
   user_id: string;
   prayer: ReminderPrayer;
@@ -36,33 +30,6 @@ type PrayerScheduleRow = {
   isha: string;
   note: string | null;
 };
-
-const reminderTitles: Record<Locale, string> = {
-  ar: "تذكير الصلاة",
-  en: "Prayer reminder",
-  de: "Gebetserinnerung",
-  tr: "Namaz hatırlatması",
-};
-
-function adhanReminderBody(locale: Locale, prayer: ReminderPrayer) {
-  const name = prayerNames[prayer][locale];
-  return {
-    ar: `حان الآن موعد أذان ${name}.`,
-    en: `It is now time for the ${name} Adhan.`,
-    de: `Jetzt ist die Adhan-Zeit für ${name}.`,
-    tr: `${name} ezanı vakti geldi.`,
-  }[locale];
-}
-
-function beforeReminderBody(locale: Locale, prayer: ReminderPrayer, minutes: number) {
-  const name = prayerNames[prayer][locale];
-  return {
-    ar: `تبقّى ${minutes} دقيقة على أذان ${name}.`,
-    en: `${name} Adhan is in ${minutes} minutes.`,
-    de: `Der Adhan für ${name} ist in ${minutes} Minuten.`,
-    tr: `${name} ezanına ${minutes} dakika kaldı.`,
-  }[locale];
-}
 
 function normalizeLeadMinutes(value: number | null): ReminderLeadMinutes {
   return value === 5 || value === 10 || value === 15 ? value : 0;
@@ -168,20 +135,13 @@ export async function GET(request: Request) {
         due += matching.length;
 
         const eventKey = `prayer:${schedule.date}:${prayer}:${time}:before:${leadMinutes}`;
-        const result = await deliverPushNotifications({
+        const result = await deliverPrayerReminderEvent({
           eventKey,
-          notificationType: "prayer_reminder",
+          prayer,
+          date: schedule.date,
+          leadMinutes,
           sourceId: schedule.id,
           subscriptions: matching,
-          payloadForLocale: (locale) => ({
-            title: reminderTitles[locale],
-            body: beforeReminderBody(locale, prayer, leadMinutes),
-            url: "/#prayer-times",
-            tag: eventKey,
-            kind: "prayer-reminder",
-            prayer,
-            date: schedule.date,
-          }),
         });
         sent += result.sent;
         failed += result.failed;
@@ -194,20 +154,13 @@ export async function GET(request: Request) {
       due += matching.length;
 
       const eventKey = `prayer:${schedule.date}:${prayer}:${time}:adhan`;
-      const result = await deliverPushNotifications({
+      const result = await deliverPrayerReminderEvent({
         eventKey,
-        notificationType: "prayer_reminder",
+        prayer,
+        date: schedule.date,
+        leadMinutes: 0,
         sourceId: schedule.id,
         subscriptions: matching,
-        payloadForLocale: (locale) => ({
-          title: reminderTitles[locale],
-          body: adhanReminderBody(locale, prayer),
-          url: "/#prayer-times",
-          tag: eventKey,
-          kind: "adhan",
-          prayer,
-          date: schedule.date,
-        }),
       });
       sent += result.sent;
       failed += result.failed;

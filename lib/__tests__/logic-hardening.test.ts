@@ -100,14 +100,16 @@ describe("logic hardening", () => {
     expect(sw).toContain('url.pathname.startsWith("/_next/static/")');
   });
 
-  it("bridges Adhan-time push to the selected sound for that prayer in an open client, including a backgrounded client attempt", () => {
+  it("bridges the real Adhan delivery event to the selected sound for that prayer in an open client, including a backgrounded client attempt", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
+    const delivery = source("lib/prayer-reminder-delivery.ts");
     const sw = source("public/sw.js");
     const provider = source("components/providers/AdhanAudioProvider.tsx");
     const sounds = source("lib/adhan-audio.ts");
 
-    expect(cron).toContain('kind: "adhan"');
-    expect(cron).toContain('url: "/#prayer-times"');
+    expect(cron).toContain("deliverPrayerReminderEvent");
+    expect(delivery).toContain('kind: isAdhan ? "adhan" : "prayer-reminder"');
+    expect(delivery).toContain('url: "/#prayer-times"');
     expect(sw).toContain('type: "ADHAN_DUE"');
     expect(sw).toContain("broadcastAdhanToOpenApp(payload)");
     expect(provider).not.toContain('document.visibilityState !== "visible"');

@@ -15,7 +15,7 @@ type PushStatus =
   | "enabled"
   | "error";
 
-type TestMode = "notification" | "adhan";
+type TestMode = "reminder" | "adhan";
 
 interface StoredPreferences {
   browserId: string;
@@ -28,7 +28,7 @@ type ContextValue = {
   enableNotifications: () => Promise<boolean>;
   disableNotifications: () => Promise<void>;
   detachAccount: () => Promise<void>;
-  sendTestNotification: (delaySeconds?: number) => Promise<boolean>;
+  sendTestPrayerReminder: (prayer: AdhanPrayer, delaySeconds?: number) => Promise<boolean>;
   sendTestAdhan: (prayer: AdhanPrayer, delaySeconds?: number) => Promise<boolean>;
 };
 
@@ -234,10 +234,10 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     await syncSubscription(subscription, stored, true);
   }, [stored, syncSubscription]);
 
-  const sendPushSelfTest = useCallback(async (
+  const sendPrayerSimulation = useCallback(async (
     mode: TestMode,
+    prayer: AdhanPrayer,
     delaySeconds = 10,
-    prayer?: AdhanPrayer,
   ) => {
     if (authLoading || !isSupported()) return false;
 
@@ -267,18 +267,18 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
       });
       return response.ok;
     } catch (error) {
-      console.warn("Prayer system self-test failed", error);
+      console.warn("Prayer system simulation failed", error);
       return false;
     }
   }, [accessToken, authLoading, enableNotifications, pushStatus, stored]);
 
-  const sendTestNotification = useCallback((delaySeconds = 10) => (
-    sendPushSelfTest("notification", delaySeconds)
-  ), [sendPushSelfTest]);
+  const sendTestPrayerReminder = useCallback((prayer: AdhanPrayer, delaySeconds = 10) => (
+    sendPrayerSimulation("reminder", prayer, delaySeconds)
+  ), [sendPrayerSimulation]);
 
   const sendTestAdhan = useCallback((prayer: AdhanPrayer, delaySeconds = 10) => (
-    sendPushSelfTest("adhan", delaySeconds, prayer)
-  ), [sendPushSelfTest]);
+    sendPrayerSimulation("adhan", prayer, delaySeconds)
+  ), [sendPrayerSimulation]);
 
   const value = useMemo<ContextValue>(() => ({
     pushStatus,
@@ -287,9 +287,9 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     enableNotifications,
     disableNotifications,
     detachAccount,
-    sendTestNotification,
+    sendTestPrayerReminder,
     sendTestAdhan,
-  }), [pushStatus, permission, busy, enableNotifications, disableNotifications, detachAccount, sendTestNotification, sendTestAdhan]);
+  }), [pushStatus, permission, busy, enableNotifications, disableNotifications, detachAccount, sendTestPrayerReminder, sendTestAdhan]);
 
   return <AppPreferencesContext.Provider value={value}>{children}</AppPreferencesContext.Provider>;
 }

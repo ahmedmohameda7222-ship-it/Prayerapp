@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Settings2 } from "lucide-react";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
@@ -22,11 +23,9 @@ function isReminderPrayer(value: string | null): value is ReminderPrayer {
 export function HomePrayerTimesCard({
   prayer,
   activePrayer,
-  preview = false,
 }: {
   prayer: PrayerTime;
   activePrayer?: PrayerName;
-  preview?: boolean;
 }) {
   const { t } = useTranslation();
   const { timeFormat } = useTimeFormat();
@@ -47,7 +46,7 @@ export function HomePrayerTimesCard({
     const load = async () => {
       setLoaded(false);
       setError("");
-      if (preview || !user) {
+      if (!user) {
         setEnabled(new Set());
         setLoaded(true);
         return;
@@ -74,10 +73,10 @@ export function HomePrayerTimesCard({
     };
     void load();
     return () => { active = false; };
-  }, [preview, reminderSaveError, user]);
+  }, [reminderSaveError, user]);
 
   const setReminder = useCallback(async (name: ReminderPrayer, nextEnabled: boolean) => {
-    if (preview || !user || savingPrayer) return false;
+    if (!user || savingPrayer) return false;
     setSavingPrayer(name);
     setError("");
     try {
@@ -110,10 +109,10 @@ export function HomePrayerTimesCard({
     } finally {
       setSavingPrayer(null);
     }
-  }, [enableNotifications, preview, pushStatus, reminderSaveError, savingPrayer, user]);
+  }, [enableNotifications, pushStatus, reminderSaveError, savingPrayer, user]);
 
   useEffect(() => {
-    if (preview || !loaded || !user || handledIntent.current) return;
+    if (!loaded || !user || handledIntent.current) return;
     const url = new URL(window.location.href);
     const requested = url.searchParams.get("reminder");
     if (!isReminderPrayer(requested)) return;
@@ -124,7 +123,7 @@ export function HomePrayerTimesCard({
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     };
     void completeIntent();
-  }, [enabled, loaded, preview, setReminder, user]);
+  }, [enabled, loaded, setReminder, user]);
 
   const rows = useMemo(() => prayerOrder.map((name) => {
     const canonicalIqama = name === "maghrib"
@@ -134,7 +133,6 @@ export function HomePrayerTimesCard({
   }), [prayer]);
 
   function clickReminder(name: ReminderPrayer) {
-    if (preview) return;
     if (!user) {
       const next = `/?reminder=${name}#prayer-times`;
       window.location.assign(`/account/sign-in?next=${encodeURIComponent(next)}`);
@@ -145,29 +143,40 @@ export function HomePrayerTimesCard({
 
   return (
     <section id="prayer-times" aria-labelledby="home-prayer-times-title" className="home-prayer-board" data-testid="home-prayer-board">
-      <div className="p-4 pb-3">
-        <h2 id="home-prayer-times-title" className="text-lg font-bold text-[var(--home-text)]">{t("prayer.todaysPrayerTimes")}</h2>
-        <p className="mt-1 text-[13px] leading-5 text-[var(--home-text-secondary)]">{reminderDescription}</p>
+      <div className="flex items-start justify-between gap-3 p-4 pb-3">
+        <div className="min-w-0">
+          <h2 id="home-prayer-times-title" className="text-lg font-bold text-[var(--home-text)]">{t("prayer.todaysPrayerTimes")}</h2>
+          <p className="mt-1 text-[13px] leading-5 text-[var(--home-text-secondary)]">{reminderDescription}</p>
+        </div>
+        <Link
+          href="/settings#prayer-reminders"
+          className="flex min-h-10 shrink-0 items-center gap-1.5 rounded-[10px] bg-[var(--home-brand-soft)] px-2.5 text-xs font-bold text-[var(--home-brand-strong)]"
+          aria-label={t("settings.prayerNotifications")}
+        >
+          <Settings2 className="h-4 w-4" aria-hidden="true" />
+          <span>{t("settings.prayerNotifications")}</span>
+        </Link>
       </div>
       <div className="grid grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_52px] items-center gap-2 border-y border-[var(--home-divider)] bg-[var(--home-surface-subtle)] px-3 py-2.5 text-xs font-semibold text-[var(--home-text-secondary)] sm:px-4">
         <span>{t("prayer.prayer")}</span>
         <span>{t("prayer.azan")}</span>
         <span>{t("prayer.iqama")}</span>
-        <span className="sr-only">{reminderDescription}</span>
+        <span className="grid place-items-center" title={t("settings.prayerNotifications")} aria-label={t("settings.prayerNotifications")}>
+          <Bell className="h-4 w-4" aria-hidden="true" />
+        </span>
       </div>
       <div className="divide-y divide-[var(--home-divider)]">
         {rows.map(({ name, adhan, iqama }) => {
           const isActive = name === activePrayer;
           const canRemind = name !== "sunrise";
-          const reminderInteractive = canRemind && !preview;
-          const isEnabled = reminderInteractive && enabled.has(name as ReminderPrayer);
+          const isEnabled = canRemind && enabled.has(name as ReminderPrayer);
           return (
             <div key={name} className={`border-s-[3px] ${isActive ? "border-s-[var(--home-brand)] bg-[var(--home-brand-soft)]" : "border-s-transparent"}`} data-prayer-row={name} data-active={isActive ? "true" : undefined}>
               <div className="grid min-h-14 grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_52px] items-center gap-2 px-3 py-2.5 sm:px-4">
                 <span className={`min-w-0 text-[15px] font-bold ${isActive ? "text-[var(--home-brand-strong)]" : "text-[var(--home-text)]"}`}>{t(`prayer.${name}`)}</span>
-                <span className="home-tabular text-[15px] font-bold text-[var(--home-text)]">{formatTime(adhan, timeFormat)}</span>
-                <span className="home-tabular text-[15px] font-bold text-[var(--home-text-secondary)]">{iqama ? formatTime(iqama, timeFormat) : "—"}</span>
-                {reminderInteractive ? (
+                <span dir="ltr" className="home-tabular text-[15px] font-bold text-[var(--home-text)]">{formatTime(adhan, timeFormat)}</span>
+                <span dir="ltr" className="home-tabular text-[15px] font-bold text-[var(--home-text-secondary)]">{iqama ? formatTime(iqama, timeFormat) : "—"}</span>
+                {canRemind ? (
                   <button
                     type="button"
                     disabled={!loaded || savingPrayer === name}
@@ -191,7 +200,7 @@ export function HomePrayerTimesCard({
                   {prayer.maghribProgram.combinedIshaTime ? (
                     <p className="flex items-center justify-between gap-3 border-t border-[var(--home-divider)] py-2 text-[13px] leading-5">
                       <span className="font-bold text-[var(--home-brand-strong)]">{t("phase1.combinedIsha")}</span>
-                      <span className="home-tabular font-bold text-[var(--home-text)]">{formatTime(prayer.maghribProgram.combinedIshaTime, timeFormat)}</span>
+                      <span dir="ltr" className="home-tabular font-bold text-[var(--home-text)]">{formatTime(prayer.maghribProgram.combinedIshaTime, timeFormat)}</span>
                     </p>
                   ) : null}
                 </div>

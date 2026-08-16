@@ -72,7 +72,7 @@ export const ADHAN_SOUNDS: readonly AdhanSound[] = [
   {
     id: "makkah",
     kind: "regular",
-    audioUrl: "https://www.ashefaa.com/ruqia/Azan/49.mp3",
+    audioUrl: "https://www.ashefaa.com/ruqia/Azan/50.mp3",
     label: {
       ar: "أذان مكة المكرمة",
       en: "Makkah Adhan",
@@ -83,7 +83,7 @@ export const ADHAN_SOUNDS: readonly AdhanSound[] = [
   {
     id: "madinah",
     kind: "regular",
-    audioUrl: "https://www.ashefaa.com/ruqia/Azan/20.mp3",
+    audioUrl: "https://www.ashefaa.com/ruqia/Azan/58.mp3",
     label: {
       ar: "أذان المدينة المنورة",
       en: "Madinah Adhan",

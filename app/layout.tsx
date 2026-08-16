@@ -14,6 +14,7 @@ import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/types";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
+import { AdhanAudioProvider } from "@/components/providers/AdhanAudioProvider";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
 import { PlatformChromeBootstrap } from "@/components/providers/PlatformChromeBootstrap";
 import { AppLaunchScreen } from "@/components/providers/AppLaunchScreen";
@@ -70,10 +71,12 @@ export default async function RootLayout({
         <I18nProvider initialLocale={initialLocale}>
           <AuthProvider>
             <AppPreferencesProvider>
-              <TimeFormatProvider>
-                {children}
-                <PublicNavigation />
-              </TimeFormatProvider>
+              <AdhanAudioProvider>
+                <TimeFormatProvider>
+                  {children}
+                  <PublicNavigation />
+                </TimeFormatProvider>
+              </AdhanAudioProvider>
               <ServiceWorkerRegistrar />
               <NotificationOptInPrompt />
             </AppPreferencesProvider>

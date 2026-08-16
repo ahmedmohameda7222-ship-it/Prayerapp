@@ -11,6 +11,24 @@ vi.mock("@/components/providers/AppPreferencesProvider", () => ({
   useAppPreferences: () => ({ pushStatus: "disabled", enableNotifications: vi.fn() }),
 }));
 
+vi.mock("@/components/providers/AdhanAudioProvider", () => ({
+  useAdhanAudio: () => ({
+    prayerSounds: {
+      fajr: "fajr",
+      dhuhr: "egyptian",
+      asr: "egyptian",
+      maghrib: "egyptian",
+      isha: "egyptian",
+    },
+    playbackStatus: "idle",
+    activeSoundId: null,
+    setPrayerSound: vi.fn(),
+    syncPrayerSounds: vi.fn(),
+    previewSound: vi.fn(),
+    stopAudio: vi.fn(),
+  }),
+}));
+
 vi.mock("@/components/providers/TimeFormatProvider", () => ({
   useTimeFormat: () => ({ timeFormat: "24-hour" }),
 }));

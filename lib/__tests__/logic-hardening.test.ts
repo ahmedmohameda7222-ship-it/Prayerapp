@@ -100,7 +100,7 @@ describe("logic hardening", () => {
     expect(sw).toContain('url.pathname.startsWith("/_next/static/")');
   });
 
-  it("bridges Adhan-time push to full audio only while the app is open", () => {
+  it("bridges Adhan-time push to the selected sound for that prayer while the app is open", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
     const sw = source("public/sw.js");
     const provider = source("components/providers/AdhanAudioProvider.tsx");
@@ -112,9 +112,12 @@ describe("logic hardening", () => {
     expect(sw).toContain("broadcastAdhanToOpenApp(payload)");
     expect(provider).toContain('document.visibilityState !== "visible"');
     expect(provider).toContain('data?.type !== "ADHAN_DUE"');
-    expect(sounds).toContain("Muslim_calling_to_prayer.ogg");
-    expect(sounds).toContain("Beautiful_adhan.ogg");
-    expect(sounds).toContain("Wikimedia Commons · CC0");
+    expect(provider).toContain("isAdhanPrayer(data.prayer)");
+    expect(provider).toContain("playSound(getPrayerSound(data.prayer))");
+    expect(sounds).toContain('"fajr-cairo"');
+    expect(sounds).toContain("getAdhanSoundsForPrayer");
+    expect(sounds).not.toContain("Muslim_calling_to_prayer.ogg");
+    expect(sounds).not.toContain("Beautiful_adhan.ogg");
   });
 
   it("aligns nullable fields, time checks, and data-api grants in the database migration", () => {

@@ -57,6 +57,9 @@ interface PushPayload {
   body: string;
   url: string;
   tag: string;
+  kind?: "content" | "prayer-reminder" | "adhan";
+  prayer?: string;
+  date?: string;
 }
 
 interface DeliveryRequest {
@@ -234,6 +237,7 @@ export async function sendAdminContentPush({
       body: localized(contentTitle, locale),
       url,
       tag: eventKey,
+      kind: "content",
     }),
   });
 }

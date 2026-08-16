@@ -19,7 +19,7 @@ type Copy = {
   testAdhan: string;
   testPush: string;
   adhanScheduled: string;
-  adhanPlaying: string;
+  adhanTriggered: string;
   adhanFailed: string;
   pushScheduled: string;
   pushSent: string;
@@ -30,63 +30,63 @@ type Copy = {
 const COPY: Record<Locale, Copy> = {
   ar: {
     title: "اختبار الأذان والإشعارات",
-    description: "اختر الصلاة ثم اختبر نفس الأذان المحفوظ والإشعار الحقيقي بعد 10 ثوانٍ.",
+    description: "اختر الصلاة ثم اختبر وصول الأذان الحقيقي والإشعار الحقيقي بعد 10 ثوانٍ.",
     prayer: "الصلاة",
     selectedAdhan: "الأذان المحفوظ",
     testAdhan: "اختبار الأذان",
     testPush: "اختبار الإشعار",
-    adhanScheduled: "محاكاة الأذان بدأت. سيحاول التشغيل بعد 10 ثوانٍ.",
-    adhanPlaying: "بدأ تشغيل الأذان من مسار التشغيل الحقيقي.",
-    adhanFailed: "تعذر تشغيل الأذان على هذا الجهاز أو في حالة التطبيق الحالية.",
-    pushScheduled: "تم إرسال طلب الاختبار للسيرفر. سيصل Push حقيقي بعد 10 ثوانٍ.",
+    adhanScheduled: "بدأ اختبار الأذان. بعد 10 ثوانٍ سيصل نفس trigger الأذان المستخدم وقت الصلاة.",
+    adhanTriggered: "تم إرسال trigger الأذان الحقيقي للجهاز. التطبيق حاول تشغيل الأذان المحفوظ لهذه الصلاة.",
+    adhanFailed: "فشل إرسال اختبار الأذان للجهاز. تأكد من إذن الإشعارات واتصال الجهاز.",
+    pushScheduled: "بدأ اختبار الإشعار. سيصل Push حقيقي بعد 10 ثوانٍ.",
     pushSent: "تم إرسال Push الاختبار بنجاح.",
     pushFailed: "فشل اختبار Push. راجع إذن الإشعارات واتصال الجهاز.",
-    backgroundNote: "اختبار Push حقيقي ويمكنك بعد الضغط وضع التطبيق في الخلفية أو قفل الشاشة. اختبار الأذان يستخدم نفس المشغل الحقيقي، لكن أنظمة iOS/Android قد تمنع بدء صوت جديد إذا كان تطبيق الويب مغلقًا أو موقوفًا بالكامل في الخلفية.",
+    backgroundNote: "الاختباران يستخدمان Web Push الحقيقي. اختبار الإشعار يختبر الإشعار فقط. اختبار الأذان يرسل trigger من نوع Adhan عبر Service Worker ثم يحاول تشغيل الأذان المحفوظ. يمكنك بعد الضغط وضع التطبيق في الخلفية أو قفل الشاشة. سيظهر إشعار أيضًا أثناء اختبار الأذان لأن Web Push في تطبيقات الويب يجب أن يكون مرئيًا للمستخدم، بينما تشغيل صوت مخصص قد يظل مقيدًا إذا أوقف النظام تطبيق الويب بالكامل.",
   },
   en: {
     title: "Adhan & notification test",
-    description: "Choose a prayer, then test its saved Adhan and a real push notification after 10 seconds.",
+    description: "Choose a prayer, then test the real Adhan-arrival path and a real push notification after 10 seconds.",
     prayer: "Prayer",
     selectedAdhan: "Saved Adhan",
     testAdhan: "Test Adhan",
     testPush: "Test push",
-    adhanScheduled: "Adhan simulation started. Playback will be attempted after 10 seconds.",
-    adhanPlaying: "Adhan playback started through the real playback path.",
-    adhanFailed: "Adhan playback was blocked or failed in the current device/app state.",
-    pushScheduled: "The server test was started. A real Web Push will be sent after 10 seconds.",
+    adhanScheduled: "Adhan test started. In 10 seconds the device will receive the same Adhan trigger used at prayer time.",
+    adhanTriggered: "The real Adhan trigger was sent to this device. The app attempted the saved Adhan for this prayer.",
+    adhanFailed: "The Adhan test could not be sent. Check notification permission and device connectivity.",
+    pushScheduled: "Push test started. A real Web Push will be sent after 10 seconds.",
     pushSent: "The test push was sent successfully.",
     pushFailed: "Push test failed. Check notification permission and device connectivity.",
-    backgroundNote: "The push test is real, so you can background the app or lock the screen after tapping it. The Adhan test uses the real player, but iOS/Android can block new audio when a web app is fully closed or suspended in the background.",
+    backgroundNote: "Both tests use real Web Push. The push test checks the notification path only. The Adhan test sends an Adhan-kind trigger through the Service Worker and then attempts the saved Adhan. You can background the app or lock the screen after tapping. The Adhan test also shows a notification because web push must remain user-visible, while custom audio can still be restricted if the OS fully suspends the web app.",
   },
   de: {
     title: "Adhan- und Benachrichtigungstest",
-    description: "Wähle ein Gebet und teste den gespeicherten Adhan sowie eine echte Push-Benachrichtigung nach 10 Sekunden.",
+    description: "Wähle ein Gebet und teste nach 10 Sekunden den echten Adhan-Ankunftspfad sowie eine echte Push-Benachrichtigung.",
     prayer: "Gebet",
     selectedAdhan: "Gespeicherter Adhan",
     testAdhan: "Adhan testen",
     testPush: "Push testen",
-    adhanScheduled: "Adhan-Simulation gestartet. Die Wiedergabe wird nach 10 Sekunden versucht.",
-    adhanPlaying: "Der Adhan wurde über den echten Wiedergabepfad gestartet.",
-    adhanFailed: "Die Adhan-Wiedergabe wurde im aktuellen Geräte-/App-Zustand blockiert oder ist fehlgeschlagen.",
-    pushScheduled: "Der Servertest wurde gestartet. Nach 10 Sekunden wird ein echter Web Push gesendet.",
+    adhanScheduled: "Adhan-Test gestartet. In 10 Sekunden erhält das Gerät denselben Adhan-Trigger wie zur Gebetszeit.",
+    adhanTriggered: "Der echte Adhan-Trigger wurde an dieses Gerät gesendet. Die App hat den gespeicherten Adhan dieses Gebets versucht abzuspielen.",
+    adhanFailed: "Der Adhan-Test konnte nicht gesendet werden. Prüfe Benachrichtigungsberechtigung und Verbindung.",
+    pushScheduled: "Push-Test gestartet. Nach 10 Sekunden wird ein echter Web Push gesendet.",
     pushSent: "Der Test-Push wurde erfolgreich gesendet.",
     pushFailed: "Push-Test fehlgeschlagen. Prüfe Benachrichtigungsberechtigung und Verbindung.",
-    backgroundNote: "Der Push-Test ist echt; danach kannst du die App in den Hintergrund legen oder das Display sperren. Der Adhan-Test nutzt den echten Player, aber iOS/Android kann neuen Ton blockieren, wenn eine Web-App vollständig geschlossen oder im Hintergrund angehalten ist.",
+    backgroundNote: "Beide Tests verwenden echten Web Push. Der Push-Test prüft nur den Benachrichtigungspfad. Der Adhan-Test sendet einen Adhan-Trigger über den Service Worker und versucht anschließend den gespeicherten Adhan. Du kannst die App danach in den Hintergrund legen oder das Display sperren. Beim Adhan-Test erscheint ebenfalls eine Benachrichtigung, da Web Push sichtbar bleiben muss; benutzerdefiniertes Audio kann jedoch weiterhin blockiert werden, wenn das Betriebssystem die Web-App vollständig anhält.",
   },
   tr: {
     title: "Ezan ve bildirim testi",
-    description: "Bir namaz seçin; kaydedilmiş ezanı ve gerçek push bildirimini 10 saniye sonra test edin.",
+    description: "Bir namaz seçin; 10 saniye sonra gerçek ezan-geliş yolunu ve gerçek push bildirimini test edin.",
     prayer: "Namaz",
     selectedAdhan: "Kayıtlı ezan",
     testAdhan: "Ezanı test et",
     testPush: "Push'u test et",
-    adhanScheduled: "Ezan simülasyonu başladı. 10 saniye sonra oynatma denenecek.",
-    adhanPlaying: "Ezan gerçek oynatma yolu üzerinden başladı.",
-    adhanFailed: "Mevcut cihaz/uygulama durumunda ezan oynatma engellendi veya başarısız oldu.",
-    pushScheduled: "Sunucu testi başladı. 10 saniye sonra gerçek Web Push gönderilecek.",
+    adhanScheduled: "Ezan testi başladı. 10 saniye sonra cihaz namaz vaktinde kullanılan gerçek ezan tetikleyicisini alacak.",
+    adhanTriggered: "Gerçek ezan tetikleyicisi bu cihaza gönderildi. Uygulama bu namaz için kayıtlı ezanı oynatmayı denedi.",
+    adhanFailed: "Ezan testi gönderilemedi. Bildirim iznini ve cihaz bağlantısını kontrol edin.",
+    pushScheduled: "Push testi başladı. 10 saniye sonra gerçek Web Push gönderilecek.",
     pushSent: "Test push bildirimi başarıyla gönderildi.",
     pushFailed: "Push testi başarısız oldu. Bildirim iznini ve cihaz bağlantısını kontrol edin.",
-    backgroundNote: "Push testi gerçektir; düğmeye bastıktan sonra uygulamayı arka plana alabilir veya ekranı kilitleyebilirsiniz. Ezan testi gerçek oynatıcıyı kullanır, ancak iOS/Android web uygulaması tamamen kapalı veya askıya alınmışken yeni sesi engelleyebilir.",
+    backgroundNote: "Her iki test de gerçek Web Push kullanır. Push testi yalnızca bildirim yolunu test eder. Ezan testi Service Worker üzerinden Adhan türü tetikleyici gönderir ve ardından kayıtlı ezanı oynatmayı dener. Düğmeye bastıktan sonra uygulamayı arka plana alabilir veya ekranı kilitleyebilirsiniz. Web Push kullanıcıya görünür kalmak zorunda olduğundan ezan testinde de bildirim görünür; işletim sistemi web uygulamasını tamamen askıya alırsa özel ses yine kısıtlanabilir.",
   },
 };
 
@@ -128,16 +128,14 @@ export function PrayerSystemTestControls() {
     getPrayerSound,
     preloadSound,
     primeSound,
-    previewSound,
     stopAudio,
   } = useAdhanAudio();
-  const { sendTestNotification } = useAppPreferences();
+  const { sendTestNotification, sendTestAdhan } = useAppPreferences();
   const [prayer, setPrayer] = useState<AdhanPrayer>("dhuhr");
   const [adhanStatus, setAdhanStatus] = useState("");
   const [pushStatus, setPushStatus] = useState("");
   const adhanCountdown = useCountdown();
   const pushCountdown = useCountdown();
-  const adhanTimerRef = useRef<number | null>(null);
 
   const soundId = getPrayerSound(prayer);
 
@@ -145,10 +143,7 @@ export function PrayerSystemTestControls() {
     preloadSound(soundId);
   }, [preloadSound, soundId]);
 
-  useEffect(() => () => {
-    if (adhanTimerRef.current !== null) window.clearTimeout(adhanTimerRef.current);
-    stopAudio();
-  }, [stopAudio]);
+  useEffect(() => () => stopAudio(), [stopAudio]);
 
   function startAdhanTest() {
     if (adhanCountdown.seconds !== null) return;
@@ -158,13 +153,10 @@ export function PrayerSystemTestControls() {
     setAdhanStatus(copy.adhanScheduled);
     adhanCountdown.start(TEST_SECONDS);
 
-    adhanTimerRef.current = window.setTimeout(() => {
-      adhanTimerRef.current = null;
-      void previewSound(soundId).then((started) => {
-        setAdhanStatus(started ? copy.adhanPlaying : copy.adhanFailed);
-        adhanCountdown.finish();
-      });
-    }, TEST_SECONDS * 1000);
+    void sendTestAdhan(prayer, TEST_SECONDS).then((sent) => {
+      setAdhanStatus(sent ? copy.adhanTriggered : copy.adhanFailed);
+      adhanCountdown.finish();
+    });
   }
 
   function startPushTest() {

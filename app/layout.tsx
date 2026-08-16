@@ -15,6 +15,7 @@ import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
 import { PlatformChromeBootstrap } from "@/components/providers/PlatformChromeBootstrap";
+import { AppLaunchScreen } from "@/components/providers/AppLaunchScreen";
 import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
 import { PublicNavigation } from "@/components/layout/PublicNavigation";
 
@@ -64,6 +65,7 @@ export default async function RootLayout({
     <html lang={initialLocale} dir={getTextDirection(initialLocale)} suppressHydrationWarning>
       <body>
         <PlatformChromeBootstrap />
+        <AppLaunchScreen />
         <I18nProvider initialLocale={initialLocale}>
           <AuthProvider>
             <AppPreferencesProvider>

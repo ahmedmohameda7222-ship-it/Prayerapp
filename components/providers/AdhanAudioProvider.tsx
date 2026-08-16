@@ -41,6 +41,11 @@ type NetworkInformationLike = {
   effectiveType?: string;
 };
 
+type IdleWindow = Window & typeof globalThis & {
+  requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+  cancelIdleCallback?: (id: number) => void;
+};
+
 const PRAYERS: readonly AdhanPrayer[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 
 function defaultPrayerSounds(): PrayerSoundMap {
@@ -293,13 +298,14 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
       for (const sound of ADHAN_SOUNDS) controller.prepare(sound.audioUrl);
     };
 
-    if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(preloadAll, { timeout: 2500 });
-      return () => window.cancelIdleCallback(idleId);
+    const idleWindow = window as IdleWindow;
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const idleId = idleWindow.requestIdleCallback(preloadAll, { timeout: 2500 });
+      return () => idleWindow.cancelIdleCallback?.(idleId);
     }
 
-    const timer = window.setTimeout(preloadAll, 900);
-    return () => window.clearTimeout(timer);
+    const timer = globalThis.setTimeout(preloadAll, 900);
+    return () => globalThis.clearTimeout(timer);
   }, [getController, prayerSounds]);
 
   useEffect(() => {

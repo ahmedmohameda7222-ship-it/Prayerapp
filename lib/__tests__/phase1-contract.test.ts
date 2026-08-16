@@ -76,8 +76,8 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(cron).toContain("supportedLeadMinutes = [5, 10, 15]");
     expect(cron).toContain("beforeReminderBody");
     expect(cron).toContain("adhanReminderBody");
-    expect(cron).toContain("`:before:${leadMinutes}`");
-    expect(cron).toContain("`:adhan`");
+    expect(cron).toContain("prayer:${schedule.date}:${prayer}:${time}:before:${leadMinutes}");
+    expect(cron).toContain("prayer:${schedule.date}:${prayer}:${time}:adhan");
     expect(cron).toContain("schedule.note !== QA_MOCK_MARKER");
     expect(source("lib/push/web-push.ts")).toContain('reserveError?.code === "23505"');
   });

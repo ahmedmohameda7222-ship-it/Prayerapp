@@ -25,6 +25,12 @@ describe("prayer-aware Adhan catalog", () => {
     expect(getAdhanSound(DEFAULT_REGULAR_ADHAN_SOUND_ID).kind).toBe("regular");
   });
 
+  it("uses the verified direct MP3 for Abdul Basit instead of the broken download endpoint", () => {
+    const sound = getAdhanSound("abdul-basit-cairo");
+    expect(sound.audioUrl).toBe("https://www.ashefaa.com/ruqia/Azan/62.mp3");
+    expect(sound.audioUrl).not.toContain("doaatv.com/download");
+  });
+
   it("normalizes legacy and incompatible selections safely", () => {
     expect(normalizeAdhanSoundId("fajr", "fajr")).toBe("fajr-cairo");
     expect(normalizeAdhanSoundId("makkah", "fajr")).toBe("fajr-makkah");

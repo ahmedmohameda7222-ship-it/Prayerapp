@@ -7,14 +7,15 @@ function source(path: string) {
 }
 
 describe("prayer reminder timing contract", () => {
-  it("stores one of the supported per-prayer lead times", () => {
+  it("stores one of the supported per-prayer lead times together with the prayer Adhan", () => {
     const migration = source("supabase/migrations/20260816013933_prayer_reminder_lead_minutes.sql");
     const card = source("components/prayer/HomePrayerTimesCard.tsx");
 
     expect(migration).toContain("lead_minutes in (0, 5, 10, 15)");
     expect(card).toContain("reminderOptions");
-    expect(card).toContain("lead_minutes: leadMinutes");
-    expect(card).toContain("option === 0 ? copy.adhanOnly");
+    expect(card).toContain("lead_minutes: normalizedLeadMinutes");
+    expect(card).toContain("adhan_sound_id: adhanSoundId");
+    expect(card).toContain("option === 0 ? copy.atAdhan");
   });
 
   it("sends a pre-Adhan push only for selected lead times and always sends an Adhan push", () => {

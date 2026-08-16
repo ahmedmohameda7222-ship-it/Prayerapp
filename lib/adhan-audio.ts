@@ -28,7 +28,7 @@ export const ADHAN_SOUNDS: readonly AdhanSound[] = [
   {
     id: "abdul-basit-cairo",
     kind: "regular",
-    audioUrl: "https://doaatv.com/download/1016",
+    audioUrl: "https://www.ashefaa.com/ruqia/Azan/62.mp3",
     label: {
       ar: "عبد الباسط عبد الصمد · القاهرة",
       en: "Abdul Basit Abdus Samad · Cairo",

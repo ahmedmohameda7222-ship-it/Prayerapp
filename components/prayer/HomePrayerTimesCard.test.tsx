@@ -19,6 +19,7 @@ vi.mock("@/lib/supabase/client", () => ({ createClient: () => null }));
 
 vi.mock("@/lib/i18n/use-translation", () => ({
   useTranslation: () => ({
+    locale: "en",
     t: (key: string) => ({
       "prayer.fajr": "Fajr",
       "prayer.sunrise": "Sunrise",
@@ -76,11 +77,12 @@ describe("HomePrayerTimesCard", () => {
     expect(within(ishaRow as HTMLElement).queryByText("22:40")).not.toBeInTheDocument();
 
     const maghribProgram = screen.getByTestId("maghrib-program");
+    expect(within(maghribProgram).getByText("Maghrib program")).toBeInTheDocument();
     expect(within(maghribProgram).getByText("Combined Salat Isha")).toBeInTheDocument();
     expect(within(maghribProgram).getByText("22:40")).toBeInTheDocument();
   });
 
-  it("keeps six prayer rows and reminders only for the five obligatory prayers", () => {
+  it("keeps six prayer rows and reminder bells only for the five obligatory prayers", () => {
     const { container } = render(<HomePrayerTimesCard prayer={prayer} activePrayer="asr" />);
 
     expect(screen.getByTestId("home-prayer-board")).toHaveClass("home-prayer-board");

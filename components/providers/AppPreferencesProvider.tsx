@@ -148,7 +148,10 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
   }, [authLoading, saveStored, syncSubscription]);
 
   const enableNotifications = useCallback(async () => {
-    if (!stored || busy || authLoading) return false;
+    if (busy || authLoading) return false;
+    const preferences = stored || readStoredPreferences();
+    if (!stored) saveStored(preferences);
+
     setBusy(true);
     try {
       if (isIos() && !isStandalone()) {
@@ -182,7 +185,7 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
-      await syncSubscription(subscription, stored);
+      await syncSubscription(subscription, preferences);
       setPushStatus("enabled");
       return true;
     } catch (error) {
@@ -192,7 +195,7 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     } finally {
       setBusy(false);
     }
-  }, [authLoading, busy, stored, syncSubscription]);
+  }, [authLoading, busy, saveStored, stored, syncSubscription]);
 
   const disableNotifications = useCallback(async () => {
     if (!stored || busy || !isSupported()) return;

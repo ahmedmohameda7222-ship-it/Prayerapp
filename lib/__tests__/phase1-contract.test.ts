@@ -65,6 +65,7 @@ describe("Phase 1 account and personalization contracts", () => {
 
   it("targets only the five canonical prayers with optional pre-Adhan and mandatory Adhan notifications", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
+    const delivery = source("lib/prayer-reminder-delivery.ts");
     expect(cron).toContain("user_prayer_reminders");
     expect(cron).toContain("fajr:");
     expect(cron).toContain("dhuhr:");
@@ -74,8 +75,10 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(cron).not.toContain("sunrise:");
     expect(cron).toContain('select("user_id, prayer, lead_minutes")');
     expect(cron).toContain("supportedLeadMinutes = [5, 10, 15]");
-    expect(cron).toContain("beforeReminderBody");
-    expect(cron).toContain("adhanReminderBody");
+    expect(cron).toContain("deliverPrayerReminderEvent");
+    expect(delivery).toContain("beforeReminderBody");
+    expect(delivery).toContain("adhanReminderBody");
+    expect(delivery).toContain('kind: isAdhan ? "adhan" : "prayer-reminder"');
     expect(cron).toContain("prayer:${schedule.date}:${prayer}:${time}:before:${leadMinutes}");
     expect(cron).toContain("prayer:${schedule.date}:${prayer}:${time}:adhan");
     expect(cron).toContain("schedule.note !== QA_MOCK_MARKER");

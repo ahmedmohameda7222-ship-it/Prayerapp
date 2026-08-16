@@ -6,14 +6,14 @@ export const ADHAN_PRAYER_SOUND_STORAGE_KEY = "masjid-el-rahman-prayer-adhan-sou
 export type AdhanSound = {
   id: AdhanSoundId;
   audioUrl: string;
-  durationLabel: string;
+  durationLabel: string | null;
 };
 
 export const ADHAN_SOUNDS: readonly AdhanSound[] = [
   {
     id: "egyptian",
     audioUrl: "https://www.repository.cam.ac.uk/bitstreams/e71f4998-5000-477a-9ae5-a19bc951db09/download",
-    durationLabel: "كامل",
+    durationLabel: null,
   },
   {
     id: "fajr",

@@ -22,11 +22,12 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(adminAuth).toContain("ADMIN_EMAILS");
   });
 
-  it("has a migration-only bootstrap authority and forward-only Phase 1 privilege repair", () => {
+  it("has a migration-only bootstrap authority and forward-only reminder preference migrations", () => {
     expect(existsSync(path.join(process.cwd(), "supabase/schema.sql"))).toBe(false);
     const initial = source("supabase/migrations/20260626000000_initial_schema.sql");
     const originalPhase1 = source("supabase/migrations/20260812000000_phase_1_account_personalization.sql");
     const correction = source("supabase/migrations/20260812010000_phase_1_post_merge_correction.sql");
+    const reminderTiming = source("supabase/migrations/20260816013933_prayer_reminder_lead_minutes.sql");
     expect(initial).toMatch(/create table if not exists\s+(?:public\.)?prayer_times/i);
     expect(originalPhase1).toContain("public.user_saved_azkar");
     expect(originalPhase1).toContain("public.user_prayer_reminders");
@@ -36,6 +37,8 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(correction).toContain("revoke all on public.user_saved_azkar, public.user_prayer_reminders from anon");
     expect(correction).toContain("grant select on public.user_prayer_reminders to service_role");
     expect(correction).not.toContain("grant all");
+    expect(reminderTiming).toContain("add column if not exists lead_minutes");
+    expect(reminderTiming).toContain("lead_minutes in (0, 5, 10, 15)");
   });
 
   it("aligns repository Auth policy with eight-character passwords and email confirmation", () => {
@@ -57,9 +60,10 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(provider).toContain("loading: authLoading");
     expect(provider).toContain("if (authLoading) return;");
     expect(provider).toContain("[authLoading, saveStored, syncSubscription]");
+    expect(provider).toContain("const preferences = stored || readStoredPreferences()");
   });
 
-  it("targets only the five canonical prayers at official adhan time with idempotent delivery keys", () => {
+  it("targets only the five canonical prayers with optional pre-Adhan and mandatory Adhan notifications", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
     expect(cron).toContain("user_prayer_reminders");
     expect(cron).toContain("fajr:");
@@ -68,8 +72,13 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(cron).toContain("maghrib:");
     expect(cron).toContain("isha:");
     expect(cron).not.toContain("sunrise:");
-    expect(cron).not.toContain("prayer_reminder_minutes");
-    expect(cron).toContain("`prayer:${schedule.date}:${prayer}:${time}`");
+    expect(cron).toContain('select("user_id, prayer, lead_minutes")');
+    expect(cron).toContain("supportedLeadMinutes = [5, 10, 15]");
+    expect(cron).toContain("beforeReminderBody");
+    expect(cron).toContain("adhanReminderBody");
+    expect(cron).toContain("`:before:${leadMinutes}`");
+    expect(cron).toContain("`:adhan`");
+    expect(cron).toContain("schedule.note !== QA_MOCK_MARKER");
     expect(source("lib/push/web-push.ts")).toContain('reserveError?.code === "23505"');
   });
 
@@ -123,12 +132,30 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(announcement).toContain('className="line-clamp-2 whitespace-pre-wrap');
   });
 
-  it("provides five prayer reminder controls and excludes Sunrise", () => {
+  it("provides five prayer reminder controls, timing choices, and excludes Sunrise", () => {
     const table = source("components/prayer/HomePrayerTimesCard.tsx");
     expect(table).toContain('new Set<ReminderPrayer>(["fajr", "dhuhr", "asr", "maghrib", "isha"])');
     expect(table).toContain('const canRemind = name !== "sunrise"');
     expect(table).toContain('aria-pressed={isEnabled}');
     expect(table).toContain('/account/sign-in?next=');
+    expect(table).toContain("reminderOptions");
+    expect(table).toContain("lead_minutes: leadMinutes");
+    expect(table).toContain('data-testid="prayer-reminder-dialog"');
+    expect(table).not.toContain("Settings2");
+  });
+
+  it("keeps the Maghrib lesson and combined Isha program in the Home prayer board", () => {
+    const table = source("components/prayer/HomePrayerTimesCard.tsx");
+    expect(table).toContain('data-testid="maghrib-program"');
+    expect(table).toContain("maghribProgram.lessonTitle");
+    expect(table).toContain("maghribProgram.combinedIshaTime");
+    expect(table).toContain("copy.maghribProgram");
+  });
+
+  it("removes the Privacy page and public navigation entries", () => {
+    expect(existsSync(path.join(process.cwd(), "app/privacy/page.tsx"))).toBe(false);
+    expect(source("app/more/page.tsx")).not.toContain('"/privacy"');
+    expect(source("app/account/page.tsx")).not.toContain('"/privacy"');
   });
 
   it("retires the old global timing selector and fake countdown placeholder", () => {

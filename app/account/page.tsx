@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, BookHeart, ChevronRight, LogOut, Settings, Shield, Trash2 } from "lucide-react";
+import { Bell, BookHeart, ChevronRight, LogOut, Settings, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -70,7 +70,6 @@ export default function AccountPage() {
     ["/azkar?tab=Favorites", t("phase1.savedAzkar"), BookHeart],
     ["/#prayer-times", t("phase1.manageReminders"), Bell],
     ["/settings", t("settings.title"), Settings],
-    ["/privacy", t("phase1.privacy"), Shield],
   ] as const;
 
   return (

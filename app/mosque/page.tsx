@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ChevronRight, Mail, MapPin, Phone } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Card } from "@/components/ui/Card";
 import { DataError, DataLoading } from "@/components/ui/DataState";
 import { getMosqueSettings } from "@/lib/data/mosque-settings";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
@@ -76,11 +75,6 @@ export default function MosquePage() {
               </a>
             ) : null}
           </section>
-
-          <Card>
-            <h2 className="text-[15px] font-bold text-[var(--app-text)]">{t("mosque.visitorInfo")}</h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--app-text-secondary)]">{t("mosque.visitorInfoDesc")}</p>
-          </Card>
 
           <Link href="/donations" className="native-list-row rounded-[16px] border border-[var(--app-divider)] bg-[var(--app-surface)]">
             <span className="native-list-row-icon" aria-hidden="true">€</span>

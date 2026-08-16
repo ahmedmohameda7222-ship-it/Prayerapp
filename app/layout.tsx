@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import "./globals.css";
+import "./launch-screen.css";
 import "./responsive-prayer-nav.css";
 import "./home-palette-preview.css";
 import "./home-jumuah.css";

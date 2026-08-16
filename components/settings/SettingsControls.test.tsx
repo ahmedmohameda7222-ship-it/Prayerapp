@@ -1,18 +1,15 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { SettingsControls } from "./SettingsControls";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
-import { AdhanAudioProvider } from "@/components/providers/AdhanAudioProvider";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 
 function renderSettings() {
   return render(
     <AppPreferencesProvider>
-      <AdhanAudioProvider>
-        <TimeFormatProvider>
-          <SettingsControls />
-        </TimeFormatProvider>
-      </AdhanAudioProvider>
+      <TimeFormatProvider>
+        <SettingsControls />
+      </TimeFormatProvider>
     </AppPreferencesProvider>,
   );
 }
@@ -32,21 +29,13 @@ describe("SettingsControls", () => {
     expect(localStorage.getItem("deggendorf-app-preferences-v1")).not.toContain('"theme"');
   });
 
-  it("retires global prayer reminder timing and points reminder management to Home", () => {
+  it("keeps prayer reminder and Adhan management on Home", () => {
     renderSettings();
 
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    expect(screen.queryByTestId("adhan-audio-settings")).not.toBeInTheDocument();
     const homeLink = screen.getAllByRole("link").find((link) => link.getAttribute("href") === "/#prayer-times");
     expect(homeLink).toBeDefined();
-  });
-
-  it("offers device-only sound plus two in-app Adhan choices", () => {
-    renderSettings();
-
-    const section = screen.getByTestId("adhan-audio-settings");
-    expect(within(section).getByText("1:42")).toBeInTheDocument();
-    expect(within(section).getByText("2:34")).toBeInTheDocument();
-    expect(within(section).getAllByRole("button")).toHaveLength(5);
   });
 });

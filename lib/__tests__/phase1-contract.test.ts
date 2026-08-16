@@ -132,14 +132,16 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(announcement).toContain('className="line-clamp-2 whitespace-pre-wrap');
   });
 
-  it("provides five prayer reminder controls, timing choices, and excludes Sunrise", () => {
+  it("provides five prayer reminder controls, timing choices, per-prayer Adhan choices, and excludes Sunrise", () => {
     const table = source("components/prayer/HomePrayerTimesCard.tsx");
     expect(table).toContain('new Set<ReminderPrayer>(["fajr", "dhuhr", "asr", "maghrib", "isha"])');
     expect(table).toContain('const canRemind = name !== "sunrise"');
     expect(table).toContain('aria-pressed={isEnabled}');
     expect(table).toContain('/account/sign-in?next=');
     expect(table).toContain("reminderOptions");
-    expect(table).toContain("lead_minutes: leadMinutes");
+    expect(table).toContain("lead_minutes: normalizedLeadMinutes");
+    expect(table).toContain("adhan_sound_id: adhanSoundId");
+    expect(table).toContain("getAdhanSoundsForPrayer(editingPrayer)");
     expect(table).toContain('data-testid="prayer-reminder-dialog"');
     expect(table).not.toContain("Settings2");
   });

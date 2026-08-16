@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { SettingsControls } from "./SettingsControls";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
@@ -44,9 +44,9 @@ describe("SettingsControls", () => {
   it("offers device-only sound plus two in-app Adhan choices", () => {
     renderSettings();
 
-    expect(screen.getByTestId("adhan-audio-settings")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Device notification sound only/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Adhan 1/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Adhan 2/i })).toBeInTheDocument();
+    const section = screen.getByTestId("adhan-audio-settings");
+    expect(within(section).getByText("1:42")).toBeInTheDocument();
+    expect(within(section).getByText("2:34")).toBeInTheDocument();
+    expect(within(section).getAllByRole("button")).toHaveLength(5);
   });
 });

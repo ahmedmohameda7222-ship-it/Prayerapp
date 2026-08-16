@@ -100,14 +100,16 @@ function formatDays(days: number, locale: Locale) {
   return days === 1 ? "1 day" : `${days} days`;
 }
 
-function formatCountdown(ms: number, locale: Locale) {
+function countdownParts(ms: number, locale: Locale) {
   const totalSeconds = Math.floor(Math.max(0, ms) / 1000);
   const days = Math.floor(totalSeconds / 86_400);
   const hours = String(Math.floor((totalSeconds % 86_400) / 3600)).padStart(2, "0");
   const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
   const seconds = String(totalSeconds % 60).padStart(2, "0");
-  const clock = `${hours}:${minutes}:${seconds}`;
-  return days > 0 ? `${formatDays(days, locale)} · ${clock}` : clock;
+  return {
+    days: days > 0 ? formatDays(days, locale) : "",
+    clock: `${hours}:${minutes}:${seconds}`,
+  };
 }
 
 type FridayPageClientProps = {
@@ -149,7 +151,7 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
     ? localizedNotes[0]
     : "";
 
-  const countdown = livePrayer ? formatCountdown(livePrayer.remainingMs, locale) : "";
+  const countdown = livePrayer ? countdownParts(livePrayer.remainingMs, locale) : null;
 
   return (
     <div className="friday-page" dir={direction} data-testid="friday-page">
@@ -160,19 +162,27 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
       >
         <span className="friday-live-image" aria-hidden="true" />
         <span className="friday-live-scrim" aria-hidden="true" />
-        {livePrayer && schedule ? (
+        {livePrayer && schedule && countdown ? (
           <div className="friday-live-content">
             <div className="friday-live-copy">
               <p className="friday-live-eyebrow">{copy.nextPrayer}</p>
               <h2 id="friday-live-title">{serviceLabel(locale, livePrayer.index, schedule.items.length)}</h2>
               <div className="friday-live-primary">
                 <p className="friday-live-time">
-                  <FormattedTime time={livePrayer.item.prayerTime} />
+                  <bdi dir="ltr" className="inline-block [unicode-bidi:isolate]">
+                    <FormattedTime time={livePrayer.item.prayerTime} />
+                  </bdi>
                 </p>
                 <div className="friday-live-countdown-wrap">
                   <span>{livePrayer.imminent ? copy.imminent : copy.remaining}</span>
-                  <p className="friday-live-countdown" role="timer" aria-live="off">
-                    <span dir="ltr">{countdown}</span>
+                  <p className="friday-live-countdown flex flex-wrap items-baseline gap-x-1.5" role="timer" aria-live="off">
+                    {countdown.days ? (
+                      <>
+                        <span dir={direction} className="[unicode-bidi:isolate]">{countdown.days}</span>
+                        <span aria-hidden="true">·</span>
+                      </>
+                    ) : null}
+                    <bdi dir="ltr" className="inline-block [unicode-bidi:isolate]">{countdown.clock}</bdi>
                   </p>
                 </div>
               </div>
@@ -225,7 +235,11 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
                       <dl className="friday-service-prayer">
                         <div>
                           <dt>{copy.prayer}</dt>
-                          <dd><FormattedTime time={item.prayerTime} /></dd>
+                          <dd>
+                            <bdi dir="ltr" className="inline-block [unicode-bidi:isolate]">
+                              <FormattedTime time={item.prayerTime} />
+                            </bdi>
+                          </dd>
                         </div>
                       </dl>
                     </div>

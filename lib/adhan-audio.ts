@@ -30,10 +30,10 @@ export const ADHAN_SOUNDS: readonly AdhanSound[] = [
     kind: "regular",
     audioUrl: "https://www.ashefaa.com/ruqia/Azan/62.mp3",
     label: {
-      ar: "عبد الباسط عبد الصمد · القاهرة",
-      en: "Abdul Basit Abdus Samad · Cairo",
-      de: "Abdul Basit Abdus Samad · Kairo",
-      tr: "Abdul Basit Abdus Samad · Kahire",
+      ar: "عبد الباسط عبد الصمد",
+      en: "Abdul Basit Abdus Samad",
+      de: "Abdul Basit Abdus Samad",
+      tr: "Abdul Basit Abdus Samad",
     },
   },
   {

@@ -1,0 +1,39 @@
+/* Installed-PWA cold launch: replace the OS/browser black flash with branded app chrome. */
+.app-launch-screen {
+  position: fixed;
+  z-index: 2147483647;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+  background: #005a52;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 180ms ease-out;
+}
+
+html[data-display-mode="standalone"] .app-launch-screen {
+  display: grid;
+}
+
+.app-launch-screen[data-ready="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app-launch-screen-icon {
+  display: block;
+  width: clamp(88px, 24vw, 112px);
+  height: auto;
+  border-radius: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-launch-screen {
+    transition: none;
+  }
+}

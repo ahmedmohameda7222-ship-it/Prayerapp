@@ -2,19 +2,24 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ADHAN_SOUND_STORAGE_KEY,
+  ADHAN_PRAYER_SOUND_STORAGE_KEY,
+  DEFAULT_ADHAN_SOUNDS,
   getAdhanSound,
+  isAdhanPrayer,
   isAdhanSoundId,
+  type AdhanPrayer,
   type AdhanSoundId,
 } from "@/lib/adhan-audio";
 
 type AdhanPlaybackStatus = "idle" | "playing" | "blocked" | "error";
+type PrayerSoundMap = Record<AdhanPrayer, AdhanSoundId>;
 
 type AdhanAudioContextValue = {
-  soundId: AdhanSoundId;
+  prayerSounds: PrayerSoundMap;
   playbackStatus: AdhanPlaybackStatus;
   activeSoundId: AdhanSoundId | null;
-  setSoundId: (soundId: AdhanSoundId) => void;
+  setPrayerSound: (prayer: AdhanPrayer, soundId: AdhanSoundId) => void;
+  syncPrayerSounds: (sounds: Partial<PrayerSoundMap>) => void;
   previewSound: (soundId: AdhanSoundId) => Promise<boolean>;
   stopAudio: () => void;
 };
@@ -32,7 +37,7 @@ class AdhanAudioController {
     if (!this.audio || this.sourceUrl !== sourceUrl) {
       this.dispose();
       const nextAudio = new Audio(sourceUrl);
-      nextAudio.preload = "auto";
+      nextAudio.preload = "metadata";
       nextAudio.addEventListener("ended", callbacks.onEnded);
       nextAudio.addEventListener("error", callbacks.onError);
       this.audio = nextAudio;
@@ -44,7 +49,7 @@ class AdhanAudioController {
     try {
       audio.currentTime = 0;
     } catch {
-      // The media source may not have metadata yet.
+      // Metadata may not be ready yet.
     }
     await audio.play();
   }
@@ -55,7 +60,7 @@ class AdhanAudioController {
     try {
       this.audio.currentTime = 0;
     } catch {
-      // The media source may not have metadata yet.
+      // Metadata may not be ready yet.
     }
   }
 
@@ -71,17 +76,31 @@ class AdhanAudioController {
 
 const AdhanAudioContext = createContext<AdhanAudioContextValue | null>(null);
 
-function readStoredSound(): AdhanSoundId {
+function readStoredPrayerSounds(): PrayerSoundMap {
+  const fallback = { ...DEFAULT_ADHAN_SOUNDS };
   try {
-    const stored = localStorage.getItem(ADHAN_SOUND_STORAGE_KEY);
-    return isAdhanSoundId(stored) ? stored : "system-only";
+    const raw = localStorage.getItem(ADHAN_PRAYER_SOUND_STORAGE_KEY);
+    if (!raw) return fallback;
+    const stored = JSON.parse(raw) as Partial<Record<AdhanPrayer, unknown>>;
+    for (const prayer of Object.keys(fallback) as AdhanPrayer[]) {
+      if (isAdhanSoundId(stored[prayer])) fallback[prayer] = stored[prayer];
+    }
   } catch {
-    return "system-only";
+    return fallback;
+  }
+  return fallback;
+}
+
+function persistPrayerSounds(sounds: PrayerSoundMap) {
+  try {
+    localStorage.setItem(ADHAN_PRAYER_SOUND_STORAGE_KEY, JSON.stringify(sounds));
+  } catch {
+    // Device storage failure should not block the current session preference.
   }
 }
 
 export function AdhanAudioProvider({ children }: { children: React.ReactNode }) {
-  const [soundId, setSoundIdState] = useState<AdhanSoundId>("system-only");
+  const [prayerSounds, setPrayerSoundsState] = useState<PrayerSoundMap>(() => ({ ...DEFAULT_ADHAN_SOUNDS }));
   const [playbackStatus, setPlaybackStatus] = useState<AdhanPlaybackStatus>("idle");
   const [activeSoundId, setActiveSoundId] = useState<AdhanSoundId | null>(null);
   const controllerRef = useRef<AdhanAudioController | null>(null);
@@ -98,10 +117,8 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
     setActiveSoundId(null);
   }, []);
 
-  const playSound = useCallback(async (requestedSoundId: Exclude<AdhanSoundId, "system-only">) => {
+  const playSound = useCallback(async (requestedSoundId: AdhanSoundId) => {
     const sound = getAdhanSound(requestedSoundId);
-    if (!sound.audioUrl) return false;
-
     setActiveSoundId(requestedSoundId);
     try {
       await getController().play(sound.audioUrl, {
@@ -124,24 +141,32 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
     }
   }, [getController]);
 
-  const setSoundId = useCallback((nextSoundId: AdhanSoundId) => {
-    setSoundIdState(nextSoundId);
-    try {
-      localStorage.setItem(ADHAN_SOUND_STORAGE_KEY, nextSoundId);
-    } catch {
-      // Device storage failure should not block the current session preference.
-    }
-    if (nextSoundId === "system-only") stopAudio();
-  }, [stopAudio]);
+  const setPrayerSound = useCallback((prayer: AdhanPrayer, soundId: AdhanSoundId) => {
+    setPrayerSoundsState((current) => {
+      const next = { ...current, [prayer]: soundId };
+      persistPrayerSounds(next);
+      return next;
+    });
+  }, []);
+
+  const syncPrayerSounds = useCallback((sounds: Partial<PrayerSoundMap>) => {
+    setPrayerSoundsState((current) => {
+      const next = { ...current };
+      for (const prayer of Object.keys(DEFAULT_ADHAN_SOUNDS) as AdhanPrayer[]) {
+        const candidate = sounds[prayer];
+        if (candidate && isAdhanSoundId(candidate)) next[prayer] = candidate;
+      }
+      persistPrayerSounds(next);
+      return next;
+    });
+  }, []);
 
   const previewSound = useCallback(async (requestedSoundId: AdhanSoundId) => {
-    setSoundId(requestedSoundId);
-    if (requestedSoundId === "system-only") return false;
     return playSound(requestedSoundId);
-  }, [playSound, setSoundId]);
+  }, [playSound]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSoundIdState(readStoredSound()), 0);
+    const timer = window.setTimeout(() => setPrayerSoundsState(readStoredPrayerSounds()), 0);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -149,30 +174,31 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
     if (!("serviceWorker" in navigator)) return;
 
     const onMessage = (event: MessageEvent) => {
-      const data = event.data as { type?: string; tag?: string } | null;
-      if (data?.type !== "ADHAN_DUE" || soundId === "system-only") return;
+      const data = event.data as { type?: string; tag?: string; prayer?: unknown } | null;
+      if (data?.type !== "ADHAN_DUE" || !isAdhanPrayer(data.prayer)) return;
       if (document.visibilityState !== "visible") return;
       if (data.tag && lastAdhanEventRef.current === data.tag) return;
       if (data.tag) lastAdhanEventRef.current = data.tag;
-      void playSound(soundId);
+      void playSound(prayerSounds[data.prayer]);
     };
 
     navigator.serviceWorker.addEventListener("message", onMessage);
     return () => navigator.serviceWorker.removeEventListener("message", onMessage);
-  }, [playSound, soundId]);
+  }, [playSound, prayerSounds]);
 
   useEffect(() => () => {
     controllerRef.current?.dispose();
   }, []);
 
   const value = useMemo<AdhanAudioContextValue>(() => ({
-    soundId,
+    prayerSounds,
     playbackStatus,
     activeSoundId,
-    setSoundId,
+    setPrayerSound,
+    syncPrayerSounds,
     previewSound,
     stopAudio,
-  }), [activeSoundId, playbackStatus, previewSound, setSoundId, soundId, stopAudio]);
+  }), [activeSoundId, playbackStatus, prayerSounds, previewSound, setPrayerSound, stopAudio, syncPrayerSounds]);
 
   return <AdhanAudioContext.Provider value={value}>{children}</AdhanAudioContext.Provider>;
 }

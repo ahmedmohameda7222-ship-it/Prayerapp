@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "deggendorf-prayer";
-const VERSION = "v16";
+const VERSION = "v17";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${VERSION}`;
 const IMAGE_CACHE = `${CACHE_PREFIX}-images-${VERSION}`;
@@ -206,20 +206,40 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+async function broadcastAdhanToOpenApp(payload) {
+  if (payload.kind !== "adhan") return;
+  const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  for (const client of clients) {
+    client.postMessage({
+      type: "ADHAN_DUE",
+      tag: payload.tag,
+      prayer: payload.prayer,
+      date: payload.date,
+    });
+  }
+}
+
 self.addEventListener("push", (event) => {
-  let payload = { title: "Masjid El-Rahman", body: "New mosque update", url: "/news", tag: "mosque-update" };
+  let payload = { title: "Masjid El-Rahman", body: "New mosque update", url: "/news", tag: "mosque-update", kind: "content" };
   try {
     if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {}
-  event.waitUntil(
+
+  event.waitUntil(Promise.all([
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: "/assets/app-icon-192.png",
       tag: payload.tag,
       renotify: false,
-      data: { url: payload.url },
-    })
-  );
+      data: {
+        url: payload.url,
+        kind: payload.kind,
+        prayer: payload.prayer,
+        date: payload.date,
+      },
+    }),
+    broadcastAdhanToOpenApp(payload),
+  ]));
 });
 
 self.addEventListener("notificationclick", (event) => {

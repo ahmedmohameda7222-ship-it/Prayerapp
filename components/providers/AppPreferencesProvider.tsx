@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/lib/i18n/context";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
+import type { AdhanPrayer } from "@/lib/adhan-audio";
 
 type PushStatus =
   | "checking"
@@ -13,6 +14,8 @@ type PushStatus =
   | "disabled"
   | "enabled"
   | "error";
+
+type TestMode = "notification" | "adhan";
 
 interface StoredPreferences {
   browserId: string;
@@ -25,6 +28,8 @@ type ContextValue = {
   enableNotifications: () => Promise<boolean>;
   disableNotifications: () => Promise<void>;
   detachAccount: () => Promise<void>;
+  sendTestNotification: (delaySeconds?: number) => Promise<boolean>;
+  sendTestAdhan: (prayer: AdhanPrayer, delaySeconds?: number) => Promise<boolean>;
 };
 
 const STORAGE_KEY = "masjid-el-rahman-push-v1";
@@ -229,6 +234,52 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     await syncSubscription(subscription, stored, true);
   }, [stored, syncSubscription]);
 
+  const sendPushSelfTest = useCallback(async (
+    mode: TestMode,
+    delaySeconds = 10,
+    prayer?: AdhanPrayer,
+  ) => {
+    if (authLoading || !isSupported()) return false;
+
+    let ready = pushStatus === "enabled";
+    if (!ready) ready = await enableNotifications();
+    if (!ready) return false;
+
+    const preferences = stored || readStoredPreferences();
+    const registration = await navigator.serviceWorker.getRegistration("/");
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return false;
+
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+    try {
+      const response = await fetch("/api/push/test", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          browserId: preferences.browserId,
+          mode,
+          prayer,
+          delaySeconds,
+        }),
+      });
+      return response.ok;
+    } catch (error) {
+      console.warn("Prayer system self-test failed", error);
+      return false;
+    }
+  }, [accessToken, authLoading, enableNotifications, pushStatus, stored]);
+
+  const sendTestNotification = useCallback((delaySeconds = 10) => (
+    sendPushSelfTest("notification", delaySeconds)
+  ), [sendPushSelfTest]);
+
+  const sendTestAdhan = useCallback((prayer: AdhanPrayer, delaySeconds = 10) => (
+    sendPushSelfTest("adhan", delaySeconds, prayer)
+  ), [sendPushSelfTest]);
+
   const value = useMemo<ContextValue>(() => ({
     pushStatus,
     permission,
@@ -236,7 +287,9 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     enableNotifications,
     disableNotifications,
     detachAccount,
-  }), [pushStatus, permission, busy, enableNotifications, disableNotifications, detachAccount]);
+    sendTestNotification,
+    sendTestAdhan,
+  }), [pushStatus, permission, busy, enableNotifications, disableNotifications, detachAccount, sendTestNotification, sendTestAdhan]);
 
   return <AppPreferencesContext.Provider value={value}>{children}</AppPreferencesContext.Provider>;
 }

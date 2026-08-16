@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import {
+  ADHAN_SOUNDS,
   LEGACY_GLOBAL_ADHAN_STORAGE_KEY,
   PRAYER_ADHAN_STORAGE_KEY,
   defaultAdhanSoundIdForPrayer,
@@ -24,6 +25,8 @@ type AdhanAudioContextValue = {
   getPrayerSound: (prayer: AdhanPrayer) => AdhanSoundId;
   setPrayerSound: (prayer: AdhanPrayer, soundId: AdhanSoundId) => void;
   syncPrayerSounds: (sounds: Partial<Record<AdhanPrayer, unknown>>) => void;
+  preloadSound: (soundId: AdhanSoundId) => void;
+  primeSound: (soundId: AdhanSoundId) => Promise<boolean>;
   previewSound: (soundId: AdhanSoundId) => Promise<boolean>;
   stopAudio: () => void;
 };
@@ -31,6 +34,16 @@ type AdhanAudioContextValue = {
 type PlaybackCallbacks = {
   onEnded: () => void;
   onError: () => void;
+};
+
+type NetworkInformationLike = {
+  saveData?: boolean;
+  effectiveType?: string;
+};
+
+type IdleWindow = Window & typeof globalThis & {
+  requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+  cancelIdleCallback?: (id: number) => void;
 };
 
 const PRAYERS: readonly AdhanPrayer[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
@@ -72,25 +85,66 @@ function storePrayerSounds(sounds: PrayerSoundMap) {
 }
 
 class AdhanAudioController {
-  private audio: HTMLAudioElement | null = null;
-  private sourceUrl = "";
-  private onEnded: (() => void) | null = null;
-  private onError: (() => void) | null = null;
+  private audios = new Map<string, HTMLAudioElement>();
+  private activeAudio: HTMLAudioElement | null = null;
+
+  private getAudio(sourceUrl: string) {
+    const existing = this.audios.get(sourceUrl);
+    if (existing) return existing;
+
+    const audio = new Audio();
+    audio.preload = "auto";
+    audio.src = sourceUrl;
+    audio.load();
+    this.audios.set(sourceUrl, audio);
+    return audio;
+  }
+
+  prepare(sourceUrl: string) {
+    const audio = this.getAudio(sourceUrl);
+    if (audio.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) audio.load();
+  }
+
+  async prime(sourceUrl: string) {
+    const audio = this.getAudio(sourceUrl);
+    const previousMuted = audio.muted;
+    const previousVolume = audio.volume;
+    audio.muted = true;
+    audio.volume = 0;
+    try {
+      await audio.play();
+      audio.pause();
+      try {
+        audio.currentTime = 0;
+      } catch {
+        // Metadata may not be available yet.
+      }
+      return true;
+    } catch {
+      return false;
+    } finally {
+      audio.muted = previousMuted;
+      audio.volume = previousVolume;
+    }
+  }
 
   async play(sourceUrl: string, callbacks: PlaybackCallbacks) {
-    if (!this.audio || this.sourceUrl !== sourceUrl) {
-      this.dispose();
-      const nextAudio = new Audio(sourceUrl);
-      nextAudio.preload = "auto";
-      this.onEnded = callbacks.onEnded;
-      this.onError = callbacks.onError;
-      nextAudio.addEventListener("ended", this.onEnded);
-      nextAudio.addEventListener("error", this.onError);
-      this.audio = nextAudio;
-      this.sourceUrl = sourceUrl;
+    const audio = this.getAudio(sourceUrl);
+
+    if (this.activeAudio && this.activeAudio !== audio) {
+      this.activeAudio.pause();
+      try {
+        this.activeAudio.currentTime = 0;
+      } catch {
+        // Metadata may not be available yet.
+      }
     }
 
-    const audio = this.audio;
+    this.activeAudio = audio;
+    audio.onended = callbacks.onEnded;
+    audio.onerror = callbacks.onError;
+    audio.muted = false;
+    audio.volume = 1;
     audio.pause();
     try {
       audio.currentTime = 0;
@@ -101,26 +155,26 @@ class AdhanAudioController {
   }
 
   stop() {
-    if (!this.audio) return;
-    this.audio.pause();
+    if (!this.activeAudio) return;
+    this.activeAudio.pause();
     try {
-      this.audio.currentTime = 0;
+      this.activeAudio.currentTime = 0;
     } catch {
       // Metadata may not be available yet.
     }
+    this.activeAudio = null;
   }
 
   dispose() {
-    if (!this.audio) return;
-    this.audio.pause();
-    if (this.onEnded) this.audio.removeEventListener("ended", this.onEnded);
-    if (this.onError) this.audio.removeEventListener("error", this.onError);
-    this.audio.removeAttribute("src");
-    this.audio.load();
-    this.audio = null;
-    this.sourceUrl = "";
-    this.onEnded = null;
-    this.onError = null;
+    for (const audio of this.audios.values()) {
+      audio.pause();
+      audio.onended = null;
+      audio.onerror = null;
+      audio.removeAttribute("src");
+      audio.load();
+    }
+    this.audios.clear();
+    this.activeAudio = null;
   }
 }
 
@@ -144,6 +198,14 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
     setPlaybackStatus("idle");
     setActiveSoundId(null);
   }, []);
+
+  const preloadSound = useCallback((soundId: AdhanSoundId) => {
+    getController().prepare(getAdhanSound(soundId).audioUrl);
+  }, [getController]);
+
+  const primeSound = useCallback(async (soundId: AdhanSoundId) => (
+    getController().prime(getAdhanSound(soundId).audioUrl)
+  ), [getController]);
 
   const playSound = useCallback(async (soundId: AdhanSoundId) => {
     const sound = getAdhanSound(soundId);
@@ -184,7 +246,8 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
 
   const setPrayerSound = useCallback((prayer: AdhanPrayer, soundId: AdhanSoundId) => {
     syncPrayerSounds({ [prayer]: soundId });
-  }, [syncPrayerSounds]);
+    preloadSound(normalizeAdhanSoundId(soundId, prayer));
+  }, [preloadSound, syncPrayerSounds]);
 
   const getPrayerSound = useCallback((prayer: AdhanPrayer) => (
     normalizeAdhanSoundId(prayerSounds[prayer], prayer)
@@ -224,12 +287,53 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
   }, [syncPrayerSounds, user]);
 
   useEffect(() => {
+    const controller = getController();
+    const selectedSoundIds = Array.from(new Set(Object.values(prayerSounds)));
+    for (const soundId of selectedSoundIds) controller.prepare(getAdhanSound(soundId).audioUrl);
+
+    const connection = (navigator as Navigator & { connection?: NetworkInformationLike }).connection;
+    if (connection?.saveData || connection?.effectiveType === "slow-2g" || connection?.effectiveType === "2g") return;
+
+    const preloadAll = () => {
+      for (const sound of ADHAN_SOUNDS) controller.prepare(sound.audioUrl);
+    };
+
+    const idleWindow = window as IdleWindow;
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const idleId = idleWindow.requestIdleCallback(preloadAll, { timeout: 2500 });
+      return () => idleWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const timer = globalThis.setTimeout(preloadAll, 900);
+    return () => globalThis.clearTimeout(timer);
+  }, [getController, prayerSounds]);
+
+  useEffect(() => {
+    const controller = getController();
+    let unlocked = false;
+    const unlockSelectedSounds = () => {
+      if (unlocked) return;
+      unlocked = true;
+      const selectedSoundIds = Array.from(new Set(Object.values(prayerSounds)));
+      for (const soundId of selectedSoundIds) {
+        void controller.prime(getAdhanSound(soundId).audioUrl);
+      }
+    };
+
+    window.addEventListener("pointerdown", unlockSelectedSounds, { once: true, capture: true });
+    window.addEventListener("keydown", unlockSelectedSounds, { once: true, capture: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlockSelectedSounds, true);
+      window.removeEventListener("keydown", unlockSelectedSounds, true);
+    };
+  }, [getController, prayerSounds]);
+
+  useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
     const onMessage = (event: MessageEvent) => {
       const data = event.data as { type?: string; tag?: string; prayer?: string } | null;
       if (data?.type !== "ADHAN_DUE" || !isAdhanPrayer(data.prayer)) return;
-      if (document.visibilityState !== "visible") return;
       if (data.tag && lastAdhanEventRef.current === data.tag) return;
       if (data.tag) lastAdhanEventRef.current = data.tag;
       void playSound(getPrayerSound(data.prayer));
@@ -250,9 +354,11 @@ export function AdhanAudioProvider({ children }: { children: React.ReactNode }) 
     getPrayerSound,
     setPrayerSound,
     syncPrayerSounds,
+    preloadSound,
+    primeSound,
     previewSound,
     stopAudio,
-  }), [activeSoundId, getPrayerSound, playbackStatus, prayerSounds, previewSound, setPrayerSound, stopAudio, syncPrayerSounds]);
+  }), [activeSoundId, getPrayerSound, playbackStatus, prayerSounds, preloadSound, previewSound, primeSound, setPrayerSound, stopAudio, syncPrayerSounds]);
 
   return <AdhanAudioContext.Provider value={value}>{children}</AdhanAudioContext.Provider>;
 }

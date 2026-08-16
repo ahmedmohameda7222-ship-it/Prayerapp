@@ -1,8 +1,12 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsControls } from "./SettingsControls";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
+
+vi.mock("./PrayerSystemTestControls", () => ({
+  PrayerSystemTestControls: () => <div data-testid="prayer-system-test" />,
+}));
 
 function renderSettings() {
   return render(
@@ -29,12 +33,13 @@ describe("SettingsControls", () => {
     expect(localStorage.getItem("deggendorf-app-preferences-v1")).not.toContain('"theme"');
   });
 
-  it("keeps prayer reminder and Adhan management on Home", () => {
+  it("keeps prayer reminder and Adhan management on Home while exposing test tools in Settings", () => {
     renderSettings();
 
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
     expect(screen.queryByTestId("adhan-audio-settings")).not.toBeInTheDocument();
+    expect(screen.getByTestId("prayer-system-test")).toBeInTheDocument();
     const homeLink = screen.getAllByRole("link").find((link) => link.getAttribute("href") === "/#prayer-times");
     expect(homeLink).toBeDefined();
   });

@@ -1,0 +1,35 @@
+import { describe, expect, it } from "vitest";
+import {
+  DEFAULT_FAJR_ADHAN_SOUND_ID,
+  DEFAULT_REGULAR_ADHAN_SOUND_ID,
+  getAdhanSound,
+  getAdhanSoundsForPrayer,
+  normalizeAdhanSoundId,
+} from "@/lib/adhan-audio";
+
+describe("prayer-aware Adhan catalog", () => {
+  it("keeps Fajr recordings separate from regular prayer recordings", () => {
+    const fajrSounds = getAdhanSoundsForPrayer("fajr");
+    const dhuhrSounds = getAdhanSoundsForPrayer("dhuhr");
+
+    expect(fajrSounds.length).toBeGreaterThanOrEqual(3);
+    expect(dhuhrSounds.length).toBeGreaterThanOrEqual(6);
+    expect(fajrSounds.every((sound) => sound.kind === "fajr")).toBe(true);
+    expect(dhuhrSounds.every((sound) => sound.kind === "regular")).toBe(true);
+  });
+
+  it("uses stable prayer-specific defaults", () => {
+    expect(DEFAULT_FAJR_ADHAN_SOUND_ID).toBe("fajr-cairo");
+    expect(DEFAULT_REGULAR_ADHAN_SOUND_ID).toBe("abdul-basit-cairo");
+    expect(getAdhanSound(DEFAULT_FAJR_ADHAN_SOUND_ID).kind).toBe("fajr");
+    expect(getAdhanSound(DEFAULT_REGULAR_ADHAN_SOUND_ID).kind).toBe("regular");
+  });
+
+  it("normalizes legacy and incompatible selections safely", () => {
+    expect(normalizeAdhanSoundId("fajr", "fajr")).toBe("fajr-cairo");
+    expect(normalizeAdhanSoundId("makkah", "fajr")).toBe("fajr-makkah");
+    expect(normalizeAdhanSoundId("madinah", "fajr")).toBe("fajr-madinah");
+    expect(normalizeAdhanSoundId("adhan-1", "dhuhr")).toBe("abdul-basit-cairo");
+    expect(normalizeAdhanSoundId("fajr-cairo", "asr")).toBe("abdul-basit-cairo");
+  });
+});

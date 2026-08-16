@@ -25,6 +25,15 @@ describe("Friday public page contract", () => {
     expect(friday).not.toContain("item.khateebName");
   });
 
+  it("isolates clock values from RTL Arabic copy", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("countdownParts");
+    expect(friday).toContain('<bdi dir="ltr"');
+    expect(friday).toContain("[unicode-bidi:isolate]");
+    expect(friday).not.toContain('<span dir="ltr">{countdown}</span>');
+  });
+
   it("keeps multiple published services dynamic and exposes the shared location inside the schedule", () => {
     const friday = source("components/friday/FridayPageClient.tsx");
 

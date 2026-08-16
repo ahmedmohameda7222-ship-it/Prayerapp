@@ -171,7 +171,12 @@ export function PrayerSystemTestControls() {
   }
 
   return (
-    <section id="prayer-system-test" className="settings-section scroll-mt-24" data-testid="prayer-system-test">
+    <section
+      id="prayer-system-test"
+      className="settings-section scroll-mt-24"
+      data-testid="prayer-system-test"
+      data-reminder-minutes={TEST_REMINDER_MINUTES}
+    >
       <h2>{copy.title}</h2>
       <p className="mt-1 text-sm leading-6 text-[var(--app-text-secondary)]">{copy.description}</p>
 
@@ -214,7 +219,6 @@ export function PrayerSystemTestControls() {
       {adhanStatus ? <p className="mt-3 text-xs font-semibold leading-5 text-[var(--app-text-secondary)]" role="status">{adhanStatus}</p> : null}
       {reminderStatus ? <p className="mt-2 text-xs font-semibold leading-5 text-[var(--app-text-secondary)]" role="status">{reminderStatus}</p> : null}
       <p className="mt-4 rounded-[12px] bg-[var(--app-surface-soft)] p-3 text-xs leading-5 text-[var(--app-text-secondary)]">{copy.backgroundNote}</p>
-      <span className="sr-only">{TEST_REMINDER_MINUTES}</span>
     </section>
   );
 }

@@ -1,38 +1,40 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export function AppLaunchScreen() {
-  const screenRef = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const screen = screenRef.current;
-    if (!screen) return;
-
+    let secondFrame = 0;
     let removeTimer = 0;
     const firstFrame = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        screen.dataset.ready = "true";
-        removeTimer = window.setTimeout(() => screen.remove(), 180);
+      secondFrame = window.requestAnimationFrame(() => {
+        setReady(true);
+        removeTimer = window.setTimeout(() => setVisible(false), 180);
       });
     });
 
     return () => {
       window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
       window.clearTimeout(removeTimer);
     };
   }, []);
 
+  if (!visible) return null;
+
   return (
-    <div ref={screenRef} className="app-launch-screen" aria-hidden="true">
-      <img
+    <div className="app-launch-screen" data-ready={ready ? "true" : undefined} aria-hidden="true">
+      <Image
         className="app-launch-screen-icon"
         src="/assets/app-icon-192.png"
         alt=""
-        width="96"
-        height="96"
-        decoding="sync"
-        fetchPriority="high"
+        width={96}
+        height={96}
+        priority
       />
     </div>
   );

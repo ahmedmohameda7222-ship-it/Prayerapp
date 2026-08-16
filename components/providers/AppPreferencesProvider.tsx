@@ -25,6 +25,7 @@ type ContextValue = {
   enableNotifications: () => Promise<boolean>;
   disableNotifications: () => Promise<void>;
   detachAccount: () => Promise<void>;
+  sendTestNotification: (delaySeconds?: number) => Promise<boolean>;
 };
 
 const STORAGE_KEY = "masjid-el-rahman-push-v1";
@@ -229,6 +230,38 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     await syncSubscription(subscription, stored, true);
   }, [stored, syncSubscription]);
 
+  const sendTestNotification = useCallback(async (delaySeconds = 10) => {
+    if (authLoading || !isSupported()) return false;
+
+    let ready = pushStatus === "enabled";
+    if (!ready) ready = await enableNotifications();
+    if (!ready) return false;
+
+    const preferences = stored || readStoredPreferences();
+    const registration = await navigator.serviceWorker.getRegistration("/");
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return false;
+
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+    try {
+      const response = await fetch("/api/push/test", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          browserId: preferences.browserId,
+          delaySeconds,
+        }),
+      });
+      return response.ok;
+    } catch (error) {
+      console.warn("Push notification self-test failed", error);
+      return false;
+    }
+  }, [accessToken, authLoading, enableNotifications, pushStatus, stored]);
+
   const value = useMemo<ContextValue>(() => ({
     pushStatus,
     permission,
@@ -236,7 +269,8 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     enableNotifications,
     disableNotifications,
     detachAccount,
-  }), [pushStatus, permission, busy, enableNotifications, disableNotifications, detachAccount]);
+    sendTestNotification,
+  }), [pushStatus, permission, busy, enableNotifications, disableNotifications, detachAccount, sendTestNotification]);
 
   return <AppPreferencesContext.Provider value={value}>{children}</AppPreferencesContext.Provider>;
 }

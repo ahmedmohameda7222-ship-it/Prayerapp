@@ -237,9 +237,10 @@ export function HomePrayerTimesCard({
     const requested = url.searchParams.get("reminder");
     if (!isReminderPrayer(requested)) return;
     handledIntent.current = true;
-    setEditingPrayer(requested);
+    const timer = window.setTimeout(() => setEditingPrayer(requested), 0);
     url.searchParams.delete("reminder");
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    return () => window.clearTimeout(timer);
   }, [loaded, user]);
 
   const rows = useMemo(() => prayerOrder.map((name) => {

@@ -1,18 +1,15 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { SettingsControls } from "./SettingsControls";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
-import { AdhanAudioProvider } from "@/components/providers/AdhanAudioProvider";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 
 function renderSettings() {
   return render(
     <AppPreferencesProvider>
-      <AdhanAudioProvider>
-        <TimeFormatProvider>
-          <SettingsControls />
-        </TimeFormatProvider>
-      </AdhanAudioProvider>
+      <TimeFormatProvider>
+        <SettingsControls />
+      </TimeFormatProvider>
     </AppPreferencesProvider>,
   );
 }
@@ -41,12 +38,11 @@ describe("SettingsControls", () => {
     expect(homeLink).toBeDefined();
   });
 
-  it("offers device-only sound plus two in-app Adhan choices", () => {
+  it("does not expose a global Adhan selector because each prayer owns its sound", () => {
     renderSettings();
 
-    const section = screen.getByTestId("adhan-audio-settings");
-    expect(within(section).getByText("1:42")).toBeInTheDocument();
-    expect(within(section).getByText("2:34")).toBeInTheDocument();
-    expect(within(section).getAllByRole("button")).toHaveLength(5);
+    expect(screen.queryByTestId("adhan-audio-settings")).not.toBeInTheDocument();
+    expect(screen.queryByText("1:42")).not.toBeInTheDocument();
+    expect(screen.queryByText("2:34")).not.toBeInTheDocument();
   });
 });

@@ -10,6 +10,7 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 
 const PRAYERS: readonly AdhanPrayer[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 const TEST_SECONDS = 10;
+const TEST_REMINDER_MINUTES = 15;
 
 type Copy = {
   title: string;
@@ -17,76 +18,76 @@ type Copy = {
   prayer: string;
   selectedAdhan: string;
   testAdhan: string;
-  testPush: string;
+  testReminder: string;
   adhanScheduled: string;
   adhanTriggered: string;
   adhanFailed: string;
-  pushScheduled: string;
-  pushSent: string;
-  pushFailed: string;
+  reminderScheduled: string;
+  reminderSent: string;
+  reminderFailed: string;
   backgroundNote: string;
 };
 
 const COPY: Record<Locale, Copy> = {
   ar: {
-    title: "اختبار الأذان والإشعارات",
-    description: "اختر الصلاة ثم اختبر وصول الأذان الحقيقي والإشعار الحقيقي بعد 10 ثوانٍ.",
+    title: "محاكاة الصلاة الحقيقية",
+    description: "اختر الصلاة. اختبار الأذان يحاكي أن وقت الأذان دخل الآن، واختبار التذكير يحاكي أن المتبقي 15 دقيقة على الأذان.",
     prayer: "الصلاة",
-    selectedAdhan: "الأذان المحفوظ",
-    testAdhan: "اختبار الأذان",
-    testPush: "اختبار الإشعار",
-    adhanScheduled: "بدأ اختبار الأذان. بعد 10 ثوانٍ سيصل نفس trigger الأذان المستخدم وقت الصلاة.",
-    adhanTriggered: "تم إرسال trigger الأذان الحقيقي للجهاز. التطبيق حاول تشغيل الأذان المحفوظ لهذه الصلاة.",
-    adhanFailed: "فشل إرسال اختبار الأذان للجهاز. تأكد من إذن الإشعارات واتصال الجهاز.",
-    pushScheduled: "بدأ اختبار الإشعار. سيصل Push حقيقي بعد 10 ثوانٍ.",
-    pushSent: "تم إرسال Push الاختبار بنجاح.",
-    pushFailed: "فشل اختبار Push. راجع إذن الإشعارات واتصال الجهاز.",
-    backgroundNote: "الاختباران يستخدمان Web Push الحقيقي. اختبار الإشعار يختبر الإشعار فقط. اختبار الأذان يرسل trigger من نوع Adhan عبر Service Worker ثم يحاول تشغيل الأذان المحفوظ. يمكنك بعد الضغط وضع التطبيق في الخلفية أو قفل الشاشة. سيظهر إشعار أيضًا أثناء اختبار الأذان لأن Web Push في تطبيقات الويب يجب أن يكون مرئيًا للمستخدم، بينما تشغيل صوت مخصص قد يظل مقيدًا إذا أوقف النظام تطبيق الويب بالكامل.",
+    selectedAdhan: "الأذان الذي سيعمل",
+    testAdhan: "محاكاة دخول الأذان",
+    testReminder: "محاكاة تذكير 15 دقيقة",
+    adhanScheduled: "بدأ العد. بعد 10 ثوانٍ سيتعامل النظام كأن وقت أذان الصلاة المختارة دخل الآن.",
+    adhanTriggered: "تم إطلاق حدث الأذان الحقيقي للصلاة المختارة. إذا سمح الجهاز بالتشغيل، سيبدأ الأذان المحفوظ نفسه.",
+    adhanFailed: "تعذر إطلاق حدث الأذان على هذا الجهاز. راجع الإشعارات واتصال الجهاز.",
+    reminderScheduled: "بدأ العد. بعد 10 ثوانٍ سيتعامل النظام كأن المتبقي 15 دقيقة على أذان الصلاة المختارة.",
+    reminderSent: "تم إطلاق تذكير الصلاة الحقيقي بصيغة: متبقي 15 دقيقة على الأذان.",
+    reminderFailed: "تعذر إرسال تذكير الصلاة الحقيقي. راجع إذن الإشعارات واتصال الجهاز.",
+    backgroundNote: "هذه ليست رسائل Test منفصلة. الزران يستخدمان نفس مسار إرسال أحداث الصلاة الذي يستخدمه النظام الحقيقي. محاكاة الأذان ترسل حدث Adhan الحقيقي ثم يحاول التطبيق تشغيل نفس الأذان المحفوظ للصلاة. محاكاة التذكير ترسل نفس تذكير الصلاة الحقيقي قبل الأذان بـ15 دقيقة. يمكنك الضغط ثم وضع التطبيق في الخلفية أو قفل الشاشة لاختبار السلوك الفعلي للجهاز.",
   },
   en: {
-    title: "Adhan & notification test",
-    description: "Choose a prayer, then test the real Adhan-arrival path and a real push notification after 10 seconds.",
+    title: "Real prayer simulation",
+    description: "Choose a prayer. The Adhan simulation treats its Adhan time as due now; the reminder simulation treats it as 15 minutes away.",
     prayer: "Prayer",
-    selectedAdhan: "Saved Adhan",
-    testAdhan: "Test Adhan",
-    testPush: "Test push",
-    adhanScheduled: "Adhan test started. In 10 seconds the device will receive the same Adhan trigger used at prayer time.",
-    adhanTriggered: "The real Adhan trigger was sent to this device. The app attempted the saved Adhan for this prayer.",
-    adhanFailed: "The Adhan test could not be sent. Check notification permission and device connectivity.",
-    pushScheduled: "Push test started. A real Web Push will be sent after 10 seconds.",
-    pushSent: "The test push was sent successfully.",
-    pushFailed: "Push test failed. Check notification permission and device connectivity.",
-    backgroundNote: "Both tests use real Web Push. The push test checks the notification path only. The Adhan test sends an Adhan-kind trigger through the Service Worker and then attempts the saved Adhan. You can background the app or lock the screen after tapping. The Adhan test also shows a notification because web push must remain user-visible, while custom audio can still be restricted if the OS fully suspends the web app.",
+    selectedAdhan: "Adhan that will play",
+    testAdhan: "Simulate Adhan now",
+    testReminder: "Simulate 15-min reminder",
+    adhanScheduled: "Countdown started. In 10 seconds the system will behave as if the selected prayer's Adhan time is due now.",
+    adhanTriggered: "The real Adhan event was triggered for the selected prayer. If the device allows playback, the saved Adhan itself will start.",
+    adhanFailed: "The real Adhan event could not be triggered on this device. Check notifications and connectivity.",
+    reminderScheduled: "Countdown started. In 10 seconds the system will behave as if the selected prayer is 15 minutes away.",
+    reminderSent: "The real 15-minute prayer reminder was triggered.",
+    reminderFailed: "The real prayer reminder could not be sent. Check notification permission and connectivity.",
+    backgroundNote: "These are not separate test messages. Both buttons use the same prayer-event delivery path as production. The Adhan simulation sends the real Adhan event and then the app attempts the saved Adhan for that prayer. The reminder simulation sends the same real 15-minute prayer reminder. You can background the app or lock the screen after tapping to test the device's real behavior.",
   },
   de: {
-    title: "Adhan- und Benachrichtigungstest",
-    description: "Wähle ein Gebet und teste nach 10 Sekunden den echten Adhan-Ankunftspfad sowie eine echte Push-Benachrichtigung.",
+    title: "Echte Gebetssimulation",
+    description: "Wähle ein Gebet. Die Adhan-Simulation behandelt die Adhan-Zeit als jetzt fällig; die Erinnerung simuliert 15 Minuten bis zum Adhan.",
     prayer: "Gebet",
-    selectedAdhan: "Gespeicherter Adhan",
-    testAdhan: "Adhan testen",
-    testPush: "Push testen",
-    adhanScheduled: "Adhan-Test gestartet. In 10 Sekunden erhält das Gerät denselben Adhan-Trigger wie zur Gebetszeit.",
-    adhanTriggered: "Der echte Adhan-Trigger wurde an dieses Gerät gesendet. Die App hat den gespeicherten Adhan dieses Gebets versucht abzuspielen.",
-    adhanFailed: "Der Adhan-Test konnte nicht gesendet werden. Prüfe Benachrichtigungsberechtigung und Verbindung.",
-    pushScheduled: "Push-Test gestartet. Nach 10 Sekunden wird ein echter Web Push gesendet.",
-    pushSent: "Der Test-Push wurde erfolgreich gesendet.",
-    pushFailed: "Push-Test fehlgeschlagen. Prüfe Benachrichtigungsberechtigung und Verbindung.",
-    backgroundNote: "Beide Tests verwenden echten Web Push. Der Push-Test prüft nur den Benachrichtigungspfad. Der Adhan-Test sendet einen Adhan-Trigger über den Service Worker und versucht anschließend den gespeicherten Adhan. Du kannst die App danach in den Hintergrund legen oder das Display sperren. Beim Adhan-Test erscheint ebenfalls eine Benachrichtigung, da Web Push sichtbar bleiben muss; benutzerdefiniertes Audio kann jedoch weiterhin blockiert werden, wenn das Betriebssystem die Web-App vollständig anhält.",
+    selectedAdhan: "Adhan, der abgespielt wird",
+    testAdhan: "Adhan jetzt simulieren",
+    testReminder: "15-Min.-Erinnerung simulieren",
+    adhanScheduled: "Countdown gestartet. In 10 Sekunden verhält sich das System so, als wäre die Adhan-Zeit des gewählten Gebets jetzt erreicht.",
+    adhanTriggered: "Das echte Adhan-Ereignis wurde ausgelöst. Wenn das Gerät Wiedergabe erlaubt, startet derselbe gespeicherte Adhan.",
+    adhanFailed: "Das echte Adhan-Ereignis konnte auf diesem Gerät nicht ausgelöst werden. Prüfe Benachrichtigungen und Verbindung.",
+    reminderScheduled: "Countdown gestartet. In 10 Sekunden verhält sich das System so, als wären noch 15 Minuten bis zum gewählten Gebet.",
+    reminderSent: "Die echte 15-Minuten-Gebetserinnerung wurde ausgelöst.",
+    reminderFailed: "Die echte Gebetserinnerung konnte nicht gesendet werden. Prüfe Berechtigung und Verbindung.",
+    backgroundNote: "Dies sind keine separaten Testnachrichten. Beide Schaltflächen verwenden denselben Gebetsereignis-Pfad wie die Produktion. Die Adhan-Simulation sendet das echte Adhan-Ereignis und die App versucht anschließend denselben gespeicherten Adhan abzuspielen. Die Erinnerung sendet dieselbe echte 15-Minuten-Gebetserinnerung. Du kannst die App danach in den Hintergrund legen oder das Display sperren.",
   },
   tr: {
-    title: "Ezan ve bildirim testi",
-    description: "Bir namaz seçin; 10 saniye sonra gerçek ezan-geliş yolunu ve gerçek push bildirimini test edin.",
+    title: "Gerçek namaz simülasyonu",
+    description: "Bir namaz seçin. Ezan simülasyonu ezan vaktini şimdi gelmiş gibi; hatırlatma ise ezana 15 dakika kalmış gibi çalıştırır.",
     prayer: "Namaz",
-    selectedAdhan: "Kayıtlı ezan",
-    testAdhan: "Ezanı test et",
-    testPush: "Push'u test et",
-    adhanScheduled: "Ezan testi başladı. 10 saniye sonra cihaz namaz vaktinde kullanılan gerçek ezan tetikleyicisini alacak.",
-    adhanTriggered: "Gerçek ezan tetikleyicisi bu cihaza gönderildi. Uygulama bu namaz için kayıtlı ezanı oynatmayı denedi.",
-    adhanFailed: "Ezan testi gönderilemedi. Bildirim iznini ve cihaz bağlantısını kontrol edin.",
-    pushScheduled: "Push testi başladı. 10 saniye sonra gerçek Web Push gönderilecek.",
-    pushSent: "Test push bildirimi başarıyla gönderildi.",
-    pushFailed: "Push testi başarısız oldu. Bildirim iznini ve cihaz bağlantısını kontrol edin.",
-    backgroundNote: "Her iki test de gerçek Web Push kullanır. Push testi yalnızca bildirim yolunu test eder. Ezan testi Service Worker üzerinden Adhan türü tetikleyici gönderir ve ardından kayıtlı ezanı oynatmayı dener. Düğmeye bastıktan sonra uygulamayı arka plana alabilir veya ekranı kilitleyebilirsiniz. Web Push kullanıcıya görünür kalmak zorunda olduğundan ezan testinde de bildirim görünür; işletim sistemi web uygulamasını tamamen askıya alırsa özel ses yine kısıtlanabilir.",
+    selectedAdhan: "Çalacak ezan",
+    testAdhan: "Ezan vaktini şimdi simüle et",
+    testReminder: "15 dk hatırlatmayı simüle et",
+    adhanScheduled: "Geri sayım başladı. 10 saniye sonra sistem seçilen namazın ezan vakti şimdi gelmiş gibi davranacak.",
+    adhanTriggered: "Gerçek ezan olayı tetiklendi. Cihaz izin verirse kayıtlı ezanın kendisi başlayacak.",
+    adhanFailed: "Gerçek ezan olayı bu cihazda tetiklenemedi. Bildirimleri ve bağlantıyı kontrol edin.",
+    reminderScheduled: "Geri sayım başladı. 10 saniye sonra sistem seçilen namaza 15 dakika kalmış gibi davranacak.",
+    reminderSent: "Gerçek 15 dakikalık namaz hatırlatması tetiklendi.",
+    reminderFailed: "Gerçek namaz hatırlatması gönderilemedi. Bildirim iznini ve bağlantıyı kontrol edin.",
+    backgroundNote: "Bunlar ayrı test mesajları değildir. İki düğme de üretimdeki gerçek namaz olayı gönderim yolunu kullanır. Ezan simülasyonu gerçek Adhan olayını gönderir ve uygulama o namaz için kayıtlı ezanı çalmayı dener. Hatırlatma simülasyonu aynı gerçek 15 dakikalık namaz hatırlatmasını gönderir. Gerçek cihaz davranışını görmek için düğmeye bastıktan sonra uygulamayı arka plana alabilir veya ekranı kilitleyebilirsiniz.",
   },
 };
 
@@ -130,12 +131,12 @@ export function PrayerSystemTestControls() {
     primeSound,
     stopAudio,
   } = useAdhanAudio();
-  const { sendTestNotification, sendTestAdhan } = useAppPreferences();
-  const [prayer, setPrayer] = useState<AdhanPrayer>("dhuhr");
+  const { sendTestPrayerReminder, sendTestAdhan } = useAppPreferences();
+  const [prayer, setPrayer] = useState<AdhanPrayer>("maghrib");
   const [adhanStatus, setAdhanStatus] = useState("");
-  const [pushStatus, setPushStatus] = useState("");
+  const [reminderStatus, setReminderStatus] = useState("");
   const adhanCountdown = useCountdown();
-  const pushCountdown = useCountdown();
+  const reminderCountdown = useCountdown();
 
   const soundId = getPrayerSound(prayer);
 
@@ -159,13 +160,13 @@ export function PrayerSystemTestControls() {
     });
   }
 
-  function startPushTest() {
-    if (pushCountdown.seconds !== null) return;
-    setPushStatus(copy.pushScheduled);
-    pushCountdown.start(TEST_SECONDS);
-    void sendTestNotification(TEST_SECONDS).then((sent) => {
-      setPushStatus(sent ? copy.pushSent : copy.pushFailed);
-      pushCountdown.finish();
+  function startReminderTest() {
+    if (reminderCountdown.seconds !== null) return;
+    setReminderStatus(copy.reminderScheduled);
+    reminderCountdown.start(TEST_SECONDS);
+    void sendTestPrayerReminder(prayer, TEST_SECONDS).then((sent) => {
+      setReminderStatus(sent ? copy.reminderSent : copy.reminderFailed);
+      reminderCountdown.finish();
     });
   }
 
@@ -201,18 +202,19 @@ export function PrayerSystemTestControls() {
         </button>
         <button
           type="button"
-          onClick={startPushTest}
-          disabled={pushCountdown.seconds !== null}
+          onClick={startReminderTest}
+          disabled={reminderCountdown.seconds !== null}
           className="flex min-h-12 items-center justify-center gap-2 rounded-[12px] border border-[var(--app-brand)] bg-[var(--app-surface)] px-3 text-sm font-extrabold text-[var(--app-brand-strong)] disabled:opacity-60"
         >
           <BellRing className="h-4 w-4" aria-hidden="true" />
-          {pushCountdown.seconds !== null ? `${pushCountdown.seconds}s` : copy.testPush}
+          {reminderCountdown.seconds !== null ? `${reminderCountdown.seconds}s` : copy.testReminder}
         </button>
       </div>
 
       {adhanStatus ? <p className="mt-3 text-xs font-semibold leading-5 text-[var(--app-text-secondary)]" role="status">{adhanStatus}</p> : null}
-      {pushStatus ? <p className="mt-2 text-xs font-semibold leading-5 text-[var(--app-text-secondary)]" role="status">{pushStatus}</p> : null}
+      {reminderStatus ? <p className="mt-2 text-xs font-semibold leading-5 text-[var(--app-text-secondary)]" role="status">{reminderStatus}</p> : null}
       <p className="mt-4 rounded-[12px] bg-[var(--app-surface-soft)] p-3 text-xs leading-5 text-[var(--app-text-secondary)]">{copy.backgroundNote}</p>
+      <span className="sr-only">{TEST_REMINDER_MINUTES}</span>
     </section>
   );
 }

@@ -31,11 +31,12 @@ export function formatShortDate(date: string, locale: Locale = "ar") {
   }).format(atNoonUtc(date));
 }
 
-export function formatDateRange(start: string, end: string, locale: Locale = "ar") {
-  const formatter = new Intl.DateTimeFormat(intlLocales[locale], {
-    day: "numeric", month: "short", year: "numeric", timeZone: APP_TIME_ZONE,
-  });
-  return `${formatter.format(atNoonUtc(start))} – ${formatter.format(atNoonUtc(end))}`;
+export function formatDateRange(start: string, end: string, _locale: Locale = "ar") {
+  const numericDate = (date: string) => {
+    const [year, month, day] = date.split("-");
+    return `${day}/${month}/${year}`;
+  };
+  return `${numericDate(start)} – ${numericDate(end)}`;
 }
 
 export function todayIso(now = new Date()) {

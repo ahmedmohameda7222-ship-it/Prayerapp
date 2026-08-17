@@ -14,9 +14,13 @@ describe("PrayerTimesBrowser", () => {
     expect(await screen.findByText("لم يتم نشر مواقيت الصلاة لهذا التاريخ بعد.")).toBeInTheDocument();
     expect(screen.queryByTestId("prayer-preview-notice")).not.toBeInTheDocument();
 
+    const weekRange = screen.getByText(/^\d{2}\/\d{2}\/\d{4} – \d{2}\/\d{2}\/\d{4}$/);
+    expect(weekRange).toHaveAttribute("dir", "ltr");
+
     const month = screen.getByRole("button", { name: "الشهر" });
     await user.click(month);
     expect(month).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("لم يتم نشر مواقيت الصلاة لهذا التاريخ بعد.")).toBeInTheDocument();
+    expect(screen.getByText(/^\d{2}\/\d{2}\/\d{4} – \d{2}\/\d{2}\/\d{4}$/)).toHaveAttribute("dir", "ltr");
   });
 });

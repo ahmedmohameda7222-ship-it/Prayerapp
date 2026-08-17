@@ -77,8 +77,8 @@ export function useSavedAzkar(validIds: Set<string>) {
     if (saved) {
       const { error: saveError } = await client
         .from("user_saved_azkar")
-        .upsert({ user_id: user.id, azkar_id: azkarId } as never, { onConflict: "user_id,azkar_id" });
-      if (saveError) return "error" as const;
+        .insert({ user_id: user.id, azkar_id: azkarId } as never);
+      if (saveError && saveError.code !== "23505") return "error" as const;
     } else {
       const { error: deleteError } = await client
         .from("user_saved_azkar")

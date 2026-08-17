@@ -81,7 +81,7 @@ export function PrayerTimesBrowser() {
           </button>
           <div className="prayer-range-label">
             <CalendarDays className="me-1 inline h-4 w-4" aria-hidden="true" />
-            <span>{formatDateRange(range.start, range.end, locale)}</span>
+            <span dir="ltr">{formatDateRange(range.start, range.end, locale)}</span>
           </div>
           <button type="button" onClick={() => moveRange(1)} aria-label={t("times.nextRange")}>
             <ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />

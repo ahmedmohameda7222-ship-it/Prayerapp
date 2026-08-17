@@ -104,6 +104,8 @@ describe("Phase 1 account and personalization contracts", () => {
     const routine = source("components/azkar/AzkarRoutine.tsx");
     expect(hook).toContain('LEGACY_FAVORITES_KEY = "azkar_favorites_v1"');
     expect(hook).toContain('.from("user_saved_azkar")');
+    expect(hook).toContain('.insert({ user_id: user.id, azkar_id: azkarId } as never)');
+    expect(hook).toContain('saveError.code !== "23505"');
     expect(hook).toContain("validIds.has");
     expect(routine).toContain('PROGRESS_KEY = "azkar_progress_v1"');
     expect(routine).toContain("/account/sign-in?next=");

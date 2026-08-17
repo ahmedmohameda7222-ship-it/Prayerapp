@@ -5,6 +5,7 @@ import { getUrgentAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns, getDonationSettings } from "@/lib/data/donations";
 import { getEvents } from "@/lib/data/events";
 import { getJumuahTimes } from "@/lib/data/jumuah";
+import { getMosqueSettings } from "@/lib/data/mosque-settings";
 import { todayIso, addDaysIso } from "@/lib/date-utils";
 import { isUpcomingEvent } from "@/lib/event-utils";
 import { HomePageClient } from "@/components/home/HomePageClient";
@@ -17,13 +18,14 @@ export default async function HomePage() {
   const today = todayIso(now);
   const startDate = addDaysIso(today, -1);
   const endDate = addDaysIso(today, 30);
-  const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult] = await Promise.allSettled([
+  const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, mosqueSettingsResult] = await Promise.allSettled([
     getPrayerTimes(false, startDate, endDate),
     getUrgentAnnouncements(),
     getJumuahTimes(),
     getEvents(),
     getDonationSettings(),
     getDonationCampaigns(),
+    getMosqueSettings(),
   ]);
 
   const prayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
@@ -36,11 +38,12 @@ export default async function HomePage() {
     : [];
   const donationSettings = donationSettingsResult.status === "fulfilled" ? donationSettingsResult.value : undefined;
   const donationCampaigns = donationCampaignsResult.status === "fulfilled" ? donationCampaignsResult.value : [];
+  const mosqueSettings = mosqueSettingsResult.status === "fulfilled" ? mosqueSettingsResult.value : undefined;
   const allowAnyFutureJumuah = jumuahTimes.some((item) => item.notes === QA_MOCK_MARKER);
 
   return (
     <AppShell surface="home">
-      <AppHeader />
+      <AppHeader whatsappLink={mosqueSettings?.whatsappLink} googleMapsLink={mosqueSettings?.googleMapsLink} />
       <HomePageClient
         initialPrayerTimes={prayerTimes}
         urgentAnnouncements={urgentAnnouncements}

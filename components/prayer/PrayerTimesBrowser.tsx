@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
-import { addDaysIso, addMonthsIso, formatDateRange, monthBoundsIso, startOfWeekIso, todayIso } from "@/lib/date-utils";
+import { addDaysIso, addMonthsIso, monthBoundsIso, startOfWeekIso, todayIso } from "@/lib/date-utils";
 import { getPrayerForDate } from "@/lib/prayer-utils";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { DataError, DataLoading } from "@/components/ui/DataState";
@@ -15,8 +15,17 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 
 type RangeTab = "today" | "week" | "month";
 
+function formatNumericDate(date: string) {
+  const [year, month, day] = date.split("-");
+  return `${day}/${month}/${year}`;
+}
+
+function formatNumericDateRange(start: string, end: string) {
+  return `${formatNumericDate(start)} – ${formatNumericDate(end)}`;
+}
+
 export function PrayerTimesBrowser() {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const today = todayIso();
   const [tab, setTab] = useState<RangeTab>("week");
   const [cursor, setCursor] = useState(today);
@@ -81,7 +90,7 @@ export function PrayerTimesBrowser() {
           </button>
           <div className="prayer-range-label">
             <CalendarDays className="me-1 inline h-4 w-4" aria-hidden="true" />
-            <span>{formatDateRange(range.start, range.end, locale)}</span>
+            <span dir="ltr">{formatNumericDateRange(range.start, range.end)}</span>
           </div>
           <button type="button" onClick={() => moveRange(1)} aria-label={t("times.nextRange")}>
             <ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />

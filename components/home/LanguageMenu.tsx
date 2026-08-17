@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Languages } from "lucide-react";
 import { useLocale } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/types";
@@ -19,6 +19,17 @@ export function LanguageMenu() {
   const { t } = useTranslation();
   const current = languageOptions.find((item) => item.value === locale) || languageOptions[0];
 
+  useEffect(() => {
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const menu = menuRef.current;
+      if (!menu?.open || !(event.target instanceof Node) || menu.contains(event.target)) return;
+      menu.removeAttribute("open");
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, []);
+
   const selectLanguage = (nextLocale: Locale) => {
     setLocale(nextLocale);
     menuRef.current?.removeAttribute("open");
@@ -33,7 +44,7 @@ export function LanguageMenu() {
         <Languages className="h-4 w-4" aria-hidden="true" />
         <span>{current.shortLabel}</span>
       </summary>
-      <div className="absolute start-0 top-[calc(100%+8px)] z-30 min-w-36 overflow-hidden rounded-xl border border-[var(--home-divider)] bg-white p-1.5 text-[var(--home-text)] shadow-[0_10px_24px_rgba(17,24,22,0.14)]">
+      <div className="absolute end-0 top-[calc(100%+8px)] z-30 w-40 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[var(--home-divider)] bg-white p-1.5 text-[var(--home-text)] shadow-[0_10px_24px_rgba(17,24,22,0.14)]">
         {languageOptions.map((item) => (
           <button
             key={item.value}

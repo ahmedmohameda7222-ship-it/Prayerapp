@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "deggendorf-prayer";
-const VERSION = "v17";
+const VERSION = "v18";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${VERSION}`;
 const IMAGE_CACHE = `${CACHE_PREFIX}-images-${VERSION}`;
@@ -220,7 +220,7 @@ async function broadcastAdhanToOpenApp(payload) {
 }
 
 self.addEventListener("push", (event) => {
-  let payload = { title: "Masjid El-Rahman", body: "New mosque update", url: "/news", tag: "mosque-update", kind: "content" };
+  let payload = { title: "مسجد الدوناو", body: "تحديث جديد من المسجد", url: "/news", tag: "mosque-update", kind: "content" };
   try {
     if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {}

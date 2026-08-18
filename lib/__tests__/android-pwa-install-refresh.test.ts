@@ -27,7 +27,8 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
     const settingsInstall = source("components/settings/InstallAppCard.tsx");
 
     expect(homeInstall).toContain("if (isAndroid())");
-    expect(homeInstall).toContain('window.location.assign("/settings#install-app")');
+    expect(homeInstall).toContain("setAndroidGuideOpen(true)");
+    expect(homeInstall).toContain('data-testid="android-add-to-home-dialog"');
     expect(homeInstall.indexOf("if (isAndroid())")).toBeLessThan(homeInstall.indexOf("currentPrompt.prompt()"));
     expect(settingsInstall).toContain("ANDROID_INSTALL_STEPS");
     expect(settingsInstall).toContain("if (!prompt || isAndroid) return;");

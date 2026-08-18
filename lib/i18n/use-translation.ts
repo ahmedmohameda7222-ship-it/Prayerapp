@@ -7,6 +7,7 @@ import en from "../../messages/en.json";
 import de from "../../messages/de.json";
 import tr from "../../messages/tr.json";
 import type { Locale } from "./types";
+import { getBrandTranslationOverride } from "@/lib/app-brand";
 
 const messages = { ar, en, de, tr };
 
@@ -15,6 +16,9 @@ export function useTranslation() {
   const current = messages[locale] || messages.ar;
 
   const t = useCallback((key: string, values?: Record<string, string | number>): string => {
+    const brandOverride = getBrandTranslationOverride(locale as Locale, key);
+    if (brandOverride) return interpolate(brandOverride, values);
+
     const keys = key.split(".");
     let value: unknown = current;
     for (const k of keys) {
@@ -36,7 +40,7 @@ export function useTranslation() {
       }
     }
     return interpolate(typeof value === "string" ? value : key, values);
-  }, [current]);
+  }, [current, locale]);
 
   return { t, locale: locale as Locale };
 }

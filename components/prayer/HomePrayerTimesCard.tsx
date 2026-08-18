@@ -194,6 +194,7 @@ export function HomePrayerTimesCard({
   const [draftSoundId, setDraftSoundId] = useState<AdhanSoundId>(defaultAdhanSoundIdForPrayer("dhuhr"));
   const [error, setError] = useState("");
   const handledIntent = useRef(false);
+  const editorPanelRef = useRef<HTMLDivElement>(null);
   const reminderSaveError = t("phase1.reminderSaveError");
   const reminderOn = t("phase1.reminderOn");
   const reminderOff = t("phase1.reminderOff");
@@ -263,6 +264,26 @@ export function HomePrayerTimesCard({
     stopAudio();
     setEditingPrayer(name);
   }, [preferences, stopAudio]);
+
+  useEffect(() => {
+    if (!editingPrayer) return;
+
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      const panel = editorPanelRef.current;
+      if (!panel || !(event.target instanceof Node) || panel.contains(event.target)) return;
+      closeEditor();
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeEditor();
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePress);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [closeEditor, editingPrayer]);
 
   const saveReminder = useCallback(async (
     name: ReminderPrayer,
@@ -357,10 +378,10 @@ export function HomePrayerTimesCard({
       <div className="p-4 pb-3">
         <h2 id="home-prayer-times-title" className="text-lg font-bold text-[var(--home-text)]">{t("prayer.todaysPrayerTimes")}</h2>
       </div>
-      <div className="grid grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_60px] items-center gap-2 border-y border-[var(--home-divider)] bg-[var(--home-surface-subtle)] px-3 py-2.5 text-xs font-semibold text-[var(--home-text-secondary)] sm:px-4">
-        <span>{t("prayer.prayer")}</span>
-        <span>{t("prayer.azan")}</span>
-        <span>{t("prayer.iqama")}</span>
+      <div className="grid grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_60px] items-center gap-2 border-y border-s-[3px] border-s-transparent border-[var(--home-divider)] bg-[var(--home-surface-subtle)] px-3 py-2.5 text-xs font-semibold text-[var(--home-text-secondary)] sm:px-4">
+        <span className="text-start">{t("prayer.prayer")}</span>
+        <span className="text-center">{t("prayer.azan")}</span>
+        <span className="text-center">{t("prayer.iqama")}</span>
         <span className="sr-only">{copy.title}</span>
       </div>
       <div className="divide-y divide-[var(--home-divider)]">
@@ -378,9 +399,9 @@ export function HomePrayerTimesCard({
           return (
             <div key={name} className={`border-s-[3px] ${isActive ? "border-s-[var(--home-brand)] bg-[var(--home-brand-soft)]" : "border-s-transparent"}`} data-prayer-row={name} data-active={isActive ? "true" : undefined}>
               <div className="grid min-h-14 grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_60px] items-center gap-2 px-3 py-2.5 sm:px-4">
-                <span className={`min-w-0 text-[15px] font-bold ${isActive ? "text-[var(--home-brand-strong)]" : "text-[var(--home-text)]"}`}>{t(`prayer.${name}`)}</span>
-                <span dir="ltr" className="home-tabular text-[15px] font-bold text-[var(--home-text)]">{formatTime(adhan, timeFormat)}</span>
-                <span dir="ltr" className="home-tabular text-[15px] font-bold text-[var(--home-text-secondary)]">{iqama ? formatTime(iqama, timeFormat) : "—"}</span>
+                <span className={`min-w-0 text-start text-[15px] font-bold ${isActive ? "text-[var(--home-brand-strong)]" : "text-[var(--home-text)]"}`}>{t(`prayer.${name}`)}</span>
+                <span dir="ltr" className="home-tabular text-center text-[15px] font-bold text-[var(--home-text)]">{formatTime(adhan, timeFormat)}</span>
+                <span dir="ltr" className="home-tabular text-center text-[15px] font-bold text-[var(--home-text-secondary)]">{iqama ? formatTime(iqama, timeFormat) : "—"}</span>
                 {canRemind ? (
                   <button
                     type="button"
@@ -423,7 +444,7 @@ export function HomePrayerTimesCard({
       {editingPrayer ? (
         <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center" data-testid="prayer-reminder-dialog">
           <button type="button" aria-label={copy.close} className="absolute inset-0 bg-black/35" onClick={closeEditor} />
-          <div role="dialog" aria-modal="true" aria-labelledby="prayer-reminder-dialog-title" className="relative z-10 flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[22px] border border-[var(--home-divider)] bg-[var(--home-surface)] shadow-2xl sm:max-h-[82dvh] sm:rounded-[22px]">
+          <div ref={editorPanelRef} role="dialog" aria-modal="true" aria-labelledby="prayer-reminder-dialog-title" className="relative z-10 flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[22px] border border-[var(--home-divider)] bg-[var(--home-surface)] shadow-2xl sm:max-h-[82dvh] sm:rounded-[22px]">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--home-divider)] px-4 py-3.5">
               <p id="prayer-reminder-dialog-title" className="min-w-0 text-lg font-extrabold text-[var(--home-text)]">{copy.title} · {t(`prayer.${editingPrayer}`)}</p>
               <button type="button" aria-label={copy.close} onClick={closeEditor} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--home-surface-subtle)] text-[var(--home-text-secondary)]">

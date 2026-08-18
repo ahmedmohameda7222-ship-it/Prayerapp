@@ -105,7 +105,7 @@ export function HomeInstallAction() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-base font-extrabold text-[var(--app-text)]">{t("settings.installApp")}</p>
-                <p className="mt-1 text-sm leading-6 text-[var(--app-text-secondary)]">{ANDROID_INSTALL_STEPS[locale]}</p>
+                <p className="mt-1 text-sm leading-6 text-[var(--app-text-secondary)]">{t("settings.installAppDescription")}</p>
               </div>
               <button
                 type="button"

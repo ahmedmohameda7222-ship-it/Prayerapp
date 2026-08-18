@@ -1,0 +1,61 @@
+html[data-pull-refresh="enabled"],
+html[data-pull-refresh="enabled"] body {
+  overscroll-behavior-y: contain;
+}
+
+.pwa-pull-refresh-indicator {
+  --pull-refresh-distance: 0px;
+  --pull-refresh-rotation: 0deg;
+  position: fixed;
+  z-index: 140;
+  top: calc(env(safe-area-inset-top) + 8px);
+  left: 50%;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--app-brand, #005a52) 16%, white);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-surface, #fffdf8) 94%, transparent);
+  box-shadow: 0 6px 20px rgba(10, 44, 39, 0.16);
+  color: var(--app-brand, #005a52);
+  opacity: 0;
+  transform: translate3d(-50%, calc(-54px + var(--pull-refresh-distance)), 0) scale(0.88);
+  transition:
+    opacity 120ms ease,
+    transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
+  backdrop-filter: blur(12px) saturate(1.15);
+}
+
+.pwa-pull-refresh-indicator[data-visible="true"] {
+  opacity: 1;
+  transform: translate3d(-50%, var(--pull-refresh-distance), 0) scale(1);
+}
+
+.pwa-pull-refresh-icon {
+  width: 18px;
+  height: 18px;
+  transform: rotate(var(--pull-refresh-rotation));
+}
+
+.pwa-pull-refresh-indicator[data-refreshing="true"] .pwa-pull-refresh-icon {
+  animation: pwa-pull-refresh-spin 650ms linear infinite;
+}
+
+@keyframes pwa-pull-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pwa-pull-refresh-indicator {
+    transition: none;
+  }
+
+  .pwa-pull-refresh-indicator[data-refreshing="true"] .pwa-pull-refresh-icon {
+    animation-duration: 1200ms;
+  }
+}

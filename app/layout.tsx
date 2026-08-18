@@ -7,6 +7,7 @@ import "./home-palette-preview.css";
 import "./home-jumuah.css";
 import "./friday-page.css";
 import "./native-pwa.css";
+import "./pull-to-refresh.css";
 import "./public-ui-refresh.css";
 import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";
@@ -18,6 +19,7 @@ import { AdhanAudioProvider } from "@/components/providers/AdhanAudioProvider";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
 import { PlatformChromeBootstrap } from "@/components/providers/PlatformChromeBootstrap";
 import { AppLaunchScreen } from "@/components/providers/AppLaunchScreen";
+import { PullToRefresh } from "@/components/providers/PullToRefresh";
 import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
 import { PublicNavigation } from "@/components/layout/PublicNavigation";
 
@@ -75,6 +77,7 @@ export default async function RootLayout({
                 <TimeFormatProvider>
                   {children}
                   <PublicNavigation />
+                  <PullToRefresh />
                 </TimeFormatProvider>
               </AdhanAudioProvider>
               <ServiceWorkerRegistrar />

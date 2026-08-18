@@ -58,10 +58,12 @@ describe("logic hardening", () => {
     expect(browser).not.toContain("addDaysIso(today, 90)");
   });
 
-  it("keeps QA prayer rows out of reminder delivery", () => {
+  it("allows published QA prayer rows into reminder delivery during the testing phase", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
-    expect(cron).toContain('const QA_MOCK_MARKER = "SUPABASE_QA_MOCK"');
-    expect(cron).toContain("schedule.note !== QA_MOCK_MARKER");
+    expect(cron).toContain('.eq("published", true)');
+    expect(cron).toContain("const prayerSchedules = (schedules || []) as PrayerScheduleRow[]");
+    expect(cron).not.toContain("QA_MOCK_MARKER");
+    expect(cron).not.toContain("schedule.note");
   });
 
   it("deduplicates Friday notifications at the Friday-date level", () => {

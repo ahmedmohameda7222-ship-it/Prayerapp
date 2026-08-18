@@ -7,6 +7,7 @@ import "./home-palette-preview.css";
 import "./home-jumuah.css";
 import "./friday-page.css";
 import "./native-pwa.css";
+import "./pull-to-refresh.css";
 import "./public-ui-refresh.css";
 import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";

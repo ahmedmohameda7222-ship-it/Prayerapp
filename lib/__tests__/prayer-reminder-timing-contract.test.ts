@@ -26,6 +26,7 @@ describe("prayer reminder timing contract", () => {
     expect(cron).toContain(":before:${leadMinutes}");
     expect(cron).toContain(":adhan");
     expect(cron).toContain("nowMs >= adhanAt");
-    expect(cron).toContain("schedule.note !== QA_MOCK_MARKER");
+    expect(cron).toContain('.eq("published", true)');
+    expect(cron).not.toContain("QA_MOCK_MARKER");
   });
 });

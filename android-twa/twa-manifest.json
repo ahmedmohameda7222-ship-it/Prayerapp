@@ -1,0 +1,18 @@
+{
+  "packageId": "de.donaumoschee.app",
+  "host": "masjidelrahman.vercel.app",
+  "startUrl": "/",
+  "webManifestUrl": "https://masjidelrahman.vercel.app/manifest.webmanifest",
+  "defaultAppName": "Danube Mosque",
+  "themeColor": "#005A52",
+  "themeColorDark": "#003E38",
+  "navigationColor": "#005A52",
+  "navigationColorDark": "#003E38",
+  "backgroundColor": "#005A52",
+  "enableNotifications": true,
+  "compileSdkVersion": 36,
+  "targetSdkVersion": 36,
+  "minSdkVersion": 23,
+  "versionCode": 1,
+  "versionName": "0.1.0"
+}

@@ -12,7 +12,6 @@ import { createServerClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 const supportedLeadMinutes = [5, 10, 15] as const;
 
 type ReminderPreferenceRow = {
@@ -28,7 +27,6 @@ type PrayerScheduleRow = {
   asr: string;
   maghrib: string;
   isha: string;
-  note: string | null;
 };
 
 function normalizeLeadMinutes(value: number | null): ReminderLeadMinutes {
@@ -75,7 +73,7 @@ export async function GET(request: Request) {
       .eq("enabled", true),
     client
       .from("prayer_times")
-      .select("id, date, fajr, dhuhr, asr, maghrib, isha, note")
+      .select("id, date, fajr, dhuhr, asr, maghrib, isha")
       .eq("published", true)
       .gte("date", today)
       .lte("date", tomorrow),
@@ -105,8 +103,9 @@ export async function GET(request: Request) {
   }
 
   const targets = (subscriptions || []) as PushSubscriptionRecord[];
-  const prayerSchedules = ((schedules || []) as PrayerScheduleRow[])
-    .filter((schedule) => schedule.note !== QA_MOCK_MARKER);
+  // During the current testing phase every published schedule is intentionally
+  // eligible for real reminder delivery, including rows populated as QA/mock data.
+  const prayerSchedules = (schedules || []) as PrayerScheduleRow[];
   let due = 0;
   let sent = 0;
   let failed = 0;

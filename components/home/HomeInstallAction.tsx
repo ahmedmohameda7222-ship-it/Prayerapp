@@ -9,6 +9,10 @@ function isStandalone() {
     || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 }
 
+function isAndroid() {
+  return /Android/i.test(navigator.userAgent);
+}
+
 export function HomeInstallAction() {
   const { t } = useTranslation();
   const [ready, setReady] = useState(false);
@@ -40,6 +44,14 @@ export function HomeInstallAction() {
   if (!ready || installed) return null;
 
   async function installOrExplain() {
+    // On Android, Chrome/Samsung can package an installable PWA as a WebAPK.
+    // Keep our own CTA on the browser's Add-to-Home guidance path instead of
+    // forcing that generated APK install flow from JavaScript.
+    if (isAndroid()) {
+      window.location.assign("/settings#install-app");
+      return;
+    }
+
     const currentPrompt = prompt || window.__pwaInstallPrompt;
     if (!currentPrompt) {
       window.location.assign("/settings#install-app");

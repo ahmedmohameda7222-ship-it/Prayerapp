@@ -1,0 +1,79 @@
+import groovy.json.JsonSlurper
+import java.util.Properties
+
+plugins {
+    id 'com.android.application'
+}
+
+def twa = new JsonSlurper().parse(rootProject.file('twa-manifest.json'))
+def signingPropertiesFile = rootProject.file('signing.properties')
+def signingProperties = new Properties()
+def hasReleaseSigning = signingPropertiesFile.exists()
+
+if (hasReleaseSigning) {
+    signingPropertiesFile.withInputStream { signingProperties.load(it) }
+}
+
+android {
+    namespace twa.packageId
+    compileSdk twa.compileSdkVersion as int
+
+    defaultConfig {
+        applicationId twa.packageId
+        minSdk twa.minSdkVersion as int
+        targetSdk twa.targetSdkVersion as int
+        versionCode twa.versionCode as int
+        versionName twa.versionName
+
+        resValue 'string', 'twa_host', twa.host
+        resValue 'string', 'twa_launch_url', "https://${twa.host}${twa.startUrl}"
+        resValue 'string', 'twa_web_manifest_url', twa.webManifestUrl
+        resValue 'string', 'twa_provider_authority', "${twa.packageId}.fileprovider"
+        resValue 'color', 'twa_theme_color', twa.themeColor
+        resValue 'color', 'twa_theme_color_dark', twa.themeColorDark
+        resValue 'color', 'twa_navigation_color', twa.navigationColor
+        resValue 'color', 'twa_navigation_color_dark', twa.navigationColorDark
+        resValue 'color', 'twa_background_color', twa.backgroundColor
+        resValue 'bool', 'twa_notifications_enabled', twa.enableNotifications.toString()
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(signingProperties.getProperty('storeFile'))
+                storePassword signingProperties.getProperty('storePassword')
+                keyAlias signingProperties.getProperty('keyAlias')
+                keyPassword signingProperties.getProperty('keyPassword')
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds true
+        abortOnError true
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.2'
+}

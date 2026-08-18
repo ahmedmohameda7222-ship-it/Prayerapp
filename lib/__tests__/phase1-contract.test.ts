@@ -81,7 +81,9 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(delivery).toContain('kind: isAdhan ? "adhan" : "prayer-reminder"');
     expect(cron).toContain("prayer:${schedule.date}:${prayer}:${time}:before:${leadMinutes}");
     expect(cron).toContain("prayer:${schedule.date}:${prayer}:${time}:adhan");
-    expect(cron).toContain("schedule.note !== QA_MOCK_MARKER");
+    expect(cron).toContain('.select("id, date, fajr, dhuhr, asr, maghrib, isha")');
+    expect(cron).toContain("const prayerSchedules = (schedules || []) as PrayerScheduleRow[]");
+    expect(cron).not.toContain("QA_MOCK_MARKER");
     expect(source("lib/push/web-push.ts")).toContain('reserveError?.code === "23505"');
   });
 
@@ -137,7 +139,7 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(announcement).toContain('className="line-clamp-2 whitespace-pre-wrap');
   });
 
-  it("provides five prayer reminder controls, timing choices, per-prayer Adhan choices, and excludes Sunrise", () => {
+  it("provides five prayer reminder controls, aligned timing columns, outside-dismiss behavior, per-prayer Adhan choices, and excludes Sunrise", () => {
     const table = source("components/prayer/HomePrayerTimesCard.tsx");
     expect(table).toContain('new Set<ReminderPrayer>(["fajr", "dhuhr", "asr", "maghrib", "isha"])');
     expect(table).toContain('const canRemind = name !== "sunrise"');
@@ -148,6 +150,12 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(table).toContain("adhan_sound_id: adhanSoundId");
     expect(table).toContain("getAdhanSoundsForPrayer(editingPrayer)");
     expect(table).toContain('data-testid="prayer-reminder-dialog"');
+    expect(table).toContain("editorPanelRef = useRef<HTMLDivElement>(null)");
+    expect(table).toContain('document.addEventListener("pointerdown", closeOnOutsidePress)');
+    expect(table).toContain("panel.contains(event.target)");
+    expect(table).toContain("border-y border-s-[3px] border-s-transparent");
+    expect(table).toContain('<span className="text-center">{t("prayer.azan")}</span>');
+    expect(table).toContain("home-tabular text-center");
     expect(table).not.toContain("Settings2");
   });
 

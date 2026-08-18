@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import { APP_NAMES } from "@/lib/app-brand";
 
 const items = [
   { href: "/admin", labelKey: "admin.dashboard", icon: LayoutDashboard },
@@ -21,7 +22,7 @@ const items = [
 export function AdminSidebar() {
   const pathname = usePathname();
   const { user, signOut } = useAdminAuth();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const nav = (
     <>
@@ -85,7 +86,7 @@ export function AdminSidebar() {
             <MosqueIcon className="h-6 w-6" aria-hidden="true" />
           </div>
           <div>
-            <p className="font-brand text-xl">Masjid El-Rahman</p>
+            <p className="font-brand text-xl">{APP_NAMES[locale]}</p>
             <p className="text-xs text-white/70">{t("admin.admin")}</p>
           </div>
         </div>

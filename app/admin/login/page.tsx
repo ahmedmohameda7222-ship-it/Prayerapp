@@ -6,11 +6,12 @@ import { AlertTriangle, LogIn, Shield } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import { APP_NAMES } from "@/lib/app-brand";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { signIn, isAdmin, loading: authLoading } = useAdminAuth();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,7 +38,7 @@ export default function AdminLoginPage() {
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]">
             <Shield className="h-6 w-6" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-semibold text-[var(--color-charcoal)]">Masjid El-Rahman</h1>
+          <h1 className="text-2xl font-semibold text-[var(--color-charcoal)]">{APP_NAMES[locale]}</h1>
           <p className="mt-1 text-sm font-medium text-[var(--color-muted)]">{t("admin.mosqueAdministration")}</p>
         </div>
 

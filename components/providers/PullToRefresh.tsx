@@ -27,6 +27,7 @@ export function PullToRefresh() {
   const pathname = usePathname();
   const [distance, setDistance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const refreshingRef = useRef(false);
   const tracking = useRef(false);
   const startX = useRef(0);
   const startY = useRef(0);
@@ -42,11 +43,11 @@ export function PullToRefresh() {
     const reset = () => {
       tracking.current = false;
       distanceRef.current = 0;
-      if (!refreshing) setDistance(0);
+      if (!refreshingRef.current) setDistance(0);
     };
 
     const onTouchStart = (event: TouchEvent) => {
-      if (refreshing || event.touches.length !== 1 || window.scrollY > 0 || blocksPullToRefresh(event.target)) {
+      if (refreshingRef.current || event.touches.length !== 1 || window.scrollY > 0 || blocksPullToRefresh(event.target)) {
         tracking.current = false;
         return;
       }
@@ -90,6 +91,7 @@ export function PullToRefresh() {
         return;
       }
 
+      refreshingRef.current = true;
       setDistance(REFRESH_THRESHOLD);
       setRefreshing(true);
       window.dispatchEvent(new Event("pwa-pull-to-refresh"));
@@ -111,7 +113,7 @@ export function PullToRefresh() {
       window.removeEventListener("touchcancel", onTouchCancel);
       if (reloadTimer.current !== null) window.clearTimeout(reloadTimer.current);
     };
-  }, [pathname, refreshing]);
+  }, [pathname]);
 
   const progress = Math.min(distance / REFRESH_THRESHOLD, 1);
   const style = {

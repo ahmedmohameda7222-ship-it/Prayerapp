@@ -1,7 +1,9 @@
 {
-  "name": "Masjid El-Rahman",
-  "short_name": "El-Rahman",
+  "name": "مسجد الدوناو",
+  "short_name": "مسجد الدوناو",
   "description": "مواقيت الصلاة والجمعة والإعلانات والتبرعات ومعلومات المجتمع في دغندورف.",
+  "lang": "ar",
+  "dir": "rtl",
   "start_url": "/",
   "id": "/",
   "display": "standalone",

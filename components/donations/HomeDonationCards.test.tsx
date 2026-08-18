@@ -23,7 +23,7 @@ vi.mock("@/lib/i18n/use-translation", () => ({
 }));
 
 const settings: DonationSettings = {
-  accountHolder: "Masjid El-Rahman",
+  accountHolder: "Danube Mosque",
   iban: "DE001234567890",
   bic: "TESTDEFF",
   defaultPurpose: "Donation",
@@ -56,7 +56,7 @@ describe("Home donation cards", () => {
   it("renders bank details as one divided surface", () => {
     render(<BankTransferCard settings={settings} home />);
     const surface = screen.getByTestId("home-bank-surface");
-    expect(within(surface).getByText("Masjid El-Rahman")).toBeInTheDocument();
+    expect(within(surface).getByText("Danube Mosque")).toBeInTheDocument();
     expect(within(surface).getByText("DE001234567890")).toBeInTheDocument();
     expect(within(surface).getByText("TESTDEFF")).toBeInTheDocument();
     expect(within(surface).getByText("Donation")).toBeInTheDocument();

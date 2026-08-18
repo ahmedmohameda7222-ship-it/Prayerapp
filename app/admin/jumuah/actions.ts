@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { requireAllowedAdmin } from "@/lib/auth/admin-server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
+import { DEFAULT_APP_NAME } from "@/lib/app-brand";
 
 type JumuahPushRow = {
   id: string;
@@ -14,7 +15,7 @@ type JumuahPushRow = {
 
 async function notifyPublishedJumuah(row: JumuahPushRow) {
   if (!row.published) return;
-  const location = row.location_name?.trim() || "Masjid El-Rahman";
+  const location = row.location_name?.trim() || DEFAULT_APP_NAME;
   try {
     await sendAdminContentPush({
       // All services on the same Friday share one delivery key. Publishing a

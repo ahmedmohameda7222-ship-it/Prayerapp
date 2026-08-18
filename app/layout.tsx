@@ -12,6 +12,7 @@ import "./public-ui-refresh.css";
 import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/types";
+import { APP_NAMES } from "@/lib/app-brand";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
@@ -33,9 +34,10 @@ const metadataDescriptions: Record<Locale, string> = {
 export async function generateMetadata(): Promise<Metadata> {
   const cookieStore = await cookies();
   const locale = normalizeLocale(cookieStore.get("locale")?.value || DEFAULT_LOCALE);
+  const appName = APP_NAMES[locale];
 
   return {
-    title: "Masjid El-Rahman",
+    title: appName,
     description: metadataDescriptions[locale],
     manifest: "/manifest.webmanifest",
     icons: {
@@ -44,7 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     appleWebApp: {
       capable: true,
-      title: "Masjid El-Rahman",
+      title: appName,
       statusBarStyle: "black-translucent",
     },
   };

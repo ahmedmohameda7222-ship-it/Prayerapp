@@ -8,13 +8,7 @@ import { HomeInstallAction } from "@/components/home/HomeInstallAction";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { todayIso, formatHijriDate, formatLongDate } from "@/lib/date-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
-
-const localizedMosqueNames = {
-  ar: "مسجد الرحمن",
-  en: "Masjid El-Rahman",
-  de: "El-Rahman-Moschee",
-  tr: "El-Rahman Camii",
-};
+import { APP_NAMES } from "@/lib/app-brand";
 
 function WhatsAppIcon({ className = "" }: { className?: string }) {
   return (
@@ -37,7 +31,7 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
   const currentDateIso = todayIso();
   const currentDate = formatLongDate(currentDateIso, locale);
   const hijriDate = formatHijriDate(currentDateIso, locale);
-  const mosqueName = title || localizedMosqueNames[locale];
+  const mosqueName = title || APP_NAMES[locale];
   const whatsappHref = whatsappLink?.startsWith("https://") ? whatsappLink : undefined;
   const mapsHref = googleMapsLink?.startsWith("https://") ? googleMapsLink : undefined;
 

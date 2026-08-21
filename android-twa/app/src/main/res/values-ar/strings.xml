@@ -2,4 +2,16 @@
 <resources>
     <string name="app_name">مسجد الدوناو</string>
     <string name="launcher_name">مسجد الدوناو</string>
+    <string name="channel_prayer_reminders">تذكيرات الصلاة</string>
+    <string name="channel_prayer_reminders_description">تذكيرات الصلاة حسب الجدول المنشور للمسجد</string>
+    <string name="channel_adhan_playback">تشغيل الأذان</string>
+    <string name="prayer_reminder_title">تذكير بالصلاة</string>
+    <string name="prayer_reminder_body">متبقي %1$d دقيقة على %2$s</string>
+    <string name="adhan_notification_title">الأذان</string>
+    <string name="stop_adhan">إيقاف الأذان</string>
+    <string name="prayer_fajr">الفجر</string>
+    <string name="prayer_dhuhr">الظهر</string>
+    <string name="prayer_asr">العصر</string>
+    <string name="prayer_maghrib">المغرب</string>
+    <string name="prayer_isha">العشاء</string>
 </resources>

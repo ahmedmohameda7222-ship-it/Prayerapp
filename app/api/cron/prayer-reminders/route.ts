@@ -8,6 +8,10 @@ import {
 } from "@/lib/prayer-reminder-delivery";
 import type { PushSubscriptionRecord } from "@/lib/push/types";
 import { createServerClient } from "@/lib/supabase/server";
+import {
+  filterPrayerPushTargets,
+  type NativeAuthorityLease,
+} from "@/lib/android/native-authority";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -102,7 +106,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Could not load reminder subscriptions" }, { status: 500 });
   }
 
-  const targets = (subscriptions || []) as PushSubscriptionRecord[];
+  const pushTargets = (subscriptions || []) as PushSubscriptionRecord[];
+  let nativeLeases: NativeAuthorityLease[] | null = null;
+  if (pushTargets.length > 0) {
+    const { data: leaseData, error: leaseError } = await client
+      .from("native_prayer_installations")
+      .select("push_subscription_id, native_ready, notification_permission, exact_alarm_permission, schedule_fresh, alarm_schedule_installed, audio_ready, engine_healthy, schedule_valid_until, lease_expires_at")
+      .in("push_subscription_id", pushTargets.map((target) => target.id));
+    if (leaseError) {
+      console.warn("[prayer reminder cron] native authority lookup failed open", leaseError.message);
+    } else {
+      nativeLeases = (leaseData || []) as NativeAuthorityLease[];
+    }
+  }
+  const targets = filterPrayerPushTargets(pushTargets, nativeLeases, now);
   // During the current testing phase every published schedule is intentionally
   // eligible for real reminder delivery, including rows populated as QA/mock data.
   const prayerSchedules = (schedules || []) as PrayerScheduleRow[];

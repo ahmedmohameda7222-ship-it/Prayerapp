@@ -2,4 +2,16 @@
 <resources>
     <string name="app_name">Donau-Moschee</string>
     <string name="launcher_name">Donau-Moschee</string>
+    <string name="channel_prayer_reminders">Gebetserinnerungen</string>
+    <string name="channel_prayer_reminders_description">Gebetserinnerungen nach dem veröffentlichten Moscheeplan</string>
+    <string name="channel_adhan_playback">Adhan-Wiedergabe</string>
+    <string name="prayer_reminder_title">Gebetserinnerung</string>
+    <string name="prayer_reminder_body">Noch %1$d Minuten bis %2$s</string>
+    <string name="adhan_notification_title">Adhan</string>
+    <string name="stop_adhan">Adhan stoppen</string>
+    <string name="prayer_fajr">Fajr</string>
+    <string name="prayer_dhuhr">Dhuhr</string>
+    <string name="prayer_asr">Asr</string>
+    <string name="prayer_maghrib">Maghrib</string>
+    <string name="prayer_isha">Isha</string>
 </resources>

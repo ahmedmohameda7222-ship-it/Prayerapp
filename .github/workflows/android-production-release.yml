@@ -1,0 +1,155 @@
+name: Android production release
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Android TWA workflow run on the current main commit
+        required: true
+        type: string
+      tag:
+        description: Production Android tag, for example android-v1.0.0
+        required: true
+        type: string
+      confirmation:
+        description: Type PUBLISH_ANDROID_PRODUCTION to authorize the public tag and release
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+env:
+  EXPECTED_CERT_SHA256: E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  publish:
+    name: Verify and publish approved Android production artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: android-production
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Require explicit publication authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          test '${{ inputs.confirmation }}' = 'PUBLISH_ANDROID_PRODUCTION'
+          [[ '${{ inputs.tag }}' =~ ^android-v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+
+      - name: Verify source workflow is green on current main
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ inputs.run_id }}")"
+          conclusion="$(printf '%s' "$run_json" | jq -r '.conclusion')"
+          head_branch="$(printf '%s' "$run_json" | jq -r '.head_branch')"
+          head_sha="$(printf '%s' "$run_json" | jq -r '.head_sha')"
+          workflow_name="$(printf '%s' "$run_json" | jq -r '.name')"
+          test "$conclusion" = "success"
+          test "$head_branch" = "main"
+          test "$workflow_name" = "Android TWA"
+          test "$head_sha" = "$(git rev-parse HEAD)"
+          printf 'head_sha=%s\n' "$head_sha" >> "$GITHUB_OUTPUT"
+
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install verification tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Reconstruct and verify permanent signing certificate
+        working-directory: android-twa
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test "$ANDROID_KEY_ALIAS" = "danube-mosque-release"
+          test -n "$ANDROID_KEY_PASSWORD"
+          keystore="$RUNNER_TEMP/danube-mosque-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          chmod 600 "$keystore"
+          certificate="$(keytool -list -v -keystore "$keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS")"
+          actual="$(printf '%s\n' "$certificate" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1 | tr '[:lower:]' '[:upper:]')"
+          test "$actual" = "$EXPECTED_CERT_SHA256"
+          {
+            printf 'storeFile=%s\n' "$keystore"
+            printf 'storePassword=%s\n' "$ANDROID_KEYSTORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD"
+          } > signing.properties
+          chmod 600 signing.properties
+
+      - name: Test, lint, and build production APK and AAB
+        working-directory: android-twa
+        run: ./gradlew --no-daemon :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease :app:bundleRelease --stacktrace
+
+      - name: Prepare exact production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir candidate
+          cp android-twa/app/build/outputs/apk/release/app-release.apk candidate/danube-mosque.apk
+          cp android-twa/app/build/outputs/bundle/release/app-release.aab candidate/danube-mosque.aab
+          (cd candidate && sha256sum danube-mosque.apk danube-mosque.aab > SHA256SUMS.txt)
+
+      - name: Independently verify production artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd candidate
+          test -f danube-mosque.apk
+          test -f danube-mosque.aab
+          test -f SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          signature="$($ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs danube-mosque.apk)"
+          actual="$(printf '%s\n' "$signature" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1 | sed 's/../&:/g;s/:$//' | tr '[:lower:]' '[:upper:]')"
+          test "$actual" = "$EXPECTED_CERT_SHA256"
+          badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging danube-mosque.apk)"
+          printf '%s\n' "$badging" | grep -F "package: name='de.donaumoschee.app' versionCode='2' versionName='1.0.0'"
+          printf '%s\n' "$badging" | grep -F "targetSdkVersion:'36'"
+          jarsigner -verify -verbose -certs danube-mosque.aab
+          aab_certificate="$(keytool -printcert -jarfile danube-mosque.aab)"
+          aab_actual="$(printf '%s\n' "$aab_certificate" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1 | tr '[:lower:]' '[:upper:]')"
+          test "$aab_actual" = "$EXPECTED_CERT_SHA256"
+
+      - name: Remove reconstructed signing material
+        if: always()
+        shell: bash
+        run: rm -f android-twa/signing.properties "$RUNNER_TEMP/danube-mosque-release.jks"
+
+      - name: Create public production tag and release
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! gh release view '${{ inputs.tag }}' >/dev/null 2>&1
+          gh release create '${{ inputs.tag }}' \
+            candidate/danube-mosque.apk \
+            candidate/danube-mosque.aab \
+            candidate/SHA256SUMS.txt \
+            --target '${{ steps.source.outputs.head_sha }}' \
+            --title 'Danube Mosque Android ${{ inputs.tag }}' \
+            --notes 'Production Android package de.donaumoschee.app. APK and Play Store AAB are signed by the permanent production certificate.'

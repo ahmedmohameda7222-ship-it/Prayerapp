@@ -43,6 +43,14 @@ jobs:
             if to_regclass('public.user_prayer_reminders') is null then
               raise exception 'user_prayer_reminders missing after clean migration reset';
             end if;
+            if to_regclass('public.native_prayer_installations') is null then
+              raise exception 'native_prayer_installations missing after clean migration reset';
+            end if;
+            if not has_table_privilege('service_role', 'public.native_prayer_installations', 'SELECT')
+              or has_table_privilege('anon', 'public.native_prayer_installations', 'SELECT')
+              or has_table_privilege('authenticated', 'public.native_prayer_installations', 'SELECT') then
+              raise exception 'native prayer authority privileges are not service-role-only';
+            end if;
             if not has_table_privilege('service_role', 'public.user_prayer_reminders', 'SELECT') then
               raise exception 'service_role lacks SELECT on user_prayer_reminders';
             end if;

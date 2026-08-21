@@ -7,6 +7,14 @@ import { PrayerSystemTestControls } from "@/components/settings/PrayerSystemTest
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
+import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
+
+const NATIVE_COPY = {
+  ar: { ready: "التنبيهات والأذان الأصليان جاهزان.", needsPermission: "يلزم إذن الإشعارات والمنبّه الدقيق.", unhealthy: "المحرك الأصلي غير جاهز؛ ستبقى إشعارات الويب الاحتياطية فعالة.", grant: "تفعيل أذونات أندرويد", refresh: "إعادة فحص الحالة" },
+  en: { ready: "Native reminders and Adhan are ready.", needsPermission: "Notification and exact-alarm access are required.", unhealthy: "The native engine is not ready; fallback Web Push remains active.", grant: "Enable Android permissions", refresh: "Check status again" },
+  de: { ready: "Native Erinnerungen und Adhan sind bereit.", needsPermission: "Benachrichtigungs- und Exaktalarmzugriff sind erforderlich.", unhealthy: "Die native Engine ist nicht bereit; Web Push bleibt als Rückfall aktiv.", grant: "Android-Berechtigungen aktivieren", refresh: "Status erneut prüfen" },
+  tr: { ready: "Yerel hatırlatıcılar ve ezan hazır.", needsPermission: "Bildirim ve tam alarm izni gerekli.", unhealthy: "Yerel motor hazır değil; yedek Web Push etkin kalır.", grant: "Android izinlerini etkinleştir", refresh: "Durumu yeniden kontrol et" },
+} as const;
 
 const timeFormatOptions = [
   { value: "24-hour" as const, labelKey: "settings.24hour" },
@@ -14,9 +22,11 @@ const timeFormatOptions = [
 ];
 
 export function SettingsControls() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { timeFormat, setTimeFormat } = useTimeFormat();
   const { pushStatus, busy, enableNotifications, disableNotifications } = useAppPreferences();
+  const { isNative, status: nativeStatus, requestPermissions, requestStatus } = useNativeAndroid();
+  const nativeCopy = NATIVE_COPY[locale];
 
   const statusKey = {
     checking: "settings.pushChecking",
@@ -38,9 +48,20 @@ export function SettingsControls() {
         </h2>
         <p className="mt-1 text-sm leading-6">{t("settings.automaticContentNotifications")}</p>
         <p className="mt-3 rounded-[12px] bg-[var(--app-surface-soft)] p-3 text-sm font-semibold text-[var(--app-brand-strong)]" role="status">
-          {t(statusKey)}
+          {isNative
+            ? nativeStatus?.nativeReady
+              ? nativeCopy.ready
+              : !nativeStatus?.notificationPermission || !nativeStatus?.exactAlarmPermission
+                ? nativeCopy.needsPermission
+                : nativeCopy.unhealthy
+            : t(statusKey)}
         </p>
-        {pushStatus === "enabled" ? (
+        {isNative ? (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <Button className="w-full" onClick={requestPermissions}>{nativeCopy.grant}</Button>
+            <Button variant="ghost" className="w-full" onClick={requestStatus}>{nativeCopy.refresh}</Button>
+          </div>
+        ) : pushStatus === "enabled" ? (
           <Button variant="ghost" className="mt-3 w-full" disabled={busy} onClick={() => void disableNotifications()}>{t("settings.disablePush")}</Button>
         ) : pushStatus === "disabled" || pushStatus === "error" ? (
           <Button className="mt-3 w-full" disabled={busy} onClick={() => void enableNotifications()}>{t("settings.enablePush")}</Button>

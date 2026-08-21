@@ -1,44 +1,43 @@
 # Danube Mosque Android TWA
 
-Long-term Android shell for the Danube Mosque PWA.
+Production Android application for the Danube Mosque PWA, including native exact prayer alarms and locked-screen Adhan playback.
 
 ## Architecture
 
-- Web/PWA source of truth: `https://masjidelrahman.vercel.app/`
+- Web/PWA source of truth: `https://donaumoschee.vercel.app/`
 - Android package ID: `de.donaumoschee.app`
-- Android shell: Trusted Web Activity (TWA) using Android Browser Helper
+- Android shell: verified Trusted Web Activity (TWA) with an AndroidX Browser postMessage session
 - Compile/target SDK: API 36
 - Minimum SDK: API 23
-- Android Browser Helper: 2.7.2
+- Android Browser Helper: 2.7.3
 - Android Gradle Plugin: 8.11.1
 - Gradle: 8.13
 - JDK: 17
 
-The Android project intentionally stays thin. Product UI, routing, authentication, prayer data, Web Push, service worker behavior, and most feature updates remain in the PWA. Native releases are reserved for Android-shell changes such as SDK updates, package metadata, signing, icons, or TWA configuration.
+The web application remains the UI, account/configuration authority, and source of the mosque-published prayer schedule. Native Android caches only normalized published rows, schedules deterministic exact alarms, posts prayer notifications, and plays an approved Adhan through Media3. It does not calculate geographic prayer times.
+
+The TWA bridge uses Digital Asset Links `use_as_origin`, a retained `CustomTabsSession`, relationship validation, and the official postMessage channel. It does not expose a WebView JavaScript interface. A short-lived server readiness lease suppresses only the paired prayer Web Push subscription while notification permission, exact-alarm access, schedule freshness, installed alarms, cached selected audio, and engine health are all confirmed. Any missing/stale/error state fails open to Web Push. Announcement/news pushes do not use this lease.
 
 `twa-manifest.json` is the Android configuration source of truth for package/host/SDK/version settings used by Gradle. Android localized launcher labels live in `app/src/main/res/values-*` because Android chooses them from the device locale.
 
 ## Local build
 
-Install Android SDK API 36, JDK 17 and Gradle 8.13, then run:
+Install Android SDK API 36 and JDK 17, then run the checked-in Gradle wrapper:
 
 ```bash
-gradle --no-daemon :app:lintDebug :app:assembleDebug
+./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
-GitHub Actions performs the same build and uploads an internal debug APK artifact. A debug APK proves that the native shell compiles, but it is not the production-signed application.
+GitHub Actions performs the same untrusted checks. For a same-repository PR or an explicitly dispatched run, a separate job reconstructs the permanent keystore in runner-temporary storage, verifies its certificate, builds release APK/AAB files, verifies both signatures and package metadata, writes checksums, removes signing material, and uploads the private `danube-mosque-android-rc` artifact.
 
-## Production signing — one-time identity step
+The signing jobs require these repository secrets by name: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. Their values must never appear in logs, artifacts, source, or documentation. The alias is permanently `danube-mosque-release`.
 
-The release key is the permanent Android identity of this app. Never commit it to Git.
+## Production signing identity
 
-Create one release keystore and keep at least two secure offline backups:
+The existing release key is the permanent Android identity of this app. Never regenerate, replace, print, or commit it. Its required SHA-256 certificate fingerprint is:
 
-```bash
-keytool -genkeypair -v \
-  -keystore danube-mosque-release.jks \
-  -alias danube-mosque \
-  -keyalg RSA -keysize 2048 -validity 10000
+```text
+E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92
 ```
 
 Copy `signing.properties.example` to `signing.properties` and fill in the local values. `signing.properties`, `*.jks`, and `*.keystore` are ignored by Git.
@@ -46,23 +45,23 @@ Copy `signing.properties.example` to `signing.properties` and fill in the local 
 Print the SHA-256 certificate fingerprint with:
 
 ```bash
-keytool -list -v -keystore danube-mosque-release.jks -alias danube-mosque
+keytool -list -v -keystore danube-mosque-release.jks -alias danube-mosque-release
 ```
 
-Then replace the placeholder in `assetlinks.template.json` and publish the resulting JSON at:
+The production Digital Asset Links document is tracked at `public/.well-known/assetlinks.json` and is served at:
 
 ```text
-https://masjidelrahman.vercel.app/.well-known/assetlinks.json
+https://donaumoschee.vercel.app/.well-known/assetlinks.json
 ```
 
-Only publish Asset Links after the permanent release certificate has been chosen. A placeholder or temporary debug fingerprint must never be deployed to production.
+It contains both `handle_all_urls` and `use_as_origin` for the production package and certificate. A placeholder or debug fingerprint must never be published.
 
 ## Release build
 
 After `signing.properties` points at the permanent keystore:
 
 ```bash
-gradle --no-daemon :app:lintRelease :app:assembleRelease :app:bundleRelease
+./gradlew --no-daemon :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease :app:bundleRelease
 ```
 
 Outputs:
@@ -76,10 +75,25 @@ For direct distribution outside Google Play, use the signed release APK. Keep th
 
 A real fullscreen TWA requires both sides of Digital Asset Links:
 
-1. The Android app declares trust for `https://masjidelrahman.vercel.app` using `asset_statements`.
+1. The Android app declares trust for `https://donaumoschee.vercel.app` using `asset_statements`.
 2. The website publishes `/.well-known/assetlinks.json` containing package `de.donaumoschee.app` and the SHA-256 fingerprint of the permanent release certificate.
 
 If verification is missing or wrong, Android Browser Helper intentionally falls back to a Custom Tab instead of pretending that the origin is trusted.
+
+## Native lifecycle and testing
+
+- `Application` creates notification channels, initializes WorkManager, and repairs the current alarm window.
+- `ScheduleRepairReceiver` repairs after boot, package replacement, clock/time-zone changes, and exact-alarm permission changes.
+- `NativeRefreshWorker` refreshes the published schedule and sends readiness heartbeats; the authority lease expires if refresh cannot confirm health.
+- `AudioCacheWorker` downloads only allowlisted HTTPS Adhan files into app-private storage with size/type/digest checks and an atomic promotion.
+- `PrayerAlarmReceiver` uses a persistent delivered-event ledger and starts `AdhanPlaybackService` only for a due, non-duplicate Adhan event.
+- Android 13+ notification access is requested natively only from the prayer setup flow. Android 12+ exact-alarm access uses `SCHEDULE_EXACT_ALARM`, `canScheduleExactAlarms()`, and the official system settings screen; denial leaves Web Push active.
+- Prayer reminders use the stable `prayer-reminders-v1` notification channel. Media3 uses the separate stable `adhan-playback-v1` channel and exposes a Stop control.
+- The Settings 10-second tests use `AlarmManager -> PrayerAlarmReceiver -> notification/AdhanPlaybackService` inside the Android app. Browser clients retain the Web Push tests.
+
+For adb diagnosis, filter `logcat` by the `DanubePrayer` tag. It records relationship/channel validation, config sync, alarm schedule/cancel/fire, schedule refresh, permission results, audio-cache readiness, and playback source/completion/error without logging credentials, endpoints, or tokens.
+
+The permanent public download link is `/download/android`. It redirects only to the exact `danube-mosque.apk` asset on the newest stable public `android-v*` GitHub release and returns a controlled 503 while no public Android release exists.
 
 ## Release discipline
 
@@ -89,3 +103,21 @@ If verification is missing or wrong, Android Browser Helper intentionally falls 
 - Keep `targetSdkVersion` current as Android requirements move.
 - Update Android Browser Helper deliberately and validate notifications, app links, back navigation, cold start, background behavior and the Adhan flow on real Android hardware.
 - Normal PWA UI/content updates do not require a new APK when the TWA shell itself is unchanged.
+- Draft-PR release candidates are private Actions artifacts. Public publication requires the separate `Android production release` workflow, a successful current-`main` source run, the `android-production` environment, and the exact confirmation phrase. Do not invoke it during release-candidate QA.
+
+If Google Play App Signing is enabled later, the Play-distributed APK may use a different app-signing certificate from this direct-download/upload certificate. Add that Play app-signing SHA-256 as an additional accepted fingerprint in `assetlinks.json`; do not replace the current direct-APK fingerprint.
+
+## Physical-device release-candidate QA
+
+Install `danube-mosque.apk` from the private `danube-mosque-android-rc` Actions artifact, then verify:
+
+1. Launch opens the trusted production origin. Until the PR is merged/deployed, the live origin cannot serve the new Asset Links file or native bridge/API code, so full TWA/native testing must wait for an authorized deployment.
+2. In prayer setup, allow notifications and exact prayer timing; confirm Settings reports both permissions, fresh schedule, cached Adhan, and native engine ready.
+3. Run the 10-second reminder test, immediately lock the phone, and confirm the native reminder appears.
+4. Run the 10-second Adhan test, immediately lock the phone, and confirm full native playback, the media notification, and Stop.
+5. Repeat after removing the TWA activity from recents.
+6. Let the chosen Adhan become cached, disable connectivity, and repeat the Adhan test.
+7. With future alarms configured, reboot and confirm the schedule is repaired.
+8. Revoke notification or exact-alarm access and confirm the app does not crash, reports fallback, and prayer Web Push remains eligible.
+
+Android cannot bypass force-stop, revoked permissions, disabled system notifications, restrictive OEM policy, or user media controls. The engine detects/rechecks those states on the next supported lifecycle event and fails open to Web Push rather than claiming native readiness.

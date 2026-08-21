@@ -1,0 +1,36 @@
+package de.donaumoschee.app.bridge;
+
+import org.json.JSONException;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+
+public final class BridgeProtocolTest {
+    @Test
+    public void acceptsOnlyVersionedWhitelistedMessages() throws Exception {
+        BridgeProtocol.Envelope envelope = BridgeProtocol.parseInbound(
+                "{\"version\":1,\"type\":\"native.status.request\",\"payload\":{}}"
+        );
+        assertEquals("native.status.request", envelope.type);
+    }
+
+    @Test(expected = JSONException.class)
+    public void rejectsUnknownTypes() throws Exception {
+        BridgeProtocol.parseInbound("{\"version\":1,\"type\":\"native.open.url\",\"payload\":{}}");
+    }
+
+    @Test(expected = JSONException.class)
+    public void rejectsUnknownVersions() throws Exception {
+        BridgeProtocol.parseInbound("{\"version\":2,\"type\":\"native.status.request\",\"payload\":{}}");
+    }
+
+    @Test(expected = JSONException.class)
+    public void rejectsNonObjectPayloads() throws Exception {
+        BridgeProtocol.parseInbound("{\"version\":1,\"type\":\"native.status.request\",\"payload\":[]}");
+    }
+
+    @Test(expected = JSONException.class)
+    public void rejectsOversizedMessages() throws Exception {
+        BridgeProtocol.parseInbound("x".repeat(BridgeProtocol.MAX_MESSAGE_LENGTH + 1));
+    }
+}

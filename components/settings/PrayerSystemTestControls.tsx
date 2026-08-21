@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BellRing, Volume2 } from "lucide-react";
 import { useAdhanAudio } from "@/components/providers/AdhanAudioProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
+import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
 import { getAdhanSoundLabel, type AdhanPrayer } from "@/lib/adhan-audio";
 import type { Locale } from "@/lib/i18n/types";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -132,6 +133,7 @@ export function PrayerSystemTestControls() {
     stopAudio,
   } = useAdhanAudio();
   const { sendTestPrayerReminder, sendTestAdhan } = useAppPreferences();
+  const { isNative, scheduleTest } = useNativeAndroid();
   const [prayer, setPrayer] = useState<AdhanPrayer>("maghrib");
   const [adhanStatus, setAdhanStatus] = useState("");
   const [reminderStatus, setReminderStatus] = useState("");
@@ -149,25 +151,55 @@ export function PrayerSystemTestControls() {
   function startAdhanTest() {
     if (adhanCountdown.seconds !== null) return;
     stopAudio();
-    preloadSound(soundId);
-    void primeSound(soundId);
+    if (!isNative) {
+      preloadSound(soundId);
+      void primeSound(soundId);
+    }
     setAdhanStatus(copy.adhanScheduled);
     adhanCountdown.start(TEST_SECONDS);
 
-    void sendTestAdhan(prayer, TEST_SECONDS).then((sent) => {
-      setAdhanStatus(sent ? copy.adhanTriggered : copy.adhanFailed);
-      adhanCountdown.finish();
-    });
+    if (isNative) {
+      void scheduleTest("adhan", prayer, soundId).then((scheduled) => {
+        if (!scheduled) {
+          setAdhanStatus(copy.adhanFailed);
+          adhanCountdown.finish();
+          return;
+        }
+        window.setTimeout(() => {
+          setAdhanStatus(copy.adhanTriggered);
+          adhanCountdown.finish();
+        }, TEST_SECONDS * 1000);
+      });
+    } else {
+      void sendTestAdhan(prayer, TEST_SECONDS).then((sent) => {
+        setAdhanStatus(sent ? copy.adhanTriggered : copy.adhanFailed);
+        adhanCountdown.finish();
+      });
+    }
   }
 
   function startReminderTest() {
     if (reminderCountdown.seconds !== null) return;
     setReminderStatus(copy.reminderScheduled);
     reminderCountdown.start(TEST_SECONDS);
-    void sendTestPrayerReminder(prayer, TEST_SECONDS).then((sent) => {
-      setReminderStatus(sent ? copy.reminderSent : copy.reminderFailed);
-      reminderCountdown.finish();
-    });
+    if (isNative) {
+      void scheduleTest("reminder", prayer, soundId).then((scheduled) => {
+        if (!scheduled) {
+          setReminderStatus(copy.reminderFailed);
+          reminderCountdown.finish();
+          return;
+        }
+        window.setTimeout(() => {
+          setReminderStatus(copy.reminderSent);
+          reminderCountdown.finish();
+        }, TEST_SECONDS * 1000);
+      });
+    } else {
+      void sendTestPrayerReminder(prayer, TEST_SECONDS).then((sent) => {
+        setReminderStatus(sent ? copy.reminderSent : copy.reminderFailed);
+        reminderCountdown.finish();
+      });
+    }
   }
 
   return (

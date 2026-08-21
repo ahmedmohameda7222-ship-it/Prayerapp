@@ -1,8 +1,8 @@
 # Android Production Completion Design
 
-**Date:** 2026-08-21  
-**Status:** Approved for implementation  
-**Production application ID:** `de.donaumoschee.app`  
+**Date:** 2026-08-21
+**Status:** Approved for implementation
+**Production application ID:** `de.donaumoschee.app`
 **Production origin:** `https://donaumoschee.vercel.app`
 
 ## Goal

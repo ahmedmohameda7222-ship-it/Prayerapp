@@ -110,4 +110,29 @@ describe("Android production completion contract", () => {
     expect(receiver).toContain("notificationCapabilities(context).adhanDeliveryReady()");
     expect(receiver).not.toContain("!NativeStatus.hasNotificationPermission(context)");
   });
+
+  it("makes native account transitions race-safe across auth hydration, legacy upgrades, web sync, and refresh workers", () => {
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
+    const bridge = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeHandler.java");
+    const store = source("android-twa/app/src/main/java/de/donaumoschee/app/storage/NativeStore.java");
+    const worker = source("android-twa/app/src/main/java/de/donaumoschee/app/workers/NativeRefreshWorker.java");
+    const work = source("android-twa/app/src/main/java/de/donaumoschee/app/workers/NativeWork.java");
+
+    expect(provider).toContain("loading: authLoading");
+    expect(provider).toContain("if (authLoading");
+    expect(provider).toContain("hasLegacyNativeState(status)");
+    expect(provider).toContain("syncGenerationRef");
+    expect(provider).toContain("const syncGeneration = syncGenerationRef.current");
+    expect(provider).toContain("syncGeneration !== syncGenerationRef.current");
+    expect(provider).toContain("accountTransitioningRef.current");
+
+    expect(store).toContain("ACCOUNT_GENERATION");
+    expect(store).toContain("public int accountGeneration()");
+    expect(store).toContain("public int advanceAccountGeneration()");
+    expect(worker).toContain("int generation = store.accountGeneration()");
+    expect(worker).toContain("store.accountGeneration() != generation");
+    expect(work).toContain("public static void cancelPrayerRefresh(Context context)");
+    expect(bridge).toContain("NativeWork.cancelPrayerRefresh(context)");
+    expect(bridge).toContain("store.advanceAccountGeneration()");
+  });
 });

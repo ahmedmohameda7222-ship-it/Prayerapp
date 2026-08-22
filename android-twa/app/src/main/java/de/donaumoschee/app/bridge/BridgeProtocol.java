@@ -13,7 +13,8 @@ public final class BridgeProtocol {
             "web.configure",
             "native.permissions.request",
             "native.status.request",
-            "native.test.schedule"
+            "native.test.schedule",
+            "native.account.reset"
     );
 
     private BridgeProtocol() {}

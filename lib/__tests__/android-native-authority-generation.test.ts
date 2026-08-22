@@ -18,6 +18,7 @@ describe("Android native authority generation", () => {
     expect(heartbeat).toContain('request.headers.get("x-native-authority-id")');
     expect(heartbeat).toContain('.eq("authority_id", row.authority_id)');
     expect(heartbeat).toContain('.eq("credential_hash", row.credential_hash)');
+    expect(heartbeat.match(/\.is\("revoked_at", null\)/gu)?.length).toBe(2);
     expect(heartbeat).toContain('.select("authority_id")');
     expect(heartbeat).toContain("authorityId != null && !isAuthorityId(authorityId)");
   });

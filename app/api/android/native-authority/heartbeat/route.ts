@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     .select("credential_hash, authority_id")
     .eq("installation_id", installationId)
     .eq("authority_id", authorityId)
+    .is("revoked_at", null)
     .maybeSingle();
   const row = data as { credential_hash?: string; authority_id?: string } | null;
   if (error || !row?.credential_hash || !row.authority_id || !credentialMatches(credential, row.credential_hash)) {
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
     .eq("installation_id", installationId)
     .eq("authority_id", row.authority_id)
     .eq("credential_hash", row.credential_hash)
+    .is("revoked_at", null)
     .select("authority_id")
     .maybeSingle();
   const updated = updatedData as { authority_id?: string } | null;

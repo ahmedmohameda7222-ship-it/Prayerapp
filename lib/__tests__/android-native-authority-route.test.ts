@@ -34,6 +34,10 @@ function query(result: QueryResult | ((updates: unknown[]) => QueryResult)) {
       filters.push([column, value]);
       return builder;
     }),
+    is: vi.fn((column: string, value: unknown) => {
+      filters.push([column, value]);
+      return builder;
+    }),
     maybeSingle: vi.fn(async () => typeof result === "function" ? result(updates) : result),
   };
   return builder;

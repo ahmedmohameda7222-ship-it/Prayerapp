@@ -22,96 +22,192 @@ public final class PrayerScheduler {
     public static final String EXTRA_PRAYER = "prayer";
     public static final String EXTRA_LEAD_MINUTES = "lead-minutes";
     public static final String EXTRA_ADHAN_SOUND_ID = "adhan-sound-id";
+    public static final String EXTRA_ACCOUNT_GENERATION = "account-generation";
 
     private PrayerScheduler() {}
 
     public static boolean reschedule(Context context) {
         NativeStore store = new NativeStore(context);
-        cancelStored(context, store);
+        int generation = store.accountGeneration();
+        if (!cancelStored(context, store, generation)) return false;
+        return scheduleCurrentGeneration(context, store, generation);
+    }
+
+    public static boolean reschedule(Context context, int expectedGeneration) {
+        NativeStore store = new NativeStore(context);
+        if (store.accountGeneration() != expectedGeneration) return false;
+        if (!cancelStored(context, store, expectedGeneration)) return false;
+        if (store.accountGeneration() != expectedGeneration) return false;
+        return scheduleCurrentGeneration(context, store, expectedGeneration);
+    }
+
+    private static boolean scheduleCurrentGeneration(Context context, NativeStore store, int generation) {
+        if (store.accountGeneration() != generation) return false;
         NativeConfig config = store.loadConfig(Instant.now());
         if (config == null || !NativeStatus.hasExactAlarmPermission(context)) {
             Log.w(TAG, "alarm.schedule skipped config=" + (config != null) + " exact=" + NativeStatus.hasExactAlarmPermission(context));
-            store.setScheduleInstalled(false);
+            store.markScheduleFailureIfGeneration("alarm-schedule-unavailable", generation);
             return false;
         }
+
+        Set<String> installedByThisCall = new HashSet<>();
         try {
             List<AlarmEvent> events = AlarmPlanner.plan(config, Instant.now());
             AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-            Set<String> requestCodes = new HashSet<>();
             for (AlarmEvent event : events) {
-                PendingIntent operation = operation(context, event);
+                if (store.accountGeneration() != generation) {
+                    cancelRequests(context, installedByThisCall);
+                    return false;
+                }
+                PendingIntent operation = operation(context, event, generation);
                 manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
-                requestCodes.add(event.requestCode() + "|" + event.eventId);
+                installedByThisCall.add(encodeScheduledRequest(generation, event));
             }
-            store.setScheduledRequestCodes(requestCodes);
-            store.setScheduleInstalled(true);
-            store.markEngineHealthy();
-            Log.i(TAG, "alarm.schedule installed count=" + events.size());
+            if (
+                    store.accountGeneration() != generation
+                    || !store.addScheduledRequestCodesIfGeneration(installedByThisCall, generation)
+                    || !store.markScheduleInstalledIfGeneration(generation)
+            ) {
+                cancelRequests(context, installedByThisCall);
+                return false;
+            }
+            Log.i(TAG, "alarm.schedule installed count=" + events.size() + " generation=" + generation);
             return true;
         } catch (RuntimeException error) {
+            cancelRequests(context, installedByThisCall);
             Log.e(TAG, "alarm.schedule failed=" + error.getClass().getSimpleName());
-            store.markEngineError("alarm-schedule-failed");
-            store.setScheduleInstalled(false);
+            store.markScheduleFailureIfGeneration("alarm-schedule-failed", generation);
             return false;
         }
     }
 
     public static boolean scheduleTest(Context context, String mode, Prayer prayer, String soundId, int delaySeconds) {
         if (!NativeStatus.hasExactAlarmPermission(context) || delaySeconds < 1 || delaySeconds > 60) return false;
+        NativeStore store = new NativeStore(context);
+        int generation = store.accountGeneration();
         AlarmEvent.Kind kind = "adhan".equals(mode) ? AlarmEvent.Kind.ADHAN : AlarmEvent.Kind.REMINDER;
         int leadMinutes = kind == AlarmEvent.Kind.REMINDER ? 15 : 0;
         AlarmEvent event = new AlarmEvent(
                 "test:" + UUID.randomUUID(), prayer, kind, Instant.now().plusSeconds(delaySeconds), leadMinutes, soundId
         );
         AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation(context, event));
-        NativeStore store = new NativeStore(context);
-        Set<String> requestCodes = store.scheduledRequestCodes();
-        requestCodes.add(event.requestCode() + "|" + event.eventId);
-        store.setScheduledRequestCodes(requestCodes);
-        Log.i(TAG, "alarm.test scheduled kind=" + kind + " prayer=" + prayer.key + " delaySeconds=" + delaySeconds);
+        PendingIntent operation = operation(context, event, generation);
+        manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
+        Set<String> requestCodes = Set.of(encodeScheduledRequest(generation, event));
+        if (!store.addScheduledRequestCodesIfGeneration(requestCodes, generation)) {
+            cancelRequests(context, requestCodes);
+            return false;
+        }
+        Log.i(TAG, "alarm.test scheduled kind=" + kind + " prayer=" + prayer.key + " delaySeconds=" + delaySeconds + " generation=" + generation);
         return true;
     }
 
     public static void cancelAll(Context context) {
         NativeStore store = new NativeStore(context);
-        cancelStored(context, store);
+        cancelStored(context, store, null);
         store.setScheduleInstalled(false);
     }
 
-    private static PendingIntent operation(Context context, AlarmEvent event) {
+    private static PendingIntent operation(Context context, AlarmEvent event, int generation) {
         Intent intent = new Intent(context, PrayerAlarmReceiver.class)
                 .setAction("de.donaumoschee.app.PRAYER_EVENT")
-                .setData(Uri.parse("danube://prayer-event/" + Uri.encode(event.eventId)))
+                .setData(eventUri(generation, event.eventId))
                 .putExtra(EXTRA_EVENT_ID, event.eventId)
                 .putExtra(EXTRA_KIND, event.kind.name())
                 .putExtra(EXTRA_PRAYER, event.prayer.key)
                 .putExtra(EXTRA_LEAD_MINUTES, event.leadMinutes)
-                .putExtra(EXTRA_ADHAN_SOUND_ID, event.adhanSoundId);
+                .putExtra(EXTRA_ADHAN_SOUND_ID, event.adhanSoundId)
+                .putExtra(EXTRA_ACCOUNT_GENERATION, generation);
         return PendingIntent.getBroadcast(context, event.requestCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    private static void cancelStored(Context context, NativeStore store) {
-        AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+    private static Uri eventUri(int generation, String eventId) {
+        return Uri.parse("danube://prayer-event/" + generation + "/" + Uri.encode(eventId));
+    }
+
+    private static String encodeScheduledRequest(int generation, AlarmEvent event) {
+        return generation + "|" + event.requestCode() + "|" + event.eventId;
+    }
+
+    private static boolean cancelStored(Context context, NativeStore store, Integer generationFilter) {
         Set<String> stored = store.scheduledRequestCodes();
+        Set<String> retained = new HashSet<>();
+        int cancelled = 0;
         for (String raw : stored) {
-            try {
-                String[] parts = raw.split("\\|", 2);
-                if (parts.length != 2) continue;
-                int requestCode = Integer.parseInt(parts[0]);
-                Intent intent = new Intent(context, PrayerAlarmReceiver.class)
-                        .setAction("de.donaumoschee.app.PRAYER_EVENT")
-                        .setData(Uri.parse("danube://prayer-event/" + Uri.encode(parts[1])));
-                PendingIntent existing = PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
-                if (existing != null) {
-                    manager.cancel(existing);
-                    existing.cancel();
-                }
-            } catch (NumberFormatException ignored) {
-                // Ignore stale local metadata.
+            ScheduledRequest request = parseScheduledRequest(raw);
+            if (request == null) {
+                if (generationFilter != null) retained.add(raw);
+                continue;
+            }
+            boolean shouldCancel = generationFilter == null || request.legacy || request.generation == generationFilter;
+            if (shouldCancel) {
+                cancelRequest(context, request);
+                cancelled += 1;
+            } else {
+                retained.add(raw);
             }
         }
-        if (!stored.isEmpty()) Log.i(TAG, "alarm.cancel staleCount=" + stored.size());
-        store.setScheduledRequestCodes(Set.of());
+        if (cancelled > 0) Log.i(TAG, "alarm.cancel count=" + cancelled + " generation=" + generationFilter);
+        if (generationFilter == null) {
+            store.setScheduledRequestCodes(retained);
+            return true;
+        }
+        return store.setScheduledRequestCodesIfGeneration(retained, generationFilter);
+    }
+
+    private static void cancelRequests(Context context, Set<String> requests) {
+        for (String raw : requests) {
+            ScheduledRequest request = parseScheduledRequest(raw);
+            if (request != null) cancelRequest(context, request);
+        }
+    }
+
+    private static void cancelRequest(Context context, ScheduledRequest request) {
+        AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Uri data = request.legacy
+                ? Uri.parse("danube://prayer-event/" + Uri.encode(request.eventId))
+                : eventUri(request.generation, request.eventId);
+        Intent intent = new Intent(context, PrayerAlarmReceiver.class)
+                .setAction("de.donaumoschee.app.PRAYER_EVENT")
+                .setData(data);
+        PendingIntent existing = PendingIntent.getBroadcast(
+                context,
+                request.requestCode,
+                intent,
+                PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE
+        );
+        if (existing != null) {
+            manager.cancel(existing);
+            existing.cancel();
+        }
+    }
+
+    private static ScheduledRequest parseScheduledRequest(String raw) {
+        try {
+            String[] parts = raw.split("\\|", 3);
+            if (parts.length == 2) {
+                return new ScheduledRequest(-1, Integer.parseInt(parts[0]), parts[1], true);
+            }
+            if (parts.length == 3) {
+                return new ScheduledRequest(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), parts[2], false);
+            }
+        } catch (NumberFormatException ignored) {
+            // Ignore corrupt local metadata.
+        }
+        return null;
+    }
+
+    private static final class ScheduledRequest {
+        final int generation;
+        final int requestCode;
+        final String eventId;
+        final boolean legacy;
+
+        ScheduledRequest(int generation, int requestCode, String eventId, boolean legacy) {
+            this.generation = generation;
+            this.requestCode = requestCode;
+            this.eventId = eventId;
+            this.legacy = legacy;
+        }
     }
 }

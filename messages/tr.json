@@ -300,7 +300,24 @@
     "prayerReminderDescription": "Beş vakit namazın tümü için tek bir zaman seçin. Arka planda iletim için bildirimlerin ve cami zamanlayıcısının açık olması gerekir.",
     "reminderOff": "Kapalı",
     "reminderAtAzan": "Ezan vaktinde",
-    "reminderBeforeMinutes": "{minutes} dakika önce"
+    "reminderBeforeMinutes": "{minutes} dakika önce",
+    "androidUpdateSection": "Android uygulama güncellemesi",
+    "androidInstalledVersion": "Yüklü sürüm",
+    "androidLatestVersion": "En son sürüm",
+    "androidUpdateStatus": "Güncelleme durumu",
+    "androidCheckForUpdates": "Güncellemeleri kontrol et",
+    "androidUpdateChecking": "Kontrol ediliyor...",
+    "androidUpdateTitle": "Yeni uygulama güncellemesi mevcut",
+    "androidUpdateBody": "Tuna Camii uygulamasının yeni bir sürümü mevcut. En son Android iyileştirmeleri için güncelleyin.",
+    "androidUpdateRequiredTitle": "Zorunlu uygulama güncellemesi",
+    "androidUpdateRequiredBody": "Güvenli yerel namaz hatırlatıcılarını ve ezanı geri yüklemek için Android uygulamasını güncelleyin.",
+    "androidUpdateNow": "Şimdi güncelle",
+    "androidUpdateLater": "Daha sonra",
+    "androidUpdateError": "Güncellemeler kontrol edilemedi. Mevcut uygulamanız kullanılabilir durumda kalır.",
+    "androidUpdateRequiredStatus": "Güncelleme gerekli",
+    "androidUpdateAvailableStatus": "Güncelleme mevcut",
+    "androidUpdateCurrentStatus": "Güncel",
+    "androidUpdateUnknownStatus": "Henüz kontrol edilmedi"
   },
   "notifications": {
     "empty": "Acil güncelleme yok."

@@ -19,6 +19,8 @@ export type StoredNativePreferences = {
 export type NativeBridgeStatus = {
   native: true;
   packageId: string;
+  versionCode: number;
+  versionName: string;
   notificationPermission: boolean;
   notificationDeliveryEnabled: boolean;
   reminderChannelEnabled: boolean;

@@ -24,6 +24,7 @@ type ContextValue = {
   requestPermissions: () => void;
   requestStatus: () => void;
   scheduleTest: (mode: "adhan" | "reminder", prayer: AdhanPrayer, adhanSoundId: AdhanSoundId) => Promise<boolean>;
+  suspendNativeAuthority: () => Promise<void>;
 };
 
 const NativeAndroidContext = createContext<ContextValue>({
@@ -32,6 +33,7 @@ const NativeAndroidContext = createContext<ContextValue>({
   requestPermissions: () => undefined,
   requestStatus: () => undefined,
   scheduleTest: async () => false,
+  suspendNativeAuthority: async () => undefined,
 });
 
 type PendingTest = { resolve: (success: boolean) => void; timer: number };
@@ -70,6 +72,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   const lastEnrolledAuthorityRef = useRef<string | null>(null);
   const enrollmentAttemptRef = useRef<string | null>(null);
   const sessionUserIdRef = useRef<string | null>(sessionUserId);
+  const nativeUpdateRequiredRef = useRef(false);
   const pendingTests = useRef(new Map<string, PendingTest>());
 
   useEffect(() => {
@@ -110,6 +113,9 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     } else if (message.type === "native.authority.result") {
       const nested = message.payload.status;
       if (nested && typeof nested === "object") setStatus(nested as NativeBridgeStatus);
+    } else if (message.type === "native.update.required.result") {
+      const nested = message.payload.status;
+      if (nested && typeof nested === "object") setStatus(nested as NativeBridgeStatus);
     } else if (message.type === "native.test.result") {
       const key = typeof message.payload.mode === "string" ? message.payload.mode : "";
       const pending = pendingTests.current.get(key);
@@ -143,7 +149,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [handleNativeMessage]);
 
   const syncConfiguration = useCallback(async () => {
-    if (authLoading || !sessionUserId || !portRef.current || accountTransitioningRef.current) return;
+    if (authLoading || !sessionUserId || !portRef.current || accountTransitioningRef.current || nativeUpdateRequiredRef.current) return;
     const configuredOwnerId = localStorage.getItem(NATIVE_ACCOUNT_OWNER_KEY);
     if (configuredOwnerId !== sessionUserId) return;
     const preferences = readNativePrayerPreferences();
@@ -319,6 +325,32 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
 
   const requestPermissions = useCallback(() => send("native.permissions.request", { mode: "both" }), [send]);
   const requestStatus = useCallback(() => send("native.status.request"), [send]);
+  const suspendNativeAuthority = useCallback(async () => {
+    nativeUpdateRequiredRef.current = true;
+    syncGenerationRef.current += 1;
+    send("native.update.required");
+    if (!status?.installationId || !status.credential) return;
+    try {
+      const response = await fetch("/api/android/native-authority/heartbeat", {
+        method: "DELETE",
+        headers: {
+          "X-Native-Installation-Id": status.installationId,
+          ...(status.authorityId ? { "X-Native-Authority-Id": status.authorityId } : {}),
+          Authorization: `Native ${status.credential}`,
+        },
+      });
+      if (response.ok && supportsNativeAuthorityGeneration(status)) {
+        const revoked = await response.json().catch(() => null) as { authorityId?: unknown } | null;
+        if (isNativeAuthorityId(revoked?.authorityId)) {
+          send("native.authority.bind", { authorityId: revoked.authorityId });
+        }
+      }
+    } catch (error) {
+      console.warn("Native authority suspension failed open", error);
+    } finally {
+      setStatus((current) => current ? { ...current, nativeReady: false, engineHealthy: false } : current);
+    }
+  }, [send, status]);
   const scheduleTest = useCallback((mode: "adhan" | "reminder", prayer: AdhanPrayer, adhanSoundId: AdhanSoundId) => (
     new Promise<boolean>((resolve) => {
       if (!portRef.current || pendingTests.current.has(mode)) return resolve(false);
@@ -345,7 +377,8 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     requestPermissions,
     requestStatus,
     scheduleTest,
-  }), [requestPermissions, requestStatus, scheduleTest, status]);
+    suspendNativeAuthority,
+  }), [requestPermissions, requestStatus, scheduleTest, status, suspendNativeAuthority]);
 
   return <NativeAndroidContext.Provider value={value}>{children}</NativeAndroidContext.Provider>;
 }

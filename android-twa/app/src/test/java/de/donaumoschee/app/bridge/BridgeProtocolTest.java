@@ -38,6 +38,14 @@ public final class BridgeProtocolTest {
         assertEquals("native.authority.clear", envelope.type);
     }
 
+    @Test
+    public void acceptsRequiredUpdateCommand() throws Exception {
+        BridgeProtocol.Envelope envelope = BridgeProtocol.parseInbound(
+                "{\"version\":1,\"type\":\"native.update.required\",\"payload\":{}}"
+        );
+        assertEquals("native.update.required", envelope.type);
+    }
+
     @Test(expected = JSONException.class)
     public void rejectsUnknownTypes() throws Exception {
         BridgeProtocol.parseInbound("{\"version\":1,\"type\":\"native.open.url\",\"payload\":{}}");

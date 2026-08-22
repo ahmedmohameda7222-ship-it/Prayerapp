@@ -14,5 +14,6 @@
   "targetSdkVersion": 36,
   "minSdkVersion": 23,
   "versionCode": 4,
-  "versionName": "1.0.0"
+  "versionName": "1.0.1",
+  "minimumSupportedVersionCode": 3
 }

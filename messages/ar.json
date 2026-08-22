@@ -300,7 +300,24 @@
     "prayerReminderDescription": "اختر توقيتاً واحداً للصلوات الخمس. يتطلب الإرسال في الخلفية تفعيل الإشعارات وجدولة المسجد.",
     "reminderOff": "متوقف",
     "reminderAtAzan": "عند وقت الأذان",
-    "reminderBeforeMinutes": "قبل {minutes} دقائق"
+    "reminderBeforeMinutes": "قبل {minutes} دقائق",
+    "androidUpdateSection": "تحديث تطبيق أندرويد",
+    "androidInstalledVersion": "الإصدار المثبّت",
+    "androidLatestVersion": "أحدث إصدار",
+    "androidUpdateStatus": "حالة التحديث",
+    "androidCheckForUpdates": "البحث عن تحديثات",
+    "androidUpdateChecking": "جارٍ التحقق...",
+    "androidUpdateTitle": "يتوفر تحديث جديد للتطبيق",
+    "androidUpdateBody": "يتوفر إصدار جديد من تطبيق مسجد الدوناو. حدّث التطبيق للحصول على أحدث تحسينات أندرويد.",
+    "androidUpdateRequiredTitle": "تحديث التطبيق مطلوب",
+    "androidUpdateRequiredBody": "حدّث تطبيق أندرويد لاستعادة تذكيرات الصلاة والأذان الأصلية الآمنة.",
+    "androidUpdateNow": "التحديث الآن",
+    "androidUpdateLater": "لاحقًا",
+    "androidUpdateError": "تعذر التحقق من التحديثات. سيبقى تطبيقك الحالي متاحًا.",
+    "androidUpdateRequiredStatus": "التحديث مطلوب",
+    "androidUpdateAvailableStatus": "التحديث متاح",
+    "androidUpdateCurrentStatus": "محدّث",
+    "androidUpdateUnknownStatus": "لم يتم التحقق بعد"
   },
   "notifications": {
     "empty": "لا توجد تحديثات عاجلة."

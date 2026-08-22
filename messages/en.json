@@ -300,7 +300,24 @@
     "prayerReminderDescription": "Choose one timing for all five daily prayers. Background delivery requires notifications and the mosque scheduler to be enabled.",
     "reminderOff": "Off",
     "reminderAtAzan": "At Azan time",
-    "reminderBeforeMinutes": "{minutes} minutes before"
+    "reminderBeforeMinutes": "{minutes} minutes before",
+    "androidUpdateSection": "Android app update",
+    "androidInstalledVersion": "Installed version",
+    "androidLatestVersion": "Latest version",
+    "androidUpdateStatus": "Update status",
+    "androidCheckForUpdates": "Check for updates",
+    "androidUpdateChecking": "Checking...",
+    "androidUpdateTitle": "New app update available",
+    "androidUpdateBody": "A new Danube Mosque app version is available. Update to get the latest Android improvements.",
+    "androidUpdateRequiredTitle": "Required app update",
+    "androidUpdateRequiredBody": "Update the Android app to restore safe native prayer reminders and Adhan.",
+    "androidUpdateNow": "Update now",
+    "androidUpdateLater": "Later",
+    "androidUpdateError": "Could not check for updates. Your current app remains available.",
+    "androidUpdateRequiredStatus": "Update required",
+    "androidUpdateAvailableStatus": "Update available",
+    "androidUpdateCurrentStatus": "Up to date",
+    "androidUpdateUnknownStatus": "Not checked yet"
   },
   "notifications": {
     "empty": "There are no urgent updates."

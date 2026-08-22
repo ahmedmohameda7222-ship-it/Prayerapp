@@ -1,4 +1,4 @@
-// Hardcoded Azkar dataset for Deggendorf Prayer app
+// Hardcoded Azkar dataset for the Danube Mosque app
 // Generated content pack: 100 published items
 // Sources are listed per item in the `source` field and in each folder's SOURCE_NOTES.md.
 // Translations are meaning-based UI translations and should receive final religious/language review before production release.

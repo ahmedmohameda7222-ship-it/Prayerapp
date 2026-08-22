@@ -166,10 +166,13 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(table).toContain("copy.maghribProgram");
   });
 
-  it("removes the Privacy page and public navigation entries", () => {
-    expect(existsSync(path.join(process.cwd(), "app/privacy/page.tsx"))).toBe(false);
-    expect(source("app/more/page.tsx")).not.toContain('"/privacy"');
-    expect(source("app/account/page.tsx")).not.toContain('"/privacy"');
+  it("exposes the public legal surfaces from More and Account", () => {
+    expect(existsSync(path.join(process.cwd(), "app/privacy/page.tsx"))).toBe(true);
+    expect(existsSync(path.join(process.cwd(), "app/imprint/page.tsx"))).toBe(true);
+    expect(source("app/more/page.tsx")).toContain('"/privacy"');
+    expect(source("app/more/page.tsx")).toContain('"/imprint"');
+    expect(source("app/account/page.tsx")).toContain('"/privacy"');
+    expect(source("app/account/page.tsx")).toContain('"/imprint"');
   });
 
   it("retires the old global timing selector and fake countdown placeholder", () => {

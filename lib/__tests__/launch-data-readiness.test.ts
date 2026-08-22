@@ -124,6 +124,33 @@ describe("launch data readiness", () => {
     ]);
   });
 
+  it("rejects contact and payment links on unapproved destinations", () => {
+    const report = assessLaunchDataReadiness({
+      today: startDate,
+      prayerTimes: completePrayerWindow(),
+      jumuahTimes: [],
+      ramadanDays: [],
+      mosqueSettings: {
+        ...validMosque,
+        google_maps_link: "https://attacker.invalid/maps.google.com",
+        whatsapp_link: "https://wa.me.attacker.invalid/49123456789",
+      },
+      donationSettings: {
+        ...validDonation,
+        paypal_link: "https://paypal.me.attacker.invalid/verifiedmosque",
+      },
+    });
+
+    expect(report.issues).toContainEqual({
+      code: "mosque.invalid_public_links",
+      fields: ["google_maps_link", "whatsapp_link"],
+    });
+    expect(report.issues).toContainEqual({
+      code: "donation.invalid_payment_links",
+      fields: ["paypal_link"],
+    });
+  });
+
   it("passes automated checks only with a complete clean window and non-placeholder fields", () => {
     const report = assessLaunchDataReadiness({
       today: startDate,

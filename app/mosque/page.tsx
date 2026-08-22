@@ -9,12 +9,17 @@ import { getMosqueSettings } from "@/lib/data/mosque-settings";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
+import { safeEmailHref, safeExternalUrl, safeTelephoneHref } from "@/lib/public-links";
 
 export default function MosquePage() {
   const { t, locale } = useTranslation();
   const { data: settings, error, loading, reload } = useAsyncData(getMosqueSettings);
   const mosqueName = settings ? getLocalizedField(settings, "mosqueName", locale) || settings.mosqueName : "";
-  const hasMapLink = Boolean(settings?.googleMapsLink?.startsWith("https://"));
+  const mapsHref = safeExternalUrl(settings?.googleMapsLink, "maps");
+  const whatsappHref = safeExternalUrl(settings?.whatsappLink, "whatsapp");
+  const telegramHref = safeExternalUrl(settings?.telegramLink, "telegram");
+  const telephoneHref = safeTelephoneHref(settings?.phone);
+  const emailHref = safeEmailHref(settings?.email);
 
   return (
     <AppShell>
@@ -27,8 +32,8 @@ export default function MosquePage() {
             <div className="mosque-profile-identity">
               <h2 className="mosque-profile-name">{mosqueName}</h2>
             </div>
-            {hasMapLink ? (
-              <a className="mosque-contact-row" href={settings.googleMapsLink} target="_blank" rel="noreferrer">
+            {mapsHref ? (
+              <a className="mosque-contact-row" href={mapsHref} target="_blank" rel="noreferrer">
                 <MapPin className="h-5 w-5" aria-hidden="true" />
                 <span>{settings.address}</span>
                 <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
@@ -39,36 +44,36 @@ export default function MosquePage() {
                 <span>{settings.address}</span>
               </div>
             )}
-            {settings.phone ? (
-              <a className="mosque-contact-row" href={`tel:${settings.phone}`}>
+            {telephoneHref ? (
+              <a className="mosque-contact-row" href={telephoneHref}>
                 <Phone className="h-5 w-5" aria-hidden="true" />
                 <span>{settings.phone}</span>
                 <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
               </a>
             ) : null}
-            {settings.email ? (
-              <a className="mosque-contact-row" href={`mailto:${settings.email}`}>
+            {emailHref ? (
+              <a className="mosque-contact-row" href={emailHref}>
                 <Mail className="h-5 w-5" aria-hidden="true" />
                 <span className="break-all">{settings.email}</span>
                 <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
               </a>
             ) : null}
-            {hasMapLink ? (
-              <a className="mosque-action-row" href={settings.googleMapsLink} target="_blank" rel="noreferrer">
+            {mapsHref ? (
+              <a className="mosque-action-row" href={mapsHref} target="_blank" rel="noreferrer">
                 <MapPin className="h-5 w-5" aria-hidden="true" />
                 <span>{t("mosque.googleMaps")}</span>
                 <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
               </a>
             ) : null}
-            {settings.whatsappLink.startsWith("https://") ? (
-              <a className="mosque-action-row" href={settings.whatsappLink} target="_blank" rel="noreferrer">
+            {whatsappHref ? (
+              <a className="mosque-action-row" href={whatsappHref} target="_blank" rel="noreferrer">
                 <span className="grid h-5 w-5 place-items-center text-xs font-extrabold text-[var(--app-brand)]" aria-hidden="true">W</span>
                 <span>{t("mosque.whatsapp")}</span>
                 <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
               </a>
             ) : null}
-            {settings.telegramLink.startsWith("https://") ? (
-              <a className="mosque-action-row" href={settings.telegramLink} target="_blank" rel="noreferrer">
+            {telegramHref ? (
+              <a className="mosque-action-row" href={telegramHref} target="_blank" rel="noreferrer">
                 <span className="grid h-5 w-5 place-items-center text-xs font-extrabold text-[var(--app-brand)]" aria-hidden="true">T</span>
                 <span>{t("mosque.telegram")}</span>
                 <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />

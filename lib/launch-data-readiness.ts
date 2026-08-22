@@ -1,5 +1,7 @@
 import { addDaysIso } from "@/lib/date-utils";
 
+import { safeExternalUrl, type PublicExternalLinkKind } from "@/lib/public-links";
+
 export const MINIMUM_FUTURE_PRAYER_DAYS = 31;
 export const CANONICAL_PRAYER_CRON_ENDPOINT =
   "https://donaumoschee.vercel.app/api/cron/prayer-reminders";
@@ -76,6 +78,20 @@ function placeholderFields<T extends object>(row: T | null, fields: (keyof T)[])
     .sort();
 }
 
+function invalidExternalLinkFields<T extends object>(
+  row: T | null,
+  fields: Array<readonly [keyof T, PublicExternalLinkKind]>,
+) {
+  if (!row) return [];
+  return fields
+    .filter(([field, kind]) => {
+      const value = row[field];
+      return typeof value === "string" && value.trim() !== "" && !isPlaceholder(value) && !safeExternalUrl(value, kind);
+    })
+    .map(([field]) => String(field))
+    .sort();
+}
+
 export function assessLaunchDataReadiness(input: LaunchDataReadinessInput) {
   const issues: LaunchDataReadinessIssue[] = [];
   const publishedPrayerRows = input.prayerTimes.filter((row) => row.published !== false);
@@ -117,6 +133,14 @@ export function assessLaunchDataReadiness(input: LaunchDataReadinessInput) {
   if (mosqueFields.length > 0) {
     issues.push({ code: "mosque.placeholder_contact_fields", fields: mosqueFields });
   }
+  const invalidMosqueLinks = invalidExternalLinkFields(input.mosqueSettings, [
+    ["google_maps_link", "maps"],
+    ["whatsapp_link", "whatsapp"],
+    ["telegram_link", "telegram"],
+  ]);
+  if (invalidMosqueLinks.length > 0) {
+    issues.push({ code: "mosque.invalid_public_links", fields: invalidMosqueLinks });
+  }
 
   const donationFields = placeholderFields(input.donationSettings, [
     "account_holder",
@@ -126,6 +150,12 @@ export function assessLaunchDataReadiness(input: LaunchDataReadinessInput) {
   ]);
   if (donationFields.length > 0) {
     issues.push({ code: "donation.placeholder_payment_fields", fields: donationFields });
+  }
+  const invalidDonationLinks = invalidExternalLinkFields(input.donationSettings, [
+    ["paypal_link", "paypal"],
+  ]);
+  if (invalidDonationLinks.length > 0) {
+    issues.push({ code: "donation.invalid_payment_links", fields: invalidDonationLinks });
   }
 
   return {

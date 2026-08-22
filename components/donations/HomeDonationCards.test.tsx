@@ -27,7 +27,7 @@ const settings: DonationSettings = {
   iban: "DE001234567890",
   bic: "TESTDEFF",
   defaultPurpose: "Donation",
-  paypalLink: "https://paypal.example/masjid",
+  paypalLink: "https://paypal.me/verifiedmasjid",
 };
 
 const campaign: DonationCampaign = {
@@ -70,9 +70,14 @@ describe("Home donation cards", () => {
     expect(screen.getByText("You can also support the mosque securely with PayPal.")).toBeInTheDocument();
     const cta = screen.getByRole("link", { name: /Donate with PayPal/i });
     const surface = screen.getByTestId("home-paypal-surface");
-    expect(cta).toHaveAttribute("href", "https://paypal.example/masjid");
-    expect(screen.queryByText("https://paypal.example/masjid")).not.toBeInTheDocument();
+    expect(cta).toHaveAttribute("href", "https://paypal.me/verifiedmasjid");
+    expect(screen.queryByText("https://paypal.me/verifiedmasjid")).not.toBeInTheDocument();
     expect(surface).toHaveClass("home-donation-surface");
     expect(cta.closest(".card")).toBeNull();
+  });
+
+  it("does not render a PayPal action for an unapproved host", () => {
+    const { container } = render(<PayPalCard paypalLink="https://paypal.me.attacker.invalid/masjid" home />);
+    expect(container).toBeEmptyDOMElement();
   });
 });

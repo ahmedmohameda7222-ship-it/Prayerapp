@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, Download, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
+import { ANDROID_PUBLIC_DOWNLOAD_PATH } from "@/lib/android-release";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 function standaloneMode() {
@@ -76,7 +77,7 @@ export function InstallAppCard() {
         ) : null}
         {!appInstalled && isAndroid ? (
           <Link
-            href="/download/android"
+            href={ANDROID_PUBLIC_DOWNLOAD_PATH}
             className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-emerald)] px-4 py-2 text-sm font-bold text-[var(--color-card)] shadow-[var(--shadow-card)] transition active:scale-[0.98]"
           >
             <Download className="h-4 w-4" aria-hidden="true" />

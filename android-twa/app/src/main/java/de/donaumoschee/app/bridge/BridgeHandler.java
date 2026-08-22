@@ -88,6 +88,7 @@ public final class BridgeHandler {
         NativeStore store = new NativeStore(context);
         int generation = store.resetAccountState();
         PrayerScheduler.cancelAll(context);
+        store.clearAccountState();
         context.stopService(new Intent(context, AdhanPlaybackService.class));
         Log.i(TAG, "bridge.account reset generation=" + generation);
         send("native.account.reset.result", new JSONObject().put("success", true).put("status", status()));

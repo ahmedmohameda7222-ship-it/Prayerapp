@@ -82,4 +82,32 @@ describe("Android production completion contract", () => {
     expect(worker).toContain('syncSucceeded && status.getBoolean("scheduleFresh")');
     expect(`${worker}\n${scheduler}\n${playback}`).toContain('TAG = "DanubePrayer"');
   });
+
+  it("clears native account state and alarms before another signed-in account can take ownership", () => {
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
+    const protocol = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeProtocol.java");
+    const bridge = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeHandler.java");
+    const store = source("android-twa/app/src/main/java/de/donaumoschee/app/storage/NativeStore.java");
+    const scheduler = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerScheduler.java");
+    const enroll = source("app/api/android/native-authority/enroll/route.ts");
+
+    expect(provider).toContain('method: "DELETE"');
+    expect(provider).toContain('send("native.account.reset"');
+    expect(protocol).toContain('"native.account.reset"');
+    expect(bridge).toContain('case "native.account.reset"');
+    expect(bridge).toContain("PrayerScheduler.cancelAll(context)");
+    expect(bridge).toContain("store.clearAccountState()");
+    expect(scheduler).toContain("public static void cancelAll");
+    expect(store).toContain("public void clearAccountState()");
+    expect(enroll).toContain('select("user_id, credential_hash")');
+    expect(enroll).toContain("credentialMatches(body.credential");
+  });
+
+  it("does not start native Adhan playback when Android notification delivery or the Adhan channel is disabled", () => {
+    const receiver = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerAlarmReceiver.java");
+    const capabilities = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/NotificationCapabilities.java");
+    expect(capabilities).toContain("adhanDeliveryReady()");
+    expect(receiver).toContain("notificationCapabilities(context).adhanDeliveryReady()");
+    expect(receiver).not.toContain("!NativeStatus.hasNotificationPermission(context)");
+  });
 });

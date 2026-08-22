@@ -84,11 +84,13 @@ export async function DELETE(request: Request) {
   if (!row?.credential_hash || !credentialMatches(credential, row.credential_hash)) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
-  const { error } = await client.from("native_prayer_installations").update({
-    native_ready: false,
-    lease_expires_at: null,
-    updated_at: new Date().toISOString(),
-  } as never).eq("installation_id", installationId);
+
+  // Deleting the authority row makes revocation terminal for the old credential:
+  // an already in-flight stale heartbeat can no longer reactivate a lease after reset.
+  const { error } = await client
+    .from("native_prayer_installations")
+    .delete()
+    .eq("installation_id", installationId);
   if (error) return NextResponse.json({ error: "Could not revoke native readiness" }, { status: 500 });
   return NextResponse.json({ success: true });
 }

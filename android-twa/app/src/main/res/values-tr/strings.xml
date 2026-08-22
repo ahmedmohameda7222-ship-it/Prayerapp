@@ -2,4 +2,16 @@
 <resources>
     <string name="app_name">Tuna Camii</string>
     <string name="launcher_name">Tuna Camii</string>
+    <string name="channel_prayer_reminders">Namaz hatırlatıcıları</string>
+    <string name="channel_prayer_reminders_description">Caminin yayımlanmış programına göre namaz hatırlatıcıları</string>
+    <string name="channel_adhan_playback">Ezan oynatma</string>
+    <string name="prayer_reminder_title">Namaz hatırlatıcısı</string>
+    <string name="prayer_reminder_body">%2$s için %1$d dakika kaldı</string>
+    <string name="adhan_notification_title">Ezan</string>
+    <string name="stop_adhan">Ezanı durdur</string>
+    <string name="prayer_fajr">Sabah</string>
+    <string name="prayer_dhuhr">Öğle</string>
+    <string name="prayer_asr">İkindi</string>
+    <string name="prayer_maghrib">Akşam</string>
+    <string name="prayer_isha">Yatsı</string>
 </resources>

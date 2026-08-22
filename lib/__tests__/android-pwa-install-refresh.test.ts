@@ -22,17 +22,17 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
     expect(manifest.icons?.some((icon) => icon.sizes === "512x512")).toBe(true);
   });
 
-  it("does not force the generated WebAPK prompt from the Android install CTA", () => {
+  it("routes Android users to the permanent native application download", () => {
     const homeInstall = source("components/home/HomeInstallAction.tsx");
     const settingsInstall = source("components/settings/InstallAppCard.tsx");
 
     expect(homeInstall).toContain("if (isAndroid())");
-    expect(homeInstall).toContain("setAndroidGuideOpen(true)");
-    expect(homeInstall).toContain('data-testid="android-add-to-home-dialog"');
+    expect(homeInstall).toContain('window.location.assign("/download/android")');
+    expect(homeInstall).toContain("installed || isNative");
     expect(homeInstall.indexOf("if (isAndroid())")).toBeLessThan(homeInstall.indexOf("currentPrompt.prompt()"));
-    expect(settingsInstall).toContain("ANDROID_INSTALL_STEPS");
-    expect(settingsInstall).toContain("if (!prompt || isAndroid) return;");
-    expect(settingsInstall).toContain('data-testid="android-add-to-home-instructions"');
+    expect(settingsInstall).toContain('href="/download/android"');
+    expect(settingsInstall).toContain("installed || isNative");
+    expect(settingsInstall).not.toContain("ANDROID_INSTALL_STEPS");
   });
 
   it("enables pull-to-refresh only for touch standalone mode at the top of public pages", () => {

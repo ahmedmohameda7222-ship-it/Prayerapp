@@ -2,5 +2,17 @@
 <resources>
     <string name="app_name">Danube Mosque</string>
     <string name="launcher_name">Danube Mosque</string>
-    <string name="asset_statements" translatable="false">[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://masjidelrahman.vercel.app\"}}]</string>
+    <string name="asset_statements" translatable="false">[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://donaumoschee.vercel.app\"}}]</string>
+    <string name="channel_prayer_reminders">Prayer reminders</string>
+    <string name="channel_prayer_reminders_description">Prayer reminders from the mosque\'s published schedule</string>
+    <string name="channel_adhan_playback">Adhan playback</string>
+    <string name="prayer_reminder_title">Prayer reminder</string>
+    <string name="prayer_reminder_body">%1$d minutes until %2$s</string>
+    <string name="adhan_notification_title">Adhan</string>
+    <string name="stop_adhan">Stop Adhan</string>
+    <string name="prayer_fajr">Fajr</string>
+    <string name="prayer_dhuhr">Dhuhr</string>
+    <string name="prayer_asr">Asr</string>
+    <string name="prayer_maghrib">Maghrib</string>
+    <string name="prayer_isha">Isha</string>
 </resources>

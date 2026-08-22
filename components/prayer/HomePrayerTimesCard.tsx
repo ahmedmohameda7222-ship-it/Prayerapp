@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Check, Play, Square, X } from "lucide-react";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
+import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
 import { useAdhanAudio } from "@/components/providers/AdhanAudioProvider";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +20,7 @@ import {
 } from "@/lib/adhan-audio";
 import type { Locale } from "@/lib/i18n/types";
 import type { PrayerName, PrayerTime } from "@/lib/types";
+import { publishNativePrayerPreferences } from "@/lib/android/native-web";
 
 type ReminderPrayer = Exclude<PrayerName, "sunrise">;
 type ReminderLeadMinutes = 0 | 5 | 10 | 15;
@@ -179,6 +181,7 @@ export function HomePrayerTimesCard({
   const { timeFormat } = useTimeFormat();
   const { user } = usePublicAuth();
   const { pushStatus, enableNotifications } = useAppPreferences();
+  const { isNative, requestPermissions } = useNativeAndroid();
   const {
     playbackStatus,
     activeSoundId,
@@ -242,6 +245,19 @@ export function HomePrayerTimesCard({
     return () => { active = false; };
   }, [reminderSaveError, user]);
 
+  useEffect(() => {
+    if (!loaded || !user) return;
+    publishNativePrayerPreferences(Array.from(reminderPrayers, (name) => {
+      const preference = preferences.get(name);
+      return {
+        prayer: name,
+        enabled: Boolean(preference?.enabled),
+        leadMinutes: preference?.leadMinutes || 0,
+        adhanSoundId: normalizeAdhanSoundId(preference?.adhanSoundId, name),
+      };
+    }));
+  }, [loaded, preferences, user]);
+
   const notificationError = useCallback(() => {
     if (pushStatus === "denied") return copy.notificationDenied;
     if (pushStatus === "ios-install-required") return copy.installRequired;
@@ -298,7 +314,9 @@ export function HomePrayerTimesCard({
     setError("");
 
     try {
-      if (nextEnabled && pushStatus !== "enabled") {
+      if (nextEnabled && isNative) {
+        requestPermissions();
+      } else if (nextEnabled && pushStatus !== "enabled") {
         const notificationReady = await enableNotifications();
         if (!notificationReady) {
           setError(notificationError());
@@ -338,7 +356,7 @@ export function HomePrayerTimesCard({
     } finally {
       setSavingPrayer(null);
     }
-  }, [enableNotifications, notificationError, pushStatus, reminderSaveError, savingPrayer, setPrayerSound, stopAudio, user]);
+  }, [enableNotifications, isNative, notificationError, pushStatus, reminderSaveError, requestPermissions, savingPrayer, setPrayerSound, stopAudio, user]);
 
   useEffect(() => {
     if (!loaded || !user || handledIntent.current) return;

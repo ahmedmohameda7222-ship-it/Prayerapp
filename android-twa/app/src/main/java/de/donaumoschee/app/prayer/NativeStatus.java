@@ -1,0 +1,106 @@
+package de.donaumoschee.app.prayer;
+
+import android.Manifest;
+import android.app.AlarmManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
+
+import androidx.core.content.ContextCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.annotation.RequiresApi;
+
+import de.donaumoschee.app.storage.NativeStore;
+import de.donaumoschee.app.adhan.AudioCache;
+import de.donaumoschee.app.adhan.AdhanPlaybackService;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.time.Instant;
+
+public final class NativeStatus {
+    private NativeStatus() {}
+
+    public static boolean hasNotificationPermission(Context context) {
+        return Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public static NotificationCapabilities notificationCapabilities(Context context) {
+        boolean permission = hasNotificationPermission(context);
+        boolean appEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled();
+        int reminderImportance = 3;
+        int adhanImportance = 3;
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationManager manager = context.getSystemService(NotificationManager.class);
+            reminderImportance = channelImportance(manager, PrayerNotifications.REMINDER_CHANNEL);
+            adhanImportance = channelImportance(manager, AdhanPlaybackService.CHANNEL);
+        }
+        return NotificationCapabilities.evaluate(
+                Build.VERSION.SDK_INT,
+                permission,
+                appEnabled,
+                reminderImportance,
+                adhanImportance
+        );
+    }
+
+    @RequiresApi(26)
+    private static int channelImportance(NotificationManager manager, String channelId) {
+        if (manager == null) return 0;
+        NotificationChannel channel = manager.getNotificationChannel(channelId);
+        return channel == null ? -1000 : channel.getImportance();
+    }
+
+    public static boolean hasExactAlarmPermission(Context context) {
+        AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        return Build.VERSION.SDK_INT < 31 || manager.canScheduleExactAlarms();
+    }
+
+    public static JSONObject payload(Context context) throws JSONException {
+        Instant now = Instant.now();
+        NativeStore store = new NativeStore(context);
+        NativeConfig config = store.loadConfig(now);
+        NotificationCapabilities notifications = notificationCapabilities(context);
+        boolean exactAlarm = hasExactAlarmPermission(context);
+        boolean scheduleFresh = config != null && config.scheduleValidUntil.isAfter(now);
+        boolean installed = store.scheduleInstalled();
+        boolean audioReady = true;
+        if (config != null) {
+            for (NativeConfig.Reminder reminder : config.reminders.values()) {
+                if (reminder.enabled && AudioCache.verifiedFile(context, reminder.adhanSoundId) == null) audioReady = false;
+            }
+        }
+        boolean healthy = store.engineHealthy();
+        boolean ready = NativeReadiness.isReady(
+                notifications.notificationPermission(),
+                notifications.notificationDeliveryEnabled(),
+                notifications.reminderChannelEnabled(),
+                notifications.adhanChannelEnabled(),
+                exactAlarm,
+                scheduleFresh,
+                installed,
+                audioReady,
+                healthy
+        );
+        return new JSONObject()
+                .put("native", true)
+                .put("packageId", context.getPackageName())
+                .put("notificationPermission", notifications.notificationPermission())
+                .put("notificationDeliveryEnabled", notifications.notificationDeliveryEnabled())
+                .put("reminderChannelEnabled", notifications.reminderChannelEnabled())
+                .put("adhanChannelEnabled", notifications.adhanChannelEnabled())
+                .put("exactAlarmPermission", exactAlarm)
+                .put("scheduleFresh", scheduleFresh)
+                .put("alarmScheduleInstalled", installed)
+                .put("audioReady", audioReady)
+                .put("engineHealthy", healthy)
+                .put("nativeReady", ready)
+                .put("scheduleValidUntil", config == null ? JSONObject.NULL : config.scheduleValidUntil.toString())
+                .put("lastError", store.lastError())
+                .put("installationId", store.installationId())
+                .put("credential", store.credential());
+    }
+}

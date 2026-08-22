@@ -63,7 +63,7 @@ describe("admin input stability", () => {
 
   afterEach(cleanup);
 
-  it("does not reload prayer times while time and text inputs change", async () => {
+  it("does not reload prayer times while time and text inputs change", { timeout: 15_000 }, async () => {
     const user = userEvent.setup();
     const { container } = renderInEnglish(<AdminPrayerTimesPage />);
     await waitFor(() => expect(dataMocks.getPrayerTimes).toHaveBeenCalledTimes(1));

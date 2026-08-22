@@ -111,7 +111,7 @@ export function AndroidUpdateProvider({ children }: { children: React.ReactNode 
   }, [release, updateKind]);
 
   const openUpdate = useCallback(() => {
-    window.location.assign(ANDROID_PUBLIC_DOWNLOAD_PATH);
+    window.location.href = ANDROID_PUBLIC_DOWNLOAD_PATH;
   }, []);
 
   const showPrompt = isNative && release && (

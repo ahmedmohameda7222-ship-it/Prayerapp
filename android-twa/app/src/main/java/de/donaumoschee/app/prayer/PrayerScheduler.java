@@ -5,7 +5,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.util.Log;
 
 import de.donaumoschee.app.storage.NativeStore;
@@ -66,8 +65,18 @@ public final class PrayerScheduler {
         );
         AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation(context, event));
+        NativeStore store = new NativeStore(context);
+        Set<String> requestCodes = store.scheduledRequestCodes();
+        requestCodes.add(event.requestCode() + "|" + event.eventId);
+        store.setScheduledRequestCodes(requestCodes);
         Log.i(TAG, "alarm.test scheduled kind=" + kind + " prayer=" + prayer.key + " delaySeconds=" + delaySeconds);
         return true;
+    }
+
+    public static void cancelAll(Context context) {
+        NativeStore store = new NativeStore(context);
+        cancelStored(context, store);
+        store.setScheduleInstalled(false);
     }
 
     private static PendingIntent operation(Context context, AlarmEvent event) {

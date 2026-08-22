@@ -8,7 +8,7 @@ describe("Android native owner synchronization", () => {
   it("does not configure a fresh native install before successful account enrollment establishes ownership", () => {
     const source = provider();
     expect(source).toContain("const configuredOwnerId = localStorage.getItem(NATIVE_ACCOUNT_OWNER_KEY)");
-    expect(source).toContain("configuredOwnerId !== session.user.id");
+    expect(source).toContain("configuredOwnerId !== sessionUserId");
   });
 
   it("invalidates local native work before waiting for remote authority revocation", () => {

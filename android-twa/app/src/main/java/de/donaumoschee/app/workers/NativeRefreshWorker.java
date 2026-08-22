@@ -92,8 +92,14 @@ public final class NativeRefreshWorker extends Worker {
                     .put("engineHealthy", status.getBoolean("engineHealthy"))
                     .put("scheduleValidUntil", scheduleValidUntil instanceof String ? scheduleValidUntil : Instant.EPOCH.toString());
             if (store.accountGeneration() != generation) return;
+            String authorityId = store.authorityId();
+            if (authorityId.isEmpty()) {
+                Log.i(TAG, "native.heartbeat skipped=no-authority generation=" + generation);
+                return;
+            }
             NativeHttp.post(ORIGIN + "/api/android/native-authority/heartbeat", body, Map.of(
                     "X-Native-Installation-Id", store.installationId(),
+                    "X-Native-Authority-Id", authorityId,
                     "Authorization", "Native " + store.credential()
             ));
         } catch (IOException | JSONException ignored) {

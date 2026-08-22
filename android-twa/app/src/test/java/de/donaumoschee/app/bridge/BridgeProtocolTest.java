@@ -22,6 +22,14 @@ public final class BridgeProtocolTest {
         assertEquals("native.account.reset", envelope.type);
     }
 
+    @Test
+    public void acceptsAuthorityBindingCommand() throws Exception {
+        BridgeProtocol.Envelope envelope = BridgeProtocol.parseInbound(
+                "{\"version\":1,\"type\":\"native.authority.bind\",\"payload\":{\"authorityId\":\"8e5f7ac6-7a84-4d3e-946a-e4f91be50a7c\"}}"
+        );
+        assertEquals("native.authority.bind", envelope.type);
+    }
+
     @Test(expected = JSONException.class)
     public void rejectsUnknownTypes() throws Exception {
         BridgeProtocol.parseInbound("{\"version\":1,\"type\":\"native.open.url\",\"payload\":{}}");

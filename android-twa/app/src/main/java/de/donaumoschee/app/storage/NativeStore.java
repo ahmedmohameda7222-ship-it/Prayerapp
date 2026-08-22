@@ -20,6 +20,7 @@ public final class NativeStore {
     private static final String CONFIG = "config";
     private static final String INSTALLATION_ID = "installation-id";
     private static final String CREDENTIAL = "credential";
+    private static final String AUTHORITY_ID = "authority-id";
     private static final String DELIVERED = "delivered-events";
     private static final String SCHEDULE_INSTALLED = "schedule-installed";
     private static final String ENGINE_HEALTHY = "engine-healthy";
@@ -91,6 +92,20 @@ public final class NativeStore {
         value = Base64.encodeToString(bytes, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
         preferences.edit().putString(CREDENTIAL, value).commit();
         return value;
+    }
+
+    public synchronized String authorityId() {
+        return preferences.getString(AUTHORITY_ID, "");
+    }
+
+    public synchronized boolean bindAuthorityId(String value) {
+        try {
+            String canonical = UUID.fromString(value).toString();
+            if (!canonical.equalsIgnoreCase(value)) return false;
+            return preferences.edit().putString(AUTHORITY_ID, canonical).commit();
+        } catch (IllegalArgumentException error) {
+            return false;
+        }
     }
 
     public synchronized boolean markDelivered(String eventId) {

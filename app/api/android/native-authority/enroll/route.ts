@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import {
   bearerToken,
   credentialMatches,
   hashNativeCredential,
+  isAuthorityId,
   isInstallationId,
   isNativeCredential,
   isSameOrigin,
@@ -28,6 +30,7 @@ export async function POST(request: Request) {
   if (
     !isInstallationId(body?.installationId)
     || !isNativeCredential(body?.credential)
+    || (body?.authorityId != null && !isAuthorityId(body.authorityId))
     || typeof body?.browserId !== "string"
     || !uuidPattern.test(body.browserId)
     || (body?.endpoint != null && !validEndpoint(body.endpoint))
@@ -44,15 +47,24 @@ export async function POST(request: Request) {
 
   const { data: existingInstallationData, error: existingInstallationError } = await client
     .from("native_prayer_installations")
-    .select("user_id, credential_hash")
+    .select("user_id, credential_hash, authority_id")
     .eq("installation_id", body.installationId)
     .maybeSingle();
   if (existingInstallationError) return NextResponse.json({ error: "Could not validate native installation" }, { status: 500 });
-  const existingInstallation = existingInstallationData as { user_id?: string; credential_hash?: string } | null;
+  const existingInstallation = existingInstallationData as {
+    user_id?: string;
+    credential_hash?: string;
+    authority_id?: string;
+  } | null;
   if (
-    existingInstallation?.user_id
-    && existingInstallation.user_id !== userData.user.id
-    && (!existingInstallation.credential_hash || !credentialMatches(body.credential, existingInstallation.credential_hash))
+    existingInstallation
+    && (
+      !existingInstallation.credential_hash
+      || !existingInstallation.authority_id
+      || !credentialMatches(body.credential, existingInstallation.credential_hash)
+      || (body.authorityId != null && body.authorityId !== existingInstallation.authority_id)
+      || (body.authorityId == null && existingInstallation.user_id !== userData.user.id)
+    )
   ) {
     return NextResponse.json({ error: "Native installation ownership mismatch" }, { status: 403 });
   }
@@ -82,8 +94,10 @@ export async function POST(request: Request) {
   }
 
   const now = new Date().toISOString();
-  const { error } = await client.from("native_prayer_installations").upsert({
+  const authorityId = randomUUID();
+  const enrollment = {
     installation_id: body.installationId,
+    authority_id: authorityId,
     user_id: userData.user.id,
     push_subscription_id: pushSubscriptionId,
     credential_hash: hashNativeCredential(body.credential),
@@ -91,10 +105,28 @@ export async function POST(request: Request) {
     lease_expires_at: null,
     last_seen_at: now,
     updated_at: now,
-  } as never, { onConflict: "installation_id" });
-  if (error) {
-    console.error("[native authority] enrollment failed", error.message);
-    return NextResponse.json({ error: "Could not enroll native installation" }, { status: 500 });
+  };
+  const enrollmentResult = existingInstallation
+    ? await client.from("native_prayer_installations")
+      .update(enrollment as never)
+      .eq("installation_id", body.installationId)
+      .eq("authority_id", existingInstallation.authority_id!)
+      .eq("credential_hash", existingInstallation.credential_hash!)
+      .select("authority_id")
+      .maybeSingle()
+    : await client.from("native_prayer_installations")
+      .insert(enrollment as never)
+      .select("authority_id")
+      .maybeSingle();
+  const { data: enrolledData, error } = enrollmentResult;
+  const enrolled = enrolledData as { authority_id?: string } | null;
+  if (error || !enrolled?.authority_id) {
+    console.error("[native authority] enrollment failed", error?.message || "authority generation changed");
+    return NextResponse.json({ error: "Could not enroll native installation" }, { status: error ? 500 : 409 });
   }
-  return NextResponse.json({ success: true, pushPaired: Boolean(pushSubscriptionId) });
+  return NextResponse.json({
+    success: true,
+    pushPaired: Boolean(pushSubscriptionId),
+    authorityId: enrolled.authority_id,
+  });
 }

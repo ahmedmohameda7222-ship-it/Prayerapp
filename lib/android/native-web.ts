@@ -2,6 +2,7 @@ import type { AdhanPrayer, AdhanSoundId } from "@/lib/adhan-audio";
 
 export const NATIVE_PRAYER_CONFIG_KEY = "danube-native-prayer-config-v1";
 export const NATIVE_CONFIG_CHANGED_EVENT = "danube-native-prayer-config-changed";
+const nativeAuthorityIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 export type NativeReminderPreference = {
   prayer: AdhanPrayer;
@@ -32,6 +33,7 @@ export type NativeBridgeStatus = {
   lastError?: string;
   installationId?: string;
   credential?: string;
+  authorityId?: string;
 };
 
 export type NativeMessage = {
@@ -39,6 +41,10 @@ export type NativeMessage = {
   type: string;
   payload: Record<string, unknown>;
 };
+
+export function isNativeAuthorityId(value: unknown): value is string {
+  return typeof value === "string" && nativeAuthorityIdPattern.test(value);
+}
 
 export function parseNativeMessage(value: unknown): NativeMessage | null {
   let parsed: unknown = value;

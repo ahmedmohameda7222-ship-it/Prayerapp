@@ -101,6 +101,7 @@ public final class NativeStatus {
                 .put("scheduleValidUntil", config == null ? JSONObject.NULL : config.scheduleValidUntil.toString())
                 .put("lastError", store.lastError())
                 .put("installationId", store.installationId())
+                .put("authorityId", store.authorityId())
                 .put("credential", store.credential());
     }
 }

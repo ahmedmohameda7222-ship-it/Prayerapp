@@ -99,7 +99,7 @@ describe("Android production completion contract", () => {
     expect(bridge).toContain("store.resetAccountState()");
     expect(scheduler).toContain("public static void cancelAll");
     expect(store).toContain("public int resetAccountState()");
-    expect(enroll).toContain('select("user_id, credential_hash")');
+    expect(enroll).toContain('select("user_id, credential_hash, authority_id")');
     expect(enroll).toContain("credentialMatches(body.credential");
   });
 

@@ -7,6 +7,10 @@ export function isInstallationId(value: unknown): value is string {
   return typeof value === "string" && uuidPattern.test(value);
 }
 
+export function isAuthorityId(value: unknown): value is string {
+  return typeof value === "string" && uuidPattern.test(value);
+}
+
 export function isNativeCredential(value: unknown): value is string {
   return typeof value === "string" && credentialPattern.test(value);
 }

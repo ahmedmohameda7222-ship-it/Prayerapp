@@ -41,6 +41,7 @@ public final class BridgeHandler {
                 case "native.permissions.request": requestPermissions(envelope.payload); break;
                 case "native.status.request": sendStatus(); break;
                 case "native.test.schedule": scheduleTest(envelope.payload); break;
+                case "native.authority.bind": bindAuthority(envelope.payload); break;
                 case "native.account.reset": resetAccount(); break;
                 default: throw new JSONException("Unsupported message type");
             }
@@ -81,6 +82,13 @@ public final class BridgeHandler {
         boolean scheduled = PrayerScheduler.scheduleTest(context, mode, prayer, soundId, delaySeconds);
         send("native.test.result", new JSONObject()
                 .put("success", scheduled).put("mode", mode).put("prayer", prayer.key).put("delaySeconds", delaySeconds));
+    }
+
+    private void bindAuthority(JSONObject payload) throws JSONException {
+        String authorityId = payload.optString("authorityId", "");
+        NativeStore store = new NativeStore(context);
+        if (!store.bindAuthorityId(authorityId)) throw new JSONException("Invalid authority id");
+        send("native.authority.result", new JSONObject().put("success", true).put("status", status()));
     }
 
     private void resetAccount() throws JSONException {

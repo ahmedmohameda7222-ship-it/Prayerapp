@@ -3,6 +3,7 @@ import { parseNativeHeartbeat } from "@/lib/android/contracts";
 import {
   bearerToken,
   credentialMatches,
+  isAuthorityId,
   isInstallationId,
   isNativeCredential,
 } from "@/lib/android/native-credentials";
@@ -14,8 +15,9 @@ const LEASE_DURATION_MS = 12 * 60 * 60 * 1000;
 
 export async function POST(request: Request) {
   const installationId = request.headers.get("x-native-installation-id");
+  const authorityId = request.headers.get("x-native-authority-id");
   const credential = bearerToken(request, "Native");
-  if (!isInstallationId(installationId) || !isNativeCredential(credential)) {
+  if (!isInstallationId(installationId) || !isAuthorityId(authorityId) || !isNativeCredential(credential)) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
   const now = new Date();
@@ -26,18 +28,19 @@ export async function POST(request: Request) {
   if (!client) return NextResponse.json({ error: "Native heartbeat is unavailable" }, { status: 503 });
   const { data, error } = await client
     .from("native_prayer_installations")
-    .select("credential_hash")
+    .select("credential_hash, authority_id")
     .eq("installation_id", installationId)
+    .eq("authority_id", authorityId)
     .maybeSingle();
-  const row = data as { credential_hash?: string } | null;
-  if (error || !row?.credential_hash || !credentialMatches(credential, row.credential_hash)) {
+  const row = data as { credential_hash?: string; authority_id?: string } | null;
+  if (error || !row?.credential_hash || !row.authority_id || !credentialMatches(credential, row.credential_hash)) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
 
   const leaseExpiresAt = heartbeat.nativeReady
     ? new Date(now.getTime() + LEASE_DURATION_MS).toISOString()
     : null;
-  const { error: updateError } = await client
+  const { data: updatedData, error: updateError } = await client
     .from("native_prayer_installations")
     .update({
       native_ready: heartbeat.nativeReady,
@@ -55,10 +58,18 @@ export async function POST(request: Request) {
       last_seen_at: now.toISOString(),
       updated_at: now.toISOString(),
     } as never)
-    .eq("installation_id", installationId);
+    .eq("installation_id", installationId)
+    .eq("authority_id", row.authority_id)
+    .eq("credential_hash", row.credential_hash)
+    .select("authority_id")
+    .maybeSingle();
+  const updated = updatedData as { authority_id?: string } | null;
   if (updateError) {
     console.error("[native authority] heartbeat failed", updateError.message);
     return NextResponse.json({ error: "Could not update native readiness" }, { status: 500 });
+  }
+  if (updated?.authority_id !== row.authority_id) {
+    return NextResponse.json({ error: "Native authority generation changed" }, { status: 409 });
   }
   return NextResponse.json({
     success: true,
@@ -69,28 +80,41 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const installationId = request.headers.get("x-native-installation-id");
+  const authorityId = request.headers.get("x-native-authority-id");
   const credential = bearerToken(request, "Native");
-  if (!isInstallationId(installationId) || !isNativeCredential(credential)) {
+  if (
+    !isInstallationId(installationId)
+    || (authorityId != null && !isAuthorityId(authorityId))
+    || !isNativeCredential(credential)
+  ) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
   const client = createServerClient();
   if (!client) return NextResponse.json({ error: "Native heartbeat is unavailable" }, { status: 503 });
-  const { data } = await client
+  let lookup = client
     .from("native_prayer_installations")
-    .select("credential_hash")
-    .eq("installation_id", installationId)
-    .maybeSingle();
-  const row = data as { credential_hash?: string } | null;
-  if (!row?.credential_hash || !credentialMatches(credential, row.credential_hash)) {
+    .select("credential_hash, authority_id")
+    .eq("installation_id", installationId);
+  if (authorityId) lookup = lookup.eq("authority_id", authorityId);
+  const { data } = await lookup.maybeSingle();
+  const row = data as { credential_hash?: string; authority_id?: string } | null;
+  if (!row?.credential_hash || !row.authority_id || !credentialMatches(credential, row.credential_hash)) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
 
   // Deleting the authority row makes revocation terminal for the old credential:
   // an already in-flight stale heartbeat can no longer reactivate a lease after reset.
-  const { error } = await client
+  const { data: deletedData, error } = await client
     .from("native_prayer_installations")
     .delete()
-    .eq("installation_id", installationId);
-  if (error) return NextResponse.json({ error: "Could not revoke native readiness" }, { status: 500 });
+    .eq("installation_id", installationId)
+    .eq("authority_id", row.authority_id)
+    .eq("credential_hash", row.credential_hash)
+    .select("authority_id")
+    .maybeSingle();
+  const deleted = deletedData as { authority_id?: string } | null;
+  if (error || deleted?.authority_id !== row.authority_id) {
+    return NextResponse.json({ error: "Could not revoke native readiness" }, { status: 409 });
+  }
   return NextResponse.json({ success: true });
 }

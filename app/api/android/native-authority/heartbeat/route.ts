@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { parseNativeHeartbeat } from "@/lib/android/contracts";
 import {
   bearerToken,
@@ -102,19 +103,39 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
 
-  // Deleting the authority row makes revocation terminal for the old credential:
-  // an already in-flight stale heartbeat can no longer reactivate a lease after reset.
-  const { data: deletedData, error } = await client
+  const now = new Date().toISOString();
+  const revokedAuthorityId = randomUUID();
+  // Rotating the persisted authority creates a tombstone. Any heartbeat that
+  // already validated the old generation can no longer mutate this row.
+  const { data: revokedData, error } = await client
     .from("native_prayer_installations")
-    .delete()
+    .update({
+      authority_id: revokedAuthorityId,
+      push_subscription_id: null,
+      native_ready: false,
+      notification_permission: false,
+      notification_delivery_enabled: false,
+      reminder_channel_enabled: false,
+      adhan_channel_enabled: false,
+      exact_alarm_permission: false,
+      schedule_fresh: false,
+      alarm_schedule_installed: false,
+      audio_ready: false,
+      engine_healthy: false,
+      schedule_valid_until: null,
+      lease_expires_at: null,
+      revoked_at: now,
+      last_seen_at: now,
+      updated_at: now,
+    } as never)
     .eq("installation_id", installationId)
     .eq("authority_id", row.authority_id)
     .eq("credential_hash", row.credential_hash)
     .select("authority_id")
     .maybeSingle();
-  const deleted = deletedData as { authority_id?: string } | null;
-  if (error || deleted?.authority_id !== row.authority_id) {
+  const revoked = revokedData as { authority_id?: string } | null;
+  if (error || revoked?.authority_id !== revokedAuthorityId) {
     return NextResponse.json({ error: "Could not revoke native readiness" }, { status: 409 });
   }
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, authorityId: revoked.authority_id });
 }

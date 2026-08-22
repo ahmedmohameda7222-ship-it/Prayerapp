@@ -17,6 +17,7 @@ import de.donaumoschee.app.adhan.AudioCache;
 import de.donaumoschee.app.adhan.AdhanPlaybackService;
 
 import org.json.JSONException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.time.Instant;
@@ -88,6 +89,7 @@ public final class NativeStatus {
         return new JSONObject()
                 .put("native", true)
                 .put("packageId", context.getPackageName())
+                .put("capabilities", new JSONArray().put("authority-generation-v1"))
                 .put("notificationPermission", notifications.notificationPermission())
                 .put("notificationDeliveryEnabled", notifications.notificationDeliveryEnabled())
                 .put("reminderChannelEnabled", notifications.reminderChannelEnabled())

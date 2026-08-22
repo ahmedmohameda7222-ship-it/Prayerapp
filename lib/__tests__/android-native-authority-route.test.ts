@@ -7,6 +7,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createServerClient: () => mocks.client,
 }));
 
+import { POST as ENROLL } from "@/app/api/android/native-authority/enroll/route";
 import { DELETE, POST } from "@/app/api/android/native-authority/heartbeat/route";
 
 const installationId = "62a9084e-710a-4aa5-b918-d9f398fb6f67";
@@ -16,18 +17,24 @@ const credentialHash = hashNativeCredential(credential);
 
 type QueryResult = { data: unknown; error: { message: string } | null };
 
-function query(result: QueryResult) {
+function query(result: QueryResult | ((updates: unknown[]) => QueryResult)) {
   const filters: Array<[string, unknown]> = [];
+  const updates: unknown[] = [];
   const builder = {
     filters,
+    updates,
     select: vi.fn(() => builder),
-    update: vi.fn(() => builder),
+    insert: vi.fn(() => builder),
+    update: vi.fn((value: unknown) => {
+      updates.push(value);
+      return builder;
+    }),
     delete: vi.fn(() => builder),
     eq: vi.fn((column: string, value: unknown) => {
       filters.push([column, value]);
       return builder;
     }),
-    maybeSingle: vi.fn(async () => result),
+    maybeSingle: vi.fn(async () => typeof result === "function" ? result(updates) : result),
   };
   return builder;
 }
@@ -83,9 +90,42 @@ describe("native authority route generation isolation", () => {
     ]));
   });
 
-  it("allows a legacy client to revoke only the exact generation it read", async () => {
+  it("rejects a stale non-null generation when revocation removed the row", async () => {
+    const lookup = query({ data: null, error: null });
+    mocks.client = {
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "user-b" } }, error: null })) },
+      from: vi.fn(() => lookup),
+    };
+
+    const response = await ENROLL(new Request("https://donaumoschee.vercel.app/api/android/native-authority/enroll", {
+      method: "POST",
+      headers: {
+        Origin: "https://donaumoschee.vercel.app",
+        Authorization: "Bearer account-token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        installationId,
+        credential,
+        authorityId,
+        browserId: "7a34b15a-1da7-4f3b-ab2d-a2f899de9a6b",
+        endpoint: null,
+      }),
+    }));
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "Native authority generation is no longer current",
+      code: "authority_generation_missing",
+    });
+  });
+
+  it("rotates a persistent tombstone while revoking only the exact generation it read", async () => {
     const lookup = query({ data: { authority_id: authorityId, credential_hash: credentialHash }, error: null });
-    const mutation = query({ data: { authority_id: authorityId }, error: null });
+    const mutation = query((updates) => ({
+      data: { authority_id: (updates[0] as { authority_id: string }).authority_id },
+      error: null,
+    }));
     const from = vi.fn()
       .mockReturnValueOnce(lookup)
       .mockReturnValueOnce(mutation);
@@ -96,6 +136,9 @@ describe("native authority route generation isolation", () => {
       headers: nativeHeaders(false),
     }));
 
+    const revokedAuthorityId = (mutation.updates[0] as { authority_id: string }).authority_id;
+    const responseBody = await response.json();
+    expect(responseBody).toEqual({ success: true, authorityId: revokedAuthorityId });
     expect(response.status).toBe(200);
     expect(lookup.filters).toEqual([["installation_id", installationId]]);
     expect(mutation.filters).toEqual(expect.arrayContaining([
@@ -103,5 +146,11 @@ describe("native authority route generation isolation", () => {
       ["authority_id", authorityId],
       ["credential_hash", credentialHash],
     ]));
+    expect(mutation.updates[0]).toEqual(expect.objectContaining({
+      authority_id: expect.any(String),
+      native_ready: false,
+      lease_expires_at: null,
+      revoked_at: expect.any(String),
+    }));
   });
 });

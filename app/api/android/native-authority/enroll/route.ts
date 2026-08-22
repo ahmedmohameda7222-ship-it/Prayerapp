@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
   const { data: existingInstallationData, error: existingInstallationError } = await client
     .from("native_prayer_installations")
-    .select("user_id, credential_hash, authority_id")
+    .select("user_id, credential_hash, authority_id, revoked_at")
     .eq("installation_id", body.installationId)
     .maybeSingle();
   if (existingInstallationError) return NextResponse.json({ error: "Could not validate native installation" }, { status: 500 });
@@ -55,7 +55,14 @@ export async function POST(request: Request) {
     user_id?: string;
     credential_hash?: string;
     authority_id?: string;
+    revoked_at?: string | null;
   } | null;
+  if (!existingInstallation && body.authorityId != null) {
+    return NextResponse.json({
+      error: "Native authority generation is no longer current",
+      code: "authority_generation_missing",
+    }, { status: 409 });
+  }
   if (
     existingInstallation
     && (
@@ -63,7 +70,16 @@ export async function POST(request: Request) {
       || !existingInstallation.authority_id
       || !credentialMatches(body.credential, existingInstallation.credential_hash)
       || (body.authorityId != null && body.authorityId !== existingInstallation.authority_id)
-      || (body.authorityId == null && existingInstallation.user_id !== userData.user.id)
+      || (
+        body.authorityId == null
+        && existingInstallation.user_id !== userData.user.id
+        && !existingInstallation.revoked_at
+      )
+      || (
+        body.authorityId == null
+        && existingInstallation.user_id === userData.user.id
+        && Boolean(existingInstallation.revoked_at)
+      )
     )
   ) {
     return NextResponse.json({ error: "Native installation ownership mismatch" }, { status: 403 });
@@ -103,6 +119,7 @@ export async function POST(request: Request) {
     credential_hash: hashNativeCredential(body.credential),
     native_ready: false,
     lease_expires_at: null,
+    revoked_at: null,
     last_seen_at: now,
     updated_at: now,
   };

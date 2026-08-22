@@ -30,6 +30,14 @@ public final class BridgeProtocolTest {
         assertEquals("native.authority.bind", envelope.type);
     }
 
+    @Test
+    public void acceptsAuthorityClearCommand() throws Exception {
+        BridgeProtocol.Envelope envelope = BridgeProtocol.parseInbound(
+                "{\"version\":1,\"type\":\"native.authority.clear\",\"payload\":{}}"
+        );
+        assertEquals("native.authority.clear", envelope.type);
+    }
+
     @Test(expected = JSONException.class)
     public void rejectsUnknownTypes() throws Exception {
         BridgeProtocol.parseInbound("{\"version\":1,\"type\":\"native.open.url\",\"payload\":{}}");

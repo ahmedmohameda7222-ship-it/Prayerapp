@@ -36,4 +36,30 @@ describe("Android native authority generation", () => {
     expect(store).toContain("bindAuthorityId");
     expect(worker).toContain('"X-Native-Authority-Id", authorityId');
   });
+
+  it("gates enrollment on an explicit native capability and serializes incidental status refreshes", () => {
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
+    const nativeWeb = source("lib/android/native-web.ts");
+    const status = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/NativeStatus.java");
+    const bridge = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeHandler.java");
+    const protocol = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeProtocol.java");
+
+    expect(nativeWeb).toContain("supportsNativeAuthorityGeneration");
+    expect(nativeWeb).toContain('capabilities.includes("authority-generation-v1")');
+    expect(status).toContain('put("capabilities"');
+    expect(status).toContain('"authority-generation-v1"');
+    expect(provider).toContain("supportsNativeAuthorityGeneration(status)");
+    expect(provider).toContain("enrollmentAttemptRef");
+    expect(provider).toContain("const enrollmentGeneration = syncGenerationRef.current");
+    expect(provider).toContain("enrollmentGeneration !== syncGenerationRef.current");
+    expect(provider).not.toContain("let active = true");
+    expect(provider).toContain('send("native.authority.clear")');
+    expect(bridge).toContain('case "native.authority.clear"');
+    expect(protocol).toContain('"native.authority.clear"');
+  });
+
+  it("adds a persistent revocation tombstone migration", () => {
+    const migration = source("supabase/migrations/20260822221500_android_native_authority_revocation.sql");
+    expect(migration).toContain("revoked_at timestamptz");
+  });
 });

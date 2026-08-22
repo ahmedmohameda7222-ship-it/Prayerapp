@@ -34,6 +34,7 @@ export type NativeBridgeStatus = {
   installationId?: string;
   credential?: string;
   authorityId?: string;
+  capabilities?: string[];
 };
 
 export type NativeMessage = {
@@ -44,6 +45,11 @@ export type NativeMessage = {
 
 export function isNativeAuthorityId(value: unknown): value is string {
   return typeof value === "string" && nativeAuthorityIdPattern.test(value);
+}
+
+export function supportsNativeAuthorityGeneration(status: NativeBridgeStatus | null) {
+  return Array.isArray(status?.capabilities)
+    && status.capabilities.includes("authority-generation-v1");
 }
 
 export function parseNativeMessage(value: unknown): NativeMessage | null {

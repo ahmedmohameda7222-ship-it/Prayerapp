@@ -42,6 +42,7 @@ public final class BridgeHandler {
                 case "native.status.request": sendStatus(); break;
                 case "native.test.schedule": scheduleTest(envelope.payload); break;
                 case "native.authority.bind": bindAuthority(envelope.payload); break;
+                case "native.authority.clear": clearAuthority(); break;
                 case "native.account.reset": resetAccount(); break;
                 default: throw new JSONException("Unsupported message type");
             }
@@ -88,6 +89,12 @@ public final class BridgeHandler {
         String authorityId = payload.optString("authorityId", "");
         NativeStore store = new NativeStore(context);
         if (!store.bindAuthorityId(authorityId)) throw new JSONException("Invalid authority id");
+        send("native.authority.result", new JSONObject().put("success", true).put("status", status()));
+    }
+
+    private void clearAuthority() throws JSONException {
+        NativeStore store = new NativeStore(context);
+        if (!store.clearAuthorityId()) throw new JSONException("Could not clear authority id");
         send("native.authority.result", new JSONObject().put("success", true).put("status", status()));
     }
 

@@ -108,6 +108,10 @@ public final class NativeStore {
         }
     }
 
+    public synchronized boolean clearAuthorityId() {
+        return preferences.edit().remove(AUTHORITY_ID).commit();
+    }
+
     public synchronized boolean markDelivered(String eventId) {
         Set<String> current = new HashSet<>(preferences.getStringSet(DELIVERED, Set.of()));
         if (current.contains(eventId)) return false;

@@ -2,6 +2,7 @@ import type { AdhanPrayer, AdhanSoundId } from "@/lib/adhan-audio";
 
 export const NATIVE_PRAYER_CONFIG_KEY = "danube-native-prayer-config-v1";
 export const NATIVE_CONFIG_CHANGED_EVENT = "danube-native-prayer-config-changed";
+const nativeAuthorityIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 export type NativeReminderPreference = {
   prayer: AdhanPrayer;
@@ -18,6 +19,8 @@ export type StoredNativePreferences = {
 export type NativeBridgeStatus = {
   native: true;
   packageId: string;
+  versionCode: number;
+  versionName: string;
   notificationPermission: boolean;
   notificationDeliveryEnabled: boolean;
   reminderChannelEnabled: boolean;
@@ -32,6 +35,8 @@ export type NativeBridgeStatus = {
   lastError?: string;
   installationId?: string;
   credential?: string;
+  authorityId?: string;
+  capabilities?: string[];
 };
 
 export type NativeMessage = {
@@ -39,6 +44,15 @@ export type NativeMessage = {
   type: string;
   payload: Record<string, unknown>;
 };
+
+export function isNativeAuthorityId(value: unknown): value is string {
+  return typeof value === "string" && nativeAuthorityIdPattern.test(value);
+}
+
+export function supportsNativeAuthorityGeneration(status: NativeBridgeStatus | null) {
+  return Array.isArray(status?.capabilities)
+    && status.capabilities.includes("authority-generation-v1");
+}
 
 export function parseNativeMessage(value: unknown): NativeMessage | null {
   let parsed: unknown = value;

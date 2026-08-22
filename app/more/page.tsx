@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, CalendarDays, ChevronRight, Compass, HandHeart, Landmark, Moon, Settings, UserRound } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronRight, Compass, HandHeart, Landmark, Moon, Scale, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -15,6 +15,8 @@ const items = [
   ["/mosque", "mosque.title", Landmark, true],
   ["/account", "phase1.account", UserRound, true],
   ["/settings", "settings.title", Settings, false],
+  ["/privacy", "legal.privacyTitle", ShieldCheck, true],
+  ["/imprint", "legal.imprintTitle", Scale, false],
 ] as const;
 
 export default function MorePage() {

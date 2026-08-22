@@ -36,6 +36,12 @@ public final class NativeWork {
         );
     }
 
+    public static void cancelPrayerRefresh(Context context) {
+        WorkManager manager = WorkManager.getInstance(context);
+        manager.cancelUniqueWork(IMMEDIATE_REFRESH);
+        manager.cancelUniqueWork(PERIODIC_REFRESH);
+    }
+
     public static void cacheAudio(Context context) {
         Constraints network = new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build();
         WorkManager.getInstance(context).enqueueUniqueWork(

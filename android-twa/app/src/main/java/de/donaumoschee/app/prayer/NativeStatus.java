@@ -5,6 +5,7 @@ import android.app.AlarmManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 
@@ -17,6 +18,7 @@ import de.donaumoschee.app.adhan.AudioCache;
 import de.donaumoschee.app.adhan.AdhanPlaybackService;
 
 import org.json.JSONException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.time.Instant;
@@ -61,6 +63,14 @@ public final class NativeStatus {
 
     public static JSONObject payload(Context context) throws JSONException {
         Instant now = Instant.now();
+        PackageInfo packageInfo;
+        try {
+            packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+        } catch (PackageManager.NameNotFoundException error) {
+            throw new JSONException("Installed package metadata is unavailable");
+        }
+        long versionCode = Build.VERSION.SDK_INT >= 28 ? packageInfo.getLongVersionCode() : packageInfo.versionCode;
+        String versionName = packageInfo.versionName == null ? "" : packageInfo.versionName;
         NativeStore store = new NativeStore(context);
         NativeConfig config = store.loadConfig(now);
         NotificationCapabilities notifications = notificationCapabilities(context);
@@ -88,6 +98,9 @@ public final class NativeStatus {
         return new JSONObject()
                 .put("native", true)
                 .put("packageId", context.getPackageName())
+                .put("versionCode", versionCode)
+                .put("versionName", versionName)
+                .put("capabilities", new JSONArray().put("authority-generation-v1"))
                 .put("notificationPermission", notifications.notificationPermission())
                 .put("notificationDeliveryEnabled", notifications.notificationDeliveryEnabled())
                 .put("reminderChannelEnabled", notifications.reminderChannelEnabled())
@@ -101,6 +114,7 @@ public final class NativeStatus {
                 .put("scheduleValidUntil", config == null ? JSONObject.NULL : config.scheduleValidUntil.toString())
                 .put("lastError", store.lastError())
                 .put("installationId", store.installationId())
+                .put("authorityId", store.authorityId())
                 .put("credential", store.credential());
     }
 }

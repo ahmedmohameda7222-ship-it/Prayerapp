@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { parseNativeHeartbeat } from "@/lib/android/contracts";
 import {
   bearerToken,
   credentialMatches,
+  isAuthorityId,
   isInstallationId,
   isNativeCredential,
 } from "@/lib/android/native-credentials";
@@ -14,8 +16,9 @@ const LEASE_DURATION_MS = 12 * 60 * 60 * 1000;
 
 export async function POST(request: Request) {
   const installationId = request.headers.get("x-native-installation-id");
+  const authorityId = request.headers.get("x-native-authority-id");
   const credential = bearerToken(request, "Native");
-  if (!isInstallationId(installationId) || !isNativeCredential(credential)) {
+  if (!isInstallationId(installationId) || !isAuthorityId(authorityId) || !isNativeCredential(credential)) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
   const now = new Date();
@@ -26,18 +29,20 @@ export async function POST(request: Request) {
   if (!client) return NextResponse.json({ error: "Native heartbeat is unavailable" }, { status: 503 });
   const { data, error } = await client
     .from("native_prayer_installations")
-    .select("credential_hash")
+    .select("credential_hash, authority_id")
     .eq("installation_id", installationId)
+    .eq("authority_id", authorityId)
+    .is("revoked_at", null)
     .maybeSingle();
-  const row = data as { credential_hash?: string } | null;
-  if (error || !row?.credential_hash || !credentialMatches(credential, row.credential_hash)) {
+  const row = data as { credential_hash?: string; authority_id?: string } | null;
+  if (error || !row?.credential_hash || !row.authority_id || !credentialMatches(credential, row.credential_hash)) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
 
   const leaseExpiresAt = heartbeat.nativeReady
     ? new Date(now.getTime() + LEASE_DURATION_MS).toISOString()
     : null;
-  const { error: updateError } = await client
+  const { data: updatedData, error: updateError } = await client
     .from("native_prayer_installations")
     .update({
       native_ready: heartbeat.nativeReady,
@@ -55,10 +60,19 @@ export async function POST(request: Request) {
       last_seen_at: now.toISOString(),
       updated_at: now.toISOString(),
     } as never)
-    .eq("installation_id", installationId);
+    .eq("installation_id", installationId)
+    .eq("authority_id", row.authority_id)
+    .eq("credential_hash", row.credential_hash)
+    .is("revoked_at", null)
+    .select("authority_id")
+    .maybeSingle();
+  const updated = updatedData as { authority_id?: string } | null;
   if (updateError) {
     console.error("[native authority] heartbeat failed", updateError.message);
     return NextResponse.json({ error: "Could not update native readiness" }, { status: 500 });
+  }
+  if (updated?.authority_id !== row.authority_id) {
+    return NextResponse.json({ error: "Native authority generation changed" }, { status: 409 });
   }
   return NextResponse.json({
     success: true,
@@ -69,26 +83,61 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const installationId = request.headers.get("x-native-installation-id");
+  const authorityId = request.headers.get("x-native-authority-id");
   const credential = bearerToken(request, "Native");
-  if (!isInstallationId(installationId) || !isNativeCredential(credential)) {
+  if (
+    !isInstallationId(installationId)
+    || (authorityId != null && !isAuthorityId(authorityId))
+    || !isNativeCredential(credential)
+  ) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
   const client = createServerClient();
   if (!client) return NextResponse.json({ error: "Native heartbeat is unavailable" }, { status: 503 });
-  const { data } = await client
+  let lookup = client
     .from("native_prayer_installations")
-    .select("credential_hash")
-    .eq("installation_id", installationId)
-    .maybeSingle();
-  const row = data as { credential_hash?: string } | null;
-  if (!row?.credential_hash || !credentialMatches(credential, row.credential_hash)) {
+    .select("credential_hash, authority_id")
+    .eq("installation_id", installationId);
+  if (authorityId) lookup = lookup.eq("authority_id", authorityId);
+  const { data } = await lookup.maybeSingle();
+  const row = data as { credential_hash?: string; authority_id?: string } | null;
+  if (!row?.credential_hash || !row.authority_id || !credentialMatches(credential, row.credential_hash)) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
-  const { error } = await client.from("native_prayer_installations").update({
-    native_ready: false,
-    lease_expires_at: null,
-    updated_at: new Date().toISOString(),
-  } as never).eq("installation_id", installationId);
-  if (error) return NextResponse.json({ error: "Could not revoke native readiness" }, { status: 500 });
-  return NextResponse.json({ success: true });
+
+  const now = new Date().toISOString();
+  const revokedAuthorityId = randomUUID();
+  // Rotating the persisted authority creates a tombstone. Any heartbeat that
+  // already validated the old generation can no longer mutate this row.
+  const { data: revokedData, error } = await client
+    .from("native_prayer_installations")
+    .update({
+      authority_id: revokedAuthorityId,
+      push_subscription_id: null,
+      native_ready: false,
+      notification_permission: false,
+      notification_delivery_enabled: false,
+      reminder_channel_enabled: false,
+      adhan_channel_enabled: false,
+      exact_alarm_permission: false,
+      schedule_fresh: false,
+      alarm_schedule_installed: false,
+      audio_ready: false,
+      engine_healthy: false,
+      schedule_valid_until: null,
+      lease_expires_at: null,
+      revoked_at: now,
+      last_seen_at: now,
+      updated_at: now,
+    } as never)
+    .eq("installation_id", installationId)
+    .eq("authority_id", row.authority_id)
+    .eq("credential_hash", row.credential_hash)
+    .select("authority_id")
+    .maybeSingle();
+  const revoked = revokedData as { authority_id?: string } | null;
+  if (error || revoked?.authority_id !== revokedAuthorityId) {
+    return NextResponse.json({ error: "Could not revoke native readiness" }, { status: 409 });
+  }
+  return NextResponse.json({ success: true, authorityId: revoked.authority_id });
 }

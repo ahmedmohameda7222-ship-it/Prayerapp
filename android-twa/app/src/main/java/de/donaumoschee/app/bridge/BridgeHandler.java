@@ -41,6 +41,9 @@ public final class BridgeHandler {
                 case "native.permissions.request": requestPermissions(envelope.payload); break;
                 case "native.status.request": sendStatus(); break;
                 case "native.test.schedule": scheduleTest(envelope.payload); break;
+                case "native.authority.bind": bindAuthority(envelope.payload); break;
+                case "native.authority.clear": clearAuthority(); break;
+                case "native.update.required": requireUpdate(); break;
                 case "native.account.reset": resetAccount(); break;
                 default: throw new JSONException("Unsupported message type");
             }
@@ -55,6 +58,7 @@ public final class BridgeHandler {
         store.saveConfig(payload, Instant.now());
         boolean installed = PrayerScheduler.reschedule(context);
         Log.i(TAG, "bridge.config synchronized installed=" + installed);
+        NativeWork.initialize(context);
         NativeWork.cacheAudio(context);
         NativeWork.refreshNow(context);
         send("native.configure.result", new JSONObject().put("success", installed).put("status", status()));
@@ -82,12 +86,38 @@ public final class BridgeHandler {
                 .put("success", scheduled).put("mode", mode).put("prayer", prayer.key).put("delaySeconds", delaySeconds));
     }
 
-    private void resetAccount() throws JSONException {
-        PrayerScheduler.cancelAll(context);
-        context.stopService(new Intent(context, AdhanPlaybackService.class));
+    private void bindAuthority(JSONObject payload) throws JSONException {
+        String authorityId = payload.optString("authorityId", "");
         NativeStore store = new NativeStore(context);
+        if (!store.bindAuthorityId(authorityId)) throw new JSONException("Invalid authority id");
+        send("native.authority.result", new JSONObject().put("success", true).put("status", status()));
+    }
+
+    private void clearAuthority() throws JSONException {
+        NativeStore store = new NativeStore(context);
+        if (!store.clearAuthorityId()) throw new JSONException("Could not clear authority id");
+        send("native.authority.result", new JSONObject().put("success", true).put("status", status()));
+    }
+
+    private void requireUpdate() throws JSONException {
+        NativeWork.cancelPrayerRefresh(context);
+        NativeStore store = new NativeStore(context);
+        store.advanceAccountGeneration();
+        PrayerScheduler.cancelAll(context);
+        store.setScheduleInstalled(false);
+        store.markEngineError("required-update");
+        context.stopService(new Intent(context, AdhanPlaybackService.class));
+        send("native.update.required.result", new JSONObject().put("success", true).put("status", status()));
+    }
+
+    private void resetAccount() throws JSONException {
+        NativeWork.cancelPrayerRefresh(context);
+        NativeStore store = new NativeStore(context);
+        int generation = store.resetAccountState();
+        PrayerScheduler.cancelAll(context);
         store.clearAccountState();
-        Log.i(TAG, "bridge.account reset");
+        context.stopService(new Intent(context, AdhanPlaybackService.class));
+        Log.i(TAG, "bridge.account reset generation=" + generation);
         send("native.account.reset.result", new JSONObject().put("success", true).put("status", status()));
     }
 

@@ -13,7 +13,7 @@
     "no": "Hayır",
     "backHome": "Ana sayfaya dön",
     "notifications": "Bildirimler",
-    "appIconAlt": "Masjid El-Rahman uygulama simgesi",
+    "appIconAlt": "Tuna Camii uygulama simgesi",
     "retry": "Tekrar dene",
     "dataLoadFailed": "Güncel veriler yüklenemedi.",
     "privacy": "Gizlilik politikası"
@@ -281,7 +281,7 @@
     "browserNotificationsEnabled": "Tarayıcı bildirimleri açık",
     "browserNotificationsUnsupported": "Tarayıcı bildirimleri desteklenmiyor",
     "installApp": "Uygulamayı yükle",
-    "installAppDescription": "Hızlı erişim ve arka plan bildirimleri için Masjid El-Rahman'ı ana ekranınıza ekleyin.",
+    "installAppDescription": "Hızlı erişim ve arka plan bildirimleri için Tuna Camii'ni ana ekranınıza ekleyin.",
     "install": "Yükle",
     "appInstalled": "Uygulama bu cihaza yüklendi.",
     "iosInstallInstructions": "iPhone veya iPad'de bildirimleri açmadan önce uygulamayı Safari üzerinden yükleyin.",
@@ -300,7 +300,24 @@
     "prayerReminderDescription": "Beş vakit namazın tümü için tek bir zaman seçin. Arka planda iletim için bildirimlerin ve cami zamanlayıcısının açık olması gerekir.",
     "reminderOff": "Kapalı",
     "reminderAtAzan": "Ezan vaktinde",
-    "reminderBeforeMinutes": "{minutes} dakika önce"
+    "reminderBeforeMinutes": "{minutes} dakika önce",
+    "androidUpdateSection": "Android uygulama güncellemesi",
+    "androidInstalledVersion": "Yüklü sürüm",
+    "androidLatestVersion": "En son sürüm",
+    "androidUpdateStatus": "Güncelleme durumu",
+    "androidCheckForUpdates": "Güncellemeleri kontrol et",
+    "androidUpdateChecking": "Kontrol ediliyor...",
+    "androidUpdateTitle": "Yeni uygulama güncellemesi mevcut",
+    "androidUpdateBody": "Tuna Camii uygulamasının yeni bir sürümü mevcut. En son Android iyileştirmeleri için güncelleyin.",
+    "androidUpdateRequiredTitle": "Zorunlu uygulama güncellemesi",
+    "androidUpdateRequiredBody": "Güvenli yerel namaz hatırlatıcılarını ve ezanı geri yüklemek için Android uygulamasını güncelleyin.",
+    "androidUpdateNow": "Şimdi güncelle",
+    "androidUpdateLater": "Daha sonra",
+    "androidUpdateError": "Güncellemeler kontrol edilemedi. Mevcut uygulamanız kullanılabilir durumda kalır.",
+    "androidUpdateRequiredStatus": "Güncelleme gerekli",
+    "androidUpdateAvailableStatus": "Güncelleme mevcut",
+    "androidUpdateCurrentStatus": "Güncel",
+    "androidUpdateUnknownStatus": "Henüz kontrol edilmedi"
   },
   "notifications": {
     "empty": "Acil güncelleme yok."
@@ -312,7 +329,7 @@
     "enabling": "Açılıyor...",
     "later": "Daha sonra",
     "iosTitle": "Önce uygulamayı yükleyin",
-    "iosBody": "iPhone veya iPad'de bildirimleri açmadan önce Masjid El-Rahman'ı Ana Ekran'a ekleyin.",
+    "iosBody": "iPhone veya iPad'de bildirimleri etkinleştirmeden önce Tuna Camii'ni Ana Ekran'a ekleyin.",
     "iosSteps": "Safari → Paylaş → Ana Ekrana Ekle",
     "gotIt": "Anladım",
     "close": "Bildirim istemini kapat"
@@ -332,6 +349,25 @@
     "contactTitle": "İletişim",
     "contactText": "Gizlilik soruları için Cami Bilgileri sayfasındaki iletişim bilgilerini kullanın.",
     "reviewNotice": "Bu sayfa bir çalışma şablonudur ve herkese açık kullanımdan önce hukuki olarak incelenmelidir."
+  },
+  "legal": {
+    "privacyTitle": "Gizlilik ve veriler",
+    "privacyIntro": "Bu sayfa uygulamanın mevcut veri davranışını açıklar. Hukuki incelemesi tamamlanmış nihai gizlilik bildirimi değildir.",
+    "dataTitle": "İsteğe bağlı özelliklerde kullanılan veriler",
+    "dataSummary": "Herkese açık içerik hesap olmadan kullanılabilir. Hesap oluşturur veya bildirimleri etkinleştirirseniz hizmet; e-posta, kaydedilen zikir kimlikleri, namaz hatırlatma tercihleri, anlık bildirim abonelik bilgileri, dil ve bu özellikler için gerekli sınırlı teknik iletim verilerini işler.",
+    "accountTitle": "Hesap ve silme",
+    "accountDeletion": "Hesap sayfasından hesabınızı kalıcı olarak silebilirsiniz. Bu işlem kaydedilen zikirleri ve hatırlatma tercihlerini kaldırır, bildirim cihazlarının hesap bağlantısını keser. Bildirimler Ayarlar'dan ayrıca kapatılabilir.",
+    "notificationsTitle": "Bildirim izinleri",
+    "notifications": "Tarayıcı ve Android bildirim izinleri isteğe bağlıdır; uygulama, tarayıcı veya cihaz ayarlarından geri alınabilir. Namaz hatırlatmaları caminin yayımladığı takvimi kullanır.",
+    "contactTitle": "Veri sorumlusu ve gizlilik iletişimi",
+    "contactPending": "Doğrulanmış veri sorumlusu, gizlilik iletişimi, saklama bilgileri ve gerekli yasal açıklamalar halka açık yayından önce cami tarafından sağlanmalı ve onaylanmalıdır.",
+    "reviewRequired": "HUKUKİ İÇERİK BEKLENİYOR — nihai metin ve sağlayıcı bilgileri halka açık yayından önce cami ve hukuk danışmanı tarafından incelenmelidir.",
+    "imprintTitle": "Yasal bildirim",
+    "imprintIntro": "Bu sayfa yasal olarak gerekli sağlayıcı bilgileri için teknik alandır. Doğrulanmış sağlayıcı içeriği henüz sağlanmamıştır.",
+    "providerTitle": "Hizmet sağlayıcı",
+    "providerPending": "İÇERİK BEKLENİYOR — doğrulanmış kuruluş adı, hukuki şekil, yetkili temsilci, kayıt bilgileri ve içerikten sorumlu kişi sağlanmalıdır.",
+    "contactDetailsTitle": "Adres ve iletişim",
+    "contactDetailsPending": "İÇERİK BEKLENİYOR — doğrulanmış posta adresi, e-posta adresi, telefon numarası ve yasal olarak gereken diğer iletişim bilgileri sağlanmalıdır."
   },
   "phase1": {
     "account": "Hesap",

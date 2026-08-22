@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { APP_NAMES, DEFAULT_APP_NAME, getBrandTranslationOverride } from "@/lib/app-brand";
 
-const ROOTS = ["app", "components", "lib", "public"];
+const ROOTS = ["app", "components", "lib", "messages", "public"];
 const TEXT_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".json", ".webmanifest"]);
 const LEGACY_PUBLIC_NAMES = [
   "Masjid El-Rahman",

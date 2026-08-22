@@ -13,7 +13,7 @@
     "no": "Nein",
     "backHome": "Zur Startseite",
     "notifications": "Benachrichtigungen",
-    "appIconAlt": "App-Symbol von Masjid El-Rahman",
+    "appIconAlt": "App-Symbol der Donau-Moschee",
     "retry": "Erneut versuchen",
     "dataLoadFailed": "Die aktuellen Daten konnten nicht geladen werden.",
     "privacy": "Datenschutz"
@@ -281,7 +281,7 @@
     "browserNotificationsEnabled": "Browser-Benachrichtigungen aktiviert",
     "browserNotificationsUnsupported": "Browser-Benachrichtigungen werden nicht unterstützt",
     "installApp": "App installieren",
-    "installAppDescription": "Füge Masjid El-Rahman für schnellen Zugriff und Hintergrund-Benachrichtigungen zum Startbildschirm hinzu.",
+    "installAppDescription": "Füge die Donau-Moschee für schnellen Zugriff und Hintergrund-Benachrichtigungen zum Startbildschirm hinzu.",
     "install": "Installieren",
     "appInstalled": "Die App ist auf diesem Gerät installiert.",
     "iosInstallInstructions": "Installiere die App auf iPhone oder iPad zuerst über Safari, bevor du Benachrichtigungen aktivierst.",
@@ -300,7 +300,24 @@
     "prayerReminderDescription": "Wähle einen Zeitpunkt für alle fünf täglichen Gebete. Für die Hintergrundzustellung müssen Benachrichtigungen und der Moschee-Zeitplaner aktiviert sein.",
     "reminderOff": "Aus",
     "reminderAtAzan": "Zur Azan-Zeit",
-    "reminderBeforeMinutes": "{minutes} Minuten vorher"
+    "reminderBeforeMinutes": "{minutes} Minuten vorher",
+    "androidUpdateSection": "Android-App-Update",
+    "androidInstalledVersion": "Installierte Version",
+    "androidLatestVersion": "Neueste Version",
+    "androidUpdateStatus": "Update-Status",
+    "androidCheckForUpdates": "Nach Updates suchen",
+    "androidUpdateChecking": "Wird geprüft...",
+    "androidUpdateTitle": "Neues App-Update verfügbar",
+    "androidUpdateBody": "Eine neue Version der Donau-Moschee-App ist verfügbar. Aktualisiere sie für die neuesten Android-Verbesserungen.",
+    "androidUpdateRequiredTitle": "Erforderliches App-Update",
+    "androidUpdateRequiredBody": "Aktualisiere die Android-App, um sichere native Gebetserinnerungen und den Adhan wiederherzustellen.",
+    "androidUpdateNow": "Jetzt aktualisieren",
+    "androidUpdateLater": "Später",
+    "androidUpdateError": "Die Update-Prüfung ist fehlgeschlagen. Deine aktuelle App bleibt verfügbar.",
+    "androidUpdateRequiredStatus": "Update erforderlich",
+    "androidUpdateAvailableStatus": "Update verfügbar",
+    "androidUpdateCurrentStatus": "Aktuell",
+    "androidUpdateUnknownStatus": "Noch nicht geprüft"
   },
   "notifications": {
     "empty": "Es gibt keine dringenden Neuigkeiten."
@@ -312,7 +329,7 @@
     "enabling": "Wird aktiviert...",
     "later": "Später",
     "iosTitle": "App zuerst installieren",
-    "iosBody": "Auf iPhone oder iPad musst du Masjid El-Rahman zuerst zum Home-Bildschirm hinzufügen, bevor du Benachrichtigungen aktivierst.",
+    "iosBody": "Füge die Donau-Moschee auf dem iPhone oder iPad zum Home-Bildschirm hinzu, bevor du Benachrichtigungen aktivierst.",
     "iosSteps": "Safari → Teilen → Zum Home-Bildschirm",
     "gotIt": "Verstanden",
     "close": "Benachrichtigungshinweis schließen"
@@ -332,6 +349,25 @@
     "contactTitle": "Kontakt",
     "contactText": "Nutze für Datenschutzfragen die Kontaktdaten auf der Moschee-Seite.",
     "reviewNotice": "Diese Seite ist eine Arbeitsvorlage und sollte vor dem öffentlichen Start rechtlich geprüft werden."
+  },
+  "legal": {
+    "privacyTitle": "Datenschutz und Daten",
+    "privacyIntro": "Diese Seite beschreibt die aktuelle Datenverarbeitung der Anwendung. Sie ist noch keine abschließend rechtlich geprüfte Datenschutzerklärung.",
+    "dataTitle": "Daten für optionale Funktionen",
+    "dataSummary": "Öffentliche Inhalte sind ohne Konto verfügbar. Bei Kontoerstellung oder aktivierten Benachrichtigungen verarbeitet der Dienst die E-Mail-Adresse, gespeicherte Azkar-IDs, Gebetserinnerungen, Push-Abonnementdaten, Sprache und begrenzte technische Zustelldaten, die für diese Funktionen erforderlich sind.",
+    "accountTitle": "Konto und Löschung",
+    "accountDeletion": "Du kannst dein Konto auf der Kontoseite dauerhaft löschen. Dabei werden gespeicherte Azkar und Erinnerungsauswahlen entfernt und Benachrichtigungsgeräte vom Konto getrennt. Benachrichtigungen lassen sich separat in den Einstellungen deaktivieren.",
+    "notificationsTitle": "Benachrichtigungsberechtigungen",
+    "notifications": "Browser- und Android-Benachrichtigungen sind freiwillig und können in der Anwendung, im Browser oder in den Geräteeinstellungen widerrufen werden. Gebetserinnerungen verwenden den veröffentlichten Zeitplan der Moschee.",
+    "contactTitle": "Verantwortlicher und Datenschutzkontakt",
+    "contactPending": "Der verifizierte Verantwortliche, der Datenschutzkontakt, Aufbewahrungsangaben und alle gesetzlich erforderlichen Hinweise müssen vor dem öffentlichen Start von der Moschee bereitgestellt und freigegeben werden.",
+    "reviewRequired": "RECHTLICHE INHALTE AUSSTEHEND — endgültiger Wortlaut und Anbieterangaben müssen vor dem öffentlichen Start von Moschee und Rechtsberatung geprüft werden.",
+    "imprintTitle": "Impressum",
+    "imprintIntro": "Diese Route ist die technische Stelle für die gesetzlich erforderlichen Anbieterangaben. Verifizierte Angaben wurden noch nicht bereitgestellt.",
+    "providerTitle": "Diensteanbieter",
+    "providerPending": "INHALT AUSSTEHEND — verifizierter Organisationsname, Rechtsform, vertretungsberechtigte Person, Registerangaben und inhaltlich verantwortliche Person müssen bereitgestellt werden.",
+    "contactDetailsTitle": "Anschrift und Kontakt",
+    "contactDetailsPending": "INHALT AUSSTEHEND — verifizierte Postanschrift, E-Mail-Adresse, Telefonnummer und weitere gesetzlich erforderliche Kontaktangaben müssen bereitgestellt werden."
   },
   "phase1": {
     "account": "Konto",

@@ -3,8 +3,13 @@ import {
   parseNativeHeartbeat,
   parseScheduleRequest,
 } from "@/lib/android/contracts";
-import { parseNativeMessage } from "@/lib/android/native-web";
+import {
+  isNativeAuthorityId,
+  parseNativeMessage,
+  supportsNativeAuthorityGeneration,
+} from "@/lib/android/native-web";
 import { nativeStatusKind } from "@/lib/android/native-status";
+import { isAuthorityId } from "@/lib/android/native-credentials";
 
 describe("Android server contracts", () => {
   it("bounds published schedule requests", () => {
@@ -78,10 +83,44 @@ describe("Android server contracts", () => {
     expect(parseNativeMessage('{"version":1,"type":"native.ready","payload":[]}')).toBeNull();
   });
 
+  it("accepts only canonical UUID authority generations", () => {
+    expect(isAuthorityId("8e5f7ac6-7a84-4d3e-946a-e4f91be50a7c")).toBe(true);
+    expect(isAuthorityId("not-an-authority")).toBe(false);
+    expect(isAuthorityId(undefined)).toBe(false);
+    expect(isNativeAuthorityId("8e5f7ac6-7a84-4d3e-946a-e4f91be50a7c")).toBe(true);
+    expect(isNativeAuthorityId("not-an-authority")).toBe(false);
+  });
+
+  it("does not enroll legacy native builds that lack generation binding", () => {
+    const status = {
+      native: true as const,
+      packageId: "de.donaumoschee.app",
+      versionCode: 4,
+      versionName: "1.0.1",
+      notificationPermission: true,
+      notificationDeliveryEnabled: true,
+      reminderChannelEnabled: true,
+      adhanChannelEnabled: true,
+      exactAlarmPermission: true,
+      scheduleFresh: false,
+      alarmScheduleInstalled: false,
+      audioReady: true,
+      engineHealthy: false,
+      nativeReady: false,
+    };
+    expect(supportsNativeAuthorityGeneration(status)).toBe(false);
+    expect(supportsNativeAuthorityGeneration({
+      ...status,
+      capabilities: ["authority-generation-v1"],
+    })).toBe(true);
+  });
+
   it("classifies disabled notification delivery as system access required", () => {
     const status = {
       native: true as const,
       packageId: "de.donaumoschee.app",
+      versionCode: 4,
+      versionName: "1.0.1",
       notificationPermission: true,
       notificationDeliveryEnabled: false,
       reminderChannelEnabled: true,

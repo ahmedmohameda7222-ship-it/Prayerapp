@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
+import { ANDROID_PUBLIC_DOWNLOAD_PATH } from "@/lib/android-release";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 function isStandalone() {
@@ -45,12 +46,21 @@ export function HomeInstallAction() {
 
   if (!ready || installed || isNative) return null;
 
-  async function installOrExplain() {
-    if (isAndroid()) {
-      window.location.assign("/download/android");
-      return;
-    }
+  if (isAndroid()) {
+    return (
+      <a
+        href={ANDROID_PUBLIC_DOWNLOAD_PATH}
+        aria-label={t("settings.installApp")}
+        title={t("settings.installApp")}
+        className="grid h-11 w-11 place-items-center rounded-[10px] text-white transition-colors hover:bg-white/10 active:bg-white/10"
+        data-testid="home-install-app"
+      >
+        <Download className="h-5 w-5" aria-hidden="true" />
+      </a>
+    );
+  }
 
+  async function installOrExplain() {
     const currentPrompt = prompt || window.__pwaInstallPrompt;
     if (!currentPrompt) {
       window.location.assign("/settings#install-app");

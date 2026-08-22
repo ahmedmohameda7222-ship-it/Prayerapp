@@ -202,7 +202,16 @@ jobs:
             --arg apkAsset "danube-mosque.apk" \
             --arg apkSha256 "$apk_sha256" \
             --arg certificateSha256 "$EXPECTED_CERT_SHA256" \
-            '{packageId, versionCode, versionName, minimumSupportedVersionCode, publishedAt, apkAsset, apkSha256, certificateSha256}' \
+            '{
+              packageId: $packageId,
+              versionCode: $versionCode,
+              versionName: $versionName,
+              minimumSupportedVersionCode: $minimumSupportedVersionCode,
+              publishedAt: $publishedAt,
+              apkAsset: $apkAsset,
+              apkSha256: $apkSha256,
+              certificateSha256: $certificateSha256
+            }' \
             > candidate/android-release.json
           jq -e \
             --arg packageId "$PACKAGE_ID" \

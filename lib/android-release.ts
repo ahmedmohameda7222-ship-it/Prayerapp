@@ -1,6 +1,7 @@
 export const ANDROID_PACKAGE_ID = "de.donaumoschee.app";
 export const ANDROID_APK_ASSET_NAME = "danube-mosque.apk";
 export const ANDROID_RELEASE_METADATA_ASSET_NAME = "android-release.json";
+export const ANDROID_PUBLIC_DOWNLOAD_PATH = "/download/android/danube-mosque.apk" as const;
 export const ANDROID_CERTIFICATE_SHA256 =
   "E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92";
 
@@ -41,7 +42,7 @@ export type AndroidRelease = AndroidReleaseMetadata & {
 export type PublicAndroidRelease = Pick<AndroidRelease,
   "packageId" | "versionCode" | "versionName" | "minimumSupportedVersionCode" | "publishedAt"
 > & {
-  downloadUrl: "/download/android";
+  downloadUrl: typeof ANDROID_PUBLIC_DOWNLOAD_PATH;
 };
 
 const legacyV100: AndroidReleaseMetadata & { downloadUrl: string } = {
@@ -153,7 +154,7 @@ export function parsePublicAndroidRelease(value: unknown): PublicAndroidRelease 
     || item.minimumSupportedVersionCode > item.versionCode
     || typeof item.publishedAt !== "string"
     || !Number.isFinite(Date.parse(item.publishedAt))
-    || item.downloadUrl !== "/download/android"
+    || item.downloadUrl !== ANDROID_PUBLIC_DOWNLOAD_PATH
   ) return null;
   return item as PublicAndroidRelease;
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ANDROID_PUBLIC_DOWNLOAD_PATH } from "@/lib/android-release";
 import { getLatestAndroidRelease } from "@/lib/android-release-server";
 
 export const runtime = "nodejs";
@@ -18,7 +19,7 @@ export async function GET() {
       versionName: release.versionName,
       minimumSupportedVersionCode: release.minimumSupportedVersionCode,
       publishedAt: release.publishedAt,
-      downloadUrl: "/download/android",
+      downloadUrl: ANDROID_PUBLIC_DOWNLOAD_PATH,
     }, {
       headers: { "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600" },
     });

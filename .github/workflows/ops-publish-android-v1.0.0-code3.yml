@@ -1,9 +1,9 @@
 name: One-time publish Android 1.0.0 code 3
 
 on:
-  push:
+  pull_request:
     branches:
-      - ops/publish-android-v1.0.0-code3
+      - main
     paths:
       - .github/workflows/ops-publish-android-v1.0.0-code3.yml
 
@@ -17,6 +17,7 @@ env:
 
 jobs:
   publish:
+    if: github.head_ref == 'ops/publish-android-v1.0.0-code3'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -41,7 +42,6 @@ jobs:
           test "$(jq -r '.versionCode' android-twa/twa-manifest.json)" = "3"
           test "$(jq -r '.versionName' android-twa/twa-manifest.json)" = "1.0.0"
           test "$(jq -r '.targetSdkVersion' android-twa/twa-manifest.json)" = "36"
-          ! gh release view android-v1.0.0 >/dev/null 2>&1
 
       - uses: actions/setup-java@v4
         with:
@@ -107,17 +107,28 @@ jobs:
         shell: bash
         run: rm -f android-twa/signing.properties "$RUNNER_TEMP/danube-mosque-release.jks"
 
-      - name: Publish Android 1.0.0
+      - name: Publish or validate Android 1.0.0
         shell: bash
         run: |
           set -euo pipefail
-          gh release create android-v1.0.0 \
-            candidate/danube-mosque.apk \
-            candidate/danube-mosque.aab \
-            candidate/SHA256SUMS.txt \
-            --target "$EXPECTED_MAIN_SHA" \
-            --title 'Danube Mosque Android 1.0.0' \
-            --notes 'First public Android test release. Package de.donaumoschee.app, versionCode 3, targetSdk 36, signed by the permanent production certificate.'
+          if gh release view android-v1.0.0 >/dev/null 2>&1; then
+            mkdir existing-release
+            gh release download android-v1.0.0 --pattern danube-mosque.apk --dir existing-release
+            signature="$($ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs existing-release/danube-mosque.apk)"
+            actual="$(printf '%s\n' "$signature" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1 | sed 's/../&:/g;s/:$//' | tr '[:lower:]' '[:upper:]')"
+            test "$actual" = "$EXPECTED_CERT_SHA256"
+            badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging existing-release/danube-mosque.apk)"
+            printf '%s\n' "$badging" | grep -F "package: name='de.donaumoschee.app' versionCode='3' versionName='1.0.0'"
+            printf '%s\n' "$badging" | grep -F "targetSdkVersion:'36'"
+          else
+            gh release create android-v1.0.0 \
+              candidate/danube-mosque.apk \
+              candidate/danube-mosque.aab \
+              candidate/SHA256SUMS.txt \
+              --target "$EXPECTED_MAIN_SHA" \
+              --title 'Danube Mosque Android 1.0.0' \
+              --notes 'First public Android test release. Package de.donaumoschee.app, versionCode 3, targetSdk 36, signed by the permanent production certificate.'
+          fi
 
       - uses: actions/upload-artifact@v4
         with:

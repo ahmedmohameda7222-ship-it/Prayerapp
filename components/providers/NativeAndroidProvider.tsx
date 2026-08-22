@@ -60,11 +60,26 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   const [accountRevision, setAccountRevision] = useState(0);
   const portRef = useRef<MessagePort | null>(null);
   const accountTransitioningRef = useRef(false);
+  const nativeResetCompleteRef = useRef(false);
+  const remoteRevocationCompleteRef = useRef(false);
   const syncGenerationRef = useRef(0);
   const pendingTests = useRef(new Map<string, PendingTest>());
 
   const send = useCallback((type: string, payload: Record<string, unknown> = {}) => {
     portRef.current?.postMessage(JSON.stringify({ version: 1, type, payload }));
+  }, []);
+
+  const finishAccountTransition = useCallback(() => {
+    if (
+      !accountTransitioningRef.current
+      || !nativeResetCompleteRef.current
+      || !remoteRevocationCompleteRef.current
+    ) return;
+    syncGenerationRef.current += 1;
+    accountTransitioningRef.current = false;
+    nativeResetCompleteRef.current = false;
+    remoteRevocationCompleteRef.current = false;
+    setAccountRevision((current) => current + 1);
   }, []);
 
   const handleNativeMessage = useCallback((raw: unknown) => {
@@ -79,9 +94,8 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
       const nested = message.payload.status;
       if (nested && typeof nested === "object") setStatus(nested as NativeBridgeStatus);
       localStorage.removeItem(NATIVE_ACCOUNT_OWNER_KEY);
-      syncGenerationRef.current += 1;
-      accountTransitioningRef.current = false;
-      setAccountRevision((current) => current + 1);
+      nativeResetCompleteRef.current = true;
+      finishAccountTransition();
     } else if (message.type === "native.test.result") {
       const key = typeof message.payload.mode === "string" ? message.payload.mode : "";
       const pending = pendingTests.current.get(key);
@@ -91,7 +105,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
         pending.resolve(message.payload.success === true);
       }
     }
-  }, []);
+  }, [finishAccountTransition]);
 
   useEffect(() => {
     const receiveInitialPort = (event: MessageEvent) => {
@@ -186,8 +200,12 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     if (!accountRequiresReset(storedOwnerId, currentUserId, status)) return;
 
     accountTransitioningRef.current = true;
+    nativeResetCompleteRef.current = false;
+    remoteRevocationCompleteRef.current = false;
     syncGenerationRef.current += 1;
-    const reset = async () => {
+    send("native.account.reset");
+
+    const revokeAuthority = async () => {
       try {
         await fetch("/api/android/native-authority/heartbeat", {
           method: "DELETE",
@@ -198,11 +216,13 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
         });
       } catch (error) {
         console.warn("Native authority revocation failed; local reset will still proceed", error);
+      } finally {
+        remoteRevocationCompleteRef.current = true;
+        finishAccountTransition();
       }
-      send("native.account.reset");
     };
-    void reset();
-  }, [accountRevision, authLoading, channelRevision, send, session?.user?.id, status]);
+    void revokeAuthority();
+  }, [accountRevision, authLoading, channelRevision, finishAccountTransition, send, session?.user?.id, status]);
 
   useEffect(() => {
     if (

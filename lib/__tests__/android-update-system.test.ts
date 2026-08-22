@@ -10,17 +10,23 @@ describe("Android direct-APK update system", () => {
     expect(workflow).toContain("android-release.json");
     expect(workflow).toContain('minimum_supported_version_code="$(jq -r ".minimumSupportedVersionCode"');
     expect(workflow).toContain('apk_sha256="$(sha256sum candidate/danube-mosque.apk');
-    expect(workflow).toContain('certificateSha256');
+    expect(workflow).toContain("packageId: $packageId");
+    expect(workflow).toContain("versionCode: $versionCode");
+    expect(workflow).toContain("certificateSha256: $certificateSha256");
     expect(workflow).toContain("candidate/android-release.json");
     expect(workflow).toContain('test "$VERSION_CODE" -gt "$previous_version_code"');
   });
 
-  it("shares one server-side release resolver between metadata and download routes", () => {
+  it("shares one server-side release resolver between metadata and the canonical APK route", () => {
     const api = source("app/api/android/release/route.ts");
-    const download = source("app/download/android/route.ts");
+    const canonicalDownload = source("app/download/android/danube-mosque.apk/route.ts");
+    const legacyDownload = source("app/download/android/route.ts");
     expect(api).toContain("getLatestAndroidRelease");
-    expect(download).toContain("getLatestAndroidRelease");
-    expect(api).toContain('downloadUrl: "/download/android"');
+    expect(canonicalDownload).toContain("getLatestAndroidRelease");
+    expect(canonicalDownload).toContain("application/vnd.android.package-archive");
+    expect(canonicalDownload).toContain('attachment; filename="danube-mosque.apk"');
+    expect(legacyDownload).toContain("ANDROID_PUBLIC_DOWNLOAD_PATH");
+    expect(api).toContain("downloadUrl: ANDROID_PUBLIC_DOWNLOAD_PATH");
     expect(api).toContain("s-maxage=300");
   });
 
@@ -42,7 +48,7 @@ describe("Android direct-APK update system", () => {
     expect(provider).toContain("useNativeAndroid()");
     expect(provider).toContain("visibilitychange");
     expect(provider).toContain("UPDATE_CHECK_INTERVAL_MS");
-    expect(provider).toContain('window.location.assign("/download/android")');
+    expect(provider).toContain("window.location.assign(ANDROID_PUBLIC_DOWNLOAD_PATH)");
     expect(provider).toContain("dismissUpdate");
     expect(provider).toContain("suspendNativeAuthority");
     const nativeProvider = source("components/providers/NativeAndroidProvider.tsx");

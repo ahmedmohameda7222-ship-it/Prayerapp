@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, BookHeart, ChevronRight, LogOut, Settings, Trash2 } from "lucide-react";
+import { Bell, BookHeart, ChevronRight, LogOut, Scale, Settings, ShieldCheck, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -72,6 +72,11 @@ export default function AccountPage() {
     ["/settings", t("settings.title"), Settings],
   ] as const;
 
+  const legalLinks = [
+    ["/privacy", t("legal.privacyTitle"), ShieldCheck],
+    ["/imprint", t("legal.imprintTitle"), Scale],
+  ] as const;
+
   return (
     <AppShell>
       <div className="account-screen">
@@ -122,6 +127,16 @@ export default function AccountPage() {
             </div>
           </div>
         ) : null}
+
+        <div className="account-actions mt-5">
+          {legalLinks.map(([href, label, Icon]) => (
+            <Link key={href} href={href} className="account-action-row">
+              <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span className="min-w-0 flex-1">{label}</span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
+            </Link>
+          ))}
+        </div>
       </div>
     </AppShell>
   );

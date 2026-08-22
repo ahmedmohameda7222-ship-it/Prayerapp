@@ -17,6 +17,7 @@ import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
 import { NativeAndroidProvider } from "@/components/providers/NativeAndroidProvider";
+import { AndroidUpdateProvider } from "@/components/providers/AndroidUpdateProvider";
 import { AdhanAudioProvider } from "@/components/providers/AdhanAudioProvider";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
 import { PlatformChromeBootstrap } from "@/components/providers/PlatformChromeBootstrap";
@@ -77,15 +78,17 @@ export default async function RootLayout({
           <AuthProvider>
             <AppPreferencesProvider>
               <NativeAndroidProvider>
-                <AdhanAudioProvider>
-                  <TimeFormatProvider>
-                    {children}
-                    <PublicNavigation />
-                    <PullToRefresh />
-                  </TimeFormatProvider>
-                </AdhanAudioProvider>
-                <ServiceWorkerRegistrar />
-                <NotificationOptInPrompt />
+                <AndroidUpdateProvider>
+                  <AdhanAudioProvider>
+                    <TimeFormatProvider>
+                      {children}
+                      <PublicNavigation />
+                      <PullToRefresh />
+                    </TimeFormatProvider>
+                  </AdhanAudioProvider>
+                  <ServiceWorkerRegistrar />
+                  <NotificationOptInPrompt />
+                </AndroidUpdateProvider>
               </NativeAndroidProvider>
             </AppPreferencesProvider>
           </AuthProvider>

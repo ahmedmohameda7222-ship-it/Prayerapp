@@ -13,7 +13,7 @@
     "no": "No",
     "backHome": "Back home",
     "notifications": "Notifications",
-    "appIconAlt": "Masjid El-Rahman app icon",
+    "appIconAlt": "Danube Mosque app icon",
     "retry": "Try again",
     "dataLoadFailed": "The latest data could not be loaded.",
     "privacy": "Privacy policy"
@@ -281,7 +281,7 @@
     "browserNotificationsEnabled": "Browser notifications enabled",
     "browserNotificationsUnsupported": "Browser notifications are not supported",
     "installApp": "Install the app",
-    "installAppDescription": "Add Masjid El-Rahman to your home screen for quick access and background notifications.",
+    "installAppDescription": "Add Danube Mosque to your home screen for quick access and background notifications.",
     "install": "Install",
     "appInstalled": "The app is installed on this device.",
     "iosInstallInstructions": "On iPhone or iPad, install the app from Safari before enabling notifications.",
@@ -300,7 +300,24 @@
     "prayerReminderDescription": "Choose one timing for all five daily prayers. Background delivery requires notifications and the mosque scheduler to be enabled.",
     "reminderOff": "Off",
     "reminderAtAzan": "At Azan time",
-    "reminderBeforeMinutes": "{minutes} minutes before"
+    "reminderBeforeMinutes": "{minutes} minutes before",
+    "androidUpdateSection": "Android app update",
+    "androidInstalledVersion": "Installed version",
+    "androidLatestVersion": "Latest version",
+    "androidUpdateStatus": "Update status",
+    "androidCheckForUpdates": "Check for updates",
+    "androidUpdateChecking": "Checking...",
+    "androidUpdateTitle": "New app update available",
+    "androidUpdateBody": "A new Danube Mosque app version is available. Update to get the latest Android improvements.",
+    "androidUpdateRequiredTitle": "Required app update",
+    "androidUpdateRequiredBody": "Update the Android app to restore safe native prayer reminders and Adhan.",
+    "androidUpdateNow": "Update now",
+    "androidUpdateLater": "Later",
+    "androidUpdateError": "Could not check for updates. Your current app remains available.",
+    "androidUpdateRequiredStatus": "Update required",
+    "androidUpdateAvailableStatus": "Update available",
+    "androidUpdateCurrentStatus": "Up to date",
+    "androidUpdateUnknownStatus": "Not checked yet"
   },
   "notifications": {
     "empty": "There are no urgent updates."
@@ -312,7 +329,7 @@
     "enabling": "Enabling...",
     "later": "Later",
     "iosTitle": "Install the app first",
-    "iosBody": "On iPhone or iPad, add Masjid El-Rahman to your Home Screen before enabling notifications.",
+    "iosBody": "On iPhone or iPad, add Danube Mosque to your Home Screen before enabling notifications.",
     "iosSteps": "Safari → Share → Add to Home Screen",
     "gotIt": "Got it",
     "close": "Close notification prompt"
@@ -332,6 +349,25 @@
     "contactTitle": "Contact",
     "contactText": "Use the contact information on the Mosque Info page for privacy questions.",
     "reviewNotice": "This page is an operational template and should be reviewed by the mosque’s legal or data-protection adviser before public launch."
+  },
+  "legal": {
+    "privacyTitle": "Privacy and data",
+    "privacyIntro": "This page describes the application's current data behavior. It is not the final legally reviewed privacy notice.",
+    "dataTitle": "Data used by optional features",
+    "dataSummary": "Public content is available without an account. If you create an account or enable notifications, the service processes the email, saved Azkar identifiers, prayer-reminder choices, push subscription details, language, and limited technical delivery data required by those features.",
+    "accountTitle": "Account and deletion",
+    "accountDeletion": "You can permanently delete your account from the Account page. This removes Saved Azkar and reminder choices and disconnects notification devices from the account. You can disable notifications separately in Settings.",
+    "notificationsTitle": "Notification permissions",
+    "notifications": "Browser and Android notification permissions are optional and can be revoked in the application, browser, or device settings. Prayer reminders use the mosque's published schedule.",
+    "contactTitle": "Controller and privacy contact",
+    "contactPending": "The verified legal controller, privacy contact, retention details, and any required statutory disclosures must be supplied and approved by the mosque before public launch.",
+    "reviewRequired": "LEGAL CONTENT PENDING — final wording and provider details require mosque and legal review before public launch.",
+    "imprintTitle": "Legal notice",
+    "imprintIntro": "This route is the technical home for the legally required provider information. Verified provider content has not yet been supplied.",
+    "providerTitle": "Service provider",
+    "providerPending": "CONTENT INPUT PENDING — verified organization name, legal form, authorized representative, register details, and responsible publisher must be provided.",
+    "contactDetailsTitle": "Address and contact",
+    "contactDetailsPending": "CONTENT INPUT PENDING — verified postal address, email address, telephone number, and any further legally required contact details must be provided."
   },
   "phase1": {
     "account": "Account",

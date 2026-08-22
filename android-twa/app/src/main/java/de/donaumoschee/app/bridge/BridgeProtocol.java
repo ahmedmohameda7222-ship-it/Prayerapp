@@ -16,6 +16,7 @@ public final class BridgeProtocol {
             "native.test.schedule",
             "native.authority.bind",
             "native.authority.clear",
+            "native.update.required",
             "native.account.reset"
     );
 

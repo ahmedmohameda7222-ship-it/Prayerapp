@@ -43,6 +43,7 @@ public final class BridgeHandler {
                 case "native.test.schedule": scheduleTest(envelope.payload); break;
                 case "native.authority.bind": bindAuthority(envelope.payload); break;
                 case "native.authority.clear": clearAuthority(); break;
+                case "native.update.required": requireUpdate(); break;
                 case "native.account.reset": resetAccount(); break;
                 default: throw new JSONException("Unsupported message type");
             }
@@ -96,6 +97,17 @@ public final class BridgeHandler {
         NativeStore store = new NativeStore(context);
         if (!store.clearAuthorityId()) throw new JSONException("Could not clear authority id");
         send("native.authority.result", new JSONObject().put("success", true).put("status", status()));
+    }
+
+    private void requireUpdate() throws JSONException {
+        NativeWork.cancelPrayerRefresh(context);
+        NativeStore store = new NativeStore(context);
+        store.advanceAccountGeneration();
+        PrayerScheduler.cancelAll(context);
+        store.setScheduleInstalled(false);
+        store.markEngineError("required-update");
+        context.stopService(new Intent(context, AdhanPlaybackService.class));
+        send("native.update.required.result", new JSONObject().put("success", true).put("status", status()));
     }
 
     private void resetAccount() throws JSONException {

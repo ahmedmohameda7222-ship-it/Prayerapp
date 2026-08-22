@@ -17,6 +17,7 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 const MORE_CHILD_ROUTES = [
   "/account",
   "/privacy",
+  "/imprint",
   "/donations",
   "/azkar",
   "/ramadan",

@@ -1,191 +1,144 @@
-# Masjid El-Rahman
+# Danube Mosque
 
-Masjid El-Rahman is a multilingual web app for the Muslim community in Deggendorf. It publishes prayer times, mosque updates, Friday prayer details, events, news, Ramadan schedules, azkar, donation information, and basic admin workflows.
+Danube Mosque is the multilingual prayer and community application for Deggendorf. The approved public names are مسجد الدوناو (Arabic), Danube Mosque (English), Donau-Moschee (German), and Tuna Camii (Turkish).
 
-The app has moved from prototype toward a usable web product: public pages now load real Supabase-backed data when configured, admin pages can manage core content, and the app includes PWA/offline support, browser notification preferences, tests, CI, and deployment documentation.
+The repository contains the Next.js web/PWA application, Supabase migrations and scheduler, and the native Android Trusted Web Activity package. The Android application ID is permanently `de.donaumoschee.app`.
 
-## Main features
+## Current capabilities
 
-- Public prayer time schedule with today, week, and month views.
-- Prayer countdown that uses the current Europe/Berlin date and schedule.
-- News, announcements, urgent alerts, events, mosque info, Friday prayer, Ramadan, azkar, qibla, settings, privacy, and offline pages.
-- Donation page with bank transfer details, campaigns, and transparency report.
-- Admin dashboard and editors for prayer times, announcements, azkar, donations, events, Friday prayer, mosque settings, Ramadan, and app settings.
-- CSV import for prayer times using `public/templates/prayer-times-template.csv`.
-- Multilingual UI content in Arabic, German, English, and Turkish.
-- Progressive Web App service worker with offline fallback.
-- Basic health endpoint at `/api/health`.
-- GitHub Actions CI for lint, tests, clean Supabase migration bootstrap, and production build.
+- Mosque-published prayer schedules; the application does not calculate geographic prayer times.
+- Jumu'ah, announcements, events, Ramadan, mosque information, donations, Azkar, qibla, and localized settings.
+- Arabic, English, German, and Turkish UI with RTL support.
+- Optional Supabase accounts for Saved Azkar and per-prayer reminder choices.
+- Web Push for prayer reminders and public announcements.
+- Installable PWA with offline navigation and deliberately bounded caching.
+- A native Android TWA with exact-alarm scheduling, background/locked-screen Adhan playback, native reminder testing, and an authenticated web/native bridge.
+- Server-backed, expiring native-authority leases so healthy native delivery deduplicates prayer Web Push while stale or unhealthy native state fails open to Web Push.
+- Trusted direct-APK update discovery with package, signing-certificate, version, and SHA-256 metadata validation.
+- Admin editors for published schedules and community content, protected by Supabase authentication plus `ADMIN_EMAILS` authorization on every mutation.
 
-## Tech stack
+## Production content status
 
-- Next.js App Router
-- React
-- TypeScript
-- Supabase
-- next-intl
-- Vitest and React Testing Library
-- Tailwind-style utility classes through CSS modules/global styles
+The software must never substitute fabricated public data when production configuration or records are missing. Public data loaders therefore return empty states, and the launch validator reports missing or placeholder data.
+
+`CONTENT INPUT PENDING` currently means the mosque still needs to provide or approve verified real-world content such as:
+
+- sufficient future prayer schedules from the mosque's official timetable;
+- current Jumu'ah and Ramadan information;
+- mosque organization, address, contact, social, and map details;
+- bank, PayPal, campaign, and transparency information;
+- final Privacy/Datenschutz and Impressum/provider wording reviewed by the mosque and legal adviser.
+
+These are production-content gates. They do not justify mock data and are tracked separately from technical platform readiness.
 
 ## Environment variables
 
-Create `.env.local` from `.env.example` and fill the values for your Supabase project:
+Copy `.env.example` to `.env.local`. Never commit populated environment files.
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-SUPABASE_SECRET_KEY=
-ADMIN_EMAILS=
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=
-VAPID_PRIVATE_KEY=
-VAPID_SUBJECT=mailto:admin@example.com
-CRON_SECRET=
-```
+Required groups are:
 
-Legacy variable names are still supported for compatibility:
+- Browser Supabase access: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or the supported legacy anon-key name).
+- Server Supabase access: `SUPABASE_SECRET_KEY` (or the supported legacy service-role name).
+- Admin authorization: comma-separated `ADMIN_EMAILS`.
+- Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT`.
+- Optional server-side qibla reverse geocoding: `GEOAPIFY_API_KEY`.
+- Optional scheduler authorization fallback: `CRON_SECRET`; production normally uses the private Supabase Vault token.
 
-```bash
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-```
-
-`ADMIN_EMAILS` should be a comma-separated list of admin email addresses. Admin auth is intentionally lightweight for the current planning/early-launch phase: Supabase email/password login plus an email allowlist. Add MFA, stronger roles, and stricter operational controls before the admin surface becomes high-risk.
-
-If Supabase variables are not configured, the public app uses bundled demo data so the UI can still be reviewed locally. If Supabase is configured but fails, the app shows an error state instead of silently falling back to mock data.
+Signing credentials are CI secrets in the protected `android-production` GitHub environment. Never store APKs, AABs, JKS files, `signing.properties`, credentials, or private keys in Git.
 
 ## Local development
 
-Install dependencies:
-
 ```bash
-npm install
-```
-
-Create your environment file:
-
-```bash
-cp .env.example .env.local
-```
-
-Start the development server:
-
-```bash
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`. With Supabase variables absent, public database-backed surfaces show honest empty states; they do not display preview payment or schedule data.
 
-## Supabase setup
+## Supabase and scheduler
 
-The ordered files in `supabase/migrations/` are the only database schema authority. Do not bootstrap or repair environments from a hand-maintained schema snapshot. A clean environment must be reproducible by applying the migration history from the initial migration forward.
+Files in `supabase/migrations/` are the ordered database authority. Apply them in sequence; do not replace migration history with a hand-maintained schema snapshot.
 
-For local verification:
+Production prayer reminders are scheduled every minute by Supabase `pg_cron`. The migration-managed job calls the canonical endpoint:
+
+`https://donaumoschee.vercel.app/api/cron/prayer-reminders`
+
+It authenticates with a private token in Supabase Vault and records the HTTP request through `pg_net`. Do not configure a second scheduler for the same job. Operational checks should confirm:
+
+1. exactly one enabled `prayer-reminders-every-minute` job;
+2. the canonical production endpoint only;
+3. recent consecutive HTTP 200 responses;
+4. no published QA/mock schedules capable of triggering notifications;
+5. enough verified future mosque schedule coverage before launch.
+
+For a local clean-migration check:
 
 ```bash
 supabase start
 supabase db reset --local --no-seed
+supabase db lint
 ```
 
-Initialize/link the hosted project only after confirming the exact project reference:
+For a linked environment, confirm the exact project reference before using `supabase migration list` or a dry-run. Production database changes require the normal reviewed migration flow.
+
+## Authentication and legal surfaces
+
+The public application works without an account. Account deletion is available from `/account` and removes account-owned Saved Azkar and reminder data while detaching notification devices.
+
+`/privacy` and `/imprint` are implemented technical surfaces. Their current copy explicitly identifies unverified legal/provider information as pending; it is not a substitute for final legal approval. Before launch, verify Supabase Auth Site URL and redirect allowlist, email confirmation and SMTP delivery, rate limits, leaked-password protection, admin MFA, and the final legal/controller/contact text.
+
+## PWA and Web Push
+
+`public/sw.js` owns offline navigation, update activation, asset caching, and Web Push. It bypasses admin/API/authenticated requests and uses network-first behavior for navigations and stable public assets so an old cache cannot hide a new deployment indefinitely.
+
+The cache prefix `deggendorf-prayer` is a legacy internal compatibility key. Do not rename it without a deliberate cache migration. The current icons are installable `any` icons; a dedicated safe-zone-verified maskable artwork remains a design enhancement rather than a reason to label the existing icon incorrectly.
+
+Prayer notifications use the mosque-published schedule. Announcement/news pushes are independent of native prayer-authority deduplication.
+
+## Android workflows
+
+`.github/workflows/android-twa.yml` verifies Android code and produces unsigned source-bound candidate inputs. Its protected signing job can create a signed, private release-candidate APK/AAB artifact for physical testing without a public GitHub release or tag.
+
+`.github/workflows/android-production-release.yml` is the separate explicitly authorized public release path. It verifies the expected tag and creates signed assets plus `android-release.json`. Do not run it for an RC-only review.
+
+The permanent production identity is:
+
+- package: `de.donaumoschee.app`
+- origin: `https://donaumoschee.vercel.app`
+- signing SHA-256: `E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92`
+
+Physical-device approval must cover install/update without uninstall, TWA verification, notification permissions, exact alarms, screen-locked Adhan, reboot rescheduling, the 10-second native test path, account switching, offline behavior, and native/Web Push failover.
+
+## Validation
+
+Run before requesting review:
 
 ```bash
-npx supabase link --project-ref <your-project-ref>
-npx supabase migration list
-npx supabase db push --dry-run
-npx supabase db push
-npx supabase migration list
-```
-
-Then:
-
-1. Create a Supabase Auth user for each admin email.
-2. Add those emails to `ADMIN_EMAILS`.
-3. Sign in at `/admin/login`.
-4. Run Supabase database lint/advisors after linking:
-
-   ```bash
-   npx supabase db lint
-   ```
-
-5. Enable backups or PITR according to the Supabase plan, and test a restore before real launch.
-
-The migration history includes the initial schema, production-readiness hardening, prayer display settings, push notification storage, and Phase 1 account personalization with explicit Data API privileges.
-
-## Admin workflows
-
-Admin users can manage:
-
-- Prayer times manually or through CSV import.
-- Announcements, including urgent public alerts.
-- News/events.
-- Friday prayer details.
-- Mosque contact, location, social, and bank information.
-- Donation campaign/report content.
-- Ramadan daily schedule.
-- Azkar categories/items.
-- App settings.
-
-The admin area is not meant to be a final enterprise-grade control panel yet. Treat it as a practical first admin console for getting the web app used by real people.
-
-## Validation commands
-
-Run these before deploying:
-
-```bash
+npm ci
 npm run lint
 npm test
-supabase start
-supabase db reset --local --no-seed
+npm audit --omit=dev
+npm audit
 npm run build
 node --check public/sw.js
 git diff --check
 ```
 
-## Deployment
+Android validation is defined in Gradle and the GitHub workflows and includes unit tests, release lint, APK/AAB assembly, metadata validation, certificate verification, package/version/target SDK inspection, and checksums.
 
-Recommended deployment path:
+## Deployment and launch boundary
 
-1. Push the repository to GitHub.
-2. Import the repo into Vercel.
-3. Add all environment variables in Vercel.
-4. Confirm the exact Supabase project ref, compare migration history, dry-run, and apply pending migrations.
-5. Reconcile hosted Auth Site URL, allowed redirects, email confirmation, and SMTP before accepting account flows.
-6. Create and verify the admin user.
-7. Import real prayer times.
-8. Smoke-test the public pages, `/admin`, and `/api/health`.
+The canonical Vercel production project serves `https://donaumoschee.vercel.app`. A source branch, passing CI, signed RC, or successful preview does not authorize a production deploy, merge, Android tag, GitHub release, or public launch.
 
-## PWA and notifications
+Before an explicitly approved production launch:
 
-The app includes an installable PWA, offline caching, real Web Push delivery, and a prayer-reminder scheduler. Generate one VAPID key pair with `npx web-push generate-vapid-keys`, set the public/private keys and contact subject in every deployment environment, and set a strong `CRON_SECRET`.
+1. confirm the exact reviewed Git SHA and a clean worktree;
+2. require green web, migration, Android, and security validation on that exact SHA;
+3. verify Vercel production environment names without printing secret values;
+4. reconcile production Supabase migrations, advisors, Auth settings, backups/PITR, and scheduler evidence;
+5. load and validate all `CONTENT INPUT PENDING` records;
+6. approve final legal text;
+7. complete signed RC physical-device testing;
+8. deploy only after a separate explicit authorization, then verify the canonical domain, APIs, asset links, logs, and deployment metadata.
 
-No Vercel cron configuration is committed because the current Hobby deployment does not support the required every-minute frequency. Configure a trusted external scheduler, or move to a hosting plan that supports the frequency, and send a `GET` request to `/api/cron/prayer-reminders` every minute with `Authorization: Bearer <CRON_SECRET>`.
-
-Push subscriptions are device-scoped. Account-backed prayer reminder selections are stored per prayer and are delivered at each selected prayer's official adhan time. Apply the latest migration before enabling account-backed personalization in production.
-
-## Privacy and legal notes
-
-The `/privacy` page is a practical starter template. Before collecting real personal data, review it with the mosque/admin team and adapt it to local legal requirements.
-
-Also verify public bank, contact, WhatsApp, Telegram, map, and donation campaign content before launch.
-
-## Launch checklist
-
-- Replace all demo/sample content.
-- Verify a clean local migration reset.
-- Confirm the exact hosted Supabase project ref and apply pending migrations through the CLI migration flow.
-- Reconcile hosted Auth confirmation/redirect/SMTP settings.
-- Create the allowed admin user.
-- Import verified prayer times.
-- Verify Friday prayer, Ramadan, and mosque settings.
-- Review Supabase RLS policies and database advisors.
-- Enable backups/PITR and monitoring.
-- Review privacy/legal wording.
-- Run the validation commands above.
-
-## Known future improvements
-
-- Stronger admin security if the app grows beyond the early phase.
-- More granular admin roles.
-- Audit log views and export tools.
-- More complete donation accounting integrations.
-- Native mobile apps if the community later needs them.
+Technical platform readiness and production content readiness must always be reported independently.

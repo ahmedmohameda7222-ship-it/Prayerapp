@@ -1,3 +1,4 @@
+-- Version matches the migration identifier assigned by the production ledger.
 alter table public.native_prayer_installations
   add column if not exists authority_id uuid not null default gen_random_uuid();
 

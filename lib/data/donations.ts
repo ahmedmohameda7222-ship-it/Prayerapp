@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
 import type { DonationSettings, DonationCampaign, Donation, DonationReport } from "@/lib/types";
-import { previewDonationCampaigns, previewDonationReport, previewDonationSettings } from "./demo-data";
 import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
 import { CACHE_TTL, getCached, invalidateCache, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCache, clearPersistentCachePrefix } from "./persistent-public-cache";
@@ -17,13 +16,18 @@ const DEFAULT_SETTINGS: DonationSettings = {
   defaultPurposeTr: "",
 };
 
-function filterPreviewDonationCampaigns(includeInactive = false): DonationCampaign[] {
-  return previewDonationCampaigns.filter((item) => includeInactive || item.isActive);
+function emptyDonationReport(): DonationReport {
+  return {
+    month: new Date().toISOString().slice(0, 7),
+    monthlyNeed: 0,
+    donationsReceived: 0,
+    remaining: 0,
+  };
 }
 
 export async function getDonationSettings(): Promise<DonationSettings> {
   const client = createClient();
-  if (!client) return previewDonationSettings;
+  if (!client) return { ...DEFAULT_SETTINGS };
   return getCached("donation_settings", async () => {
     try {
       const { data, error } = await client.from("donation_settings").select("*").single();
@@ -67,7 +71,7 @@ export async function updateDonationSettings(settings: Partial<DonationSettings>
 
 export async function getDonationCampaigns(includeInactive = false): Promise<DonationCampaign[]> {
   const client = createClient();
-  if (!client) return filterPreviewDonationCampaigns(includeInactive);
+  if (!client) return [];
   if (includeInactive) {
     const query = client
       .from("donation_campaigns")
@@ -197,11 +201,11 @@ export async function getDonations(): Promise<Donation[]> {
 
 export async function getDonationReport(): Promise<DonationReport> {
   const client = createClient();
-  if (!client) return previewDonationReport;
+  if (!client) return emptyDonationReport();
   return getCached("donation_report", async () => {
     try {
       const { data, error } = await client.from("donation_reports").select("*").order("month", { ascending: false }).limit(1).single();
-      if (error?.code === "PGRST116") return { month: new Date().toISOString().slice(0, 7), monthlyNeed: 0, donationsReceived: 0, remaining: 0 };
+      if (error?.code === "PGRST116") return emptyDonationReport();
       if (error || !data) throw new Error("Unable to load donation report");
       const result = {
         month: String((data as Record<string, unknown>).month),

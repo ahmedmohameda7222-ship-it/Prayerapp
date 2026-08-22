@@ -705,6 +705,39 @@
   border-top: 1px solid var(--app-divider);
 }
 
+.privacy-screen .legal-section + .legal-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--app-divider);
+}
+
+.privacy-screen .legal-section h2 {
+  margin-bottom: 6px;
+  color: var(--app-text);
+  font-size: 17px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.privacy-screen .legal-review-notice {
+  margin-top: 22px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--app-brand) 28%, var(--app-divider));
+  border-radius: 14px;
+  background: var(--app-brand-soft);
+  color: var(--app-brand-strong);
+  font-weight: 680;
+}
+
+.privacy-screen .legal-related-link {
+  display: inline-flex;
+  margin-top: 18px;
+  color: var(--app-brand);
+  font-weight: 720;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* Error / offline */
 .system-state-screen {
   display: grid;

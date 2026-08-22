@@ -19,5 +19,8 @@ describe("Android native owner synchronization", () => {
     expect(transition).toBeGreaterThanOrEqual(0);
     expect(localReset).toBeGreaterThan(transition);
     expect(remoteRevoke).toBeGreaterThan(localReset);
+    expect(source).toContain("nativeResetCompleteRef");
+    expect(source).toContain("remoteRevocationCompleteRef");
+    expect(source).toContain("finishAccountTransition");
   });
 });

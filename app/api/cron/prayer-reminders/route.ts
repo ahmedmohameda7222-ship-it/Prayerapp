@@ -12,6 +12,7 @@ import {
   filterPrayerPushTargets,
   type NativeAuthorityLease,
 } from "@/lib/android/native-authority";
+import { isPrayerScheduleQaRow } from "@/lib/launch-data-readiness";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +32,11 @@ type PrayerScheduleRow = {
   asr: string;
   maghrib: string;
   isha: string;
+  note: string | null;
+  note_ar: string | null;
+  note_en: string | null;
+  note_de: string | null;
+  note_tr: string | null;
 };
 
 function normalizeLeadMinutes(value: number | null): ReminderLeadMinutes {
@@ -77,7 +83,7 @@ export async function GET(request: Request) {
       .eq("enabled", true),
     client
       .from("prayer_times")
-      .select("id, date, fajr, dhuhr, asr, maghrib, isha")
+      .select("id, date, fajr, dhuhr, asr, maghrib, isha, note, note_ar, note_en, note_de, note_tr")
       .eq("published", true)
       .gte("date", today)
       .lte("date", tomorrow),
@@ -120,9 +126,8 @@ export async function GET(request: Request) {
     }
   }
   const targets = filterPrayerPushTargets(pushTargets, nativeLeases, now);
-  // During the current testing phase every published schedule is intentionally
-  // eligible for real reminder delivery, including rows populated as QA/mock data.
-  const prayerSchedules = (schedules || []) as PrayerScheduleRow[];
+  const prayerSchedules = ((schedules || []) as PrayerScheduleRow[])
+    .filter((schedule) => !isPrayerScheduleQaRow(schedule));
   let due = 0;
   let sent = 0;
   let failed = 0;

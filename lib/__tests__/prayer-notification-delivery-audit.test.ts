@@ -7,14 +7,14 @@ function source(path: string) {
 }
 
 describe("prayer notification delivery audit", () => {
-  it("keeps every published testing schedule eligible for the real cron path", () => {
+  it("keeps published QA schedules out of the real cron path", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
 
     expect(cron).toContain('.from("prayer_times")');
     expect(cron).toContain('.eq("published", true)');
-    expect(cron).toContain("const prayerSchedules = (schedules || []) as PrayerScheduleRow[]");
-    expect(cron).not.toContain("QA_MOCK_MARKER");
-    expect(cron).not.toContain("schedule.note");
+    expect(cron).toContain("isPrayerScheduleQaRow");
+    expect(cron).toContain(".filter((schedule) => !isPrayerScheduleQaRow(schedule))");
+    expect(cron).toContain("note, note_ar, note_en, note_de, note_tr");
   });
 
   it("checks pre-Adhan and Adhan due windows every cron run", () => {

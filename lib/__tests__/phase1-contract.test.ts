@@ -81,9 +81,8 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(delivery).toContain('kind: isAdhan ? "adhan" : "prayer-reminder"');
     expect(cron).toContain("prayer:${schedule.date}:${prayer}:${time}:before:${leadMinutes}");
     expect(cron).toContain("prayer:${schedule.date}:${prayer}:${time}:adhan");
-    expect(cron).toContain('.select("id, date, fajr, dhuhr, asr, maghrib, isha")');
-    expect(cron).toContain("const prayerSchedules = (schedules || []) as PrayerScheduleRow[]");
-    expect(cron).not.toContain("QA_MOCK_MARKER");
+    expect(cron).toContain('.select("id, date, fajr, dhuhr, asr, maghrib, isha, note, note_ar, note_en, note_de, note_tr")');
+    expect(cron).toContain("isPrayerScheduleQaRow");
     expect(source("lib/push/web-push.ts")).toContain('reserveError?.code === "23505"');
   });
 

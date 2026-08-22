@@ -1,0 +1,141 @@
+name: One-time publish Android 1.0.0
+
+on:
+  push:
+    branches:
+      - ops/publish-android-v1.0.0
+    paths:
+      - .github/workflows/ops-publish-android-v1.0.0.yml
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+
+concurrency:
+  group: one-time-publish-android-v1.0.0
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  TARGET_MAIN_SHA: aded64a1533ab50491fbdb408f8ef586b46bdac8
+  SIGNED_SOURCE_SHA: 61d966457fee9e1d5b47186d3f6ab07c67cd35ae
+  SOURCE_RUN_ID: "32585377248"
+  SOURCE_ARTIFACT: danube-mosque-android-rc-61d966457fee9e1d5b47186d3f6ab07c67cd35ae
+  RELEASE_TAG: android-v1.0.0
+  EXPECTED_TREE_SHA: e0d67668edee853671c36f0f18cc64ed6813ce58
+  EXPECTED_CERT_SHA256: E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92
+  EXPECTED_APK_SHA256: 0328f919034d736990c9c4a7de52d4d1bc0b91cb6f0bea0b132f38e8c4f2a203
+  EXPECTED_AAB_SHA256: 47de8cea260d0bfbda3d46a55316bdf3b65b47bad35dd6d959fe7512f6355688
+
+jobs:
+  publish:
+    name: Verify protected RC and publish public release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify authorized source and current main identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          test "$main_sha" = "$TARGET_MAIN_SHA"
+
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID")"
+          test "$(printf '%s' "$run_json" | jq -r '.conclusion')" = "success"
+          test "$(printf '%s' "$run_json" | jq -r '.name')" = "Android TWA"
+          test "$(printf '%s' "$run_json" | jq -r '.head_sha')" = "$SIGNED_SOURCE_SHA"
+
+          signed_tree="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$SIGNED_SOURCE_SHA" --jq '.tree.sha')"
+          target_tree="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$TARGET_MAIN_SHA" --jq '.tree.sha')"
+          test "$signed_tree" = "$EXPECTED_TREE_SHA"
+          test "$target_tree" = "$EXPECTED_TREE_SHA"
+          test "$signed_tree" = "$target_tree"
+
+      - name: Download protected signed release candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.SOURCE_ARTIFACT }}
+          path: candidate
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android verification tools
+        run: sdkmanager "build-tools;36.0.0"
+
+      - name: Independently verify RC before publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd candidate
+          test -f danube-mosque.apk
+          test -f danube-mosque.aab
+          test -f SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          test "$(sha256sum danube-mosque.apk | awk '{print $1}')" = "$EXPECTED_APK_SHA256"
+          test "$(sha256sum danube-mosque.aab | awk '{print $1}')" = "$EXPECTED_AAB_SHA256"
+
+          signature="$($ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs danube-mosque.apk)"
+          cert="$(printf '%s\n' "$signature" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1 | sed 's/../&:/g;s/:$//' | tr '[:lower:]' '[:upper:]')"
+          test "$cert" = "$EXPECTED_CERT_SHA256"
+
+          badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging danube-mosque.apk)"
+          printf '%s\n' "$badging" | grep -F "package: name='de.donaumoschee.app' versionCode='2' versionName='1.0.0'"
+          printf '%s\n' "$badging" | grep -F "targetSdkVersion:'36'"
+
+          jarsigner -verify -verbose -certs danube-mosque.aab >/dev/null
+          aab_certificate="$(keytool -printcert -jarfile danube-mosque.aab)"
+          aab_cert="$(printf '%s\n' "$aab_certificate" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1 | tr '[:lower:]' '[:upper:]')"
+          test "$aab_cert" = "$EXPECTED_CERT_SHA256"
+
+      - name: Publish stable Android release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; verifying it instead of overwriting."
+          else
+            gh release create "$RELEASE_TAG" \
+              candidate/danube-mosque.apk \
+              candidate/danube-mosque.aab \
+              candidate/SHA256SUMS.txt \
+              --target "$TARGET_MAIN_SHA" \
+              --title "Danube Mosque Android 1.0.0" \
+              --notes "Production Android package de.donaumoschee.app version 1.0.0 (versionCode 2), signed by the permanent production certificate."
+          fi
+
+      - name: Verify public release assets byte-for-byte
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_json="$(gh release view "$RELEASE_TAG" --json isDraft,isPrerelease,tagName,targetCommitish,assets,url)"
+          test "$(printf '%s' "$release_json" | jq -r '.isDraft')" = "false"
+          test "$(printf '%s' "$release_json" | jq -r '.isPrerelease')" = "false"
+          test "$(printf '%s' "$release_json" | jq -r '.tagName')" = "$RELEASE_TAG"
+
+          mkdir public-release
+          gh release download "$RELEASE_TAG" --pattern 'danube-mosque.apk' --pattern 'danube-mosque.aab' --pattern 'SHA256SUMS.txt' --dir public-release
+          test "$(sha256sum public-release/danube-mosque.apk | awk '{print $1}')" = "$EXPECTED_APK_SHA256"
+          test "$(sha256sum public-release/danube-mosque.aab | awk '{print $1}')" = "$EXPECTED_AAB_SHA256"
+          (cd public-release && sha256sum --check SHA256SUMS.txt)
+
+      - name: Record successful publication on PR 46
+        if: success()
+        shell: bash
+        run: |
+          gh pr comment 46 --body "Android 1.0.0 production release published and independently re-downloaded/verified. Tag: \`android-v1.0.0\`; target main: \`$TARGET_MAIN_SHA\`; APK SHA-256: \`$EXPECTED_APK_SHA256\`. The website /download/android route can now resolve the stable \`danube-mosque.apk\` asset."
+
+      - name: Record publication failure on PR 46
+        if: failure()
+        shell: bash
+        run: |
+          gh pr comment 46 --body "Android 1.0.0 one-time publication workflow failed. No release asset should be trusted until the failed workflow is reviewed. Source signed RC SHA: \`$SIGNED_SOURCE_SHA\`; intended main target: \`$TARGET_MAIN_SHA\`."

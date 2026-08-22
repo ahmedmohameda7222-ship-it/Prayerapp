@@ -95,6 +95,8 @@ describe("Android server contracts", () => {
     const status = {
       native: true as const,
       packageId: "de.donaumoschee.app",
+      versionCode: 4,
+      versionName: "1.0.1",
       notificationPermission: true,
       notificationDeliveryEnabled: true,
       reminderChannelEnabled: true,
@@ -117,6 +119,8 @@ describe("Android server contracts", () => {
     const status = {
       native: true as const,
       packageId: "de.donaumoschee.app",
+      versionCode: 4,
+      versionName: "1.0.1",
       notificationPermission: true,
       notificationDeliveryEnabled: false,
       reminderChannelEnabled: true,

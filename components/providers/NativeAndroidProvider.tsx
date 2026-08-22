@@ -34,14 +34,33 @@ const NativeAndroidContext = createContext<ContextValue>({
 
 type PendingTest = { resolve: (success: boolean) => void; timer: number };
 
+function hasLegacyNativeState(status: NativeBridgeStatus | null) {
+  return Boolean(
+    status?.alarmScheduleInstalled
+    || status?.scheduleFresh
+    || status?.nativeReady
+    || status?.scheduleValidUntil,
+  );
+}
+
+function accountRequiresReset(
+  storedOwnerId: string | null,
+  currentUserId: string | null,
+  status: NativeBridgeStatus | null,
+) {
+  if (storedOwnerId !== null) return storedOwnerId !== currentUserId;
+  return hasLegacyNativeState(status);
+}
+
 export function NativeAndroidProvider({ children }: { children: React.ReactNode }) {
-  const { session } = usePublicAuth();
+  const { session, loading: authLoading } = usePublicAuth();
   const { pushStatus, enableNotifications } = useAppPreferences();
   const [status, setStatus] = useState<NativeBridgeStatus | null>(null);
   const [channelRevision, setChannelRevision] = useState(0);
   const [accountRevision, setAccountRevision] = useState(0);
   const portRef = useRef<MessagePort | null>(null);
   const accountTransitioningRef = useRef(false);
+  const syncGenerationRef = useRef(0);
   const pendingTests = useRef(new Map<string, PendingTest>());
 
   const send = useCallback((type: string, payload: Record<string, unknown> = {}) => {
@@ -60,6 +79,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
       const nested = message.payload.status;
       if (nested && typeof nested === "object") setStatus(nested as NativeBridgeStatus);
       localStorage.removeItem(NATIVE_ACCOUNT_OWNER_KEY);
+      syncGenerationRef.current += 1;
       accountTransitioningRef.current = false;
       setAccountRevision((current) => current + 1);
     } else if (message.type === "native.test.result") {
@@ -95,9 +115,10 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [handleNativeMessage]);
 
   const syncConfiguration = useCallback(async () => {
-    if (!portRef.current || accountTransitioningRef.current) return;
+    if (authLoading || !session?.user?.id || !portRef.current || accountTransitioningRef.current) return;
     const preferences = readNativePrayerPreferences();
     if (!preferences) return;
+    const syncGeneration = syncGenerationRef.current;
     const from = todayIso(new Date());
     try {
       const [scheduleResponse, catalogResponse] = await Promise.all([
@@ -113,11 +134,17 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
       };
       const catalog = await catalogResponse.json() as { schemaVersion: number; sounds: Array<Record<string, unknown>> };
       if (schedule.schemaVersion !== 1 || schedule.timeZone !== "Europe/Berlin" || !Array.isArray(schedule.rows) || schedule.rows.length === 0) return;
+      if (
+        accountTransitioningRef.current
+        || syncGeneration !== syncGenerationRef.current
+        || !portRef.current
+      ) return;
       const latestRowRevision = schedule.rows.reduce((latest, row) => {
         const updated = typeof row.updated_at === "string" ? row.updated_at : "";
         return updated > latest ? updated : latest;
       }, "");
       const scheduleValidUntil = zonedDateTime(addDaysIso(schedule.through, 1), "00:00").toISOString();
+      if (accountTransitioningRef.current || syncGeneration !== syncGenerationRef.current) return;
       send("web.configure", {
         schemaVersion: 1,
         revision: `${preferences.updatedAt}|${latestRowRevision}`.slice(0, 128),
@@ -130,7 +157,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     } catch (error) {
       console.warn("Native prayer configuration sync failed", error);
     }
-  }, [send]);
+  }, [authLoading, send, session?.user?.id]);
 
   useEffect(() => {
     const sync = () => { void syncConfiguration(); };
@@ -145,12 +172,19 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [enableNotifications, pushStatus, status?.notificationPermission]);
 
   useEffect(() => {
-    if (!status?.installationId || !status.credential || channelRevision === 0 || accountTransitioningRef.current) return;
+    if (
+      authLoading
+      || !status?.installationId
+      || !status.credential
+      || channelRevision === 0
+      || accountTransitioningRef.current
+    ) return;
     const currentUserId = session?.user?.id ?? null;
     const storedOwnerId = localStorage.getItem(NATIVE_ACCOUNT_OWNER_KEY);
-    if (!storedOwnerId || storedOwnerId === currentUserId) return;
+    if (!accountRequiresReset(storedOwnerId, currentUserId, status)) return;
 
     accountTransitioningRef.current = true;
+    syncGenerationRef.current += 1;
     const reset = async () => {
       try {
         await fetch("/api/android/native-authority/heartbeat", {
@@ -166,17 +200,21 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
       send("native.account.reset");
     };
     void reset();
-  }, [accountRevision, channelRevision, send, session?.user?.id, status?.credential, status?.installationId]);
+  }, [accountRevision, authLoading, channelRevision, send, session?.user?.id, status]);
 
   useEffect(() => {
     if (
-      !status?.installationId
+      authLoading
+      || !status?.installationId
       || !status.credential
       || !session?.access_token
       || !session.user?.id
       || channelRevision === 0
       || accountTransitioningRef.current
     ) return;
+    const storedOwnerId = localStorage.getItem(NATIVE_ACCOUNT_OWNER_KEY);
+    if (accountRequiresReset(storedOwnerId, session.user.id, status)) return;
+
     let active = true;
     const enroll = async () => {
       try {
@@ -205,7 +243,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     };
     void enroll();
     return () => { active = false; };
-  }, [accountRevision, channelRevision, send, session?.access_token, session?.user?.id, status?.credential, status?.installationId, syncConfiguration, pushStatus]);
+  }, [accountRevision, authLoading, channelRevision, send, session?.access_token, session?.user?.id, status, syncConfiguration, pushStatus]);
 
   const requestPermissions = useCallback(() => send("native.permissions.request", { mode: "both" }), [send]);
   const requestStatus = useCallback(() => send("native.status.request"), [send]);

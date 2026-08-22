@@ -134,7 +134,9 @@ public final class NativeStore {
     }
 
     public int accountGeneration() {
-        return preferences.getInt(ACCOUNT_GENERATION, 0);
+        synchronized (ACCOUNT_LOCK) {
+            return preferences.getInt(ACCOUNT_GENERATION, 0);
+        }
     }
 
     public int advanceAccountGeneration() {

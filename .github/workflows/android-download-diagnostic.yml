@@ -27,6 +27,11 @@ jobs:
           set -u
           echo '=== GitHub release ==='
           gh release view "$TAG" --json tagName,isDraft,isPrerelease,targetCommitish,assets --jq '{tagName,isDraft,isPrerelease,targetCommitish,assets:[.assets[]|{name,size,digest,url}]}' || true
+          rm -rf /tmp/release-meta && mkdir -p /tmp/release-meta
+          gh release download "$TAG" --pattern android-release.json --dir /tmp/release-meta || true
+          echo '=== Published android-release.json ==='
+          cat /tmp/release-meta/android-release.json || true
+          echo
 
           echo '=== Production release API ==='
           curl -sS -D /tmp/api.headers -o /tmp/api.body "$ORIGIN/api/android/release" || true
@@ -38,30 +43,30 @@ jobs:
           echo '=== Production download route (no redirects) ==='
           curl -sS -D /tmp/route.headers -o /tmp/route.body --max-redirs 0 "$ORIGIN/download/android" || true
           cat /tmp/route.headers || true
-          echo "route-body-bytes=$(wc -c < /tmp/route.body 2>/dev/null || echo 0)"
           route_location="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^[^:]*:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}' /tmp/route.headers)"
           echo "route-location=$route_location"
 
           echo '=== Direct GitHub release asset ==='
           direct="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ASSET}"
           curl -sS -L -D /tmp/direct.headers -o /tmp/direct.apk -w '\nfinal_url=%{url_effective}\nhttp=%{http_code}\ncontent_type=%{content_type}\nsize_download=%{size_download}\n' "$direct" || true
-          tail -n 80 /tmp/direct.headers || true
           ls -l /tmp/direct.apk || true
           file /tmp/direct.apk || true
           sha256sum /tmp/direct.apk || true
-          xxd -l 16 /tmp/direct.apk || true
-          unzip -t /tmp/direct.apk >/tmp/direct.unzip 2>&1; direct_unzip=$?; echo "direct_unzip_exit=$direct_unzip"; tail -n 20 /tmp/direct.unzip || true
+          unzip -t /tmp/direct.apk >/dev/null 2>&1; echo "direct_unzip_exit=$?"
 
           echo '=== Website route with redirects ==='
           curl -sS -L -D /tmp/site.headers -o /tmp/site.apk -w '\nfinal_url=%{url_effective}\nhttp=%{http_code}\ncontent_type=%{content_type}\nsize_download=%{size_download}\n' "$ORIGIN/download/android" || true
-          tail -n 120 /tmp/site.headers || true
           ls -l /tmp/site.apk || true
           file /tmp/site.apk || true
           sha256sum /tmp/site.apk || true
-          xxd -l 16 /tmp/site.apk || true
-          unzip -t /tmp/site.apk >/tmp/site.unzip 2>&1; site_unzip=$?; echo "site_unzip_exit=$site_unzip"; tail -n 20 /tmp/site.unzip || true
+          unzip -t /tmp/site.apk >/dev/null 2>&1; echo "site_unzip_exit=$?"
 
-          echo '=== Compare ==='
-          if [ -f /tmp/direct.apk ] && [ -f /tmp/site.apk ]; then cmp -s /tmp/direct.apk /tmp/site.apk; echo "binary_equal=$?"; fi
+          echo '=== Key response headers ==='
+          echo '-- route --'
+          grep -Ei '^(HTTP/|location:|content-type:|content-disposition:|content-length:)' /tmp/route.headers || true
+          echo '-- direct final --'
+          grep -Ei '^(HTTP/|location:|content-type:|content-disposition:|content-length:)' /tmp/direct.headers || true
+          echo '-- site final --'
+          grep -Ei '^(HTTP/|location:|content-type:|content-disposition:|content-length:)' /tmp/site.headers || true
 
           exit 0

@@ -14,6 +14,7 @@ import {
 
 const PRODUCTION_ORIGIN = "https://donaumoschee.vercel.app";
 const PUSH_STORAGE_KEY = "masjid-el-rahman-push-v1";
+const NATIVE_ACCOUNT_OWNER_KEY = "danube-native-account-owner-v1";
 
 type ContextValue = {
   isNative: boolean;
@@ -38,7 +39,9 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   const { pushStatus, enableNotifications } = useAppPreferences();
   const [status, setStatus] = useState<NativeBridgeStatus | null>(null);
   const [channelRevision, setChannelRevision] = useState(0);
+  const [accountRevision, setAccountRevision] = useState(0);
   const portRef = useRef<MessagePort | null>(null);
+  const accountTransitioningRef = useRef(false);
   const pendingTests = useRef(new Map<string, PendingTest>());
 
   const send = useCallback((type: string, payload: Record<string, unknown> = {}) => {
@@ -53,6 +56,12 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     } else if (message.type === "native.configure.result") {
       const nested = message.payload.status;
       if (nested && typeof nested === "object") setStatus(nested as NativeBridgeStatus);
+    } else if (message.type === "native.account.reset.result") {
+      const nested = message.payload.status;
+      if (nested && typeof nested === "object") setStatus(nested as NativeBridgeStatus);
+      localStorage.removeItem(NATIVE_ACCOUNT_OWNER_KEY);
+      accountTransitioningRef.current = false;
+      setAccountRevision((current) => current + 1);
     } else if (message.type === "native.test.result") {
       const key = typeof message.payload.mode === "string" ? message.payload.mode : "";
       const pending = pendingTests.current.get(key);
@@ -86,7 +95,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [handleNativeMessage]);
 
   const syncConfiguration = useCallback(async () => {
-    if (!portRef.current) return;
+    if (!portRef.current || accountTransitioningRef.current) return;
     const preferences = readNativePrayerPreferences();
     if (!preferences) return;
     const from = todayIso(new Date());
@@ -136,14 +145,45 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [enableNotifications, pushStatus, status?.notificationPermission]);
 
   useEffect(() => {
-    if (!status?.installationId || !status.credential || !session?.access_token || channelRevision === 0) return;
+    if (!status?.installationId || !status.credential || channelRevision === 0 || accountTransitioningRef.current) return;
+    const currentUserId = session?.user?.id ?? null;
+    const storedOwnerId = localStorage.getItem(NATIVE_ACCOUNT_OWNER_KEY);
+    if (!storedOwnerId || storedOwnerId === currentUserId) return;
+
+    accountTransitioningRef.current = true;
+    const reset = async () => {
+      try {
+        await fetch("/api/android/native-authority/heartbeat", {
+          method: "DELETE",
+          headers: {
+            "X-Native-Installation-Id": status.installationId!,
+            Authorization: `Native ${status.credential}`,
+          },
+        });
+      } catch (error) {
+        console.warn("Native authority revocation failed; local reset will still proceed", error);
+      }
+      send("native.account.reset");
+    };
+    void reset();
+  }, [accountRevision, channelRevision, send, session?.user?.id, status?.credential, status?.installationId]);
+
+  useEffect(() => {
+    if (
+      !status?.installationId
+      || !status.credential
+      || !session?.access_token
+      || !session.user?.id
+      || channelRevision === 0
+      || accountTransitioningRef.current
+    ) return;
     let active = true;
     const enroll = async () => {
       try {
         const stored = JSON.parse(localStorage.getItem(PUSH_STORAGE_KEY) || "null") as { browserId?: string } | null;
         const registration = await navigator.serviceWorker?.getRegistration("/");
         const subscription = await registration?.pushManager.getSubscription();
-        if (!stored?.browserId || !active) return;
+        if (!stored?.browserId || !active || accountTransitioningRef.current) return;
         const response = await fetch("/api/android/native-authority/enroll", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -154,7 +194,8 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
             endpoint: subscription?.endpoint || null,
           }),
         });
-        if (response.ok && active) {
+        if (response.ok && active && !accountTransitioningRef.current) {
+          localStorage.setItem(NATIVE_ACCOUNT_OWNER_KEY, session.user.id);
           send("native.status.request");
           void syncConfiguration();
         }
@@ -164,7 +205,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     };
     void enroll();
     return () => { active = false; };
-  }, [channelRevision, send, session?.access_token, status?.credential, status?.installationId, syncConfiguration, pushStatus]);
+  }, [accountRevision, channelRevision, send, session?.access_token, session?.user?.id, status?.credential, status?.installationId, syncConfiguration, pushStatus]);
 
   const requestPermissions = useCallback(() => send("native.permissions.request", { mode: "both" }), [send]);
   const requestStatus = useCallback(() => send("native.status.request"), [send]);

@@ -48,7 +48,7 @@ describe("Android direct-APK update system", () => {
     expect(provider).toContain("useNativeAndroid()");
     expect(provider).toContain("visibilitychange");
     expect(provider).toContain("UPDATE_CHECK_INTERVAL_MS");
-    expect(provider).toContain("window.location.assign(ANDROID_PUBLIC_DOWNLOAD_PATH)");
+    expect(provider).toContain("window.location.href = ANDROID_PUBLIC_DOWNLOAD_PATH");
     expect(provider).toContain("dismissUpdate");
     expect(provider).toContain("suspendNativeAuthority");
     const nativeProvider = source("components/providers/NativeAndroidProvider.tsx");

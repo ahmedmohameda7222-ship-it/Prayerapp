@@ -6,6 +6,7 @@ import android.util.Log;
 
 import de.donaumoschee.app.NativePermissionActivity;
 import de.donaumoschee.app.adhan.AdhanCatalog;
+import de.donaumoschee.app.adhan.AdhanPlaybackService;
 import de.donaumoschee.app.prayer.NativeStatus;
 import de.donaumoschee.app.prayer.Prayer;
 import de.donaumoschee.app.prayer.PrayerScheduler;
@@ -40,6 +41,7 @@ public final class BridgeHandler {
                 case "native.permissions.request": requestPermissions(envelope.payload); break;
                 case "native.status.request": sendStatus(); break;
                 case "native.test.schedule": scheduleTest(envelope.payload); break;
+                case "native.account.reset": resetAccount(); break;
                 default: throw new JSONException("Unsupported message type");
             }
         } catch (JSONException | RuntimeException error) {
@@ -78,6 +80,15 @@ public final class BridgeHandler {
         boolean scheduled = PrayerScheduler.scheduleTest(context, mode, prayer, soundId, delaySeconds);
         send("native.test.result", new JSONObject()
                 .put("success", scheduled).put("mode", mode).put("prayer", prayer.key).put("delaySeconds", delaySeconds));
+    }
+
+    private void resetAccount() throws JSONException {
+        PrayerScheduler.cancelAll(context);
+        context.stopService(new Intent(context, AdhanPlaybackService.class));
+        NativeStore store = new NativeStore(context);
+        store.clearAccountState();
+        Log.i(TAG, "bridge.account reset");
+        send("native.account.reset.result", new JSONObject().put("success", true).put("status", status()));
     }
 
     private JSONObject status() {

@@ -23,7 +23,7 @@ describe("Android direct APK distribution regression", () => {
     const release = source("lib/android-release.ts");
     const api = source("app/api/android/release/route.ts");
     expect(release).toContain(canonicalDownloadPath);
-    expect(api).toContain(canonicalDownloadPath);
+    expect(api).toContain("ANDROID_PUBLIC_DOWNLOAD_PATH");
   });
 
   it("serves the canonical APK-named endpoint with download identity before redirecting", () => {
@@ -34,18 +34,23 @@ describe("Android direct APK distribution regression", () => {
     expect(route).toContain("application/vnd.android.package-archive");
     expect(route).toContain('attachment; filename="danube-mosque.apk"');
     expect(route).toContain("getLatestAndroidRelease");
+    expect(route).toContain("export async function HEAD");
   });
 
   it("keeps the legacy extensionless endpoint as compatibility only", () => {
     const legacy = source("app/download/android/route.ts");
-    expect(legacy).toContain(canonicalDownloadPath);
+    expect(legacy).toContain("ANDROID_PUBLIC_DOWNLOAD_PATH");
     expect(legacy).not.toContain("selected.downloadUrl");
+    expect(legacy).not.toContain("getLatestAndroidRelease");
   });
 
-  it("smoke-tests the public API shape and the APK-named route instead of private metadata fields", () => {
+  it("smoke-tests public metadata separately from signed release metadata", () => {
     const smoke = source(".github/workflows/android-download-smoke.yml");
     expect(smoke).toContain(canonicalDownloadPath);
-    expect(smoke).not.toContain('.apkAsset == "danube-mosque.apk"');
-    expect(smoke).not.toContain(".apkSha256");
+    expect(smoke).toContain("/api/android/release");
+    expect(smoke).toContain("gh release download");
+    expect(smoke).toContain("expected_sha");
+    expect(smoke).toContain("content-disposition");
+    expect(smoke).toContain("unzip -t");
   });
 });

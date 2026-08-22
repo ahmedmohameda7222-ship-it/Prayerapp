@@ -55,6 +55,7 @@ public final class BridgeHandler {
         store.saveConfig(payload, Instant.now());
         boolean installed = PrayerScheduler.reschedule(context);
         Log.i(TAG, "bridge.config synchronized installed=" + installed);
+        NativeWork.initialize(context);
         NativeWork.cacheAudio(context);
         NativeWork.refreshNow(context);
         send("native.configure.result", new JSONObject().put("success", installed).put("status", status()));
@@ -83,11 +84,12 @@ public final class BridgeHandler {
     }
 
     private void resetAccount() throws JSONException {
+        NativeWork.cancelPrayerRefresh(context);
+        NativeStore store = new NativeStore(context);
+        int generation = store.resetAccountState();
         PrayerScheduler.cancelAll(context);
         context.stopService(new Intent(context, AdhanPlaybackService.class));
-        NativeStore store = new NativeStore(context);
-        store.clearAccountState();
-        Log.i(TAG, "bridge.account reset");
+        Log.i(TAG, "bridge.account reset generation=" + generation);
         send("native.account.reset.result", new JSONObject().put("success", true).put("status", status()));
     }
 

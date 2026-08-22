@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
+import { ANDROID_PUBLIC_DOWNLOAD_PATH } from "@/lib/android-release";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 function isStandalone() {
@@ -47,7 +48,7 @@ export function HomeInstallAction() {
 
   async function installOrExplain() {
     if (isAndroid()) {
-      window.location.assign("/download/android");
+      window.location.assign(ANDROID_PUBLIC_DOWNLOAD_PATH);
       return;
     }
 

@@ -22,15 +22,17 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
     expect(manifest.icons?.some((icon) => icon.sizes === "512x512")).toBe(true);
   });
 
-  it("routes Android users to the permanent native application download", () => {
+  it("routes Android users to the permanent APK-named native application download", () => {
     const homeInstall = source("components/home/HomeInstallAction.tsx");
     const settingsInstall = source("components/settings/InstallAppCard.tsx");
+    const release = source("lib/android-release.ts");
 
+    expect(release).toContain('"/download/android/danube-mosque.apk"');
     expect(homeInstall).toContain("if (isAndroid())");
-    expect(homeInstall).toContain('window.location.assign("/download/android")');
+    expect(homeInstall).toContain("window.location.assign(ANDROID_PUBLIC_DOWNLOAD_PATH)");
     expect(homeInstall).toContain("installed || isNative");
     expect(homeInstall.indexOf("if (isAndroid())")).toBeLessThan(homeInstall.indexOf("currentPrompt.prompt()"));
-    expect(settingsInstall).toContain('href="/download/android"');
+    expect(settingsInstall).toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");
     expect(settingsInstall).toContain("installed || isNative");
     expect(settingsInstall).not.toContain("ANDROID_INSTALL_STEPS");
   });

@@ -3,7 +3,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
-import { parsePublicAndroidRelease, type PublicAndroidRelease } from "@/lib/android-release";
+import {
+  ANDROID_PUBLIC_DOWNLOAD_PATH,
+  parsePublicAndroidRelease,
+  type PublicAndroidRelease,
+} from "@/lib/android-release";
 import { classifyAndroidUpdate, type AndroidUpdateKind } from "@/lib/android-update";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
@@ -107,7 +111,7 @@ export function AndroidUpdateProvider({ children }: { children: React.ReactNode 
   }, [release, updateKind]);
 
   const openUpdate = useCallback(() => {
-    window.location.assign("/download/android");
+    window.location.assign(ANDROID_PUBLIC_DOWNLOAD_PATH);
   }, []);
 
   const showPrompt = isNative && release && (

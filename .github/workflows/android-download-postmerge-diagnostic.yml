@@ -1,0 +1,97 @@
+name: Android download post-merge diagnostic
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/android-download-postmerge-diagnostic.yml"
+
+permissions:
+  contents: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  TAG: android-v1.0.1
+  PRODUCTION_ORIGIN: https://donaumoschee.vercel.app
+  DOWNLOAD_PATH: /download/android/danube-mosque.apk
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inspect published release and metadata
+        shell: bash
+        run: |
+          set +e
+          echo '=== gh version ==='
+          gh --version
+          echo '=== release summary ==='
+          gh release view "$TAG" --json tagName,isDraft,isPrerelease,isImmutable,publishedAt,assets > /tmp/release.json
+          rc=$?
+          echo "release-view-exit=$rc"
+          if [ -s /tmp/release.json ]; then
+            jq '{tagName,isDraft,isPrerelease,isImmutable,publishedAt,assets:(.assets | map({name,size,digest,url}))}' /tmp/release.json
+          fi
+          echo '=== download release metadata ==='
+          rm -rf /tmp/release-assets && mkdir -p /tmp/release-assets
+          gh release download "$TAG" --pattern android-release.json --dir /tmp/release-assets
+          echo "metadata-download-exit=$?"
+          if [ -f /tmp/release-assets/android-release.json ]; then
+            echo '--- android-release.json ---'
+            cat /tmp/release-assets/android-release.json
+            echo
+            echo '--- parsed types ---'
+            jq 'to_entries | map({key, value, type:(.value|type)})' /tmp/release-assets/android-release.json
+          fi
+
+      - name: Inspect production API and redirect headers
+        shell: bash
+        run: |
+          set +e
+          echo '=== /api/android/release ==='
+          curl -sS -D /tmp/api-headers -o /tmp/api-body "$PRODUCTION_ORIGIN/api/android/release"
+          echo "api-curl-exit=$?"
+          cat /tmp/api-headers || true
+          echo '--- body ---'
+          cat /tmp/api-body || true
+          echo
+
+          echo '=== canonical APK route ==='
+          curl -sS -D /tmp/canonical-headers -o /tmp/canonical-body --max-redirs 0 "$PRODUCTION_ORIGIN$DOWNLOAD_PATH"
+          echo "canonical-curl-exit=$?"
+          cat /tmp/canonical-headers || true
+          echo '--- body bytes ---'
+          wc -c /tmp/canonical-body 2>/dev/null || true
+          echo
+
+          echo '=== legacy route ==='
+          curl -sS -D /tmp/legacy-headers -o /tmp/legacy-body --max-redirs 0 "$PRODUCTION_ORIGIN/download/android"
+          echo "legacy-curl-exit=$?"
+          cat /tmp/legacy-headers || true
+          echo '--- body bytes ---'
+          wc -c /tmp/legacy-body 2>/dev/null || true
+
+      - name: Follow canonical download and inspect file
+        shell: bash
+        run: |
+          set +e
+          rm -f /tmp/live.apk
+          curl -sS -L -D /tmp/follow-headers "$PRODUCTION_ORIGIN$DOWNLOAD_PATH" -o /tmp/live.apk
+          rc=$?
+          echo "download-exit=$rc"
+          echo '=== redirect chain headers ==='
+          cat /tmp/follow-headers || true
+          if [ -f /tmp/live.apk ]; then
+            echo '=== downloaded file ==='
+            stat -c 'size=%s' /tmp/live.apk || true
+            sha256sum /tmp/live.apk || true
+            file /tmp/live.apk || true
+            unzip -t /tmp/live.apk >/tmp/unzip.log 2>&1
+            echo "unzip-exit=$?"
+            tail -n 20 /tmp/unzip.log || true
+          fi
+
+      - name: Diagnostic completion
+        run: echo 'Read-only diagnostic completed; inspect previous step logs for exact failing boundary.'

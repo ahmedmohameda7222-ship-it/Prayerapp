@@ -25,6 +25,8 @@ public final class NativeStore {
     private static final String ENGINE_HEALTHY = "engine-healthy";
     private static final String LAST_ERROR = "last-error";
     private static final String SCHEDULED_REQUEST_CODES = "scheduled-request-codes";
+    private static final String ACCOUNT_GENERATION = "account-generation";
+    private static final Object ACCOUNT_LOCK = new Object();
 
     private final SharedPreferences preferences;
 
@@ -32,12 +34,24 @@ public final class NativeStore {
         preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
     }
 
-    public synchronized NativeConfig saveConfig(JSONObject object, Instant now) throws JSONException {
+    public NativeConfig saveConfig(JSONObject object, Instant now) throws JSONException {
         NativeConfig config = NativeConfig.parse(object, now);
         if (!preferences.edit().putString(CONFIG, config.source.toString()).putBoolean(ENGINE_HEALTHY, true).putString(LAST_ERROR, "").commit()) {
             throw new JSONException("Could not persist native config");
         }
         return config;
+    }
+
+    public boolean saveConfigIfGeneration(JSONObject object, Instant now, int generation) throws JSONException {
+        synchronized (ACCOUNT_LOCK) {
+            if (accountGeneration() != generation) return false;
+            NativeConfig config = NativeConfig.parse(object, now);
+            return preferences.edit()
+                    .putString(CONFIG, config.source.toString())
+                    .putBoolean(ENGINE_HEALTHY, true)
+                    .putString(LAST_ERROR, "")
+                    .commit();
+        }
     }
 
     public NativeConfig loadConfig(Instant now) {
@@ -119,8 +133,45 @@ public final class NativeStore {
         preferences.edit().putStringSet(SCHEDULED_REQUEST_CODES, new HashSet<>(values)).apply();
     }
 
+    public int accountGeneration() {
+        return preferences.getInt(ACCOUNT_GENERATION, 0);
+    }
+
+    public int advanceAccountGeneration() {
+        synchronized (ACCOUNT_LOCK) {
+            return advanceAccountGenerationLocked();
+        }
+    }
+
+    public int resetAccountState() {
+        synchronized (ACCOUNT_LOCK) {
+            int generation = advanceAccountGenerationLocked();
+            if (!clearAccountStateLocked()) {
+                throw new IllegalStateException("Could not reset native account state");
+            }
+            return generation;
+        }
+    }
+
     public void clearAccountState() {
-        preferences.edit()
+        synchronized (ACCOUNT_LOCK) {
+            if (!clearAccountStateLocked()) {
+                throw new IllegalStateException("Could not clear native account state");
+            }
+        }
+    }
+
+    private int advanceAccountGenerationLocked() {
+        int current = preferences.getInt(ACCOUNT_GENERATION, 0);
+        int next = current == Integer.MAX_VALUE ? 1 : current + 1;
+        if (!preferences.edit().putInt(ACCOUNT_GENERATION, next).commit()) {
+            throw new IllegalStateException("Could not advance native account generation");
+        }
+        return next;
+    }
+
+    private boolean clearAccountStateLocked() {
+        return preferences.edit()
                 .remove(CONFIG)
                 .remove(DELIVERED)
                 .putBoolean(SCHEDULE_INSTALLED, false)

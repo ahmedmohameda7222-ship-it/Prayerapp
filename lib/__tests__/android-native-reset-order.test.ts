@@ -18,4 +18,10 @@ describe("Android native reset ordering", () => {
     const resetMethod = store.slice(store.indexOf("public int resetAccountState()"), store.indexOf("public void clearAccountState()"));
     expect(resetMethod).not.toContain("remove(SCHEDULED_REQUEST_CODES)");
   });
+
+  it("reads account generation under the same lock used by reset", () => {
+    const store = source("android-twa/app/src/main/java/de/donaumoschee/app/storage/NativeStore.java");
+    const generationMethod = store.slice(store.indexOf("public int accountGeneration()"), store.indexOf("public int advanceAccountGeneration()"));
+    expect(generationMethod).toContain("synchronized (ACCOUNT_LOCK)");
+  });
 });

@@ -73,26 +73,54 @@ describe("long-term Android TWA contract", () => {
     expect(published).not.toContain(forbiddenFingerprintPlaceholder);
   });
 
-  it("keeps Android CI pinned and preserves main-only Vercel deployment", () => {
+  it("keeps automatic Android PR CI unsigned and isolates manual RC signing", () => {
     const workflow = read(".github/workflows/android-twa.yml");
     expect(workflow).toContain("./gradlew");
     expect(workflow).toContain('sdkmanager "platforms;android-36"');
     expect(workflow).toContain(":app:testDebugUnitTest :app:lintDebug :app:assembleDebug");
-    expect(workflow).toContain("ANDROID_KEYSTORE_BASE64");
-    expect(workflow).toContain(":app:lintRelease :app:testReleaseUnitTest :app:assembleRelease :app:bundleRelease");
+    expect(workflow).toContain(":app:testReleaseUnitTest :app:lintRelease :app:assembleRelease :app:bundleRelease");
+    expect(workflow).toContain("danube-mosque-unsigned-candidate");
+
+    const signer = workflow.slice(workflow.indexOf("signed_release_candidate:"));
+    const automatic = workflow.slice(0, workflow.indexOf("signed_release_candidate:"));
+    expect(automatic).not.toContain("ANDROID_KEYSTORE_BASE64");
+    expect(automatic).not.toContain("ANDROID_KEYSTORE_PASSWORD");
+    expect(automatic).not.toContain("ANDROID_KEY_PASSWORD");
+    expect(signer).toContain("github.event_name == 'workflow_dispatch'");
+    expect(signer).toContain("environment: android-production");
+    expect(signer).toContain("SIGN_ANDROID_RC");
+    expect(signer).toContain("actions/download-artifact@v4");
+    expect(signer).not.toContain("actions/checkout");
     expect(workflow).toContain("apksigner verify --verbose --print-certs");
     expect(workflow).toContain("E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92");
     expect(workflow).toContain("danube-mosque.apk");
     expect(workflow).toContain("danube-mosque.aab");
+  });
 
+  it("derives production identity from the TWA manifest and runs only from main", () => {
     const productionWorkflow = read(".github/workflows/android-production-release.yml");
     expect(productionWorkflow).toContain("workflow_dispatch");
     expect(productionWorkflow).toContain("contents: write");
     expect(productionWorkflow).toContain("confirmation");
     expect(productionWorkflow).toContain("PUBLISH_ANDROID_PRODUCTION");
+    expect(productionWorkflow).toContain("github.ref == 'refs/heads/main'");
+    expect(productionWorkflow).toContain('package_id="$(jq -r ".packageId" android-twa/twa-manifest.json)"');
+    expect(productionWorkflow).toContain('version_code="$(jq -r ".versionCode" android-twa/twa-manifest.json)"');
+    expect(productionWorkflow).toContain('version_name="$(jq -r ".versionName" android-twa/twa-manifest.json)"');
+    expect(productionWorkflow).toContain('target_sdk="$(jq -r ".targetSdkVersion" android-twa/twa-manifest.json)"');
+    expect(productionWorkflow).toContain('test "${{ inputs.tag }}" = "android-v$version_name"');
+    expect(productionWorkflow).toContain("previous_version_code");
+    expect(productionWorkflow).not.toContain("versionCode='2'");
+    expect(productionWorkflow).not.toContain("versionName='1.0.0'");
     expect(productionWorkflow).toContain('test "$head_branch" = "main"');
     expect(productionWorkflow).toContain("gh release create");
 
+    const config = JSON.parse(read("android-twa/twa-manifest.json")) as Record<string, unknown>;
+    expect(config.versionCode).toBe(2);
+    expect(config.versionName).toBe("1.0.0");
+  });
+
+  it("preserves main-only Vercel deployment", () => {
     const vercel = JSON.parse(read("vercel.json")) as {
       git?: { deploymentEnabled?: Record<string, boolean> };
     };

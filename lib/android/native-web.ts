@@ -19,6 +19,9 @@ export type NativeBridgeStatus = {
   native: true;
   packageId: string;
   notificationPermission: boolean;
+  notificationDeliveryEnabled: boolean;
+  reminderChannelEnabled: boolean;
+  adhanChannelEnabled: boolean;
   exactAlarmPermission: boolean;
   scheduleFresh: boolean;
   alarmScheduleInstalled: boolean;

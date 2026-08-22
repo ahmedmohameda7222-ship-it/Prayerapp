@@ -65,6 +65,9 @@ public final class NativeRefreshWorker extends Worker {
             Object scheduleValidUntil = status.opt("scheduleValidUntil");
             JSONObject body = new JSONObject()
                     .put("notificationPermission", status.getBoolean("notificationPermission"))
+                    .put("notificationDeliveryEnabled", status.getBoolean("notificationDeliveryEnabled"))
+                    .put("reminderChannelEnabled", status.getBoolean("reminderChannelEnabled"))
+                    .put("adhanChannelEnabled", status.getBoolean("adhanChannelEnabled"))
                     .put("exactAlarmPermission", status.getBoolean("exactAlarmPermission"))
                     .put("scheduleFresh", syncSucceeded && status.getBoolean("scheduleFresh"))
                     .put("alarmScheduleInstalled", status.getBoolean("alarmScheduleInstalled"))

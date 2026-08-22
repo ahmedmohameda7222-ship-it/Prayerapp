@@ -1,7 +1,6 @@
 package de.donaumoschee.app;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -9,16 +8,26 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 
+import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
 import de.donaumoschee.app.prayer.NativeStatus;
 import de.donaumoschee.app.prayer.PrayerScheduler;
 import de.donaumoschee.app.workers.NativeWork;
 
-public final class NativePermissionActivity extends Activity {
+public final class NativePermissionActivity extends ComponentActivity {
     private static final String TAG = "DanubePrayer";
     public static final String EXTRA_MODE = "permission-mode";
-    private static final int NOTIFICATION_REQUEST = 72;
     private String mode;
-    private boolean waitingForExactSettings;
+    private final ActivityResultLauncher<String> notificationPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            ignored -> continueAfterNotification()
+    );
+    private final ActivityResultLauncher<Intent> exactAlarmSettingsLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            ignored -> finishAndRepair()
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,38 +35,26 @@ public final class NativePermissionActivity extends Activity {
         mode = getIntent().getStringExtra(EXTRA_MODE);
         if (mode == null) mode = "both";
         if ((mode.equals("notification") || mode.equals("both")) && Build.VERSION.SDK_INT >= 33 && !NativeStatus.hasNotificationPermission(this)) {
-            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_REQUEST);
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
         } else {
             continueAfterNotification();
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == NOTIFICATION_REQUEST) continueAfterNotification();
-    }
-
     private void continueAfterNotification() {
         if ((mode.equals("exactAlarm") || mode.equals("both")) && Build.VERSION.SDK_INT >= 31 && !NativeStatus.hasExactAlarmPermission(this)) {
-            waitingForExactSettings = true;
-            startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:" + getPackageName())));
+            exactAlarmSettingsLauncher.launch(new Intent(
+                    Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                    Uri.parse("package:" + getPackageName())
+            ));
             return;
         }
         finishAndRepair();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (waitingForExactSettings) {
-            waitingForExactSettings = false;
-            finishAndRepair();
-        }
-    }
-
     private void finishAndRepair() {
-        Log.i(TAG, "permission.result notification=" + NativeStatus.hasNotificationPermission(this) + " exact=" + NativeStatus.hasExactAlarmPermission(this));
+        boolean exactAlarmPermission = NativeStatus.hasExactAlarmPermission(this);
+        Log.i(TAG, "permission.result notification=" + NativeStatus.hasNotificationPermission(this) + " exact=" + exactAlarmPermission);
         PrayerScheduler.reschedule(this);
         NativeWork.refreshNow(this);
         finish();

@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       tag:
-        description: Production Android tag, for example android-v1.0.0
+        description: Production Android tag matching android-v<manifest versionName>
         required: true
         type: string
       confirmation:
@@ -27,8 +27,9 @@ env:
 jobs:
   publish:
     name: Verify and publish approved Android production artifacts
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     environment: android-production
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -38,15 +39,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Require explicit publication authorization
+      - name: Require trusted current-main execution
         shell: bash
         run: |
           set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          git fetch origin main
+          test "$GITHUB_SHA" = "$(git rev-parse HEAD)"
+          test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
+
+      - name: Derive and validate Android release metadata
+        id: manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_id="$(jq -r ".packageId" android-twa/twa-manifest.json)"
+          version_code="$(jq -r ".versionCode" android-twa/twa-manifest.json)"
+          version_name="$(jq -r ".versionName" android-twa/twa-manifest.json)"
+          target_sdk="$(jq -r ".targetSdkVersion" android-twa/twa-manifest.json)"
+          test "$package_id" = "de.donaumoschee.app"
+          [[ "$version_code" =~ ^[1-9][0-9]*$ ]]
+          [[ "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$target_sdk" =~ ^[1-9][0-9]*$ ]]
           test '${{ inputs.confirmation }}' = 'PUBLISH_ANDROID_PRODUCTION'
-          [[ '${{ inputs.tag }}' =~ ^android-v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "${{ inputs.tag }}" = "android-v$version_name"
+          {
+            printf 'package_id=%s\n' "$package_id"
+            printf 'version_code=%s\n' "$version_code"
+            printf 'version_name=%s\n' "$version_name"
+            printf 'target_sdk=%s\n' "$target_sdk"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Verify source workflow is green on current main
         id: source
@@ -61,9 +86,8 @@ jobs:
           test "$conclusion" = "success"
           test "$head_branch" = "main"
           test "$workflow_name" = "Android TWA"
-          test "$head_sha" = "$(git rev-parse HEAD)"
+          test "$head_sha" = "$GITHUB_SHA"
           printf 'head_sha=%s\n' "$head_sha" >> "$GITHUB_OUTPUT"
-
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -76,6 +100,22 @@ jobs:
 
       - name: Install verification tools
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Enforce monotonic versionCode against latest Android release
+        shell: bash
+        env:
+          VERSION_CODE: ${{ steps.manifest.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          latest_tag="$(gh release list --exclude-drafts --exclude-pre-releases --limit 100 --json tagName,publishedAt --jq '[.[] | select(.tagName | test("^android-v[0-9]+\\.[0-9]+\\.[0-9]+$"))] | sort_by(.publishedAt) | last | .tagName // empty')"
+          if [ -n "$latest_tag" ]; then
+            mkdir previous-release
+            gh release download "$latest_tag" --pattern danube-mosque.apk --dir previous-release
+            previous_badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging previous-release/danube-mosque.apk)"
+            previous_version_code="$(printf '%s\n' "$previous_badging" | sed -n "s/^package:.*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
+            [[ "$previous_version_code" =~ ^[1-9][0-9]*$ ]]
+            test "$VERSION_CODE" -gt "$previous_version_code"
+          fi
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
@@ -118,19 +158,21 @@ jobs:
 
       - name: Independently verify production artifacts
         shell: bash
+        env:
+          PACKAGE_ID: ${{ steps.manifest.outputs.package_id }}
+          VERSION_CODE: ${{ steps.manifest.outputs.version_code }}
+          VERSION_NAME: ${{ steps.manifest.outputs.version_name }}
+          TARGET_SDK: ${{ steps.manifest.outputs.target_sdk }}
         run: |
           set -euo pipefail
           cd candidate
-          test -f danube-mosque.apk
-          test -f danube-mosque.aab
-          test -f SHA256SUMS.txt
           sha256sum --check SHA256SUMS.txt
           signature="$($ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs danube-mosque.apk)"
           actual="$(printf '%s\n' "$signature" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1 | sed 's/../&:/g;s/:$//' | tr '[:lower:]' '[:upper:]')"
           test "$actual" = "$EXPECTED_CERT_SHA256"
           badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging danube-mosque.apk)"
-          printf '%s\n' "$badging" | grep -F "package: name='de.donaumoschee.app' versionCode='2' versionName='1.0.0'"
-          printf '%s\n' "$badging" | grep -F "targetSdkVersion:'36'"
+          printf '%s\n' "$badging" | grep -F "package: name='$PACKAGE_ID' versionCode='$VERSION_CODE' versionName='$VERSION_NAME'"
+          printf '%s\n' "$badging" | grep -F "targetSdkVersion:'$TARGET_SDK'"
           jarsigner -verify -verbose -certs danube-mosque.aab
           aab_certificate="$(keytool -printcert -jarfile danube-mosque.aab)"
           aab_actual="$(printf '%s\n' "$aab_certificate" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1 | tr '[:lower:]' '[:upper:]')"
@@ -151,5 +193,5 @@ jobs:
             candidate/danube-mosque.aab \
             candidate/SHA256SUMS.txt \
             --target '${{ steps.source.outputs.head_sha }}' \
-            --title 'Danube Mosque Android ${{ inputs.tag }}' \
-            --notes 'Production Android package de.donaumoschee.app. APK and Play Store AAB are signed by the permanent production certificate.'
+            --title 'Danube Mosque Android ${{ steps.manifest.outputs.version_name }}' \
+            --notes 'Production Android package ${{ steps.manifest.outputs.package_id }}. APK and Play Store AAB are signed by the permanent production certificate.'

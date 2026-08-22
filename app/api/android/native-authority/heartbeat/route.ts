@@ -42,6 +42,9 @@ export async function POST(request: Request) {
     .update({
       native_ready: heartbeat.nativeReady,
       notification_permission: heartbeat.notificationPermission,
+      notification_delivery_enabled: heartbeat.notificationDeliveryEnabled,
+      reminder_channel_enabled: heartbeat.reminderChannelEnabled,
+      adhan_channel_enabled: heartbeat.adhanChannelEnabled,
       exact_alarm_permission: heartbeat.exactAlarmPermission,
       schedule_fresh: heartbeat.scheduleFresh,
       alarm_schedule_installed: heartbeat.alarmScheduleInstalled,

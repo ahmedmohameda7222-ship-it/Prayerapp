@@ -4,6 +4,7 @@ import {
   parseScheduleRequest,
 } from "@/lib/android/contracts";
 import { parseNativeMessage } from "@/lib/android/native-web";
+import { nativeStatusKind } from "@/lib/android/native-status";
 
 describe("Android server contracts", () => {
   it("bounds published schedule requests", () => {
@@ -19,6 +20,9 @@ describe("Android server contracts", () => {
   it("grants readiness only for a complete healthy native engine report", () => {
     const parsed = parseNativeHeartbeat({
       notificationPermission: true,
+      notificationDeliveryEnabled: true,
+      reminderChannelEnabled: true,
+      adhanChannelEnabled: true,
       exactAlarmPermission: true,
       scheduleFresh: true,
       alarmScheduleInstalled: true,
@@ -29,9 +33,34 @@ describe("Android server contracts", () => {
     expect(parsed?.nativeReady).toBe(true);
   });
 
+  it.each([
+    "notificationPermission",
+    "notificationDeliveryEnabled",
+    "reminderChannelEnabled",
+    "adhanChannelEnabled",
+  ] as const)("revokes readiness when %s is false", (field) => {
+    const heartbeat = {
+      notificationPermission: true,
+      notificationDeliveryEnabled: true,
+      reminderChannelEnabled: true,
+      adhanChannelEnabled: true,
+      exactAlarmPermission: true,
+      scheduleFresh: true,
+      alarmScheduleInstalled: true,
+      audioReady: true,
+      engineHealthy: true,
+      scheduleValidUntil: "2026-08-25T00:00:00.000Z",
+      [field]: false,
+    };
+    expect(parseNativeHeartbeat(heartbeat, new Date("2026-08-22T08:00:00.000Z"))?.nativeReady).toBe(false);
+  });
+
   it("never treats an invalid or stale schedule report as ready", () => {
     expect(parseNativeHeartbeat({
       notificationPermission: true,
+      notificationDeliveryEnabled: true,
+      reminderChannelEnabled: true,
+      adhanChannelEnabled: true,
       exactAlarmPermission: true,
       scheduleFresh: true,
       alarmScheduleInstalled: true,
@@ -47,5 +76,29 @@ describe("Android server contracts", () => {
     expect(parseNativeMessage('{"version":2,"type":"native.ready","payload":{}}')).toBeNull();
     expect(parseNativeMessage('{"version":1,"type":"web.configure","payload":{}}')).toBeNull();
     expect(parseNativeMessage('{"version":1,"type":"native.ready","payload":[]}')).toBeNull();
+  });
+
+  it("classifies disabled notification delivery as system access required", () => {
+    const status = {
+      native: true as const,
+      packageId: "de.donaumoschee.app",
+      notificationPermission: true,
+      notificationDeliveryEnabled: false,
+      reminderChannelEnabled: true,
+      adhanChannelEnabled: true,
+      exactAlarmPermission: true,
+      scheduleFresh: true,
+      alarmScheduleInstalled: true,
+      audioReady: true,
+      engineHealthy: true,
+      nativeReady: false,
+    };
+    expect(nativeStatusKind(status)).toBe("needs-system-access");
+    expect(nativeStatusKind({ ...status, notificationDeliveryEnabled: true, reminderChannelEnabled: false }))
+      .toBe("needs-system-access");
+    expect(nativeStatusKind({ ...status, notificationDeliveryEnabled: true, adhanChannelEnabled: false }))
+      .toBe("needs-system-access");
+    expect(nativeStatusKind({ ...status, notificationDeliveryEnabled: true, nativeReady: true }))
+      .toBe("ready");
   });
 });

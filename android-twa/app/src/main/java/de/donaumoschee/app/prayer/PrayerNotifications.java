@@ -31,7 +31,7 @@ public final class PrayerNotifications {
     }
 
     public static void showReminder(Context context, String eventId, Prayer prayer, int leadMinutes) {
-        if (!NativeStatus.hasNotificationPermission(context)) return;
+        if (!NativeStatus.notificationCapabilities(context).reminderDeliveryReady()) return;
         Intent launch = new Intent(context, LauncherActivity.class).setData(android.net.Uri.parse("https://donaumoschee.vercel.app/?reminder=" + prayer.key + "#prayer-times"));
         PendingIntent content = PendingIntent.getActivity(context, prayer.ordinal(), launch, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, REMINDER_CHANNEL)

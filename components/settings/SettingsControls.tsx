@@ -8,12 +8,13 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
 import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
+import { nativeStatusKind } from "@/lib/android/native-status";
 
 const NATIVE_COPY = {
-  ar: { ready: "التنبيهات والأذان الأصليان جاهزان.", needsPermission: "يلزم إذن الإشعارات والمنبّه الدقيق.", unhealthy: "المحرك الأصلي غير جاهز؛ ستبقى إشعارات الويب الاحتياطية فعالة.", grant: "تفعيل أذونات أندرويد", refresh: "إعادة فحص الحالة" },
-  en: { ready: "Native reminders and Adhan are ready.", needsPermission: "Notification and exact-alarm access are required.", unhealthy: "The native engine is not ready; fallback Web Push remains active.", grant: "Enable Android permissions", refresh: "Check status again" },
-  de: { ready: "Native Erinnerungen und Adhan sind bereit.", needsPermission: "Benachrichtigungs- und Exaktalarmzugriff sind erforderlich.", unhealthy: "Die native Engine ist nicht bereit; Web Push bleibt als Rückfall aktiv.", grant: "Android-Berechtigungen aktivieren", refresh: "Status erneut prüfen" },
-  tr: { ready: "Yerel hatırlatıcılar ve ezan hazır.", needsPermission: "Bildirim ve tam alarm izni gerekli.", unhealthy: "Yerel motor hazır değil; yedek Web Push etkin kalır.", grant: "Android izinlerini etkinleştir", refresh: "Durumu yeniden kontrol et" },
+  ar: { ready: "التنبيهات والأذان الأصليان جاهزان.", needsPermission: "فعّل إشعارات التطبيق وقناتي تذكير الصلاة والأذان والمنبّه الدقيق في إعدادات أندرويد.", unhealthy: "المحرك الأصلي غير جاهز؛ ستبقى إشعارات الويب الاحتياطية فعالة.", grant: "تفعيل أذونات أندرويد", refresh: "إعادة فحص الحالة" },
+  en: { ready: "Native reminders and Adhan are ready.", needsPermission: "Enable app notifications, both prayer/Adhan channels, and exact alarms in Android settings.", unhealthy: "The native engine is not ready; fallback Web Push remains active.", grant: "Enable Android permissions", refresh: "Check status again" },
+  de: { ready: "Native Erinnerungen und Adhan sind bereit.", needsPermission: "Aktiviere App-Benachrichtigungen, beide Gebets-/Adhan-Kanäle und Exaktalarme in den Android-Einstellungen.", unhealthy: "Die native Engine ist nicht bereit; Web Push bleibt als Rückfall aktiv.", grant: "Android-Berechtigungen aktivieren", refresh: "Status erneut prüfen" },
+  tr: { ready: "Yerel hatırlatıcılar ve ezan hazır.", needsPermission: "Android ayarlarında uygulama bildirimlerini, namaz/ezan kanallarını ve tam alarmları etkinleştirin.", unhealthy: "Yerel motor hazır değil; yedek Web Push etkin kalır.", grant: "Android izinlerini etkinleştir", refresh: "Durumu yeniden kontrol et" },
 } as const;
 
 const timeFormatOptions = [
@@ -27,6 +28,7 @@ export function SettingsControls() {
   const { pushStatus, busy, enableNotifications, disableNotifications } = useAppPreferences();
   const { isNative, status: nativeStatus, requestPermissions, requestStatus } = useNativeAndroid();
   const nativeCopy = NATIVE_COPY[locale];
+  const nativeKind = nativeStatusKind(nativeStatus);
 
   const statusKey = {
     checking: "settings.pushChecking",
@@ -49,9 +51,9 @@ export function SettingsControls() {
         <p className="mt-1 text-sm leading-6">{t("settings.automaticContentNotifications")}</p>
         <p className="mt-3 rounded-[12px] bg-[var(--app-surface-soft)] p-3 text-sm font-semibold text-[var(--app-brand-strong)]" role="status">
           {isNative
-            ? nativeStatus?.nativeReady
+            ? nativeKind === "ready"
               ? nativeCopy.ready
-              : !nativeStatus?.notificationPermission || !nativeStatus?.exactAlarmPermission
+              : nativeKind === "needs-system-access"
                 ? nativeCopy.needsPermission
                 : nativeCopy.unhealthy
             : t(statusKey)}

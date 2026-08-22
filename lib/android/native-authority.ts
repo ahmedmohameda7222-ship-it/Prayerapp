@@ -4,6 +4,9 @@ export type NativeAuthorityLease = {
   push_subscription_id: string | null;
   native_ready: boolean;
   notification_permission: boolean;
+  notification_delivery_enabled: boolean;
+  reminder_channel_enabled: boolean;
+  adhan_channel_enabled: boolean;
   exact_alarm_permission: boolean;
   schedule_fresh: boolean;
   alarm_schedule_installed: boolean;
@@ -22,6 +25,9 @@ function isFuture(value: string | null, nowMs: number) {
 function leaseIsHealthy(lease: NativeAuthorityLease, nowMs: number) {
   return lease.native_ready
     && lease.notification_permission
+    && lease.notification_delivery_enabled
+    && lease.reminder_channel_enabled
+    && lease.adhan_channel_enabled
     && lease.exact_alarm_permission
     && lease.schedule_fresh
     && lease.alarm_schedule_installed

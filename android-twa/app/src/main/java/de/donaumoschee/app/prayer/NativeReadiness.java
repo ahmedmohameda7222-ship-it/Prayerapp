@@ -5,6 +5,9 @@ public final class NativeReadiness {
 
     public static boolean isReady(
             boolean notificationPermission,
+            boolean notificationDeliveryEnabled,
+            boolean reminderChannelEnabled,
+            boolean adhanChannelEnabled,
             boolean exactAlarmPermission,
             boolean scheduleFresh,
             boolean alarmScheduleInstalled,
@@ -12,6 +15,9 @@ public final class NativeReadiness {
             boolean engineHealthy
     ) {
         return notificationPermission
+                && notificationDeliveryEnabled
+                && reminderChannelEnabled
+                && adhanChannelEnabled
                 && exactAlarmPermission
                 && scheduleFresh
                 && alarmScheduleInstalled

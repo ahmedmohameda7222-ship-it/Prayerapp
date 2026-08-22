@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { ADHAN_SOUNDS } from "@/lib/adhan-audio";
 
 const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
@@ -26,17 +27,40 @@ describe("Android production completion contract", () => {
     expect(service).toContain("extends MediaSessionService");
     expect(service).toContain("setWakeMode(C.WAKE_MODE_LOCAL)");
     expect(service).toContain("CommandButton.ICON_STOP");
-    expect(service).toContain('setChannelId("adhan-playback-v1")');
+    expect(service).toContain('CHANNEL = "adhan-playback-v1"');
+    expect(service).toContain("setChannelId(CHANNEL)");
     expect(controls).toContain('scheduleTest("adhan"');
     expect(controls).toContain('scheduleTest("reminder"');
   });
 
-  it("keeps the verified Madinah Fajr audio source identical in web and native catalogs", () => {
-    const webCatalog = source("lib/adhan-audio.ts");
+  it("handles exact-alarm settings return through Activity Result without consuming initial resume", () => {
+    const activity = source("android-twa/app/src/main/java/de/donaumoschee/app/NativePermissionActivity.java");
+    const gradle = source("android-twa/app/build.gradle");
+    expect(activity).toContain("extends ComponentActivity");
+    expect(activity).toContain("registerForActivityResult");
+    expect(activity).toContain("ActivityResultContracts.StartActivityForResult");
+    expect(activity).toContain("ActivityResultContracts.RequestPermission");
+    expect(activity).toContain("NativeStatus.hasExactAlarmPermission(this)");
+    expect(activity).not.toContain("waitingForExactSettings");
+    expect(activity).not.toContain("protected void onResume()");
+    expect(activity).not.toContain("onRequestPermissionsResult");
+    expect(gradle).toContain("androidx.activity:activity:1.9.0");
+  });
+
+  it("keeps every native Adhan URL and kind identical to the web catalog", () => {
     const nativeCatalog = source("android-twa/app/src/main/java/de/donaumoschee/app/adhan/AdhanCatalog.java");
-    expect(webCatalog).toContain('audioUrl: "https://www.ashefaa.com/ruqia/Azan/20.mp3"');
-    expect(nativeCatalog).toContain('Map.entry("fajr-madinah", "https://www.ashefaa.com/ruqia/Azan/20.mp3")');
-    expect(`${webCatalog}\n${nativeCatalog}`).not.toContain("/Azan/19.mp3");
+    const nativeEntries = [...nativeCatalog.matchAll(
+      /Map\.entry\("([^"]+)", new ApprovedSound\("([^"]+)", SoundKind\.(REGULAR|FAJR)\)\)/gu,
+    )].map((match) => ({
+      id: match[1],
+      audioUrl: match[2],
+      kind: match[3].toLowerCase(),
+    }));
+    const webEntries = ADHAN_SOUNDS.map(({ id, audioUrl, kind }) => ({ id, audioUrl, kind }));
+
+    expect(nativeEntries).toEqual(webEntries);
+    expect(webEntries.find((sound) => sound.id === "fajr-madinah")?.audioUrl)
+      .toBe("https://www.ashefaa.com/ruqia/Azan/19.mp3");
   });
 
   it("keeps native authority short-lived, service-role-only, and prayer-push-specific", () => {

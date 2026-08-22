@@ -116,7 +116,7 @@ export const ADHAN_SOUNDS: readonly AdhanSound[] = [
   {
     id: "fajr-madinah",
     kind: "fajr",
-    audioUrl: "https://www.ashefaa.com/ruqia/Azan/20.mp3",
+    audioUrl: "https://www.ashefaa.com/ruqia/Azan/19.mp3",
     label: {
       ar: "أذان الفجر · المدينة المنورة",
       en: "Fajr Adhan · Madinah",

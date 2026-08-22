@@ -111,7 +111,7 @@ export async function GET(request: Request) {
   if (pushTargets.length > 0) {
     const { data: leaseData, error: leaseError } = await client
       .from("native_prayer_installations")
-      .select("push_subscription_id, native_ready, notification_permission, exact_alarm_permission, schedule_fresh, alarm_schedule_installed, audio_ready, engine_healthy, schedule_valid_until, lease_expires_at")
+      .select("push_subscription_id, native_ready, notification_permission, notification_delivery_enabled, reminder_channel_enabled, adhan_channel_enabled, exact_alarm_permission, schedule_fresh, alarm_schedule_installed, audio_ready, engine_healthy, schedule_valid_until, lease_expires_at")
       .in("push_subscription_id", pushTargets.map((target) => target.id));
     if (leaseError) {
       console.warn("[prayer reminder cron] native authority lookup failed open", leaseError.message);

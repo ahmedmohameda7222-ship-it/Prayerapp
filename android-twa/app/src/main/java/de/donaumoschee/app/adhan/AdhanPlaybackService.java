@@ -30,6 +30,7 @@ import java.util.List;
 public final class AdhanPlaybackService extends MediaSessionService {
     private static final String TAG = "DanubePrayer";
     public static final String ACTION_PLAY = "de.donaumoschee.app.action.PLAY_ADHAN";
+    public static final String CHANNEL = "adhan-playback-v1";
 
     private ExoPlayer player;
     private MediaSession mediaSession;
@@ -39,7 +40,7 @@ public final class AdhanPlaybackService extends MediaSessionService {
     public void onCreate() {
         super.onCreate();
         setMediaNotificationProvider(new DefaultMediaNotificationProvider.Builder(this)
-                .setChannelId("adhan-playback-v1")
+                .setChannelId(CHANNEL)
                 .setChannelName(R.string.channel_adhan_playback)
                 .build());
         player = new ExoPlayer.Builder(this).build();

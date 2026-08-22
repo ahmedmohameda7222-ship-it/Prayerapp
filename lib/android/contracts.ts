@@ -10,6 +10,9 @@ export type ScheduleRequest = {
 
 export type NativeHeartbeat = {
   notificationPermission: boolean;
+  notificationDeliveryEnabled: boolean;
+  reminderChannelEnabled: boolean;
+  adhanChannelEnabled: boolean;
   exactAlarmPermission: boolean;
   scheduleFresh: boolean;
   alarmScheduleInstalled: boolean;
@@ -39,6 +42,9 @@ export function parseNativeHeartbeat(value: unknown, now: Date): NativeHeartbeat
   const body = value as Record<string, unknown>;
   const fields = [
     "notificationPermission",
+    "notificationDeliveryEnabled",
+    "reminderChannelEnabled",
+    "adhanChannelEnabled",
     "exactAlarmPermission",
     "scheduleFresh",
     "alarmScheduleInstalled",
@@ -52,6 +58,9 @@ export function parseNativeHeartbeat(value: unknown, now: Date): NativeHeartbeat
   const nativeReady = fields.every((field) => body[field] === true) && validUntilMs > now.getTime();
   return {
     notificationPermission: body.notificationPermission as boolean,
+    notificationDeliveryEnabled: body.notificationDeliveryEnabled as boolean,
+    reminderChannelEnabled: body.reminderChannelEnabled as boolean,
+    adhanChannelEnabled: body.adhanChannelEnabled as boolean,
     exactAlarmPermission: body.exactAlarmPermission as boolean,
     scheduleFresh: body.scheduleFresh as boolean,
     alarmScheduleInstalled: body.alarmScheduleInstalled as boolean,

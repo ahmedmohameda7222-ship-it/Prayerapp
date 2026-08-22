@@ -4,6 +4,7 @@ import de.donaumoschee.app.prayer.Prayer;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -15,6 +16,8 @@ public final class AdhanCatalogTest {
         assertFalse(AdhanCatalog.isCompatible(Prayer.FAJR, "abdul-basit-cairo"));
         assertFalse(AdhanCatalog.isCompatible(Prayer.ISHA, "fajr-madinah"));
         assertFalse(AdhanCatalog.isApproved("https://evil.example/adhan.mp3"));
-        assertTrue(AdhanCatalog.approvedUrl("fajr-madinah").startsWith("https://"));
+        assertEquals("https://www.ashefaa.com/ruqia/Azan/19.mp3", AdhanCatalog.approvedUrl("fajr-madinah"));
+        assertEquals(AdhanCatalog.SoundKind.FAJR, AdhanCatalog.approvedKind("fajr-madinah"));
+        assertEquals(9, AdhanCatalog.approvedSounds().size());
     }
 }

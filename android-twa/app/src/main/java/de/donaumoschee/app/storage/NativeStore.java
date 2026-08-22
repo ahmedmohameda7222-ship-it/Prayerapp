@@ -133,6 +133,13 @@ public final class NativeStore {
         preferences.edit().putStringSet(SCHEDULED_REQUEST_CODES, new HashSet<>(values)).apply();
     }
 
+    public boolean setScheduledRequestCodesIfGeneration(Set<String> values, int generation) {
+        synchronized (ACCOUNT_LOCK) {
+            if (accountGeneration() != generation) return false;
+            return preferences.edit().putStringSet(SCHEDULED_REQUEST_CODES, new HashSet<>(values)).commit();
+        }
+    }
+
     public boolean addScheduledRequestCodesIfGeneration(Set<String> values, int generation) {
         synchronized (ACCOUNT_LOCK) {
             if (accountGeneration() != generation) return false;

@@ -19,16 +19,23 @@ public final class PrayerAlarmReceiver extends BroadcastReceiver {
         String prayerValue = intent.getStringExtra(PrayerScheduler.EXTRA_PRAYER);
         String kind = intent.getStringExtra(PrayerScheduler.EXTRA_KIND);
         String soundId = intent.getStringExtra(PrayerScheduler.EXTRA_ADHAN_SOUND_ID);
+        int eventGeneration = intent.getIntExtra(PrayerScheduler.EXTRA_ACCOUNT_GENERATION, -1);
         if (eventId == null || prayerValue == null || kind == null || !AdhanCatalog.isApproved(soundId)) return;
+
+        NativeStore store = new NativeStore(context);
+        if (store.accountGeneration() != eventGeneration) {
+            Log.i(TAG, "alarm.fire ignored-stale generation=" + eventGeneration);
+            return;
+        }
+
         Prayer prayer;
         try {
             prayer = Prayer.fromKey(prayerValue);
         } catch (IllegalArgumentException error) {
             return;
         }
-        NativeStore store = new NativeStore(context);
         if (!store.markDelivered(eventId)) return;
-        Log.i(TAG, "alarm.fire kind=" + kind + " prayer=" + prayer.key);
+        Log.i(TAG, "alarm.fire kind=" + kind + " prayer=" + prayer.key + " generation=" + eventGeneration);
         if (AlarmEvent.Kind.REMINDER.name().equals(kind)) {
             PrayerNotifications.showReminder(context, eventId, prayer, intent.getIntExtra(PrayerScheduler.EXTRA_LEAD_MINUTES, 15));
             return;

@@ -116,6 +116,8 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
 
   const syncConfiguration = useCallback(async () => {
     if (authLoading || !session?.user?.id || !portRef.current || accountTransitioningRef.current) return;
+    const configuredOwnerId = localStorage.getItem(NATIVE_ACCOUNT_OWNER_KEY);
+    if (configuredOwnerId !== session.user.id) return;
     const preferences = readNativePrayerPreferences();
     if (!preferences) return;
     const syncGeneration = syncGenerationRef.current;

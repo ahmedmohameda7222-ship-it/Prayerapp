@@ -1,3 +1,4 @@
+-- Version matches the migration identifier assigned by the production ledger.
 -- Cover foreign keys reported by the production advisor.
 create index if not exists native_prayer_installations_user_id_idx
   on public.native_prayer_installations (user_id);

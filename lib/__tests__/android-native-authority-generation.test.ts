@@ -6,7 +6,7 @@ const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8")
 
 describe("Android native authority generation", () => {
   it("rotates a persisted authority id on enrollment and scopes heartbeat mutations to it", () => {
-    const migration = source("supabase/migrations/20260822203500_android_native_authority_generation.sql");
+    const migration = source("supabase/migrations/20260822200527_android_native_authority_generation.sql");
     const enroll = source("app/api/android/native-authority/enroll/route.ts");
     const heartbeat = source("app/api/android/native-authority/heartbeat/route.ts");
 
@@ -60,7 +60,7 @@ describe("Android native authority generation", () => {
   });
 
   it("adds a persistent revocation tombstone migration", () => {
-    const migration = source("supabase/migrations/20260822221500_android_native_authority_revocation.sql");
+    const migration = source("supabase/migrations/20260822201651_android_native_authority_revocation.sql");
     expect(migration).toContain("revoked_at timestamptz");
   });
 });

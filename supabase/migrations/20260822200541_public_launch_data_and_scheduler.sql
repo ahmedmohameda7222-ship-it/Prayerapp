@@ -1,3 +1,4 @@
+-- Version matches the migration identifier assigned by the production ledger.
 -- Public-launch safety: remove deterministic QA rows from public delivery before
 -- restoring the migration-managed production scheduler.
 

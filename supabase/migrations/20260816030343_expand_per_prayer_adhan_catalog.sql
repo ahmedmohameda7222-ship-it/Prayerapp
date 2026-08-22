@@ -1,3 +1,4 @@
+-- Version matches the migration identifier assigned by the production ledger.
 alter table public.user_prayer_reminders
   drop constraint if exists user_prayer_reminders_adhan_sound_id_check;
 

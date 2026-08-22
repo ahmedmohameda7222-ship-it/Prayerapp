@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const migrationPath = "supabase/migrations/20260822220000_public_launch_data_and_scheduler.sql";
+const migrationPath = "supabase/migrations/20260822200541_public_launch_data_and_scheduler.sql";
 
 function migration() {
   return readFileSync(join(process.cwd(), migrationPath), "utf8");

@@ -1,0 +1,126 @@
+name: One-time publish Android 1.0.0 code 3
+
+on:
+  push:
+    branches:
+      - ops/publish-android-v1.0.0-code3
+    paths:
+      - .github/workflows/ops-publish-android-v1.0.0-code3.yml
+
+permissions:
+  contents: write
+
+env:
+  EXPECTED_MAIN_SHA: 27c420694ab0e5f18b439aa9b6b2dca23140eb7c
+  EXPECTED_CERT_SHA256: E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_MAIN_SHA }}
+          fetch-depth: 0
+
+      - name: Verify exact approved main source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN_SHA"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN_SHA"
+          test "$(jq -r '.packageId' android-twa/twa-manifest.json)" = "de.donaumoschee.app"
+          test "$(jq -r '.versionCode' android-twa/twa-manifest.json)" = "3"
+          test "$(jq -r '.versionName' android-twa/twa-manifest.json)" = "1.0.0"
+          test "$(jq -r '.targetSdkVersion' android-twa/twa-manifest.json)" = "36"
+          ! gh release view android-v1.0.0 >/dev/null 2>&1
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android verification tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - uses: gradle/actions/wrapper-validation@v4
+
+      - name: Reconstruct permanent signing identity
+        working-directory: android-twa
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test "$ANDROID_KEY_ALIAS" = "danube-mosque-release"
+          test -n "$ANDROID_KEY_PASSWORD"
+          keystore="$RUNNER_TEMP/danube-mosque-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          chmod 600 "$keystore"
+          certificate="$(keytool -list -v -keystore "$keystore" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS")"
+          actual="$(printf '%s\n' "$certificate" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1 | tr '[:lower:]' '[:upper:]')"
+          test "$actual" = "$EXPECTED_CERT_SHA256"
+          {
+            printf 'storeFile=%s\n' "$keystore"
+            printf 'storePassword=%s\n' "$ANDROID_KEYSTORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD"
+          } > signing.properties
+          chmod 600 signing.properties
+
+      - name: Test and build signed production package
+        working-directory: android-twa
+        run: ./gradlew --no-daemon :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease :app:bundleRelease --stacktrace
+
+      - name: Prepare and verify production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir candidate
+          cp android-twa/app/build/outputs/apk/release/app-release.apk candidate/danube-mosque.apk
+          cp android-twa/app/build/outputs/bundle/release/app-release.aab candidate/danube-mosque.aab
+          (cd candidate && sha256sum danube-mosque.apk danube-mosque.aab > SHA256SUMS.txt)
+          signature="$($ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs candidate/danube-mosque.apk)"
+          actual="$(printf '%s\n' "$signature" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1 | sed 's/../&:/g;s/:$//' | tr '[:lower:]' '[:upper:]')"
+          test "$actual" = "$EXPECTED_CERT_SHA256"
+          badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging candidate/danube-mosque.apk)"
+          printf '%s\n' "$badging" | grep -F "package: name='de.donaumoschee.app' versionCode='3' versionName='1.0.0'"
+          printf '%s\n' "$badging" | grep -F "targetSdkVersion:'36'"
+          jarsigner -verify -verbose -certs candidate/danube-mosque.aab
+          aab_certificate="$(keytool -printcert -jarfile candidate/danube-mosque.aab)"
+          aab_actual="$(printf '%s\n' "$aab_certificate" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1 | tr '[:lower:]' '[:upper:]')"
+          test "$aab_actual" = "$EXPECTED_CERT_SHA256"
+          (cd candidate && sha256sum --check SHA256SUMS.txt)
+
+      - name: Remove reconstructed signing material
+        if: always()
+        shell: bash
+        run: rm -f android-twa/signing.properties "$RUNNER_TEMP/danube-mosque-release.jks"
+
+      - name: Publish Android 1.0.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create android-v1.0.0 \
+            candidate/danube-mosque.apk \
+            candidate/danube-mosque.aab \
+            candidate/SHA256SUMS.txt \
+            --target "$EXPECTED_MAIN_SHA" \
+            --title 'Danube Mosque Android 1.0.0' \
+            --notes 'First public Android test release. Package de.donaumoschee.app, versionCode 3, targetSdk 36, signed by the permanent production certificate.'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: danube-mosque-android-production-1.0.0-code3
+          path: candidate/
+          retention-days: 30

@@ -86,4 +86,3 @@ Missing verified real-world content is `CONTENT INPUT PENDING`; it does not bloc
 2. Verify exact-head GitHub CI and request exact-head Codex review.
 3. Produce signed RC APK/AAB only through protected CI if needed for physical-device validation; do not publish a new stable release/tag.
 4. Report technical platform readiness and production content readiness separately, with physical-device and human-content/legal gates explicit.
-

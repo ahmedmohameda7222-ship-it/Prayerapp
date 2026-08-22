@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   bearerToken,
+  credentialMatches,
   hashNativeCredential,
   isInstallationId,
   isNativeCredential,
@@ -43,12 +44,16 @@ export async function POST(request: Request) {
 
   const { data: existingInstallationData, error: existingInstallationError } = await client
     .from("native_prayer_installations")
-    .select("user_id")
+    .select("user_id, credential_hash")
     .eq("installation_id", body.installationId)
     .maybeSingle();
   if (existingInstallationError) return NextResponse.json({ error: "Could not validate native installation" }, { status: 500 });
-  const existingInstallation = existingInstallationData as { user_id?: string } | null;
-  if (existingInstallation?.user_id && existingInstallation.user_id !== userData.user.id) {
+  const existingInstallation = existingInstallationData as { user_id?: string; credential_hash?: string } | null;
+  if (
+    existingInstallation?.user_id
+    && existingInstallation.user_id !== userData.user.id
+    && (!existingInstallation.credential_hash || !credentialMatches(body.credential, existingInstallation.credential_hash))
+  ) {
     return NextResponse.json({ error: "Native installation ownership mismatch" }, { status: 403 });
   }
 

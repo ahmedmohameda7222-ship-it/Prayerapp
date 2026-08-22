@@ -3,6 +3,7 @@ import {
   ANDROID_APK_ASSET_NAME,
   ANDROID_CERTIFICATE_SHA256,
   ANDROID_PACKAGE_ID,
+  ANDROID_PUBLIC_DOWNLOAD_PATH,
   ANDROID_RELEASE_METADATA_ASSET_NAME,
   parsePublicAndroidRelease,
   selectLatestAndroidRelease,
@@ -120,7 +121,7 @@ describe("Android release selection", () => {
       versionName: "1.0.1",
       minimumSupportedVersionCode: 3,
       publishedAt: "2026-08-22T20:01:00Z",
-      downloadUrl: "/download/android",
+      downloadUrl: ANDROID_PUBLIC_DOWNLOAD_PATH,
     })).toEqual(expect.objectContaining({ versionCode: 4 }));
     expect(parsePublicAndroidRelease({
       packageId: ANDROID_PACKAGE_ID,

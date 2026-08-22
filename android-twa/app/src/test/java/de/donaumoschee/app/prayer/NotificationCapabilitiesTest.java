@@ -14,6 +14,7 @@ public final class NotificationCapabilitiesTest {
         NotificationCapabilities state = NotificationCapabilities.evaluate(32, true, false, ENABLED, ENABLED);
         assertTrue(state.notificationPermission());
         assertFalse(state.notificationDeliveryEnabled());
+        assertFalse(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
     }
 
@@ -22,6 +23,7 @@ public final class NotificationCapabilitiesTest {
         NotificationCapabilities state = NotificationCapabilities.evaluate(33, false, true, ENABLED, ENABLED);
         assertFalse(state.notificationPermission());
         assertFalse(state.notificationDeliveryEnabled());
+        assertFalse(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
     }
 
@@ -29,20 +31,23 @@ public final class NotificationCapabilitiesTest {
     public void globalAppDisableBlocksDelivery() {
         NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, false, ENABLED, ENABLED);
         assertFalse(state.notificationDeliveryEnabled());
+        assertFalse(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
     }
 
     @Test
-    public void disabledReminderChannelBlocksNativeAuthority() {
+    public void disabledReminderChannelBlocksNativeAuthorityWithoutBlockingAdhanCapability() {
         NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, DISABLED, ENABLED);
         assertFalse(state.reminderChannelEnabled());
+        assertTrue(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
     }
 
     @Test
-    public void disabledAdhanChannelBlocksNativeAuthority() {
+    public void disabledAdhanChannelBlocksAdhanAndNativeAuthority() {
         NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, ENABLED, DISABLED);
         assertFalse(state.adhanChannelEnabled());
+        assertFalse(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
     }
 
@@ -53,6 +58,7 @@ public final class NotificationCapabilitiesTest {
         assertTrue(state.notificationDeliveryEnabled());
         assertTrue(state.reminderChannelEnabled());
         assertTrue(state.adhanChannelEnabled());
+        assertTrue(state.adhanDeliveryReady());
         assertTrue(state.nativeDeliveryReady());
     }
 }

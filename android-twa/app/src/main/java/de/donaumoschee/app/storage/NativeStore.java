@@ -133,6 +133,37 @@ public final class NativeStore {
         preferences.edit().putStringSet(SCHEDULED_REQUEST_CODES, new HashSet<>(values)).apply();
     }
 
+    public boolean addScheduledRequestCodesIfGeneration(Set<String> values, int generation) {
+        synchronized (ACCOUNT_LOCK) {
+            if (accountGeneration() != generation) return false;
+            Set<String> current = new HashSet<>(preferences.getStringSet(SCHEDULED_REQUEST_CODES, Set.of()));
+            current.addAll(values);
+            return preferences.edit().putStringSet(SCHEDULED_REQUEST_CODES, current).commit();
+        }
+    }
+
+    public boolean markScheduleInstalledIfGeneration(int generation) {
+        synchronized (ACCOUNT_LOCK) {
+            if (accountGeneration() != generation) return false;
+            return preferences.edit()
+                    .putBoolean(SCHEDULE_INSTALLED, true)
+                    .putBoolean(ENGINE_HEALTHY, true)
+                    .putString(LAST_ERROR, "")
+                    .commit();
+        }
+    }
+
+    public void markScheduleFailureIfGeneration(String code, int generation) {
+        synchronized (ACCOUNT_LOCK) {
+            if (accountGeneration() != generation) return;
+            preferences.edit()
+                    .putBoolean(SCHEDULE_INSTALLED, false)
+                    .putBoolean(ENGINE_HEALTHY, false)
+                    .putString(LAST_ERROR, code)
+                    .commit();
+        }
+    }
+
     public int accountGeneration() {
         synchronized (ACCOUNT_LOCK) {
             return preferences.getInt(ACCOUNT_GENERATION, 0);

@@ -29,7 +29,7 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
 
     expect(release).toContain('"/download/android/danube-mosque.apk"');
     expect(homeInstall).toContain("if (isAndroid())");
-    expect(homeInstall).toContain("window.location.assign(ANDROID_PUBLIC_DOWNLOAD_PATH)");
+    expect(homeInstall).toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");
     expect(homeInstall).toContain("installed || isNative");
     expect(homeInstall.indexOf("if (isAndroid())")).toBeLessThan(homeInstall.indexOf("currentPrompt.prompt()"));
     expect(settingsInstall).toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");

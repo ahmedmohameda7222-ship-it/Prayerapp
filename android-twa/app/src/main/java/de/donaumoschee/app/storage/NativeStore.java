@@ -146,7 +146,13 @@ public final class NativeStore {
     public int resetAccountState() {
         synchronized (ACCOUNT_LOCK) {
             int generation = advanceAccountGenerationLocked();
-            if (!clearAccountStateLocked()) {
+            if (!preferences.edit()
+                    .remove(CONFIG)
+                    .remove(DELIVERED)
+                    .putBoolean(SCHEDULE_INSTALLED, false)
+                    .putBoolean(ENGINE_HEALTHY, false)
+                    .putString(LAST_ERROR, "")
+                    .commit()) {
                 throw new IllegalStateException("Could not reset native account state");
             }
             return generation;

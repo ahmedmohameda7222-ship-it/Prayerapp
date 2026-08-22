@@ -14,6 +14,14 @@ public final class BridgeProtocolTest {
         assertEquals("native.status.request", envelope.type);
     }
 
+    @Test
+    public void acceptsAccountResetCommand() throws Exception {
+        BridgeProtocol.Envelope envelope = BridgeProtocol.parseInbound(
+                "{\"version\":1,\"type\":\"native.account.reset\",\"payload\":{}}"
+        );
+        assertEquals("native.account.reset", envelope.type);
+    }
+
     @Test(expected = JSONException.class)
     public void rejectsUnknownTypes() throws Exception {
         BridgeProtocol.parseInbound("{\"version\":1,\"type\":\"native.open.url\",\"payload\":{}}");

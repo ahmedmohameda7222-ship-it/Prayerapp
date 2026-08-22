@@ -25,7 +25,7 @@ describe("long-term Android TWA contract", () => {
     expect(config.compileSdkVersion).toBe(36);
     expect(config.targetSdkVersion).toBe(36);
     expect(config.minSdkVersion).toBe(23);
-    expect(config.versionCode).toBe(2);
+    expect(config.versionCode).toBe(3);
     expect(config.versionName).toBe("1.0.0");
     expect(rootGradle).toContain("com.android.application' version '8.11.1'");
     expect(gradle).toContain("androidbrowserhelper:2.7.3");
@@ -116,7 +116,7 @@ describe("long-term Android TWA contract", () => {
     expect(productionWorkflow).toContain("gh release create");
 
     const config = JSON.parse(read("android-twa/twa-manifest.json")) as Record<string, unknown>;
-    expect(config.versionCode).toBe(2);
+    expect(config.versionCode).toBe(3);
     expect(config.versionName).toBe("1.0.0");
   });
 

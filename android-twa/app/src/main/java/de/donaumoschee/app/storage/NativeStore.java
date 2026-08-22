@@ -118,4 +118,15 @@ public final class NativeStore {
     public void setScheduledRequestCodes(Set<String> values) {
         preferences.edit().putStringSet(SCHEDULED_REQUEST_CODES, new HashSet<>(values)).apply();
     }
+
+    public void clearAccountState() {
+        preferences.edit()
+                .remove(CONFIG)
+                .remove(DELIVERED)
+                .putBoolean(SCHEDULE_INSTALLED, false)
+                .putBoolean(ENGINE_HEALTHY, false)
+                .putString(LAST_ERROR, "")
+                .remove(SCHEDULED_REQUEST_CODES)
+                .commit();
+    }
 }

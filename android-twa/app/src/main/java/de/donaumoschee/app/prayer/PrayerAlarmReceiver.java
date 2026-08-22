@@ -33,7 +33,8 @@ public final class PrayerAlarmReceiver extends BroadcastReceiver {
             PrayerNotifications.showReminder(context, eventId, prayer, intent.getIntExtra(PrayerScheduler.EXTRA_LEAD_MINUTES, 15));
             return;
         }
-        if (!AlarmEvent.Kind.ADHAN.name().equals(kind) || !NativeStatus.hasNotificationPermission(context)) return;
+        if (!AlarmEvent.Kind.ADHAN.name().equals(kind)
+                || !NativeStatus.notificationCapabilities(context).adhanDeliveryReady()) return;
         Intent playback = new Intent(context, AdhanPlaybackService.class)
                 .setAction(AdhanPlaybackService.ACTION_PLAY)
                 .putExtra(PrayerScheduler.EXTRA_EVENT_ID, eventId)

@@ -28,7 +28,11 @@ public record NotificationCapabilities(
         return notificationDeliveryEnabled && reminderChannelEnabled;
     }
 
+    public boolean adhanDeliveryReady() {
+        return notificationDeliveryEnabled && adhanChannelEnabled;
+    }
+
     public boolean nativeDeliveryReady() {
-        return reminderDeliveryReady() && adhanChannelEnabled;
+        return reminderDeliveryReady() && adhanDeliveryReady();
     }
 }

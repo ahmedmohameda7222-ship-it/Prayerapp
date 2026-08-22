@@ -17,9 +17,28 @@ env:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Read version-matched Next.js route handler docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Next version: $(node -p 'require(\"next/package.json\").version')"
+          doc="$(find node_modules/next/dist/docs -type f | grep -E '/route-handlers[^/]*\.md$|route-handlers/.+\.md$' | head -n 1)"
+          if [ -z "$doc" ]; then
+            echo 'Route handler doc not found' >&2
+            find node_modules/next/dist/docs -type f | grep -Ei 'route|redirect' | head -n 40
+            exit 1
+          fi
+          echo "DOC=$doc"
+          grep -n -E 'Response|redirect|headers|Route Handler|NextResponse' "$doc" | head -n 120 || true
 
       - name: Inspect release metadata and both download paths
         shell: bash

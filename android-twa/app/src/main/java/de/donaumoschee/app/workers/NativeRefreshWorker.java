@@ -47,9 +47,8 @@ public final class NativeRefreshWorker extends Worker {
         }
 
         Log.i(TAG, "schedule.refresh success=" + scheduleRefreshed + " generation=" + generation);
-        PrayerScheduler.reschedule(getApplicationContext());
+        PrayerScheduler.reschedule(getApplicationContext(), generation);
         if (store.accountGeneration() != generation) {
-            PrayerScheduler.cancelAll(getApplicationContext());
             Log.i(TAG, "schedule.refresh stale-after-reschedule generation=" + generation);
             return Result.success();
         }

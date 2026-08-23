@@ -9,6 +9,9 @@ describe("Android native authority generation", () => {
     const migration = source("supabase/migrations/20260822200527_android_native_authority_generation.sql");
     const enroll = source("app/api/android/native-authority/enroll/route.ts");
     const heartbeat = source("app/api/android/native-authority/heartbeat/route.ts");
+    const deleteStart = heartbeat.indexOf("export async function DELETE");
+    const postSection = heartbeat.slice(0, deleteStart);
+    const deleteSection = heartbeat.slice(deleteStart);
 
     expect(migration).toContain("authority_id uuid not null default gen_random_uuid()");
     expect(enroll).toContain("randomUUID");
@@ -18,7 +21,8 @@ describe("Android native authority generation", () => {
     expect(heartbeat).toContain('request.headers.get("x-native-authority-id")');
     expect(heartbeat).toContain('.eq("authority_id", row.authority_id)');
     expect(heartbeat).toContain('.eq("credential_hash", row.credential_hash)');
-    expect(heartbeat.match(/\.is\("revoked_at", null\)/gu)?.length).toBe(2);
+    expect(postSection.match(/\.is\("revoked_at", null\)/gu)?.length).toBe(2);
+    expect(deleteSection.match(/\.is\("revoked_at", null\)/gu)?.length).toBe(1);
     expect(heartbeat).toContain('.select("authority_id")');
     expect(heartbeat).toContain("authorityId != null && !isAuthorityId(authorityId)");
   });

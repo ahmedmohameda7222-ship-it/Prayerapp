@@ -23,6 +23,7 @@ public final class PrayerScheduler {
     public static final String EXTRA_LEAD_MINUTES = "lead-minutes";
     public static final String EXTRA_ADHAN_SOUND_ID = "adhan-sound-id";
     public static final String EXTRA_ACCOUNT_GENERATION = "account-generation";
+    public static final String EXTRA_DUE_AT_MS = "due-at-ms";
 
     private PrayerScheduler() {}
 
@@ -59,6 +60,11 @@ public final class PrayerScheduler {
                     cancelRequests(context, installedByThisCall);
                     return false;
                 }
+                if (!store.markDeliveryScheduled(event.eventId, event.kind.name(), event.dueAt.toEpochMilli())) {
+                    cancelRequests(context, installedByThisCall);
+                    store.markScheduleFailureIfGeneration("delivery-state-unavailable", generation);
+                    return false;
+                }
                 PendingIntent operation = operation(context, event, generation);
                 manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
                 installedByThisCall.add(encodeScheduledRequest(generation, event));
@@ -90,6 +96,7 @@ public final class PrayerScheduler {
         AlarmEvent event = new AlarmEvent(
                 "test:" + UUID.randomUUID(), prayer, kind, Instant.now().plusSeconds(delaySeconds), leadMinutes, soundId
         );
+        if (!store.markDeliveryScheduled(event.eventId, event.kind.name(), event.dueAt.toEpochMilli())) return false;
         AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         PendingIntent operation = operation(context, event, generation);
         manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
@@ -117,7 +124,8 @@ public final class PrayerScheduler {
                 .putExtra(EXTRA_PRAYER, event.prayer.key)
                 .putExtra(EXTRA_LEAD_MINUTES, event.leadMinutes)
                 .putExtra(EXTRA_ADHAN_SOUND_ID, event.adhanSoundId)
-                .putExtra(EXTRA_ACCOUNT_GENERATION, generation);
+                .putExtra(EXTRA_ACCOUNT_GENERATION, generation)
+                .putExtra(EXTRA_DUE_AT_MS, event.dueAt.toEpochMilli());
         return PendingIntent.getBroadcast(context, event.requestCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 

@@ -102,6 +102,15 @@ public final class DeliverySourceContractTest {
     }
 
     @Test
+    public void receiverFailsClosedWhenAdhanFailureStateCannotPersist() throws IOException {
+        String receiver = source("de/donaumoschee/app/prayer/PrayerAlarmReceiver.java");
+
+        assertTrue(receiver.contains("unsupported-delivery-failure-persist-failed"));
+        assertTrue(receiver.contains("adhan-delivery-unavailable-persist-failed"));
+        assertTrue(receiver.contains("adhan-service-start-failure-persist-failed"));
+    }
+
+    @Test
     public void adhanServiceAcknowledgesActualPlaybackAndFailure() throws IOException {
         String service = source("de/donaumoschee/app/adhan/AdhanPlaybackService.java");
 

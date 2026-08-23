@@ -11,9 +11,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public final class NativeSecretBoundarySourceContractTest {
-    private static Path projectRoot() {
-        Path cwd = Path.of(System.getProperty("user.dir"));
-        return Files.exists(cwd.resolve("app/src/main")) ? cwd : cwd.resolve("android-twa");
+    private static Path projectRoot() throws IOException {
+        Path cursor = Path.of(System.getProperty("user.dir")).toAbsolutePath();
+        while (cursor != null) {
+            if (Files.exists(cursor.resolve("app/src/main/java"))) return cursor;
+            Path nested = cursor.resolve("android-twa");
+            if (Files.exists(nested.resolve("app/src/main/java"))) return nested;
+            cursor = cursor.getParent();
+        }
+        throw new IOException("Could not locate android-twa project root");
     }
 
     private static String read(Path path) throws IOException {

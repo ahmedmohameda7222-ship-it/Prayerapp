@@ -23,6 +23,7 @@ describe("Android server delivery v2 contract", () => {
     expect(migration).toContain("event_id text not null");
     expect(migration).toContain("installation_id uuid not null");
     expect(migration).toContain("account_generation integer not null");
+    expect(migration).toContain("primary key (installation_id, account_generation, event_id)");
     expect(migration).toContain("expires_at timestamptz not null");
     expect(migration).toContain("enable row level security");
     expect(migration).toContain("revoke all on public.native_prayer_delivery_receipts from public, anon, authenticated");

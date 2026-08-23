@@ -18,6 +18,7 @@ describe("Arabic mosque name typography", () => {
     expect(css).toContain('url("/fonts/donau-thuluth.woff2")');
     expect(css).toContain(".home-page-shell .mosque-name-thuluth");
     expect(existsSync(join(process.cwd(), "public/fonts/donau-thuluth.woff2"))).toBe(true);
+    expect(existsSync(join(process.cwd(), "public/fonts/OFL-Layla-Thuluth.txt"))).toBe(true);
   });
 
   it("keeps Quran and donation Arabic typography on the existing Naskh stack", () => {

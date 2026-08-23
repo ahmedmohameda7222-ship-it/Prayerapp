@@ -19,6 +19,18 @@ public final class DeliveryLedgerTest {
     }
 
     @Test
+    public void cancelledPendingEventBecomesTerminalAndCanBeScheduledAgain() {
+        DeliveryLedger ledger = new DeliveryLedger(2);
+        assertTrue(ledger.schedule("event-cancel", "REMINDER", 900L));
+        assertTrue(ledger.cancelScheduled("event-cancel", "alarm-cancelled", 850L));
+        assertEquals(DeliveryState.FAILED, ledger.record("event-cancel").state());
+        assertEquals("alarm-cancelled", ledger.record("event-cancel").failureCode());
+
+        assertTrue(ledger.schedule("event-cancel", "REMINDER", 900L));
+        assertEquals(DeliveryState.SCHEDULED, ledger.record("event-cancel").state());
+    }
+
+    @Test
     public void duplicateActiveOrDeliveredEventCannotBeginAgain() {
         DeliveryLedger ledger = new DeliveryLedger(4);
         assertTrue(ledger.schedule("event-1", "REMINDER", 1_000L));

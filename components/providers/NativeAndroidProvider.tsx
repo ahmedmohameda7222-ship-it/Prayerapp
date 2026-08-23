@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
+import { useLocale } from "@/lib/i18n/context";
 import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
 import type { AdhanPrayer, AdhanSoundId } from "@/lib/adhan-audio";
 import {
@@ -85,6 +86,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   const sessionUserId = session?.user?.id ?? null;
   const sessionAccessToken = session?.access_token ?? null;
   const { pushStatus, enableNotifications } = useAppPreferences();
+  const { locale } = useLocale();
   const [status, setStatus] = useState<NativeBridgeStatus | null>(null);
   const [bridgeState, setBridgeState] = useState<NativeBridgeState>("probing");
   const [channelRevision, setChannelRevision] = useState(0);
@@ -255,6 +257,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
         schemaVersion: 1,
         revision: `${preferences.updatedAt}|${latestRowRevision}`.slice(0, 128),
         timeZone: "Europe/Berlin",
+        locale,
         scheduleValidUntil,
         rows: schedule.rows,
         reminders: preferences.reminders,
@@ -263,7 +266,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     } catch (error) {
       console.warn("Native prayer configuration sync failed", error);
     }
-  }, [authLoading, send, sessionUserId, status?.lastError]);
+  }, [authLoading, locale, send, sessionUserId, status?.lastError]);
 
   useEffect(() => {
     const sync = () => { void syncConfiguration(); };

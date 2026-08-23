@@ -7,6 +7,7 @@ import en from "../../messages/en.json";
 import de from "../../messages/de.json";
 import tr from "../../messages/tr.json";
 import type { Locale } from "./types";
+import { getPrayerTranslationOverride } from "./prayer-names";
 import { getBrandTranslationOverride } from "@/lib/app-brand";
 
 const messages = { ar, en, de, tr };
@@ -18,6 +19,9 @@ export function useTranslation() {
   const t = useCallback((key: string, values?: Record<string, string | number>): string => {
     const brandOverride = getBrandTranslationOverride(locale as Locale, key);
     if (brandOverride) return interpolate(brandOverride, values);
+
+    const prayerOverride = getPrayerTranslationOverride(locale as Locale, key);
+    if (prayerOverride) return interpolate(prayerOverride, values);
 
     const keys = key.split(".");
     let value: unknown = current;

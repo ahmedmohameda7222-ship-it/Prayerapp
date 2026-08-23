@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "deggendorf-prayer";
-const VERSION = "v19";
+const VERSION = "v18";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${VERSION}`;
 const IMAGE_CACHE = `${CACHE_PREFIX}-images-${VERSION}`;

@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
 
-  const leaseExpiresAt = heartbeat.nativeReady
+  const leaseExpiresAt = heartbeat.reminderReady || heartbeat.adhanReady
     ? new Date(now.getTime() + LEASE_DURATION_MS).toISOString()
     : null;
   const { data: updatedData, error: updateError } = await client

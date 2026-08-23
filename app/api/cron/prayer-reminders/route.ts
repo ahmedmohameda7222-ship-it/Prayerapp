@@ -43,7 +43,6 @@ type PrayerScheduleRow = {
   note_en: string | null;
   note_de: string | null;
   note_tr: string | null;
-  updated_at: string | null;
 };
 
 type NativeReceiptRow = {
@@ -58,17 +57,6 @@ function normalizeLeadMinutes(value: number | null): ReminderLeadMinutes {
 function isDue(nowMs: number, targetMs: number, lookbackMs: number) {
   const age = nowMs - targetMs;
   return age >= 0 && age <= lookbackMs;
-}
-
-function scheduleRevision(schedule: PrayerScheduleRow) {
-  return schedule.updated_at || [
-    schedule.date,
-    schedule.fajr,
-    schedule.dhuhr,
-    schedule.asr,
-    schedule.maghrib,
-    schedule.isha,
-  ].join("|");
 }
 
 function groupNativeLeasesByPushId(leases: NativeAuthorityLease[] | null) {
@@ -210,7 +198,7 @@ export async function GET(request: Request) {
       .eq("enabled", true),
     client
       .from("prayer_times")
-      .select("id, date, fajr, dhuhr, asr, maghrib, isha, note, note_ar, note_en, note_de, note_tr, updated_at")
+      .select("id, date, fajr, dhuhr, asr, maghrib, isha, note, note_ar, note_en, note_de, note_tr")
       .eq("published", true)
       .gte("date", today)
       .lte("date", tomorrow),
@@ -267,7 +255,6 @@ export async function GET(request: Request) {
   const prePrayerLookbackMs = 2 * 60 * 1000;
 
   for (const schedule of prayerSchedules) {
-    const revision = scheduleRevision(schedule);
     for (const prayer of Object.keys(prayerNames) as ReminderPrayer[]) {
       const time = schedule[prayer];
       const adhanAt = zonedDateTime(schedule.date, time).getTime();
@@ -292,7 +279,7 @@ export async function GET(request: Request) {
 
         const eventId = prayerEventId({
           scheduleId: schedule.id,
-          scheduleRevision: revision,
+          scheduleRevision: time,
           date: schedule.date,
           prayer,
           kind: "reminder",
@@ -335,7 +322,7 @@ export async function GET(request: Request) {
 
       const eventId = prayerEventId({
         scheduleId: schedule.id,
-        scheduleRevision: revision,
+        scheduleRevision: time,
         date: schedule.date,
         prayer,
         kind: "adhan",

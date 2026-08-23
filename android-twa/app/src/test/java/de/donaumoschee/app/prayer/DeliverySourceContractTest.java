@@ -1,0 +1,45 @@
+package de.donaumoschee.app.prayer;
+
+import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+public final class DeliverySourceContractTest {
+    private static String source(String relativePath) throws IOException {
+        Path project = Path.of(System.getProperty("user.dir"));
+        Path direct = project.resolve("src/main/java").resolve(relativePath);
+        Path nested = project.resolve("app/src/main/java").resolve(relativePath);
+        Path file = Files.exists(direct) ? direct : nested;
+        return Files.readString(file);
+    }
+
+    @Test
+    public void receiverDoesNotClaimReminderDeliveryBeforeNotificationSucceeds() throws IOException {
+        String receiver = source("de/donaumoschee/app/prayer/PrayerAlarmReceiver.java");
+
+        assertFalse(receiver.contains("markDelivered(eventId)"));
+        int begin = receiver.indexOf("beginDelivery(");
+        int notify = receiver.indexOf("PrayerNotifications.showReminder(");
+        int delivered = receiver.indexOf("markDeliveryDelivered(");
+        int failed = receiver.indexOf("markDeliveryFailed(");
+
+        assertTrue(begin >= 0);
+        assertTrue(notify > begin);
+        assertTrue(delivered > notify);
+        assertTrue(failed > notify);
+    }
+
+    @Test
+    public void adhanServiceAcknowledgesActualPlaybackAndFailure() throws IOException {
+        String service = source("de/donaumoschee/app/adhan/AdhanPlaybackService.java");
+
+        assertTrue(service.contains("onIsPlayingChanged"));
+        assertTrue(service.contains("markDeliveryDelivered("));
+        assertTrue(service.contains("markDeliveryFailed("));
+    }
+}

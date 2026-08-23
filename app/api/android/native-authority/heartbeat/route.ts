@@ -29,14 +29,17 @@ export async function POST(request: Request) {
   if (!client) return NextResponse.json({ error: "Native heartbeat is unavailable" }, { status: 503 });
   const { data, error } = await client
     .from("native_prayer_installations")
-    .select("credential_hash, authority_id")
+    .select("credential_hash, authority_id, account_generation")
     .eq("installation_id", installationId)
     .eq("authority_id", authorityId)
     .is("revoked_at", null)
     .maybeSingle();
-  const row = data as { credential_hash?: string; authority_id?: string } | null;
+  const row = data as { credential_hash?: string; authority_id?: string; account_generation?: number } | null;
   if (error || !row?.credential_hash || !row.authority_id || !credentialMatches(credential, row.credential_hash)) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
+  }
+  if (heartbeat.receiptV2 && heartbeat.accountGeneration !== row.account_generation) {
+    return NextResponse.json({ error: "Native account generation changed" }, { status: 409 });
   }
 
   const leaseExpiresAt = heartbeat.reminderReady || heartbeat.adhanReady
@@ -45,6 +48,7 @@ export async function POST(request: Request) {
   const { data: updatedData, error: updateError } = await client
     .from("native_prayer_installations")
     .update({
+      receipt_v2: heartbeat.receiptV2,
       native_ready: heartbeat.nativeReady,
       notification_permission: heartbeat.notificationPermission,
       notification_delivery_enabled: heartbeat.notificationDeliveryEnabled,
@@ -63,6 +67,7 @@ export async function POST(request: Request) {
     .eq("installation_id", installationId)
     .eq("authority_id", row.authority_id)
     .eq("credential_hash", row.credential_hash)
+    .eq("account_generation", row.account_generation ?? 0)
     .is("revoked_at", null)
     .select("authority_id")
     .maybeSingle();
@@ -114,6 +119,7 @@ export async function DELETE(request: Request) {
     .update({
       authority_id: revokedAuthorityId,
       push_subscription_id: null,
+      receipt_v2: false,
       native_ready: false,
       notification_permission: false,
       notification_delivery_enabled: false,

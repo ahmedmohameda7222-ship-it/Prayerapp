@@ -36,6 +36,7 @@ export type NativeBridgeStatus = {
   scheduleValidUntil?: string;
   lastError?: string;
   installationId?: string;
+  /** Legacy v1 APK compatibility only. New APKs never serialize this value. */
   credential?: string;
   authorityId?: string;
   capabilities?: string[];
@@ -54,6 +55,11 @@ export function isNativeAuthorityId(value: unknown): value is string {
 export function supportsNativeAuthorityGeneration(status: NativeBridgeStatus | null) {
   return Array.isArray(status?.capabilities)
     && status.capabilities.includes("authority-generation-v1");
+}
+
+export function supportsNativeSecretPrivate(status: NativeBridgeStatus | null) {
+  return Array.isArray(status?.capabilities)
+    && status.capabilities.includes("native-secret-private-v2");
 }
 
 export function parseNativeMessage(value: unknown): NativeMessage | null {

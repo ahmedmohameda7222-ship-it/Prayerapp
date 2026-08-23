@@ -1,6 +1,9 @@
 import type { PushSubscriptionRecord } from "@/lib/push/types";
 
 export type NativeDeliveryKind = "reminder" | "adhan";
+export type NativeFallbackDecision = "push" | "wait" | "suppress";
+
+export const NATIVE_DELIVERY_GRACE_MS = 60 * 1000;
 
 export type NativeAuthorityLease = {
   installation_id?: string;
@@ -48,6 +51,38 @@ export function nativeDeliveryCapability(
   if (!commonDeliveryCapability(lease, nowMs)) return false;
   if (kind === "adhan") return lease.adhan_channel_enabled && lease.audio_ready;
   return lease.reminder_channel_enabled;
+}
+
+export function nativeFallbackDecision({
+  targetId,
+  lease,
+  kind,
+  now,
+  dueAtMs,
+  receiptInstallationIds,
+  receiptLookupFailed,
+}: {
+  targetId: string;
+  lease: NativeAuthorityLease | null | undefined;
+  kind: NativeDeliveryKind;
+  now: Date;
+  dueAtMs: number;
+  receiptInstallationIds: ReadonlySet<string>;
+  receiptLookupFailed: boolean;
+}): NativeFallbackDecision {
+  if (
+    !lease
+    || lease.push_subscription_id !== targetId
+    || lease.receipt_v2 !== true
+    || !lease.installation_id
+    || !nativeDeliveryCapability(lease, kind, now)
+  ) {
+    return "push";
+  }
+
+  if (now.getTime() - dueAtMs < NATIVE_DELIVERY_GRACE_MS) return "wait";
+  if (receiptLookupFailed) return "push";
+  return receiptInstallationIds.has(lease.installation_id) ? "suppress" : "push";
 }
 
 function leaseIsHealthy(lease: NativeAuthorityLease, nowMs: number) {

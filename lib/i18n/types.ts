@@ -2,14 +2,18 @@ export const SUPPORTED_LOCALES = ["ar", "en", "de", "tr"] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
-export const DEFAULT_LOCALE: Locale = "en";
+// Keep the provider's internal no-prop default stable for isolated consumers/tests.
+// Request-time locale resolution uses FALLBACK_LOCALE instead of treating Arabic
+// as the universal language for a new, unsupported device.
+export const DEFAULT_LOCALE: Locale = "ar";
+export const FALLBACK_LOCALE: Locale = "en";
 
 export function isLocale(value: unknown): value is Locale {
   return typeof value === "string" && SUPPORTED_LOCALES.includes(value as Locale);
 }
 
 export function normalizeLocale(value: unknown): Locale {
-  return isLocale(value) ? value : DEFAULT_LOCALE;
+  return isLocale(value) ? value : FALLBACK_LOCALE;
 }
 
 export function detectSupportedLocale(acceptedLanguages: readonly string[]): Locale {
@@ -28,7 +32,7 @@ export function detectSupportedLocale(acceptedLanguages: readonly string[]): Loc
     .filter((candidate) => candidate.locale && candidate.quality > 0)
     .sort((left, right) => right.quality - left.quality || left.index - right.index);
 
-  return candidates[0]?.locale || DEFAULT_LOCALE;
+  return candidates[0]?.locale || FALLBACK_LOCALE;
 }
 
 export function localeFieldSuffix(locale: Locale): "Ar" | "En" | "De" | "Tr" {

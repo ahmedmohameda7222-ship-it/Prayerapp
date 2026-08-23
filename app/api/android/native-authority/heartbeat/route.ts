@@ -99,15 +99,31 @@ export async function DELETE(request: Request) {
   }
   const client = createServerClient();
   if (!client) return NextResponse.json({ error: "Native heartbeat is unavailable" }, { status: 503 });
-  let lookup = client
+  const { data, error: lookupError } = await client
     .from("native_prayer_installations")
-    .select("credential_hash, authority_id")
-    .eq("installation_id", installationId);
-  if (authorityId) lookup = lookup.eq("authority_id", authorityId);
-  const { data } = await lookup.maybeSingle();
-  const row = data as { credential_hash?: string; authority_id?: string } | null;
-  if (!row?.credential_hash || !row.authority_id || !credentialMatches(credential, row.credential_hash)) {
+    .select("credential_hash, authority_id, revoked_at")
+    .eq("installation_id", installationId)
+    .maybeSingle();
+  const row = data as { credential_hash?: string; authority_id?: string; revoked_at?: string | null } | null;
+  if (
+    lookupError
+    || !row?.credential_hash
+    || !row.authority_id
+    || !credentialMatches(credential, row.credential_hash)
+  ) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
+  }
+
+  // A successful revoke rotates authority_id before Android can durably
+  // acknowledge it. If the process dies in that window, the retry still
+  // carries the previous generation. The credential proves installation
+  // ownership, while revoked_at proves there is no active generation left to
+  // accidentally revoke, so the retry is safely idempotent.
+  if (row.revoked_at) {
+    return NextResponse.json({ success: true, authorityId: row.authority_id });
+  }
+  if (authorityId != null && authorityId !== row.authority_id) {
+    return NextResponse.json({ error: "Native authority generation changed" }, { status: 409 });
   }
 
   const now = new Date().toISOString();
@@ -139,6 +155,7 @@ export async function DELETE(request: Request) {
     .eq("installation_id", installationId)
     .eq("authority_id", row.authority_id)
     .eq("credential_hash", row.credential_hash)
+    .is("revoked_at", null)
     .select("authority_id")
     .maybeSingle();
   const revoked = revokedData as { authority_id?: string } | null;

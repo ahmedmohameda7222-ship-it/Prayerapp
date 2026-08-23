@@ -100,7 +100,10 @@ public final class NativeStatus {
                 .put("packageId", context.getPackageName())
                 .put("versionCode", versionCode)
                 .put("versionName", versionName)
-                .put("capabilities", new JSONArray().put("authority-generation-v1").put("delivery-receipt-v2"))
+                .put("capabilities", new JSONArray()
+                        .put("authority-generation-v1")
+                        .put("delivery-receipt-v2")
+                        .put("native-secret-private-v2"))
                 .put("receiptV2", true)
                 .put("accountGeneration", store.accountGeneration())
                 .put("notificationPermission", notifications.notificationPermission())
@@ -116,7 +119,6 @@ public final class NativeStatus {
                 .put("scheduleValidUntil", config == null ? JSONObject.NULL : config.scheduleValidUntil.toString())
                 .put("lastError", store.lastError())
                 .put("installationId", store.installationId())
-                .put("authorityId", store.authorityId())
-                .put("credential", store.credential());
+                .put("authorityId", store.authorityId());
     }
 }

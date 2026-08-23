@@ -47,6 +47,26 @@ public final class DeliverySourceContractTest {
     }
 
     @Test
+    public void testAlarmTracksRollbackBeforeInstallAndCleansRuntimeFailure() throws IOException {
+        String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        int methodStart = scheduler.indexOf("public static boolean scheduleTest");
+        int methodEnd = scheduler.indexOf("public static void cancelAll", methodStart);
+        assertTrue(methodStart >= 0);
+        assertTrue(methodEnd > methodStart);
+
+        String testMethod = scheduler.substring(methodStart, methodEnd);
+        int scheduled = testMethod.indexOf("markDeliveryScheduled(");
+        int tracked = testMethod.indexOf("Set<String> requestCodes = Set.of(encodeScheduledRequest(generation, event))");
+        int install = testMethod.indexOf("manager.setExactAndAllowWhileIdle(");
+
+        assertTrue(scheduled >= 0);
+        assertTrue(tracked > scheduled);
+        assertTrue(install > tracked);
+        assertTrue(testMethod.contains("catch (RuntimeException error)"));
+        assertTrue(testMethod.contains("cancelRequests(context, store, requestCodes)"));
+    }
+
+    @Test
     public void schedulerPersistsCancellationWhenStoredAlarmIsRemoved() throws IOException {
         String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
         String store = source("de/donaumoschee/app/storage/NativeStore.java");

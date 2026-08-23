@@ -3,6 +3,7 @@ package de.donaumoschee.app.prayer;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -15,7 +16,7 @@ public final class DeliverySourceContractTest {
         Path direct = project.resolve("src/main/java").resolve(relativePath);
         Path nested = project.resolve("app/src/main/java").resolve(relativePath);
         Path file = Files.exists(direct) ? direct : nested;
-        return Files.readString(file);
+        return new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
     }
 
     @Test

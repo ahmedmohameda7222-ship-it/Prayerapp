@@ -30,6 +30,14 @@ describe("Android server delivery v2 contract", () => {
     expect(migration).toContain("grant all on public.native_prayer_delivery_receipts to service_role");
   });
 
+  it("prunes expired native delivery receipts without making cleanup a delivery dependency", () => {
+    const cron = source("app/api/cron/prayer-reminders/route.ts");
+    expect(cron).toContain('.from("native_prayer_delivery_receipts")');
+    expect(cron).toContain(".delete()");
+    expect(cron).toContain('.lt("expires_at", now.toISOString())');
+    expect(cron).toContain("native receipt cleanup failed");
+  });
+
   it("separates reminder capability from Adhan capability", () => {
     const authority = source("lib/android/native-authority.ts");
     expect(authority).toContain("nativeDeliveryCapability");

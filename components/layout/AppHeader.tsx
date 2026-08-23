@@ -39,7 +39,7 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
   const currentDate = formatLongDate(currentDateIso, locale);
   const hijriDate = formatHijriDate(currentDateIso, locale);
   const mosqueName = title || APP_NAMES[locale];
-  const useBrandLogo = !title;
+  const useArabicBrandLogo = !title && locale === "ar";
   const whatsappHref = safeExternalUrl(whatsappLink, "whatsapp");
   const mapsHref = safeExternalUrl(googleMapsLink, "maps");
 
@@ -87,11 +87,11 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
         </div>
 
         <div className="mt-1 text-center">
-          {useBrandLogo ? (
-            <h1 lang={locale} className="flex justify-center">
+          {useArabicBrandLogo ? (
+            <h1 lang="ar" className="flex justify-center">
               <Image
                 src="/brand/masjid-al-donau.svg"
-                alt={mosqueName}
+                alt={APP_NAMES.ar}
                 width={1852}
                 height={584}
                 className="mosque-name-logo h-auto w-[clamp(190px,54vw,230px)]"

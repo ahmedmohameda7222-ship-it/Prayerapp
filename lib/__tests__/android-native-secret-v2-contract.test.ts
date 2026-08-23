@@ -30,6 +30,15 @@ describe("Android native secret boundary v2", () => {
     expect(provider).toContain("nestedStatus.accountGeneration !== attempt.accountGeneration");
   });
 
+  it("treats an orphaned native authority as account state that must be reset before adoption", () => {
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
+    const helper = provider.slice(
+      provider.indexOf("function hasLegacyNativeState"),
+      provider.indexOf("function accountRequiresReset"),
+    );
+    expect(helper).toContain("status?.authorityId");
+  });
+
   it("accepts the private native credential in a header without requiring it in the enrollment body", () => {
     const enroll = source("app/api/android/native-authority/enroll/route.ts");
     expect(enroll).toContain('request.headers.get("x-native-credential")');

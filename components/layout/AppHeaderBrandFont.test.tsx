@@ -12,6 +12,7 @@ describe("mosque name header brand mark", () => {
 
     expect(header).toContain('import Image from "next/image"');
     expect(header).toContain("const useBrandLogo = !title;");
+    expect(header).toContain('<h1 lang={locale} className="flex justify-center">');
     expect(header).toContain('src="/brand/masjid-al-donau.svg"');
     expect(header).toContain("alt={mosqueName}");
     expect(header).toContain('width={1852}');

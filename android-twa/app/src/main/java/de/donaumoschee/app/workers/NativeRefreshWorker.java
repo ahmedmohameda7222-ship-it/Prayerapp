@@ -81,6 +81,8 @@ public final class NativeRefreshWorker extends Worker {
             if (store.accountGeneration() != generation) return;
             Object scheduleValidUntil = status.opt("scheduleValidUntil");
             JSONObject body = new JSONObject()
+                    .put("receiptV2", true)
+                    .put("accountGeneration", generation)
                     .put("notificationPermission", status.getBoolean("notificationPermission"))
                     .put("notificationDeliveryEnabled", status.getBoolean("notificationDeliveryEnabled"))
                     .put("reminderChannelEnabled", status.getBoolean("reminderChannelEnabled"))

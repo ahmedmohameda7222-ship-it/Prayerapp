@@ -75,6 +75,7 @@ public final class PrayerScheduler {
                     || !store.markScheduleInstalledIfGeneration(generation)
             ) {
                 cancelRequests(context, store, installedByThisCall);
+                store.markScheduleFailureIfGeneration("alarm-schedule-finalize-failed", generation);
                 return false;
             }
             Log.i(TAG, "alarm.schedule installed count=" + events.size() + " generation=" + generation);

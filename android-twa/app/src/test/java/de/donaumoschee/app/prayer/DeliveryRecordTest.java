@@ -8,6 +8,17 @@ import static org.junit.Assert.assertTrue;
 
 public final class DeliveryRecordTest {
     @Test
+    public void scheduledDeliveryMustEnterFiringBeforeCompletion() {
+        DeliveryRecord scheduled = DeliveryRecord.schedule("event-0", "REMINDER", 900L);
+        assertEquals(DeliveryState.SCHEDULED, scheduled.state());
+        assertEquals(0L, scheduled.attemptedAtMs());
+
+        DeliveryRecord firing = scheduled.fire(950L);
+        assertEquals(DeliveryState.FIRING, firing.state());
+        assertEquals(950L, firing.attemptedAtMs());
+    }
+
+    @Test
     public void deliveryMustPassThroughFiringBeforeItCanBeDelivered() {
         DeliveryRecord firing = DeliveryRecord.begin("event-1", "REMINDER", 1_000L, 1_050L);
 

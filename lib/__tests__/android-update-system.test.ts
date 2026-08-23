@@ -59,6 +59,19 @@ describe("Android direct-APK update system", () => {
     expect(protocol).toContain('"native.update.required"');
   });
 
+  it("does not re-enroll native authority while a required update is active", () => {
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
+    const accessTokenGate = provider.indexOf("|| !sessionAccessToken");
+    const enrollmentEffectStart = provider.lastIndexOf("useEffect(() => {", accessTokenGate);
+    const enrollmentGateEnd = provider.indexOf("const storedOwnerId", accessTokenGate);
+    const enrollmentGate = provider.slice(enrollmentEffectStart, enrollmentGateEnd);
+
+    expect(accessTokenGate).toBeGreaterThanOrEqual(0);
+    expect(enrollmentEffectStart).toBeGreaterThanOrEqual(0);
+    expect(enrollmentGateEnd).toBeGreaterThan(accessTokenGate);
+    expect(enrollmentGate).toContain("nativeUpdateRequiredRef.current");
+  });
+
   it("shows native-only installed/latest/update controls in Settings", () => {
     const card = source("components/settings/AndroidUpdateCard.tsx");
     const page = source("app/settings/page.tsx");

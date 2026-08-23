@@ -289,6 +289,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
             installationId: status.installationId,
             credential: status.credential,
             authorityId: status.authorityId || null,
+            accountGeneration: status.accountGeneration,
             browserId: stored.browserId,
             endpoint: subscription?.endpoint || null,
           }),

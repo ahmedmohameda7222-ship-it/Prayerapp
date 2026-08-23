@@ -22,6 +22,14 @@ describe("Android native secret boundary v2", () => {
     expect(provider).toContain("supportsNativeSecretPrivate(status)");
   });
 
+  it("correlates native enrollment completion with the initiating web account and generations", () => {
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
+    expect(provider).toContain("type NativeEnrollmentAttempt");
+    expect(provider).toContain("sessionUserIdRef.current !== attempt.userId");
+    expect(provider).toContain("syncGenerationRef.current !== attempt.syncGeneration");
+    expect(provider).toContain("nestedStatus.accountGeneration !== attempt.accountGeneration");
+  });
+
   it("accepts the private native credential in a header without requiring it in the enrollment body", () => {
     const enroll = source("app/api/android/native-authority/enroll/route.ts");
     expect(enroll).toContain('request.headers.get("x-native-credential")');

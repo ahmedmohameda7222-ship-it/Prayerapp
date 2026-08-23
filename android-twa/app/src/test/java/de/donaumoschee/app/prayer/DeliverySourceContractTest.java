@@ -29,6 +29,16 @@ public final class DeliverySourceContractTest {
     }
 
     @Test
+    public void schedulerPersistsCancellationWhenStoredAlarmIsRemoved() throws IOException {
+        String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        String store = source("de/donaumoschee/app/storage/NativeStore.java");
+
+        assertTrue(store.contains("cancelDeliveryScheduled("));
+        assertTrue(scheduler.contains("store.cancelDeliveryScheduled(request.eventId"));
+        assertTrue(scheduler.contains("cancelRequest(context, store, request)"));
+    }
+
+    @Test
     public void applicationCreatesBothReminderAndAdhanChannelsUpFront() throws IOException {
         String notifications = source("de/donaumoschee/app/prayer/PrayerNotifications.java");
 

@@ -17,7 +17,13 @@ public final class DeliveryLedger {
     }
 
     public boolean schedule(String eventId, String kind, long dueAtMs) {
-        if (records.containsKey(eventId) || !reserveSlot()) return false;
+        DeliveryRecord current = records.get(eventId);
+        if (current != null) {
+            return current.state() == DeliveryState.SCHEDULED
+                    && current.kind().equals(kind)
+                    && current.dueAtMs() == dueAtMs;
+        }
+        if (!reserveSlot()) return false;
         records.put(eventId, DeliveryRecord.schedule(eventId, kind, dueAtMs));
         return true;
     }

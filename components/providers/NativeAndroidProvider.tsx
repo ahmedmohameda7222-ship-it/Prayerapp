@@ -18,9 +18,24 @@ import {
 const PRODUCTION_ORIGIN = "https://donaumoschee.vercel.app";
 const PUSH_STORAGE_KEY = "masjid-el-rahman-push-v1";
 const NATIVE_ACCOUNT_OWNER_KEY = "danube-native-account-owner-v1";
+const BRIDGE_READY_TIMEOUT_MS = 4_000;
+
+type NativeBridgeState = "probing" | "ready" | "unavailable";
+type NativeBridgeBootstrap = {
+  origin: string;
+  data: unknown;
+  port: MessagePort;
+};
+
+declare global {
+  interface Window {
+    __DANUBE_NATIVE_BRIDGE_BOOTSTRAP__?: NativeBridgeBootstrap;
+  }
+}
 
 type ContextValue = {
   isNative: boolean;
+  bridgeState: NativeBridgeState;
   status: NativeBridgeStatus | null;
   requestPermissions: () => void;
   requestStatus: () => void;
@@ -30,6 +45,7 @@ type ContextValue = {
 
 const NativeAndroidContext = createContext<ContextValue>({
   isNative: false,
+  bridgeState: "probing",
   status: null,
   requestPermissions: () => undefined,
   requestStatus: () => undefined,
@@ -70,6 +86,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   const sessionAccessToken = session?.access_token ?? null;
   const { pushStatus, enableNotifications } = useAppPreferences();
   const [status, setStatus] = useState<NativeBridgeStatus | null>(null);
+  const [bridgeState, setBridgeState] = useState<NativeBridgeState>("probing");
   const [channelRevision, setChannelRevision] = useState(0);
   const [accountRevision, setAccountRevision] = useState(0);
   const portRef = useRef<MessagePort | null>(null);
@@ -159,20 +176,35 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [finishAccountTransition, send]);
 
   useEffect(() => {
-    const receiveInitialPort = (event: MessageEvent) => {
-      if (event.origin !== PRODUCTION_ORIGIN || !event.ports[0]) return;
-      const initial = parseNativeMessage(event.data);
+    const attachInitialPort = (origin: string, raw: unknown, port: MessagePort | undefined) => {
+      if (portRef.current || origin !== PRODUCTION_ORIGIN || !port) return;
+      const initial = parseNativeMessage(raw);
       if (!initial || initial.type !== "native.ready") return;
-      const port = event.ports[0];
       port.onmessage = (portEvent) => handleNativeMessage(portEvent.data);
       port.start();
       portRef.current = port;
       handleNativeMessage(initial);
+      setBridgeState("ready");
       setChannelRevision((current) => current + 1);
+      port.postMessage(JSON.stringify({ version: 1, type: "web.bridge.ready", payload: {} }));
       port.postMessage(JSON.stringify({ version: 1, type: "native.status.request", payload: {} }));
     };
+    const receiveInitialPort = (event: MessageEvent) => {
+      attachInitialPort(event.origin, event.data, event.ports[0]);
+    };
+    const timeout = window.setTimeout(() => {
+      if (!portRef.current) setBridgeState("unavailable");
+    }, BRIDGE_READY_TIMEOUT_MS);
+
     window.addEventListener("message", receiveInitialPort);
+    const bootstrap = window.__DANUBE_NATIVE_BRIDGE_BOOTSTRAP__;
+    if (bootstrap) {
+      attachInitialPort(bootstrap.origin, bootstrap.data, bootstrap.port);
+      delete window.__DANUBE_NATIVE_BRIDGE_BOOTSTRAP__;
+    }
+
     return () => {
+      window.clearTimeout(timeout);
       window.removeEventListener("message", receiveInitialPort);
       portRef.current?.close();
       portRef.current = null;
@@ -445,12 +477,13 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
 
   const value = useMemo<ContextValue>(() => ({
     isNative: Boolean(status?.native && status.packageId === "de.donaumoschee.app"),
+    bridgeState,
     status,
     requestPermissions,
     requestStatus,
     scheduleTest,
     suspendNativeAuthority,
-  }), [requestPermissions, requestStatus, scheduleTest, status, suspendNativeAuthority]);
+  }), [bridgeState, requestPermissions, requestStatus, scheduleTest, status, suspendNativeAuthority]);
 
   return <NativeAndroidContext.Provider value={value}>{children}</NativeAndroidContext.Provider>;
 }

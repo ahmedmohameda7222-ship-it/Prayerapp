@@ -30,13 +30,13 @@ describe("Android native secret boundary v2", () => {
     expect(provider).toContain("nestedStatus.accountGeneration !== attempt.accountGeneration");
   });
 
-  it("treats an orphaned native authority as account state that must be reset before adoption", () => {
+  it("treats an authority-only orphan as account state only for private-secret v2", () => {
     const provider = source("components/providers/NativeAndroidProvider.tsx");
     const helper = provider.slice(
       provider.indexOf("function hasLegacyNativeState"),
       provider.indexOf("function accountRequiresReset"),
     );
-    expect(helper).toContain("status?.authorityId");
+    expect(helper).toContain("supportsNativeSecretPrivate(status) && status?.authorityId");
   });
 
   it("accepts the private native credential in a header without requiring it in the enrollment body", () => {

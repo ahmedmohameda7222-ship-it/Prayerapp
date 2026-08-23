@@ -125,5 +125,15 @@ describe("Android server delivery v2 behavior", () => {
       receiptInstallationIds: new Set<string>(),
       receiptLookupFailed: false,
     })).toBe("push");
+
+    expect(decide({
+      targetId: "push-a",
+      lease: healthyLease({ account_generation: undefined }),
+      kind: "reminder",
+      now: new Date("2026-08-23T12:00:10.000Z"),
+      dueAtMs,
+      receiptInstallationIds: new Set<string>(),
+      receiptLookupFailed: false,
+    })).toBe("push");
   });
 });

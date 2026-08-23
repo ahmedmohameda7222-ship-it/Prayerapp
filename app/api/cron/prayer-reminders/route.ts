@@ -188,6 +188,14 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
+  const { error: receiptCleanupError } = await client
+    .from("native_prayer_delivery_receipts")
+    .delete()
+    .lt("expires_at", now.toISOString());
+  if (receiptCleanupError) {
+    console.warn("[prayer reminder cron] native receipt cleanup failed", receiptCleanupError.message);
+  }
+
   const nowMs = now.getTime();
   const today = todayIso(now);
   const tomorrow = addDaysIso(today, 1);

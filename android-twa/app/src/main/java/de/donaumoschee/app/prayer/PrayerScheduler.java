@@ -57,11 +57,11 @@ public final class PrayerScheduler {
             AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             for (AlarmEvent event : events) {
                 if (store.accountGeneration() != generation) {
-                    cancelRequests(context, installedByThisCall);
+                    cancelRequests(context, store, installedByThisCall);
                     return false;
                 }
                 if (!store.markDeliveryScheduled(event.eventId, event.kind.name(), event.dueAt.toEpochMilli())) {
-                    cancelRequests(context, installedByThisCall);
+                    cancelRequests(context, store, installedByThisCall);
                     store.markScheduleFailureIfGeneration("delivery-state-unavailable", generation);
                     return false;
                 }
@@ -74,13 +74,13 @@ public final class PrayerScheduler {
                     || !store.addScheduledRequestCodesIfGeneration(installedByThisCall, generation)
                     || !store.markScheduleInstalledIfGeneration(generation)
             ) {
-                cancelRequests(context, installedByThisCall);
+                cancelRequests(context, store, installedByThisCall);
                 return false;
             }
             Log.i(TAG, "alarm.schedule installed count=" + events.size() + " generation=" + generation);
             return true;
         } catch (RuntimeException error) {
-            cancelRequests(context, installedByThisCall);
+            cancelRequests(context, store, installedByThisCall);
             Log.e(TAG, "alarm.schedule failed=" + error.getClass().getSimpleName());
             store.markScheduleFailureIfGeneration("alarm-schedule-failed", generation);
             return false;
@@ -102,7 +102,7 @@ public final class PrayerScheduler {
         manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
         Set<String> requestCodes = Set.of(encodeScheduledRequest(generation, event));
         if (!store.addScheduledRequestCodesIfGeneration(requestCodes, generation)) {
-            cancelRequests(context, requestCodes);
+            cancelRequests(context, store, requestCodes);
             return false;
         }
         Log.i(TAG, "alarm.test scheduled kind=" + kind + " prayer=" + prayer.key + " delaySeconds=" + delaySeconds + " generation=" + generation);
@@ -141,6 +141,7 @@ public final class PrayerScheduler {
         Set<String> stored = store.scheduledRequestCodes();
         Set<String> retained = new HashSet<>();
         int cancelled = 0;
+        boolean deliveryStateUpdated = true;
         for (String raw : stored) {
             ScheduledRequest request = parseScheduledRequest(raw);
             if (request == null) {
@@ -149,28 +150,39 @@ public final class PrayerScheduler {
             }
             boolean shouldCancel = generationFilter == null || request.legacy || request.generation == generationFilter;
             if (shouldCancel) {
-                cancelRequest(context, request);
+                boolean cancelledCleanly = cancelRequest(context, store, request);
+                if (!cancelledCleanly) {
+                    retained.add(raw);
+                    deliveryStateUpdated = false;
+                }
                 cancelled += 1;
             } else {
                 retained.add(raw);
             }
         }
         if (cancelled > 0) Log.i(TAG, "alarm.cancel count=" + cancelled + " generation=" + generationFilter);
+        boolean metadataUpdated;
         if (generationFilter == null) {
             store.setScheduledRequestCodes(retained);
-            return true;
+            metadataUpdated = true;
+        } else {
+            metadataUpdated = store.setScheduledRequestCodesIfGeneration(retained, generationFilter);
         }
-        return store.setScheduledRequestCodesIfGeneration(retained, generationFilter);
+        if (!deliveryStateUpdated) store.markEngineError("delivery-cancellation-persist-failed");
+        return deliveryStateUpdated && metadataUpdated;
     }
 
-    private static void cancelRequests(Context context, Set<String> requests) {
+    private static boolean cancelRequests(Context context, NativeStore store, Set<String> requests) {
+        boolean success = true;
         for (String raw : requests) {
             ScheduledRequest request = parseScheduledRequest(raw);
-            if (request != null) cancelRequest(context, request);
+            if (request != null && !cancelRequest(context, store, request)) success = false;
         }
+        if (!success) store.markEngineError("delivery-cancellation-persist-failed");
+        return success;
     }
 
-    private static void cancelRequest(Context context, ScheduledRequest request) {
+    private static boolean cancelRequest(Context context, NativeStore store, ScheduledRequest request) {
         AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Uri data = request.legacy
                 ? Uri.parse("danube://prayer-event/" + Uri.encode(request.eventId))
@@ -188,6 +200,7 @@ public final class PrayerScheduler {
             manager.cancel(existing);
             existing.cancel();
         }
+        return store.cancelDeliveryScheduled(request.eventId, "alarm-cancelled", System.currentTimeMillis());
     }
 
     private static ScheduledRequest parseScheduledRequest(String raw) {

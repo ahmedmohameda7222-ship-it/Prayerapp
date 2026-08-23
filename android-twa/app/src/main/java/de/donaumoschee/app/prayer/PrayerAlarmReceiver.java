@@ -63,11 +63,15 @@ public final class PrayerAlarmReceiver extends BroadcastReceiver {
         }
 
         if (!AlarmEvent.Kind.ADHAN.name().equals(kind)) {
-            store.markDeliveryFailed(eventId, "unsupported-delivery-kind", System.currentTimeMillis());
+            if (!store.markDeliveryFailed(eventId, "unsupported-delivery-kind", System.currentTimeMillis())) {
+                store.markEngineError("unsupported-delivery-failure-persist-failed");
+            }
             return;
         }
         if (!NativeStatus.notificationCapabilities(context).adhanDeliveryReady()) {
-            store.markDeliveryFailed(eventId, "adhan-delivery-unavailable", System.currentTimeMillis());
+            if (!store.markDeliveryFailed(eventId, "adhan-delivery-unavailable", System.currentTimeMillis())) {
+                store.markEngineError("adhan-delivery-unavailable-persist-failed");
+            }
             return;
         }
 
@@ -79,7 +83,9 @@ public final class PrayerAlarmReceiver extends BroadcastReceiver {
         try {
             ContextCompat.startForegroundService(context, playback);
         } catch (RuntimeException error) {
-            store.markDeliveryFailed(eventId, "adhan-service-start-failed", System.currentTimeMillis());
+            if (!store.markDeliveryFailed(eventId, "adhan-service-start-failed", System.currentTimeMillis())) {
+                store.markEngineError("adhan-service-start-failure-persist-failed");
+            }
             Log.e(TAG, "alarm.fire adhan-service-start-failed=" + error.getClass().getSimpleName());
         }
     }

@@ -17,6 +17,7 @@ public final class NativeWork {
     private static final String IMMEDIATE_REFRESH = "native-prayer-refresh-now-v1";
     private static final String AUDIO_CACHE = "native-prayer-audio-cache-v1";
     private static final String RECEIPT_FLUSH = "native-prayer-receipt-flush-v2";
+    private static final String AUTHORITY_REVOCATION = "native-authority-revocation-v2";
 
     private NativeWork() {}
 
@@ -43,6 +44,15 @@ public final class NativeWork {
                 RECEIPT_FLUSH,
                 ExistingWorkPolicy.KEEP,
                 new OneTimeWorkRequest.Builder(DeliveryReceiptWorker.class).setConstraints(network).build()
+        );
+    }
+
+    public static void flushAuthorityRevocation(Context context) {
+        Constraints network = new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build();
+        WorkManager.getInstance(context).enqueueUniqueWork(
+                AUTHORITY_REVOCATION,
+                ExistingWorkPolicy.REPLACE,
+                new OneTimeWorkRequest.Builder(NativeAuthorityWorker.class).setConstraints(network).build()
         );
     }
 

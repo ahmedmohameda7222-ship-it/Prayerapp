@@ -23,6 +23,7 @@ import de.donaumoschee.app.R;
 import de.donaumoschee.app.prayer.PrayerScheduler;
 import de.donaumoschee.app.prayer.Prayer;
 import de.donaumoschee.app.storage.NativeStore;
+import de.donaumoschee.app.workers.NativeWork;
 
 import java.io.File;
 import java.util.List;
@@ -56,6 +57,8 @@ public final class AdhanPlaybackService extends MediaSessionService {
                 NativeStore store = new NativeStore(AdhanPlaybackService.this);
                 if (!store.markDeliveryDelivered(currentEventId, System.currentTimeMillis())) {
                     store.markEngineError("adhan-delivery-state-persist-failed");
+                } else {
+                    NativeWork.flushReceipts(AdhanPlaybackService.this);
                 }
                 playbackAcknowledged = true;
                 Log.i(TAG, "adhan.playback acknowledged event=" + currentEventId);

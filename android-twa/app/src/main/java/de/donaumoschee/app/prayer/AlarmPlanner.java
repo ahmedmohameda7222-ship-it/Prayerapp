@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 public final class AlarmPlanner {
-    private static final Duration HORIZON = Duration.ofDays(7);
+    private static final Duration HORIZON = Duration.ofDays(14);
 
     private AlarmPlanner() {}
 
@@ -45,7 +45,19 @@ public final class AlarmPlanner {
             Instant through
     ) {
         if (!dueAt.isAfter(now) || dueAt.isAfter(through)) return;
-        String eventId = config.revision + ":" + row.date + ":" + prayer.key + ":" + kind.name().toLowerCase(Locale.ROOT) + ":" + leadMinutes;
+        String eventId;
+        if (row.id.isBlank()) {
+            eventId = config.revision + ":" + row.date + ":" + prayer.key + ":" + kind.name().toLowerCase(Locale.ROOT) + ":" + leadMinutes;
+        } else {
+            eventId = PrayerEventId.create(
+                    row.id,
+                    row.prayerRevision(prayer),
+                    row.date,
+                    prayer,
+                    kind,
+                    leadMinutes
+            );
+        }
         events.add(new AlarmEvent(eventId, prayer, kind, dueAt, leadMinutes, reminder.adhanSoundId));
     }
 }

@@ -14,7 +14,7 @@ describe("Android native authority generation", () => {
     expect(enroll).toContain("randomUUID");
     expect(enroll).toContain("authority_id: authorityId");
     expect(enroll).toContain("authorityId: enrolled.authority_id");
-    expect(heartbeat).toContain('select("credential_hash, authority_id")');
+    expect(heartbeat).toContain('select("credential_hash, authority_id, account_generation")');
     expect(heartbeat).toContain('request.headers.get("x-native-authority-id")');
     expect(heartbeat).toContain('.eq("authority_id", row.authority_id)');
     expect(heartbeat).toContain('.eq("credential_hash", row.credential_hash)');

@@ -11,12 +11,19 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public final class DeliverySourceContractTest {
-    private static String source(String relativePath) throws IOException {
+    private static Path sourcePath(String relativePath) {
         Path project = Path.of(System.getProperty("user.dir"));
         Path direct = project.resolve("src/main/java").resolve(relativePath);
         Path nested = project.resolve("app/src/main/java").resolve(relativePath);
-        Path file = Files.exists(direct) ? direct : nested;
-        return new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+        return Files.exists(direct) ? direct : nested;
+    }
+
+    private static String source(String relativePath) throws IOException {
+        return new String(Files.readAllBytes(sourcePath(relativePath)), StandardCharsets.UTF_8);
+    }
+
+    private static boolean sourceExists(String relativePath) {
+        return Files.exists(sourcePath(relativePath));
     }
 
     @Test
@@ -108,6 +115,46 @@ public final class DeliverySourceContractTest {
         assertTrue(persistMethod.contains("if (!persisted)"));
         assertTrue(persistMethod.contains("putBoolean(ENGINE_HEALTHY, false)"));
         assertTrue(persistMethod.contains("delivery-ledger-persist-failed"));
+    }
+
+    @Test
+    public void deliveredLedgerAndReceiptQueuePersistTogether() throws IOException {
+        String store = source("de/donaumoschee/app/storage/NativeStore.java");
+        int methodStart = store.indexOf("public boolean markDeliveryDelivered");
+        int methodEnd = store.indexOf("public boolean markDeliveryFailed", methodStart);
+        assertTrue(methodStart >= 0);
+        assertTrue(methodEnd > methodStart);
+
+        String deliveredMethod = store.substring(methodStart, methodEnd);
+        assertTrue(store.contains("DELIVERY_RECEIPTS"));
+        assertTrue(store.contains("DeliveryReceiptQueue"));
+        assertTrue(deliveredMethod.contains("ledger.markDelivered"));
+        assertTrue(deliveredMethod.contains("receiptQueue.enqueue"));
+        assertTrue(deliveredMethod.contains("persistDeliveredAndReceiptQueueLocked"));
+        assertTrue(store.contains("pendingDeliveryReceipts("));
+        assertTrue(store.contains("acknowledgeDeliveryReceipt("));
+    }
+
+    @Test
+    public void accountResetAndClearDropOldGenerationReceipts() throws IOException {
+        String store = source("de/donaumoschee/app/storage/NativeStore.java");
+        assertTrue(store.contains(".remove(DELIVERY_RECEIPTS)"));
+        assertTrue(store.contains("advanceAccountGenerationLocked"));
+    }
+
+    @Test
+    public void receiptWorkerAndRepairHooksExist() throws IOException {
+        assertTrue(sourceExists("de/donaumoschee/app/workers/DeliveryReceiptWorker.java"));
+        String nativeWork = source("de/donaumoschee/app/workers/NativeWork.java");
+        String repair = source("de/donaumoschee/app/system/ScheduleRepairReceiver.java");
+        String receiver = source("de/donaumoschee/app/prayer/PrayerAlarmReceiver.java");
+        String adhan = source("de/donaumoschee/app/adhan/AdhanPlaybackService.java");
+
+        assertTrue(nativeWork.contains("flushReceipts("));
+        assertTrue(repair.contains("Intent.ACTION_DATE_CHANGED"));
+        assertTrue(repair.contains("NativeWork.flushReceipts(context)"));
+        assertTrue(receiver.contains("NativeWork.flushReceipts(context)"));
+        assertTrue(adhan.contains("NativeWork.flushReceipts(AdhanPlaybackService.this)"));
     }
 
     @Test

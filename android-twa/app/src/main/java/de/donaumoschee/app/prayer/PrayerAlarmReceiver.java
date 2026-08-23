@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat;
 import de.donaumoschee.app.adhan.AdhanCatalog;
 import de.donaumoschee.app.adhan.AdhanPlaybackService;
 import de.donaumoschee.app.storage.NativeStore;
+import de.donaumoschee.app.workers.NativeWork;
 
 public final class PrayerAlarmReceiver extends BroadcastReceiver {
     private static final String TAG = "DanubePrayer";
@@ -55,6 +56,8 @@ public final class PrayerAlarmReceiver extends BroadcastReceiver {
             if (posted) {
                 if (!store.markDeliveryDelivered(eventId, completedAtMs)) {
                     store.markEngineError("reminder-delivery-state-persist-failed");
+                } else {
+                    NativeWork.flushReceipts(context);
                 }
             } else if (!store.markDeliveryFailed(eventId, "notification-delivery-failed", completedAtMs)) {
                 store.markEngineError("reminder-delivery-failure-persist-failed");

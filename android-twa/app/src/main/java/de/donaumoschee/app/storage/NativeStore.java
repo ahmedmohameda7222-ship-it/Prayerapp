@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.util.Base64;
 
 import de.donaumoschee.app.prayer.DeliveryLedger;
+import de.donaumoschee.app.prayer.DeliveryReceiptQueue;
 import de.donaumoschee.app.prayer.DeliveryRecord;
 import de.donaumoschee.app.prayer.DeliveryState;
 import de.donaumoschee.app.prayer.NativeConfig;
@@ -15,6 +16,7 @@ import org.json.JSONObject;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -26,7 +28,9 @@ public final class NativeStore {
     private static final String AUTHORITY_ID = "authority-id";
     private static final String DELIVERED = "delivered-events";
     private static final String DELIVERY_RECORDS = "delivery-records-v2";
+    private static final String DELIVERY_RECEIPTS = "delivery-receipts-v2";
     private static final int MAX_DELIVERY_RECORDS = 512;
+    private static final int MAX_DELIVERY_RECEIPTS = 512;
     private static final String SCHEDULE_INSTALLED = "schedule-installed";
     private static final String ENGINE_HEALTHY = "engine-healthy";
     private static final String LAST_ERROR = "last-error";
@@ -157,8 +161,16 @@ public final class NativeStore {
     public boolean markDeliveryDelivered(String eventId, long deliveredAtMs) {
         synchronized (ACCOUNT_LOCK) {
             DeliveryLedger ledger = loadDeliveryLedgerLocked();
-            if (ledger == null || !ledger.markDelivered(eventId, deliveredAtMs)) return false;
-            return persistDeliveryLedgerLocked(ledger);
+            DeliveryRecord current = ledger == null ? null : ledger.record(eventId);
+            if (current == null || !ledger.markDelivered(eventId, deliveredAtMs)) return false;
+            if (!eventId.startsWith("p2:")) return persistDeliveryLedgerLocked(ledger);
+
+            DeliveryReceiptQueue receiptQueue = loadDeliveryReceiptQueueLocked();
+            if (receiptQueue == null || !receiptQueue.enqueue(eventId, current.kind(), deliveredAtMs, accountGeneration())) {
+                markEngineError("delivery-receipt-queue-unavailable");
+                return false;
+            }
+            return persistDeliveredAndReceiptQueueLocked(ledger, receiptQueue);
         }
     }
 
@@ -174,6 +186,23 @@ public final class NativeStore {
         synchronized (ACCOUNT_LOCK) {
             DeliveryLedger ledger = loadDeliveryLedgerLocked();
             return ledger == null ? null : ledger.record(eventId);
+        }
+    }
+
+    public List<DeliveryReceiptQueue.Receipt> pendingDeliveryReceipts(int generation) {
+        synchronized (ACCOUNT_LOCK) {
+            DeliveryReceiptQueue receiptQueue = loadDeliveryReceiptQueueLocked();
+            return receiptQueue == null ? List.of() : receiptQueue.pending(generation);
+        }
+    }
+
+    public boolean acknowledgeDeliveryReceipt(String eventId, int generation) {
+        synchronized (ACCOUNT_LOCK) {
+            if (accountGeneration() != generation) return false;
+            DeliveryReceiptQueue receiptQueue = loadDeliveryReceiptQueueLocked();
+            if (receiptQueue == null) return false;
+            if (!receiptQueue.acknowledge(eventId, generation)) return true;
+            return persistDeliveryReceiptQueueLocked(receiptQueue);
         }
     }
 
@@ -266,6 +295,7 @@ public final class NativeStore {
                     .remove(CONFIG)
                     .remove(DELIVERED)
                     .remove(DELIVERY_RECORDS)
+                    .remove(DELIVERY_RECEIPTS)
                     .putBoolean(SCHEDULE_INSTALLED, false)
                     .putBoolean(ENGINE_HEALTHY, false)
                     .putString(LAST_ERROR, "")
@@ -298,6 +328,20 @@ public final class NativeStore {
         }
     }
 
+    private DeliveryReceiptQueue loadDeliveryReceiptQueueLocked() {
+        String raw = preferences.getString(DELIVERY_RECEIPTS, null);
+        if (raw == null || raw.isBlank()) return new DeliveryReceiptQueue(MAX_DELIVERY_RECEIPTS);
+        try {
+            return DeliveryReceiptQueue.fromJson(new JSONObject(raw), MAX_DELIVERY_RECEIPTS);
+        } catch (JSONException | RuntimeException error) {
+            preferences.edit()
+                    .putBoolean(ENGINE_HEALTHY, false)
+                    .putString(LAST_ERROR, "delivery-receipts-invalid")
+                    .commit();
+            return null;
+        }
+    }
+
     private boolean persistDeliveryLedgerLocked(DeliveryLedger ledger) {
         try {
             boolean persisted = preferences.edit()
@@ -319,6 +363,33 @@ public final class NativeStore {
         }
     }
 
+    private boolean persistDeliveredAndReceiptQueueLocked(DeliveryLedger ledger, DeliveryReceiptQueue receiptQueue) {
+        try {
+            boolean persisted = preferences.edit()
+                    .putString(DELIVERY_RECORDS, ledger.toJson().toString())
+                    .putString(DELIVERY_RECEIPTS, receiptQueue.toJson().toString())
+                    .commit();
+            if (!persisted) markEngineError("delivery-receipt-persist-failed");
+            return persisted;
+        } catch (JSONException error) {
+            markEngineError("delivery-receipt-persist-failed");
+            return false;
+        }
+    }
+
+    private boolean persistDeliveryReceiptQueueLocked(DeliveryReceiptQueue receiptQueue) {
+        try {
+            boolean persisted = preferences.edit()
+                    .putString(DELIVERY_RECEIPTS, receiptQueue.toJson().toString())
+                    .commit();
+            if (!persisted) markEngineError("delivery-receipt-persist-failed");
+            return persisted;
+        } catch (JSONException error) {
+            markEngineError("delivery-receipt-persist-failed");
+            return false;
+        }
+    }
+
     private boolean legacyDeliveredLocked(String eventId) {
         return preferences.getStringSet(DELIVERED, Set.of()).contains(eventId);
     }
@@ -326,7 +397,7 @@ public final class NativeStore {
     private int advanceAccountGenerationLocked() {
         int current = preferences.getInt(ACCOUNT_GENERATION, 0);
         int next = current == Integer.MAX_VALUE ? 1 : current + 1;
-        if (!preferences.edit().putInt(ACCOUNT_GENERATION, next).commit()) {
+        if (!preferences.edit().putInt(ACCOUNT_GENERATION, next).remove(DELIVERY_RECEIPTS).commit()) {
             throw new IllegalStateException("Could not advance native account generation");
         }
         return next;
@@ -337,6 +408,7 @@ public final class NativeStore {
                 .remove(CONFIG)
                 .remove(DELIVERED)
                 .remove(DELIVERY_RECORDS)
+                .remove(DELIVERY_RECEIPTS)
                 .putBoolean(SCHEDULE_INSTALLED, false)
                 .putBoolean(ENGINE_HEALTHY, false)
                 .putString(LAST_ERROR, "")

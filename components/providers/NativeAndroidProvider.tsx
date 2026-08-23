@@ -47,7 +47,7 @@ type NativeEnrollmentAttempt = {
 
 function hasLegacyNativeState(status: NativeBridgeStatus | null) {
   return Boolean(
-    status?.authorityId
+    (supportsNativeSecretPrivate(status) && status?.authorityId)
     || status?.alarmScheduleInstalled
     || status?.scheduleFresh
     || status?.nativeReady

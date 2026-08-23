@@ -96,6 +96,21 @@ public final class DeliverySourceContractTest {
     }
 
     @Test
+    public void deliveryLedgerPersistenceFailureRevokesEngineHealth() throws IOException {
+        String store = source("de/donaumoschee/app/storage/NativeStore.java");
+        int methodStart = store.indexOf("private boolean persistDeliveryLedgerLocked");
+        int methodEnd = store.indexOf("private boolean legacyDeliveredLocked", methodStart);
+        assertTrue(methodStart >= 0);
+        assertTrue(methodEnd > methodStart);
+
+        String persistMethod = store.substring(methodStart, methodEnd);
+        assertTrue(persistMethod.contains("boolean persisted ="));
+        assertTrue(persistMethod.contains("if (!persisted)"));
+        assertTrue(persistMethod.contains("putBoolean(ENGINE_HEALTHY, false)"));
+        assertTrue(persistMethod.contains("delivery-ledger-persist-failed"));
+    }
+
+    @Test
     public void applicationCreatesBothReminderAndAdhanChannelsUpFront() throws IOException {
         String notifications = source("de/donaumoschee/app/prayer/PrayerNotifications.java");
 

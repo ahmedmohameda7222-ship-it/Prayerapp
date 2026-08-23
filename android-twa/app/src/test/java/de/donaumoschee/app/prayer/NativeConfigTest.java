@@ -4,6 +4,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
@@ -17,6 +19,23 @@ public final class NativeConfigTest {
         assertEquals(1, config.rows.size());
         assertEquals(1, config.reminders.size());
         assertEquals(NativeConfig.ZONE, java.time.ZoneId.of("Europe/Berlin"));
+    }
+
+    @Test
+    public void persistsAppSelectedLocaleInParsedConfig() throws Exception {
+        NativeConfig config = NativeConfig.parse(valid("fajr", "fajr-cairo").put("locale", "ar"), NOW);
+        Field locale = NativeConfig.class.getField("locale");
+        assertEquals("ar", locale.get(config));
+        assertEquals("ar", config.source.getString("locale"));
+    }
+
+    @Test
+    public void unsupportedAppLocaleFallsBackToEnglish() throws Exception {
+        Class<?> appLocale = Class.forName("de.donaumoschee.app.localization.AppLocale");
+        Method normalize = appLocale.getMethod("normalize", String.class);
+        assertEquals("en", normalize.invoke(null, "fr"));
+        assertEquals("en", normalize.invoke(null, new Object[]{null}));
+        assertEquals("tr", normalize.invoke(null, "tr"));
     }
 
     @Test(expected = JSONException.class)

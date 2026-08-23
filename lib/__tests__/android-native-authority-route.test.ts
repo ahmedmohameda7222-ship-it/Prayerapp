@@ -193,4 +193,29 @@ describe("native authority route generation isolation", () => {
       revoked_at: expect.any(String),
     }));
   });
+
+  it("treats a retry of an already-revoked generation as idempotent success", async () => {
+    const tombstoneAuthorityId = "56cd571a-cbae-4f2c-915c-65f604dbd265";
+    const lookup = query({
+      data: {
+        authority_id: tombstoneAuthorityId,
+        credential_hash: credentialHash,
+        revoked_at: "2026-08-23T15:00:00.000Z",
+      },
+      error: null,
+    });
+    const from = vi.fn(() => lookup);
+    mocks.client = { from };
+
+    const response = await DELETE(new Request("https://donaumoschee.vercel.app/api/android/native-authority/heartbeat", {
+      method: "DELETE",
+      headers: nativeHeaders(true),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true, authorityId: tombstoneAuthorityId });
+    expect(from).toHaveBeenCalledTimes(1);
+    expect(lookup.filters).toEqual([["installation_id", installationId]]);
+    expect(lookup.updates).toHaveLength(0);
+  });
 });

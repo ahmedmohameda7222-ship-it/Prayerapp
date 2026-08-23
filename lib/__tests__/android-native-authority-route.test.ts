@@ -130,6 +130,38 @@ describe("native authority route generation isolation", () => {
     }));
   });
 
+  it("accepts Android-private enrollment without a browser Origin header", async () => {
+    const lookup = query({ data: null, error: null });
+    const insertion = query({ data: { authority_id: authorityId }, error: null });
+    const from = vi.fn()
+      .mockReturnValueOnce(lookup)
+      .mockReturnValueOnce(insertion);
+    mocks.client = {
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "user-a" } }, error: null })) },
+      from,
+    };
+
+    const response = await ENROLL(new Request("https://donaumoschee.vercel.app/api/android/native-authority/enroll", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer account-token",
+        "X-Native-Credential": credential,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        installationId,
+        accountGeneration: 0,
+        browserId: "7a34b15a-1da7-4f3b-ab2d-a2f899de9a6b",
+        endpoint: null,
+        authorityId: null,
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true, pushPaired: false, authorityId });
+    expect(from).toHaveBeenCalledTimes(2);
+  });
+
   it("rejects a stale non-null generation when revocation removed the row", async () => {
     const lookup = query({ data: null, error: null });
     mocks.client = {

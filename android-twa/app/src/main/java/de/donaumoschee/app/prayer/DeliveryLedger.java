@@ -57,7 +57,7 @@ public final class DeliveryLedger {
             records.put(eventId, current.fire(attemptedAtMs));
             return true;
         }
-        if (current.state() == DeliveryState.FAILED) {
+        if (current.canBeginAgain()) {
             records.put(eventId, current.restart(attemptedAtMs));
             return true;
         }

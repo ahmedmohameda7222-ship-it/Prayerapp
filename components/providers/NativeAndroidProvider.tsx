@@ -180,7 +180,14 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [handleNativeMessage]);
 
   const syncConfiguration = useCallback(async () => {
-    if (authLoading || !sessionUserId || !portRef.current || accountTransitioningRef.current || nativeUpdateRequiredRef.current) return;
+    if (
+      authLoading
+      || !sessionUserId
+      || !portRef.current
+      || accountTransitioningRef.current
+      || nativeUpdateRequiredRef.current
+      || status?.lastError === "required-update"
+    ) return;
     const configuredOwnerId = localStorage.getItem(NATIVE_ACCOUNT_OWNER_KEY);
     if (configuredOwnerId !== sessionUserId) return;
     const preferences = readNativePrayerPreferences();
@@ -224,7 +231,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     } catch (error) {
       console.warn("Native prayer configuration sync failed", error);
     }
-  }, [authLoading, send, sessionUserId]);
+  }, [authLoading, send, sessionUserId, status?.lastError]);
 
   useEffect(() => {
     const sync = () => { void syncConfiguration(); };
@@ -297,6 +304,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
       || channelRevision === 0
       || accountTransitioningRef.current
       || nativeUpdateRequiredRef.current
+      || status?.lastError === "required-update"
       || !supportsNativeAuthorityGeneration(status)
       || typeof status.accountGeneration !== "number"
       || !Number.isInteger(status.accountGeneration)

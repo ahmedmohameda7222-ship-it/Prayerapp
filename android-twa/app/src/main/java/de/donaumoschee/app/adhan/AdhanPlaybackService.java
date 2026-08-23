@@ -1,5 +1,6 @@
 package de.donaumoschee.app.adhan;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.IBinder;
@@ -20,6 +21,7 @@ import androidx.media3.session.CommandButton;
 import androidx.media3.session.DefaultMediaNotificationProvider;
 
 import de.donaumoschee.app.R;
+import de.donaumoschee.app.localization.AppLocale;
 import de.donaumoschee.app.prayer.PrayerScheduler;
 import de.donaumoschee.app.prayer.Prayer;
 import de.donaumoschee.app.storage.NativeStore;
@@ -43,6 +45,7 @@ public final class AdhanPlaybackService extends MediaSessionService {
     @Override
     public void onCreate() {
         super.onCreate();
+        Context localizedContext = localizedContext();
         setMediaNotificationProvider(new DefaultMediaNotificationProvider.Builder(this)
                 .setChannelId(CHANNEL)
                 .setChannelName(R.string.channel_adhan_playback)
@@ -88,7 +91,7 @@ public final class AdhanPlaybackService extends MediaSessionService {
         mediaSession.setMediaButtonPreferences(List.of(
                 new CommandButton.Builder(CommandButton.ICON_STOP)
                         .setPlayerCommand(Player.COMMAND_STOP)
-                        .setDisplayName(getString(R.string.stop_adhan))
+                        .setDisplayName(localizedContext.getString(R.string.stop_adhan))
                         .setSlots(CommandButton.SLOT_FORWARD)
                         .build()
         ));
@@ -127,6 +130,7 @@ public final class AdhanPlaybackService extends MediaSessionService {
             File cached = AudioCache.verifiedFile(this, soundId);
             Log.i(TAG, "adhan.playback start prayer=" + prayer + " source=" + (cached == null ? "remote" : "cache"));
             Uri uri = cached == null ? Uri.parse(AdhanCatalog.approvedUrl(soundId)) : Uri.fromFile(cached);
+            Context localizedContext = localizedContext();
             String prayerName = prayer;
             try {
                 prayerName = Prayer.fromKey(prayer).displayName(this);
@@ -134,8 +138,8 @@ public final class AdhanPlaybackService extends MediaSessionService {
                 // Keep the raw prayer key for diagnostic metadata.
             }
             MediaMetadata metadata = new MediaMetadata.Builder()
-                    .setTitle(getString(R.string.adhan_notification_title))
-                    .setArtist(prayerName == null ? getString(R.string.app_name) : prayerName)
+                    .setTitle(localizedContext.getString(R.string.adhan_notification_title))
+                    .setArtist(prayerName == null ? localizedContext.getString(R.string.app_name) : prayerName)
                     .build();
             player.setMediaItem(new MediaItem.Builder().setUri(uri).setMediaMetadata(metadata).build());
             player.prepare();
@@ -147,6 +151,10 @@ public final class AdhanPlaybackService extends MediaSessionService {
             stopAndReleasePlayback();
         }
         return START_NOT_STICKY;
+    }
+
+    private Context localizedContext() {
+        return AppLocale.localizedContext(this, new NativeStore(this).appLocale());
     }
 
     private void markDeliveryFailed(String failureCode) {

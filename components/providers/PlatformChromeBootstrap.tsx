@@ -1,4 +1,23 @@
 const bootstrap = `(() => {
+  const NATIVE_BRIDGE_KEY = "__DANUBE_NATIVE_BRIDGE_BOOTSTRAP__";
+  const NATIVE_ORIGIN = "https://donaumoschee.vercel.app";
+
+  function captureNativeBridge(event) {
+    try {
+      if (event.origin !== "https://donaumoschee.vercel.app" || !event.ports[0] || window[NATIVE_BRIDGE_KEY]) return;
+      const initial = typeof event.data === "string" ? JSON.parse(event.data) : null;
+      if (!initial || initial.version !== 1 || initial.type !== "native.ready" || !initial.payload || typeof initial.payload !== "object") return;
+      window[NATIVE_BRIDGE_KEY] = {
+        origin: NATIVE_ORIGIN,
+        data: event.data,
+        port: event.ports[0],
+      };
+      window.removeEventListener("message", captureNativeBridge);
+    } catch {}
+  }
+
+  window.addEventListener("message", captureNativeBridge);
+
   try {
     const ua = navigator.userAgent || "";
     const platform = navigator.platform || "";

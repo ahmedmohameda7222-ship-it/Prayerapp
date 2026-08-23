@@ -45,6 +45,7 @@ public final class BridgeHandler {
             BridgeProtocol.Envelope envelope = BridgeProtocol.parseInbound(message);
             switch (envelope.type) {
                 case "web.configure": configure(envelope.payload); break;
+                case "web.bridge.ready": sendStatus(); break;
                 case "native.permissions.request": requestPermissions(envelope.payload); break;
                 case "native.status.request": sendStatus(); break;
                 case "native.test.schedule": scheduleTest(envelope.payload); break;

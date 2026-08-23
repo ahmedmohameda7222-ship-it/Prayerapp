@@ -26,7 +26,7 @@ export function SettingsControls() {
   const { t, locale } = useTranslation();
   const { timeFormat, setTimeFormat } = useTimeFormat();
   const { pushStatus, busy, enableNotifications, disableNotifications } = useAppPreferences();
-  const { isNative, status: nativeStatus, requestPermissions, requestStatus } = useNativeAndroid();
+  const { isNative, bridgeState, status: nativeStatus, requestPermissions, requestStatus } = useNativeAndroid();
   const nativeCopy = NATIVE_COPY[locale];
   const nativeKind = nativeStatusKind(nativeStatus);
 
@@ -50,15 +50,17 @@ export function SettingsControls() {
         </h2>
         <p className="mt-1 text-sm leading-6">{t("settings.automaticContentNotifications")}</p>
         <p className="mt-3 rounded-[12px] bg-[var(--app-surface-soft)] p-3 text-sm font-semibold text-[var(--app-brand-strong)]" role="status">
-          {isNative
-            ? nativeKind === "ready"
-              ? nativeCopy.ready
-              : nativeKind === "needs-system-access"
-                ? nativeCopy.needsPermission
-                : nativeCopy.unhealthy
-            : t(statusKey)}
+          {bridgeState === "probing"
+            ? t("settings.pushChecking")
+            : isNative
+              ? nativeKind === "ready"
+                ? nativeCopy.ready
+                : nativeKind === "needs-system-access"
+                  ? nativeCopy.needsPermission
+                  : nativeCopy.unhealthy
+              : t(statusKey)}
         </p>
-        {isNative ? (
+        {bridgeState === "probing" ? null : isNative ? (
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <Button className="w-full" onClick={requestPermissions}>{nativeCopy.grant}</Button>
             <Button variant="ghost" className="w-full" onClick={requestStatus}>{nativeCopy.refresh}</Button>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { MapPin, UserRound } from "lucide-react";
 import { NotificationButton } from "@/components/notifications/NotificationButton";
@@ -38,6 +39,7 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
   const currentDate = formatLongDate(currentDateIso, locale);
   const hijriDate = formatHijriDate(currentDateIso, locale);
   const mosqueName = title || APP_NAMES[locale];
+  const useBrandLogo = !title;
   const whatsappHref = safeExternalUrl(whatsappLink, "whatsapp");
   const mapsHref = safeExternalUrl(googleMapsLink, "maps");
 
@@ -85,16 +87,22 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
         </div>
 
         <div className="mt-1 text-center">
-          <h1
-            lang={locale}
-            className={
-              locale === "ar" && mosqueName === APP_NAMES.ar
-                ? "mosque-name-thuluth text-[#F2EBDD]"
-                : "text-[28px] font-bold leading-tight text-[#F2EBDD]"
-            }
-          >
-            {mosqueName}
-          </h1>
+          {useBrandLogo ? (
+            <h1 lang="ar" className="flex justify-center">
+              <Image
+                src="/brand/masjid-al-donau.svg"
+                alt={mosqueName}
+                width={1852}
+                height={584}
+                className="mosque-name-logo h-auto w-[clamp(190px,54vw,230px)]"
+                unoptimized
+              />
+            </h1>
+          ) : (
+            <h1 lang={locale} className="text-[28px] font-bold leading-tight text-[#F2EBDD]">
+              {mosqueName}
+            </h1>
+          )}
           <p className="mt-1 text-[13px] font-semibold text-[rgba(255,255,255,0.78)]">Deggendorf</p>
         </div>
 

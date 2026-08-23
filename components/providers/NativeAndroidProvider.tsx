@@ -296,6 +296,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
       || !sessionUserId
       || channelRevision === 0
       || accountTransitioningRef.current
+      || nativeUpdateRequiredRef.current
       || !supportsNativeAuthorityGeneration(status)
       || typeof status.accountGeneration !== "number"
       || !Number.isInteger(status.accountGeneration)

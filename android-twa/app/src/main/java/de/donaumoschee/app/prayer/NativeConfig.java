@@ -67,15 +67,20 @@ public final class NativeConfig {
             }
             if (previous != null && !date.isAfter(previous)) throw new JSONException("Prayer rows must be ordered and unique");
             previous = date;
+            String scheduleId = row.optString("id", "");
+            if (scheduleId.length() > 128) throw new JSONException("Invalid prayer schedule id");
             EnumMap<Prayer, LocalTime> times = new EnumMap<>(Prayer.class);
+            EnumMap<Prayer, String> revisions = new EnumMap<>(Prayer.class);
             for (Prayer prayer : Prayer.values()) {
                 try {
-                    times.put(prayer, LocalTime.parse(row.getString(prayer.key)));
+                    String rawTime = row.getString(prayer.key);
+                    times.put(prayer, LocalTime.parse(rawTime));
+                    revisions.put(prayer, rawTime);
                 } catch (RuntimeException error) {
                     throw new JSONException("Invalid prayer time");
                 }
             }
-            rows.add(new ScheduleRow(date, times));
+            rows.add(new ScheduleRow(scheduleId, date, times, revisions));
         }
 
         EnumMap<Prayer, Reminder> reminders = new EnumMap<>(Prayer.class);
@@ -103,16 +108,24 @@ public final class NativeConfig {
     }
 
     public static final class ScheduleRow {
+        public final String id;
         public final LocalDate date;
         private final Map<Prayer, LocalTime> times;
+        private final Map<Prayer, String> revisions;
 
-        private ScheduleRow(LocalDate date, Map<Prayer, LocalTime> times) {
+        private ScheduleRow(String id, LocalDate date, Map<Prayer, LocalTime> times, Map<Prayer, String> revisions) {
+            this.id = id;
             this.date = date;
             this.times = times;
+            this.revisions = revisions;
         }
 
         public LocalTime time(Prayer prayer) {
             return times.get(prayer);
+        }
+
+        public String prayerRevision(Prayer prayer) {
+            return revisions.get(prayer);
         }
     }
 

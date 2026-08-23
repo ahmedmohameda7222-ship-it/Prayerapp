@@ -12,7 +12,18 @@ public record DeliveryRecord(
         long deliveredAtMs,
         String failureCode
 ) {
+    public static DeliveryRecord schedule(String eventId, String kind, long dueAtMs) {
+        return new DeliveryRecord(eventId, kind, DeliveryState.SCHEDULED, dueAtMs, 0L, 0L, "");
+    }
+
     public static DeliveryRecord begin(String eventId, String kind, long dueAtMs, long attemptedAtMs) {
+        return schedule(eventId, kind, dueAtMs).fire(attemptedAtMs);
+    }
+
+    public DeliveryRecord fire(long attemptedAtMs) {
+        if (state != DeliveryState.SCHEDULED) {
+            throw new IllegalStateException("Only scheduled delivery may start firing");
+        }
         return new DeliveryRecord(eventId, kind, DeliveryState.FIRING, dueAtMs, attemptedAtMs, 0L, "");
     }
 
@@ -23,8 +34,8 @@ public record DeliveryRecord(
 
     public DeliveryRecord markFailed(String failureCode, long failedAtMs) {
         requireFiring();
-        String code = failureCode == null ? "delivery-failed" : failureCode;
-        return new DeliveryRecord(eventId, kind, DeliveryState.FAILED, dueAtMs, failedAtMs, 0L, code);
+        String code = failureCode == null || failureCode.isBlank() ? "delivery-failed" : failureCode;
+        return new DeliveryRecord(eventId, kind, DeliveryState.FAILED, dueAtMs, attemptedAtMs, 0L, code);
     }
 
     public DeliveryRecord restart(long attemptedAtMs) {
@@ -34,6 +45,16 @@ public record DeliveryRecord(
 
     public boolean canBeginAgain() {
         return state == DeliveryState.FAILED;
+    }
+
+    public long retentionTimestampMs() {
+        if (deliveredAtMs > 0L) return deliveredAtMs;
+        if (attemptedAtMs > 0L) return attemptedAtMs;
+        return dueAtMs;
+    }
+
+    public boolean terminal() {
+        return state == DeliveryState.DELIVERED || state == DeliveryState.FAILED;
     }
 
     public JSONObject toJson() throws JSONException {
@@ -48,15 +69,19 @@ public record DeliveryRecord(
     }
 
     public static DeliveryRecord fromJson(JSONObject object) throws JSONException {
-        return new DeliveryRecord(
-                object.getString("eventId"),
-                object.getString("kind"),
-                DeliveryState.valueOf(object.getString("state")),
-                object.getLong("dueAtMs"),
-                object.getLong("attemptedAtMs"),
-                object.optLong("deliveredAtMs", 0L),
-                object.optString("failureCode", "")
-        );
+        try {
+            return new DeliveryRecord(
+                    object.getString("eventId"),
+                    object.getString("kind"),
+                    DeliveryState.valueOf(object.getString("state")),
+                    object.getLong("dueAtMs"),
+                    object.optLong("attemptedAtMs", 0L),
+                    object.optLong("deliveredAtMs", 0L),
+                    object.optString("failureCode", "")
+            );
+        } catch (IllegalArgumentException error) {
+            throw new JSONException("Invalid delivery state");
+        }
     }
 
     private void requireFiring() {

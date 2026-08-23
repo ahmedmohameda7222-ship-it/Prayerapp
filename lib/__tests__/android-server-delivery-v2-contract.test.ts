@@ -50,6 +50,10 @@ describe("Android server delivery v2 contract", () => {
     expect(cron).toContain("prayerEventId");
     expect(cron).toContain("native_prayer_delivery_receipts");
     expect(cron).toContain("NATIVE_DELIVERY_GRACE_MS");
+    expect(cron).toContain("installation_id");
+    expect(cron).toContain("receipt_v2");
+    expect(cron).toContain("account_generation");
+    expect(cron).toContain('.gt("expires_at"');
     expect(cron).not.toContain("const targets = filterPrayerPushTargets(pushTargets, nativeLeases, now)");
   });
 

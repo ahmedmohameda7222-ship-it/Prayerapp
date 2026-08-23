@@ -5,28 +5,33 @@ import { describe, expect, it } from "vitest";
 const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
 describe("Android bridge readiness v2", () => {
-  it("retries the native ready handshake until the web acknowledges it, then refreshes status", () => {
-    const protocol = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeProtocol.java");
-    const bridge = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeHandler.java");
-    const launcher = source("android-twa/app/src/main/java/de/donaumoschee/app/LauncherActivity.java");
+  it("captures the first port-bearing native message before React providers mount", () => {
+    const bootstrap = source("components/providers/PlatformChromeBootstrap.tsx");
+    const layout = source("app/layout.tsx");
 
-    expect(protocol).toContain('"web.bridge.ready"');
-    expect(bridge).toContain("READY_RETRY_INTERVAL_MS");
-    expect(bridge).toContain("READY_HANDSHAKE_TIMEOUT_MS");
-    expect(bridge).toContain("startReadyHandshake");
-    expect(bridge).toContain("acknowledgeReady");
-    expect(bridge).toContain("mainHandler.removeCallbacks");
-    expect(bridge).toContain("sendStatus()");
-    expect(launcher).toContain("bridgeHandler.startReadyHandshake()");
-    expect(launcher).toContain("bridgeHandler.close()");
+    expect(bootstrap).toContain("__DANUBE_NATIVE_BRIDGE_BOOTSTRAP__");
+    expect(bootstrap).toContain('event.origin !== "https://donaumoschee.vercel.app"');
+    expect(bootstrap).toContain("event.ports[0]");
+    expect(bootstrap).toContain('initial.type !== "native.ready"');
+    expect(bootstrap).toContain('window.addEventListener("message", captureNativeBridge)');
+
+    const bootstrapIndex = layout.indexOf("<PlatformChromeBootstrap />");
+    const providerIndex = layout.indexOf("<NativeAndroidProvider>");
+    expect(bootstrapIndex).toBeGreaterThan(-1);
+    expect(providerIndex).toBeGreaterThan(bootstrapIndex);
   });
 
-  it("keeps web bridge availability probing until an explicit timeout or native ready event", () => {
+  it("acknowledges native readiness, explicitly refreshes status, and times out deterministically", () => {
+    const protocol = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeProtocol.java");
+    const bridge = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeHandler.java");
     const provider = source("components/providers/NativeAndroidProvider.tsx");
 
+    expect(protocol).toContain('"web.bridge.ready"');
+    expect(bridge).toContain('case "web.bridge.ready": sendStatus(); break;');
     expect(provider).toContain('type NativeBridgeState = "probing" | "ready" | "unavailable"');
     expect(provider).toContain("BRIDGE_READY_TIMEOUT_MS");
     expect(provider).toContain('useState<NativeBridgeState>("probing")');
+    expect(provider).toContain("__DANUBE_NATIVE_BRIDGE_BOOTSTRAP__");
     expect(provider).toContain('setBridgeState("unavailable")');
     expect(provider).toContain('setBridgeState("ready")');
     expect(provider).toContain('type: "web.bridge.ready"');

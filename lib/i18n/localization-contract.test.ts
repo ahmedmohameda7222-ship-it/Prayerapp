@@ -1,10 +1,11 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 import de from "../../messages/de.json";
 import tr from "../../messages/tr.json";
+import { getTranslation } from "./server-translation";
 import * as localeTypes from "./types";
 
 type MessageTree = Record<string, unknown>;
@@ -56,7 +57,7 @@ describe("localization authority contract", () => {
     expect(flattenKeys(tr as MessageTree)).toEqual(expected);
   });
 
-  it("uses approved prayer names instead of literal machine-translated English or mixed German spellings", () => {
+  it("uses one approved runtime prayer-name contract instead of literal or mixed translations", () => {
     expect(en.prayer).toMatchObject({
       fajr: "Fajr",
       sunrise: "Sunrise",
@@ -65,7 +66,18 @@ describe("localization authority contract", () => {
       maghrib: "Maghrib",
       isha: "Isha",
     });
-    expect(de.prayer).toMatchObject({
+
+    const german = getTranslation("de").t;
+    expect({
+      fajr: german("prayer.fajr"),
+      sunrise: german("prayer.sunrise"),
+      dhuhr: german("prayer.dhuhr"),
+      asr: german("prayer.asr"),
+      maghrib: german("prayer.maghrib"),
+      isha: german("prayer.isha"),
+      salatFajr: german("prayer.salatFajr"),
+      salatIsha: german("prayer.salatIsha"),
+    }).toEqual({
       fajr: "Fajr",
       sunrise: "Sonnenaufgang",
       dhuhr: "Dhuhr",
@@ -76,9 +88,29 @@ describe("localization authority contract", () => {
       salatIsha: "Salat Isha",
     });
 
+    const clientTranslation = readFileSync(join(process.cwd(), "lib/i18n/use-translation.ts"), "utf8");
+    const serverTranslation = readFileSync(join(process.cwd(), "lib/i18n/server-translation.ts"), "utf8");
+    expect(clientTranslation).toContain("getPrayerTranslationOverride");
+    expect(serverTranslation).toContain("getPrayerTranslationOverride");
+
     const forbiddenEnglishPrayerNames = new Set(["dawn", "noon", "the era", "morocco", "dinner", "accommodation"]);
     for (const value of Object.values(en.prayer)) {
       expect(forbiddenEnglishPrayerNames.has(String(value).toLowerCase())).toBe(false);
     }
+  });
+
+  it("loads a scoped mobile prayer-grid rule that reserves fixed time and control columns", () => {
+    const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
+    const cssPath = join(process.cwd(), "app/prayer-table-localization.css");
+
+    expect(layout).toContain('import "./prayer-table-localization.css"');
+    expect(existsSync(cssPath)).toBe(true);
+    if (!existsSync(cssPath)) return;
+
+    const css = readFileSync(cssPath, "utf8");
+    expect(css).toContain(".home-prayer-board > .grid");
+    expect(css).toContain('.home-prayer-board [data-prayer-row] > .grid');
+    expect(css).toContain("grid-template-columns: minmax(0, 1fr) 4rem 4rem 3.25rem");
+    expect(css).toContain("gap: 0.25rem");
   });
 });

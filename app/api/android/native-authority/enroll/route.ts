@@ -28,9 +28,12 @@ function validEndpoint(value: unknown): value is string {
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const body = await request.json().catch(() => null);
+  const headerCredential = request.headers.get("x-native-credential");
+  const credential = headerCredential || body?.credential;
+  const privateNativeSecret = isNativeCredential(headerCredential);
   if (
     !isInstallationId(body?.installationId)
-    || !isNativeCredential(body?.credential)
+    || !isNativeCredential(credential)
     || (body?.authorityId != null && !isAuthorityId(body.authorityId))
     || typeof body?.browserId !== "string"
     || !uuidPattern.test(body.browserId)
@@ -78,7 +81,7 @@ export async function POST(request: Request) {
     && (
       !existingInstallation.credential_hash
       || !existingInstallation.authority_id
-      || !credentialMatches(body.credential, existingInstallation.credential_hash)
+      || !credentialMatches(credential, existingInstallation.credential_hash)
       || (body.authorityId != null && body.authorityId !== existingInstallation.authority_id)
       || (
         body.authorityId == null
@@ -89,6 +92,7 @@ export async function POST(request: Request) {
         body.authorityId == null
         && existingInstallation.user_id === userData.user.id
         && Boolean(existingInstallation.revoked_at)
+        && !privateNativeSecret
       )
     )
   ) {
@@ -132,7 +136,7 @@ export async function POST(request: Request) {
     authority_id: authorityId,
     user_id: userData.user.id,
     push_subscription_id: pushSubscriptionId,
-    credential_hash: hashNativeCredential(body.credential),
+    credential_hash: hashNativeCredential(credential),
     account_generation: body.accountGeneration,
     receipt_v2: false,
     native_ready: false,

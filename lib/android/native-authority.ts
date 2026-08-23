@@ -75,6 +75,8 @@ export function nativeFallbackDecision({
     || lease.push_subscription_id !== targetId
     || lease.receipt_v2 !== true
     || !lease.installation_id
+    || !Number.isInteger(lease.account_generation)
+    || (lease.account_generation as number) < 0
     || !nativeDeliveryCapability(lease, kind, now)
   ) {
     return "push";

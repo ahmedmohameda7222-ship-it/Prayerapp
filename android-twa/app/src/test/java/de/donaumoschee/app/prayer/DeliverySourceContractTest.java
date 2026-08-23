@@ -20,6 +20,24 @@ public final class DeliverySourceContractTest {
     }
 
     @Test
+    public void schedulerPersistsScheduledDeliveryBeforeAlarmCanFire() throws IOException {
+        String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
+
+        assertTrue(scheduler.contains("EXTRA_DUE_AT_MS"));
+        assertTrue(scheduler.contains("markDeliveryScheduled("));
+        assertTrue(scheduler.contains("event.dueAt.toEpochMilli()"));
+    }
+
+    @Test
+    public void applicationCreatesBothReminderAndAdhanChannelsUpFront() throws IOException {
+        String notifications = source("de/donaumoschee/app/prayer/PrayerNotifications.java");
+
+        assertTrue(notifications.contains("AdhanPlaybackService.CHANNEL"));
+        assertTrue(notifications.contains("channel_adhan_playback"));
+        assertTrue(notifications.contains("createNotificationChannel(adhan"));
+    }
+
+    @Test
     public void receiverDoesNotClaimReminderDeliveryBeforeNotificationSucceeds() throws IOException {
         String receiver = source("de/donaumoschee/app/prayer/PrayerAlarmReceiver.java");
 

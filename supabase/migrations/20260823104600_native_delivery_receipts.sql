@@ -15,7 +15,7 @@ create table public.native_prayer_delivery_receipts (
   delivered_at timestamptz not null,
   expires_at timestamptz not null default (now() + interval '2 days'),
   created_at timestamptz not null default now(),
-  primary key (installation_id, event_id),
+  primary key (installation_id, account_generation, event_id),
   check (expires_at > delivered_at)
 );
 

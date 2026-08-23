@@ -65,9 +65,9 @@ public final class PrayerScheduler {
                     store.markScheduleFailureIfGeneration("delivery-state-unavailable", generation);
                     return false;
                 }
+                installedByThisCall.add(encodeScheduledRequest(generation, event));
                 PendingIntent operation = operation(context, event, generation);
                 manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
-                installedByThisCall.add(encodeScheduledRequest(generation, event));
             }
             if (
                     store.accountGeneration() != generation

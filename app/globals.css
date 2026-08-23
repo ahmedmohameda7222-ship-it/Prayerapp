@@ -251,9 +251,18 @@ textarea {
 }
 
 .home-page-shell .mosque-name-thuluth {
+  display: inline-block;
+  max-width: calc(100% - 16px);
+  padding: 0.08em 0.12em 0.12em;
   font-family: "Donau Thuluth", "Noto Naskh Arabic", "Geeza Pro", "Traditional Arabic", serif;
+  font-size: clamp(42px, 11.5vw, 54px);
   font-weight: 400;
+  line-height: 1.22;
   letter-spacing: 0;
+  white-space: nowrap;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 .home-page-shell .home-tabular {

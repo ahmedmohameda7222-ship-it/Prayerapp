@@ -9,6 +9,8 @@ export type ScheduleRequest = {
 };
 
 export type NativeHeartbeat = {
+  receiptV2: boolean;
+  accountGeneration: number;
   notificationPermission: boolean;
   notificationDeliveryEnabled: boolean;
   reminderChannelEnabled: boolean;
@@ -41,7 +43,7 @@ export function parseScheduleRequest(url: URL): ScheduleRequest | null {
 
 export function parseNativeHeartbeat(value: unknown, now: Date): NativeHeartbeat | null {
   if (!value || typeof value !== "object") return null;
-  const body = value as Record<string, unknown>;
+  const body = value as Record<string, unknown> & { accountGeneration: number };
   const fields = [
     "notificationPermission",
     "notificationDeliveryEnabled",
@@ -57,6 +59,13 @@ export function parseNativeHeartbeat(value: unknown, now: Date): NativeHeartbeat
   if (typeof body.scheduleValidUntil !== "string" || body.scheduleValidUntil.length > 64) return null;
   const validUntilMs = Date.parse(body.scheduleValidUntil);
   if (!Number.isFinite(validUntilMs)) return null;
+
+  const receiptV2 = body.receiptV2 === true;
+  const hasAccountGeneration = Number.isInteger(body.accountGeneration)
+    && body.accountGeneration >= 0
+    && body.accountGeneration <= 2_147_483_647;
+  if (receiptV2 && !hasAccountGeneration) return null;
+  const accountGeneration = hasAccountGeneration ? body.accountGeneration : 0;
 
   const scheduleIsValid = validUntilMs > now.getTime();
   const commonReady = Boolean(
@@ -75,6 +84,8 @@ export function parseNativeHeartbeat(value: unknown, now: Date): NativeHeartbeat
   const nativeReady = reminderReady && adhanReady;
 
   return {
+    receiptV2,
+    accountGeneration,
     notificationPermission: body.notificationPermission as boolean,
     notificationDeliveryEnabled: body.notificationDeliveryEnabled as boolean,
     reminderChannelEnabled: body.reminderChannelEnabled as boolean,

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import "./globals.css";
 import "./launch-screen.css";
 import "./responsive-prayer-nav.css";
@@ -11,7 +11,7 @@ import "./pull-to-refresh.css";
 import "./public-ui-refresh.css";
 import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";
-import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n/types";
+import { detectSupportedLocale, isLocale, type Locale } from "@/lib/i18n/types";
 import { APP_NAMES } from "@/lib/app-brand";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -33,9 +33,18 @@ const metadataDescriptions: Record<Locale, string> = {
   tr: "Deggendorf için yerel namaz vakitleri, cuma, duyurular, bağışlar ve topluluk bilgileri.",
 };
 
-export async function generateMetadata(): Promise<Metadata> {
+async function resolveRequestLocale(): Promise<Locale> {
   const cookieStore = await cookies();
-  const locale = normalizeLocale(cookieStore.get("locale")?.value || DEFAULT_LOCALE);
+  const storedLocale = cookieStore.get("locale")?.value;
+  if (isLocale(storedLocale)) return storedLocale;
+
+  const requestHeaders = await headers();
+  const acceptLanguage = requestHeaders.get("accept-language");
+  return detectSupportedLocale(acceptLanguage ? acceptLanguage.split(",") : []);
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await resolveRequestLocale();
   const appName = APP_NAMES[locale];
 
   return {
@@ -50,6 +59,9 @@ export async function generateMetadata(): Promise<Metadata> {
       capable: true,
       title: appName,
       statusBarStyle: "black-translucent",
+    },
+    other: {
+      google: "notranslate",
     },
   };
 }
@@ -66,11 +78,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const initialLocale = normalizeLocale(cookieStore.get("locale")?.value || DEFAULT_LOCALE);
+  const initialLocale = await resolveRequestLocale();
 
   return (
-    <html lang={initialLocale} dir={getTextDirection(initialLocale)} suppressHydrationWarning>
+    <html lang={initialLocale} dir={getTextDirection(initialLocale)} translate="no" suppressHydrationWarning>
       <body>
         <PlatformChromeBootstrap />
         <AppLaunchScreen />

@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import "./globals.css";
 import "./launch-screen.css";
 import "./responsive-prayer-nav.css";
+import "./prayer-table-localization.css";
 import "./home-palette-preview.css";
 import "./home-jumuah.css";
 import "./friday-page.css";

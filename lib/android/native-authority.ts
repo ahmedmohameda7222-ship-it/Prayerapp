@@ -1,7 +1,12 @@
 import type { PushSubscriptionRecord } from "@/lib/push/types";
 
+export type NativeDeliveryKind = "reminder" | "adhan";
+
 export type NativeAuthorityLease = {
+  installation_id?: string;
   push_subscription_id: string | null;
+  receipt_v2?: boolean;
+  account_generation?: number;
   native_ready: boolean;
   notification_permission: boolean;
   notification_delivery_enabled: boolean;
@@ -22,6 +27,29 @@ function isFuture(value: string | null, nowMs: number) {
   return Number.isFinite(parsed) && parsed > nowMs;
 }
 
+function commonDeliveryCapability(lease: NativeAuthorityLease, nowMs: number) {
+  return lease.native_ready
+    && lease.notification_permission
+    && lease.notification_delivery_enabled
+    && lease.exact_alarm_permission
+    && lease.schedule_fresh
+    && lease.alarm_schedule_installed
+    && lease.engine_healthy
+    && isFuture(lease.schedule_valid_until, nowMs)
+    && isFuture(lease.lease_expires_at, nowMs);
+}
+
+export function nativeDeliveryCapability(
+  lease: NativeAuthorityLease,
+  kind: NativeDeliveryKind,
+  now: Date,
+) {
+  const nowMs = now.getTime();
+  if (!commonDeliveryCapability(lease, nowMs)) return false;
+  if (kind === "adhan") return lease.adhan_channel_enabled && lease.audio_ready;
+  return lease.reminder_channel_enabled;
+}
+
 function leaseIsHealthy(lease: NativeAuthorityLease, nowMs: number) {
   return lease.native_ready
     && lease.notification_permission
@@ -37,6 +65,10 @@ function leaseIsHealthy(lease: NativeAuthorityLease, nowMs: number) {
     && isFuture(lease.lease_expires_at, nowMs);
 }
 
+/**
+ * Legacy v1 all-capability suppression. New server fallback must use the
+ * event-specific nativeDeliveryCapability contract plus delivery receipts.
+ */
 export function filterPrayerPushTargets(
   targets: PushSubscriptionRecord[],
   leases: NativeAuthorityLease[] | null,

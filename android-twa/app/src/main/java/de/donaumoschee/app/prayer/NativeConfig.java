@@ -1,6 +1,7 @@
 package de.donaumoschee.app.prayer;
 
 import de.donaumoschee.app.adhan.AdhanCatalog;
+import de.donaumoschee.app.localization.AppLocale;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,6 +20,7 @@ import java.util.Map;
 public final class NativeConfig {
     public static final ZoneId ZONE = ZoneId.of("Europe/Berlin");
     public final String revision;
+    public final String locale;
     public final Instant scheduleValidUntil;
     public final List<ScheduleRow> rows;
     public final Map<Prayer, Reminder> reminders;
@@ -26,12 +28,14 @@ public final class NativeConfig {
 
     private NativeConfig(
             String revision,
+            String locale,
             Instant scheduleValidUntil,
             List<ScheduleRow> rows,
             Map<Prayer, Reminder> reminders,
             JSONObject source
     ) {
         this.revision = revision;
+        this.locale = locale;
         this.scheduleValidUntil = scheduleValidUntil;
         this.rows = Collections.unmodifiableList(rows);
         this.reminders = Collections.unmodifiableMap(reminders);
@@ -43,6 +47,7 @@ public final class NativeConfig {
         if (!"Europe/Berlin".equals(object.optString("timeZone"))) throw new JSONException("Invalid time zone");
         String revision = object.optString("revision", "");
         if (revision.length() == 0 || revision.length() > 128) throw new JSONException("Invalid revision");
+        String locale = AppLocale.normalize(object.optString("locale", "en"));
         Instant validUntil;
         try {
             validUntil = Instant.parse(object.getString("scheduleValidUntil"));
@@ -104,7 +109,8 @@ public final class NativeConfig {
                 throw new JSONException("Duplicate reminder prayer");
             }
         }
-        return new NativeConfig(revision, validUntil, rows, reminders, new JSONObject(object.toString()));
+        JSONObject source = new JSONObject(object.toString()).put("locale", locale);
+        return new NativeConfig(revision, locale, validUntil, rows, reminders, source);
     }
 
     public static final class ScheduleRow {

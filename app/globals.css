@@ -3,6 +3,14 @@
 @source "../components";
 @source "../app";
 
+@font-face {
+  font-family: "Donau Thuluth";
+  src: url("/fonts/donau-thuluth.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --color-emerald: #0e3d36;
   --color-emerald-dark: #062b26;
@@ -240,6 +248,12 @@ textarea {
 .home-page-shell .home-quran-text,
 .home-page-shell .home-donation-verse {
   font-family: "Noto Naskh Arabic", "Geeza Pro", "Traditional Arabic", serif;
+}
+
+.home-page-shell .mosque-name-thuluth {
+  font-family: "Donau Thuluth", "Noto Naskh Arabic", "Geeza Pro", "Traditional Arabic", serif;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .home-page-shell .home-tabular {

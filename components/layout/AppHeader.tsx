@@ -88,7 +88,7 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
 
         <div className="mt-1 text-center">
           {useBrandLogo ? (
-            <h1 lang="ar" className="flex justify-center">
+            <h1 lang={locale} className="flex justify-center">
               <Image
                 src="/brand/masjid-al-donau.svg"
                 alt={mosqueName}

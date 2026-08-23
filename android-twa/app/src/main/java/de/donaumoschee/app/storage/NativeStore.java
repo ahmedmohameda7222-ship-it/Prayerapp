@@ -300,7 +300,16 @@ public final class NativeStore {
 
     private boolean persistDeliveryLedgerLocked(DeliveryLedger ledger) {
         try {
-            return preferences.edit().putString(DELIVERY_RECORDS, ledger.toJson().toString()).commit();
+            boolean persisted = preferences.edit()
+                    .putString(DELIVERY_RECORDS, ledger.toJson().toString())
+                    .commit();
+            if (!persisted) {
+                preferences.edit()
+                        .putBoolean(ENGINE_HEALTHY, false)
+                        .putString(LAST_ERROR, "delivery-ledger-persist-failed")
+                        .commit();
+            }
+            return persisted;
         } catch (JSONException error) {
             preferences.edit()
                     .putBoolean(ENGINE_HEALTHY, false)

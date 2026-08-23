@@ -23,8 +23,11 @@ describe("prayer reminder timing contract", () => {
 
     expect(cron).toContain("supportedLeadMinutes = [5, 10, 15]");
     expect(cron).toContain("item.lead_minutes === leadMinutes");
-    expect(cron).toContain(":before:${leadMinutes}");
-    expect(cron).toContain(":adhan");
+    expect(cron).toContain("prayerEventId");
+    expect(cron).toContain('kind: "reminder"');
+    expect(cron).toContain("leadMinutes,");
+    expect(cron).toContain('kind: "adhan"');
+    expect(cron).toContain("leadMinutes: 0");
     expect(cron).toContain("nowMs >= adhanAt");
     expect(cron).toContain('.eq("published", true)');
     expect(cron).not.toContain("QA_MOCK_MARKER");

@@ -94,6 +94,42 @@ describe("native authority route generation isolation", () => {
     ]));
   });
 
+  it("keeps a short lease for reminder-only capability even when legacy nativeReady is false", async () => {
+    const lookup = query({ data: { authority_id: authorityId, credential_hash: credentialHash }, error: null });
+    const mutation = query(() => ({
+      data: { authority_id: authorityId },
+      error: null,
+    }));
+    const from = vi.fn()
+      .mockReturnValueOnce(lookup)
+      .mockReturnValueOnce(mutation);
+    mocks.client = { from };
+
+    const response = await POST(new Request("https://donaumoschee.vercel.app/api/android/native-authority/heartbeat", {
+      method: "POST",
+      headers: nativeHeaders(),
+      body: JSON.stringify({
+        ...heartbeatBody(),
+        adhanChannelEnabled: false,
+        audioReady: false,
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(expect.objectContaining({
+      success: true,
+      nativeReady: false,
+      leaseExpiresAt: expect.any(String),
+    }));
+    expect(mutation.updates[0]).toEqual(expect.objectContaining({
+      native_ready: false,
+      reminder_channel_enabled: true,
+      adhan_channel_enabled: false,
+      audio_ready: false,
+      lease_expires_at: expect.any(String),
+    }));
+  });
+
   it("rejects a stale non-null generation when revocation removed the row", async () => {
     const lookup = query({ data: null, error: null });
     mocks.client = {

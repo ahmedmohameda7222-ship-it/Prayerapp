@@ -206,6 +206,13 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+function isStalePrayerPush(payload) {
+  if (payload.kind !== "adhan" && payload.kind !== "prayer-reminder") return false;
+  if (typeof payload.expiresAt !== "string" || payload.expiresAt.length === 0) return false;
+  const expiresAt = Date.parse(payload.expiresAt);
+  return Number.isFinite(expiresAt) && Date.now() >= expiresAt;
+}
+
 async function broadcastAdhanToOpenApp(payload) {
   if (payload.kind !== "adhan") return;
   const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
@@ -215,6 +222,8 @@ async function broadcastAdhanToOpenApp(payload) {
       tag: payload.tag,
       prayer: payload.prayer,
       date: payload.date,
+      eventId: payload.eventId,
+      dueAt: payload.dueAt,
     });
   }
 }
@@ -225,21 +234,27 @@ self.addEventListener("push", (event) => {
     if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {}
 
-  event.waitUntil(Promise.all([
-    self.registration.showNotification(payload.title, {
-      body: payload.body,
-      icon: "/assets/app-icon-192.png",
-      tag: payload.tag,
-      renotify: false,
-      data: {
-        url: payload.url,
-        kind: payload.kind,
-        prayer: payload.prayer,
-        date: payload.date,
-      },
-    }),
-    broadcastAdhanToOpenApp(payload),
-  ]));
+  event.waitUntil((async () => {
+    if (isStalePrayerPush(payload)) return;
+    await Promise.all([
+      self.registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: "/assets/app-icon-192.png",
+        tag: payload.tag,
+        renotify: false,
+        data: {
+          url: payload.url,
+          kind: payload.kind,
+          prayer: payload.prayer,
+          date: payload.date,
+          eventId: payload.eventId,
+          dueAt: payload.dueAt,
+          expiresAt: payload.expiresAt,
+        },
+      }),
+      broadcastAdhanToOpenApp(payload),
+    ]);
+  })());
 });
 
 self.addEventListener("notificationclick", (event) => {

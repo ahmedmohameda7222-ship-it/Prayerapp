@@ -19,6 +19,8 @@ export type NativeHeartbeat = {
   audioReady: boolean;
   engineHealthy: boolean;
   scheduleValidUntil: string;
+  reminderReady: boolean;
+  adhanReady: boolean;
   nativeReady: boolean;
 };
 
@@ -55,7 +57,23 @@ export function parseNativeHeartbeat(value: unknown, now: Date): NativeHeartbeat
   if (typeof body.scheduleValidUntil !== "string" || body.scheduleValidUntil.length > 64) return null;
   const validUntilMs = Date.parse(body.scheduleValidUntil);
   if (!Number.isFinite(validUntilMs)) return null;
-  const nativeReady = fields.every((field) => body[field] === true) && validUntilMs > now.getTime();
+
+  const scheduleIsValid = validUntilMs > now.getTime();
+  const commonReady = Boolean(
+    body.notificationPermission
+    && body.notificationDeliveryEnabled
+    && body.exactAlarmPermission
+    && body.scheduleFresh
+    && body.alarmScheduleInstalled
+    && body.engineHealthy
+    && scheduleIsValid,
+  );
+  const reminderReady = commonReady && body.reminderChannelEnabled === true;
+  const adhanReady = commonReady && body.adhanChannelEnabled === true && body.audioReady === true;
+  // Preserve the legacy all-capability bit for v1 clients while v2 evaluates
+  // reminder and Adhan readiness independently.
+  const nativeReady = reminderReady && adhanReady;
+
   return {
     notificationPermission: body.notificationPermission as boolean,
     notificationDeliveryEnabled: body.notificationDeliveryEnabled as boolean,
@@ -67,6 +85,8 @@ export function parseNativeHeartbeat(value: unknown, now: Date): NativeHeartbeat
     audioReady: body.audioReady as boolean,
     engineHealthy: body.engineHealthy as boolean,
     scheduleValidUntil: new Date(validUntilMs).toISOString(),
+    reminderReady,
+    adhanReady,
     nativeReady,
   };
 }

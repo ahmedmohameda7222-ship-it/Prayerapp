@@ -39,6 +39,10 @@ describe("prayer system self-test contract", () => {
     expect(route).toContain("const TEST_REMINDER_LEAD_MINUTES = 15 as const");
     expect(route).toContain("deliverPrayerReminderEvent");
     expect(route).toContain('value === "reminder" || value === "adhan"');
+    expect(route).toContain("eventId,");
+    expect(route).toContain("dueAt,");
+    expect(route).toContain("expiresAt,");
+    expect(route).not.toContain("eventKey,");
     expect(route).not.toContain("notificationCopy");
     expect(route).not.toContain("adhanCopy");
     expect(route).not.toContain('kind: "content"');

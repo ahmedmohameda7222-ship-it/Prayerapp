@@ -65,13 +65,22 @@ describe("Android production completion contract", () => {
 
   it("keeps native authority short-lived, service-role-only, and prayer-push-specific", () => {
     const migration = source("supabase/migrations/20260821220800_android_native_authority.sql");
+    const receipts = source("supabase/migrations/20260823104600_native_delivery_receipts.sql");
     const cron = source("app/api/cron/prayer-reminders/route.ts");
     const push = source("lib/push/web-push.ts");
     expect(migration).toContain("enable row level security");
     expect(migration).toContain("revoke all on public.native_prayer_installations from public, anon, authenticated");
     expect(migration).toContain("lease_expires_at");
-    expect(cron).toContain("filterPrayerPushTargets");
+    expect(receipts).toContain("alter table public.native_prayer_delivery_receipts enable row level security");
+    expect(receipts).toContain("revoke all on public.native_prayer_delivery_receipts from public, anon, authenticated");
+    expect(receipts).toContain("grant all on public.native_prayer_delivery_receipts to service_role");
+    expect(cron).toContain("nativeFallbackDecision");
+    expect(cron).toContain("native_prayer_delivery_receipts");
+    expect(cron).toContain("receipt_v2");
+    expect(cron).toContain("account_generation");
     expect(cron).toContain("native authority lookup failed open");
+    expect(cron).toContain("native receipt lookup failed open");
+    expect(cron).not.toContain("const targets = filterPrayerPushTargets(pushTargets, nativeLeases, now)");
     expect(push).not.toContain("native_prayer_installations");
   });
 

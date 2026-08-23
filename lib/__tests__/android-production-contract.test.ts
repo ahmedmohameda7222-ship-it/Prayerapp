@@ -105,11 +105,12 @@ describe("Android production completion contract", () => {
     expect(protocol).toContain('"native.account.reset"');
     expect(bridge).toContain('case "native.account.reset"');
     expect(bridge).toContain("PrayerScheduler.cancelAll(context)");
-    expect(bridge).toContain("store.resetAccountState()");
+    expect(bridge).toContain("store.resetAccountStateAndQueueAuthorityRevocation()");
+    expect(bridge).toContain("NativeWork.flushAuthorityRevocation(context)");
     expect(scheduler).toContain("public static void cancelAll");
-    expect(store).toContain("public int resetAccountState()");
+    expect(store).toContain("public int resetAccountStateAndQueueAuthorityRevocation()");
     expect(enroll).toContain('select("user_id, credential_hash, authority_id, revoked_at, account_generation")');
-    expect(enroll).toContain("credentialMatches(body.credential");
+    expect(enroll).toContain("credentialMatches(credential");
   });
 
   it("does not start native Adhan playback when Android notification delivery or the Adhan channel is disabled", () => {
@@ -138,11 +139,12 @@ describe("Android production completion contract", () => {
     expect(store).toContain("ACCOUNT_GENERATION");
     expect(store).toContain("public int accountGeneration()");
     expect(store).toContain("public int advanceAccountGeneration()");
-    expect(store).toContain("public int resetAccountState()");
+    expect(store).toContain("public int resetAccountStateAndQueueAuthorityRevocation()");
     expect(worker).toContain("int generation = store.accountGeneration()");
     expect(worker).toContain("store.accountGeneration() != generation");
     expect(work).toContain("public static void cancelPrayerRefresh(Context context)");
+    expect(work).toContain("public static void flushAuthorityRevocation(Context context)");
     expect(bridge).toContain("NativeWork.cancelPrayerRefresh(context)");
-    expect(bridge).toContain("store.resetAccountState()");
+    expect(bridge).toContain("store.resetAccountStateAndQueueAuthorityRevocation()");
   });
 });

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
 
+import de.donaumoschee.app.prayer.DeliveryLedger;
+import de.donaumoschee.app.prayer.DeliveryRecord;
 import de.donaumoschee.app.prayer.NativeConfig;
 
 import org.json.JSONException;
@@ -22,6 +24,8 @@ public final class NativeStore {
     private static final String CREDENTIAL = "credential";
     private static final String AUTHORITY_ID = "authority-id";
     private static final String DELIVERED = "delivered-events";
+    private static final String DELIVERY_RECORDS = "delivery-records-v2";
+    private static final int MAX_DELIVERY_RECORDS = 512;
     private static final String SCHEDULE_INSTALLED = "schedule-installed";
     private static final String ENGINE_HEALTHY = "engine-healthy";
     private static final String LAST_ERROR = "last-error";
@@ -112,12 +116,53 @@ public final class NativeStore {
         return preferences.edit().remove(AUTHORITY_ID).commit();
     }
 
+    /** Legacy v1 compatibility only. New delivery paths use the delivery ledger below. */
     public synchronized boolean markDelivered(String eventId) {
         Set<String> current = new HashSet<>(preferences.getStringSet(DELIVERED, Set.of()));
-        if (current.contains(eventId)) return false;
-        if (current.size() >= 512) current.clear();
+        if (current.contains(eventId) || current.size() >= MAX_DELIVERY_RECORDS) return false;
         current.add(eventId);
         return preferences.edit().putStringSet(DELIVERED, current).commit();
+    }
+
+    public boolean markDeliveryScheduled(String eventId, String kind, long dueAtMs) {
+        synchronized (ACCOUNT_LOCK) {
+            if (legacyDeliveredLocked(eventId)) return false;
+            DeliveryLedger ledger = loadDeliveryLedgerLocked();
+            if (ledger == null || !ledger.schedule(eventId, kind, dueAtMs)) return false;
+            return persistDeliveryLedgerLocked(ledger);
+        }
+    }
+
+    public boolean beginDelivery(String eventId, String kind, long dueAtMs, long attemptedAtMs) {
+        synchronized (ACCOUNT_LOCK) {
+            if (legacyDeliveredLocked(eventId)) return false;
+            DeliveryLedger ledger = loadDeliveryLedgerLocked();
+            if (ledger == null || !ledger.begin(eventId, kind, dueAtMs, attemptedAtMs)) return false;
+            return persistDeliveryLedgerLocked(ledger);
+        }
+    }
+
+    public boolean markDeliveryDelivered(String eventId, long deliveredAtMs) {
+        synchronized (ACCOUNT_LOCK) {
+            DeliveryLedger ledger = loadDeliveryLedgerLocked();
+            if (ledger == null || !ledger.markDelivered(eventId, deliveredAtMs)) return false;
+            return persistDeliveryLedgerLocked(ledger);
+        }
+    }
+
+    public boolean markDeliveryFailed(String eventId, String failureCode, long failedAtMs) {
+        synchronized (ACCOUNT_LOCK) {
+            DeliveryLedger ledger = loadDeliveryLedgerLocked();
+            if (ledger == null || !ledger.markFailed(eventId, failureCode, failedAtMs)) return false;
+            return persistDeliveryLedgerLocked(ledger);
+        }
+    }
+
+    public DeliveryRecord deliveryRecord(String eventId) {
+        synchronized (ACCOUNT_LOCK) {
+            DeliveryLedger ledger = loadDeliveryLedgerLocked();
+            return ledger == null ? null : ledger.record(eventId);
+        }
     }
 
     public void setScheduleInstalled(boolean installed) {
@@ -208,6 +253,7 @@ public final class NativeStore {
             if (!preferences.edit()
                     .remove(CONFIG)
                     .remove(DELIVERED)
+                    .remove(DELIVERY_RECORDS)
                     .putBoolean(SCHEDULE_INSTALLED, false)
                     .putBoolean(ENGINE_HEALTHY, false)
                     .putString(LAST_ERROR, "")
@@ -226,6 +272,36 @@ public final class NativeStore {
         }
     }
 
+    private DeliveryLedger loadDeliveryLedgerLocked() {
+        String raw = preferences.getString(DELIVERY_RECORDS, null);
+        if (raw == null || raw.isBlank()) return new DeliveryLedger(MAX_DELIVERY_RECORDS);
+        try {
+            return DeliveryLedger.fromJson(new JSONObject(raw), MAX_DELIVERY_RECORDS);
+        } catch (JSONException | RuntimeException error) {
+            preferences.edit()
+                    .putBoolean(ENGINE_HEALTHY, false)
+                    .putString(LAST_ERROR, "delivery-ledger-invalid")
+                    .commit();
+            return null;
+        }
+    }
+
+    private boolean persistDeliveryLedgerLocked(DeliveryLedger ledger) {
+        try {
+            return preferences.edit().putString(DELIVERY_RECORDS, ledger.toJson().toString()).commit();
+        } catch (JSONException error) {
+            preferences.edit()
+                    .putBoolean(ENGINE_HEALTHY, false)
+                    .putString(LAST_ERROR, "delivery-ledger-persist-failed")
+                    .commit();
+            return false;
+        }
+    }
+
+    private boolean legacyDeliveredLocked(String eventId) {
+        return preferences.getStringSet(DELIVERED, Set.of()).contains(eventId);
+    }
+
     private int advanceAccountGenerationLocked() {
         int current = preferences.getInt(ACCOUNT_GENERATION, 0);
         int next = current == Integer.MAX_VALUE ? 1 : current + 1;
@@ -239,6 +315,7 @@ public final class NativeStore {
         return preferences.edit()
                 .remove(CONFIG)
                 .remove(DELIVERED)
+                .remove(DELIVERY_RECORDS)
                 .putBoolean(SCHEDULE_INSTALLED, false)
                 .putBoolean(ENGINE_HEALTHY, false)
                 .putString(LAST_ERROR, "")

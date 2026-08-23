@@ -47,6 +47,25 @@ public final class DeliverySourceContractTest {
     }
 
     @Test
+    public void schedulerFailsClosedWhenScheduleFinalizationCannotPersist() throws IOException {
+        String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        int methodStart = scheduler.indexOf("private static boolean scheduleCurrentGeneration");
+        int methodEnd = scheduler.indexOf("public static boolean scheduleTest", methodStart);
+        assertTrue(methodStart >= 0);
+        assertTrue(methodEnd > methodStart);
+
+        String scheduleMethod = scheduler.substring(methodStart, methodEnd);
+        int finalize = scheduleMethod.indexOf("!store.addScheduledRequestCodesIfGeneration");
+        int failClosed = scheduleMethod.indexOf(
+                "store.markScheduleFailureIfGeneration(\"alarm-schedule-finalize-failed\", generation)",
+                finalize
+        );
+
+        assertTrue(finalize >= 0);
+        assertTrue(failClosed > finalize);
+    }
+
+    @Test
     public void testAlarmTracksRollbackBeforeInstallAndCleansRuntimeFailure() throws IOException {
         String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
         int methodStart = scheduler.indexOf("public static boolean scheduleTest");

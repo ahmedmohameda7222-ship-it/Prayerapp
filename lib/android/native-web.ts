@@ -31,6 +31,8 @@ export type NativeBridgeStatus = {
   audioReady: boolean;
   engineHealthy: boolean;
   nativeReady: boolean;
+  receiptV2?: boolean;
+  accountGeneration?: number;
   scheduleValidUntil?: string;
   lastError?: string;
   installationId?: string;

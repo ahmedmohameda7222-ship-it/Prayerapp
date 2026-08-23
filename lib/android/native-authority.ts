@@ -31,8 +31,7 @@ function isFuture(value: string | null, nowMs: number) {
 }
 
 function commonDeliveryCapability(lease: NativeAuthorityLease, nowMs: number) {
-  return lease.native_ready
-    && lease.notification_permission
+  return lease.notification_permission
     && lease.notification_delivery_enabled
     && lease.exact_alarm_permission
     && lease.schedule_fresh

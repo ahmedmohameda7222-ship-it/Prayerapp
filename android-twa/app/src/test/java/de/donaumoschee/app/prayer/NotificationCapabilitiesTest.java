@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 public final class NotificationCapabilitiesTest {
     private static final int ENABLED = 3;
     private static final int DISABLED = 0;
+    private static final int MISSING = -1000;
 
     @Test
     public void pre33GlobalDisableBlocksDeliveryDespiteImplicitRuntimePermission() {
@@ -46,6 +47,22 @@ public final class NotificationCapabilitiesTest {
     @Test
     public void disabledAdhanChannelBlocksAdhanAndNativeAuthority() {
         NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, ENABLED, DISABLED);
+        assertFalse(state.adhanChannelEnabled());
+        assertFalse(state.adhanDeliveryReady());
+        assertFalse(state.nativeDeliveryReady());
+    }
+
+    @Test
+    public void missingReminderChannelIsNotTreatedAsEnabled() {
+        NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, MISSING, ENABLED);
+        assertFalse(state.reminderChannelEnabled());
+        assertFalse(state.reminderDeliveryReady());
+        assertFalse(state.nativeDeliveryReady());
+    }
+
+    @Test
+    public void missingAdhanChannelIsNotTreatedAsEnabled() {
+        NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, ENABLED, MISSING);
         assertFalse(state.adhanChannelEnabled());
         assertFalse(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());

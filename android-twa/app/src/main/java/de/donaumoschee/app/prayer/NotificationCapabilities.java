@@ -19,8 +19,8 @@ public record NotificationCapabilities(
     ) {
         boolean permission = sdk < API_RUNTIME_NOTIFICATIONS || runtimePermissionGranted;
         boolean delivery = permission && appNotificationsEnabled;
-        boolean reminderChannel = sdk < API_NOTIFICATION_CHANNELS || reminderChannelImportance != IMPORTANCE_NONE;
-        boolean adhanChannel = sdk < API_NOTIFICATION_CHANNELS || adhanChannelImportance != IMPORTANCE_NONE;
+        boolean reminderChannel = sdk < API_NOTIFICATION_CHANNELS || reminderChannelImportance > IMPORTANCE_NONE;
+        boolean adhanChannel = sdk < API_NOTIFICATION_CHANNELS || adhanChannelImportance > IMPORTANCE_NONE;
         return new NotificationCapabilities(permission, delivery, reminderChannel, adhanChannel);
     }
 

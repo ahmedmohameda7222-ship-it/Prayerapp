@@ -133,7 +133,7 @@ export function PrayerSystemTestControls() {
     stopAudio,
   } = useAdhanAudio();
   const { sendTestPrayerReminder, sendTestAdhan } = useAppPreferences();
-  const { isNative, scheduleTest } = useNativeAndroid();
+  const { isNative, bridgeState, scheduleTest } = useNativeAndroid();
   const [prayer, setPrayer] = useState<AdhanPrayer>("maghrib");
   const [adhanStatus, setAdhanStatus] = useState("");
   const [reminderStatus, setReminderStatus] = useState("");
@@ -149,7 +149,7 @@ export function PrayerSystemTestControls() {
   useEffect(() => () => stopAudio(), [stopAudio]);
 
   function startAdhanTest() {
-    if (adhanCountdown.seconds !== null) return;
+    if (bridgeState === "probing" || adhanCountdown.seconds !== null) return;
     stopAudio();
     if (!isNative) {
       preloadSound(soundId);
@@ -179,7 +179,7 @@ export function PrayerSystemTestControls() {
   }
 
   function startReminderTest() {
-    if (reminderCountdown.seconds !== null) return;
+    if (bridgeState === "probing" || reminderCountdown.seconds !== null) return;
     setReminderStatus(copy.reminderScheduled);
     reminderCountdown.start(TEST_SECONDS);
     if (isNative) {
@@ -231,7 +231,7 @@ export function PrayerSystemTestControls() {
         <button
           type="button"
           onClick={startAdhanTest}
-          disabled={adhanCountdown.seconds !== null}
+          disabled={bridgeState === "probing" || adhanCountdown.seconds !== null}
           className="flex min-h-12 items-center justify-center gap-2 rounded-[12px] bg-[var(--app-brand)] px-3 text-sm font-extrabold text-white disabled:opacity-60"
         >
           <Volume2 className="h-4 w-4" aria-hidden="true" />
@@ -240,7 +240,7 @@ export function PrayerSystemTestControls() {
         <button
           type="button"
           onClick={startReminderTest}
-          disabled={reminderCountdown.seconds !== null}
+          disabled={bridgeState === "probing" || reminderCountdown.seconds !== null}
           className="flex min-h-12 items-center justify-center gap-2 rounded-[12px] border border-[var(--app-brand)] bg-[var(--app-surface)] px-3 text-sm font-extrabold text-[var(--app-brand-strong)] disabled:opacity-60"
         >
           <BellRing className="h-4 w-4" aria-hidden="true" />

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { isAdhanPrayer, type AdhanPrayer } from "@/lib/adhan-audio";
+import { prayerEventId } from "@/lib/android/prayer-event-id";
 import { todayIso } from "@/lib/date-utils";
 import { deliverPrayerReminderEvent } from "@/lib/prayer-reminder-delivery";
 import type { PushSubscriptionRecord } from "@/lib/push/types";
@@ -12,6 +13,7 @@ export const maxDuration = 20;
 
 const TEST_DELAY_MS = 10_000;
 const TEST_REMINDER_LEAD_MINUTES = 15 as const;
+const TEST_PUSH_TTL_MS = 5 * 60_000;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type TestMode = "reminder" | "adhan";
@@ -88,11 +90,23 @@ export async function POST(request: Request) {
 
   await sleep(TEST_DELAY_MS);
 
-  const date = todayIso(new Date());
-  const eventKey = `prayer-simulation:${mode}:${prayer}:${randomUUID()}`;
+  const due = new Date();
+  const date = todayIso(due);
   const leadMinutes = mode === "adhan" ? 0 : TEST_REMINDER_LEAD_MINUTES;
+  const eventId = prayerEventId({
+    scheduleId: randomUUID(),
+    scheduleRevision: "simulation",
+    date,
+    prayer,
+    kind: mode,
+    leadMinutes,
+  });
+  const dueAt = due.toISOString();
+  const expiresAt = new Date(due.getTime() + TEST_PUSH_TTL_MS).toISOString();
   const result = await deliverPrayerReminderEvent({
-    eventKey,
+    eventId,
+    dueAt,
+    expiresAt,
     prayer,
     date,
     leadMinutes,

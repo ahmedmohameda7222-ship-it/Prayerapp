@@ -13,6 +13,8 @@ import androidx.core.app.NotificationManagerCompat;
 import de.donaumoschee.app.LauncherActivity;
 import de.donaumoschee.app.R;
 import de.donaumoschee.app.adhan.AdhanPlaybackService;
+import de.donaumoschee.app.localization.AppLocale;
+import de.donaumoschee.app.storage.NativeStore;
 
 public final class PrayerNotifications {
     public static final String REMINDER_CHANNEL = "prayer-reminders-v1";
@@ -23,18 +25,19 @@ public final class PrayerNotifications {
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         if (manager == null) return;
+        Context localizedContext = AppLocale.localizedContext(context, new NativeStore(context).appLocale());
 
         NotificationChannel reminders = new NotificationChannel(
                 REMINDER_CHANNEL,
-                context.getString(R.string.channel_prayer_reminders),
+                localizedContext.getString(R.string.channel_prayer_reminders),
                 NotificationManager.IMPORTANCE_HIGH
         );
-        reminders.setDescription(context.getString(R.string.channel_prayer_reminders_description));
+        reminders.setDescription(localizedContext.getString(R.string.channel_prayer_reminders_description));
         manager.createNotificationChannel(reminders);
 
         NotificationChannel adhan = new NotificationChannel(
                 AdhanPlaybackService.CHANNEL,
-                context.getString(R.string.channel_adhan_playback),
+                localizedContext.getString(R.string.channel_adhan_playback),
                 NotificationManager.IMPORTANCE_LOW
         );
         manager.createNotificationChannel(adhan);
@@ -42,12 +45,13 @@ public final class PrayerNotifications {
 
     public static boolean showReminder(Context context, String eventId, Prayer prayer, int leadMinutes) {
         if (!NativeStatus.notificationCapabilities(context).reminderDeliveryReady()) return false;
+        Context localizedContext = AppLocale.localizedContext(context, new NativeStore(context).appLocale());
         Intent launch = new Intent(context, LauncherActivity.class).setData(android.net.Uri.parse("https://donaumoschee.vercel.app/?reminder=" + prayer.key + "#prayer-times"));
         PendingIntent content = PendingIntent.getActivity(context, prayer.ordinal(), launch, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, REMINDER_CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification_icon)
-                .setContentTitle(context.getString(R.string.prayer_reminder_title))
-                .setContentText(context.getString(R.string.prayer_reminder_body, leadMinutes, prayer.displayName(context)))
+                .setContentTitle(localizedContext.getString(R.string.prayer_reminder_title))
+                .setContentText(localizedContext.getString(R.string.prayer_reminder_body, leadMinutes, prayer.displayName(context)))
                 .setContentIntent(content)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)

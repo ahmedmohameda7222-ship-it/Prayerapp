@@ -9,6 +9,16 @@ import static org.junit.Assert.assertTrue;
 
 public final class DeliveryLedgerTest {
     @Test
+    public void identicalScheduledRegistrationIsIdempotentButConflictsAreRejected() {
+        DeliveryLedger ledger = new DeliveryLedger(4);
+        assertTrue(ledger.schedule("event-0", "REMINDER", 900L));
+        assertTrue(ledger.schedule("event-0", "REMINDER", 900L));
+        assertFalse(ledger.schedule("event-0", "ADHAN", 900L));
+        assertFalse(ledger.schedule("event-0", "REMINDER", 901L));
+        assertEquals(1, ledger.size());
+    }
+
+    @Test
     public void duplicateActiveOrDeliveredEventCannotBeginAgain() {
         DeliveryLedger ledger = new DeliveryLedger(4);
         assertTrue(ledger.schedule("event-1", "REMINDER", 1_000L));

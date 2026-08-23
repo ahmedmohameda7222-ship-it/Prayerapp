@@ -17,12 +17,13 @@ describe("Android native receipt v2 contract", () => {
     expect(heartbeat).not.toContain("account_generation: heartbeat.accountGeneration");
   });
 
-  it("propagates the native generation through authenticated web enrollment", () => {
+  it("captures and propagates the native generation through authenticated web enrollment", () => {
     const provider = source("components/providers/NativeAndroidProvider.tsx");
     const nativeWeb = source("lib/android/native-web.ts");
 
     expect(nativeWeb).toContain("accountGeneration?: number");
-    expect(provider).toContain("accountGeneration: status.accountGeneration");
+    expect(provider).toContain("const nativeAccountGeneration = status.accountGeneration");
+    expect(provider).toContain("accountGeneration: nativeAccountGeneration");
   });
 
   it("parses legacy heartbeat clients fail-open and receipt-v2 clients with generation", () => {

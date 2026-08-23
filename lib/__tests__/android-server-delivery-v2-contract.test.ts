@@ -57,6 +57,13 @@ describe("Android server delivery v2 contract", () => {
     expect(cron).not.toContain("const targets = filterPrayerPushTargets(pushTargets, nativeLeases, now)");
   });
 
+  it("binds each canonical event revision to that prayer's actual time", () => {
+    const cron = source("app/api/cron/prayer-reminders/route.ts");
+    expect(cron).toContain("scheduleRevision: time");
+    expect(cron).not.toContain("function scheduleRevision(schedule");
+    expect(cron).not.toContain("note_tr, updated_at");
+  });
+
   it("drops stale prayer fallback pushes before showing them", () => {
     const sw = source("public/sw.js");
     expect(sw).toContain("expiresAt");

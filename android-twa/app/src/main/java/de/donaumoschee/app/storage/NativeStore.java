@@ -26,6 +26,7 @@ public final class NativeStore {
     private static final String INSTALLATION_ID = "installation-id";
     private static final String CREDENTIAL = "credential";
     private static final String AUTHORITY_ID = "authority-id";
+    private static final String PENDING_AUTHORITY_REVOCATION = "pending-authority-revocation-v2";
     private static final String DELIVERED = "delivered-events";
     private static final String DELIVERY_RECORDS = "delivery-records-v2";
     private static final String DELIVERY_RECEIPTS = "delivery-receipts-v2";
@@ -108,17 +109,36 @@ public final class NativeStore {
     }
 
     public synchronized boolean bindAuthorityId(String value) {
-        try {
-            String canonical = UUID.fromString(value).toString();
-            if (!canonical.equalsIgnoreCase(value)) return false;
-            return preferences.edit().putString(AUTHORITY_ID, canonical).commit();
-        } catch (IllegalArgumentException error) {
-            return false;
+        String canonical = canonicalAuthorityId(value);
+        return canonical != null && preferences.edit().putString(AUTHORITY_ID, canonical).commit();
+    }
+
+    public boolean bindAuthorityIdIfGeneration(String value, int generation) {
+        synchronized (ACCOUNT_LOCK) {
+            if (accountGeneration() != generation) return false;
+            String canonical = canonicalAuthorityId(value);
+            return canonical != null && preferences.edit().putString(AUTHORITY_ID, canonical).commit();
         }
     }
 
     public synchronized boolean clearAuthorityId() {
         return preferences.edit().remove(AUTHORITY_ID).commit();
+    }
+
+    public PendingAuthorityRevocation pendingAuthorityRevocation() {
+        synchronized (ACCOUNT_LOCK) {
+            return pendingAuthorityRevocationLocked();
+        }
+    }
+
+    public boolean acknowledgeAuthorityRevocation(String authorityId, int targetGeneration) {
+        synchronized (ACCOUNT_LOCK) {
+            if (accountGeneration() != targetGeneration) return false;
+            PendingAuthorityRevocation pending = pendingAuthorityRevocationLocked();
+            if (pending == null) return true;
+            if (!pending.authorityId.equals(authorityId) || pending.targetGeneration != targetGeneration) return false;
+            return preferences.edit().remove(PENDING_AUTHORITY_REVOCATION).commit();
+        }
     }
 
     /** Legacy v1 compatibility only. New delivery paths use the delivery ledger below. */
@@ -306,6 +326,44 @@ public final class NativeStore {
         }
     }
 
+    public int resetAccountStateAndQueueAuthorityRevocation() {
+        synchronized (ACCOUNT_LOCK) {
+            int current = preferences.getInt(ACCOUNT_GENERATION, 0);
+            int generation = nextAccountGeneration(current);
+            PendingAuthorityRevocation existingPending = pendingAuthorityRevocationLocked();
+            String authorityId = preferences.getString(AUTHORITY_ID, "");
+            if ((authorityId == null || authorityId.isBlank()) && existingPending != null) {
+                authorityId = existingPending.authorityId;
+            }
+
+            SharedPreferences.Editor editor = preferences.edit()
+                    .putInt(ACCOUNT_GENERATION, generation)
+                    .remove(AUTHORITY_ID)
+                    .remove(CONFIG)
+                    .remove(DELIVERED)
+                    .remove(DELIVERY_RECORDS)
+                    .remove(DELIVERY_RECEIPTS)
+                    .putBoolean(SCHEDULE_INSTALLED, false)
+                    .putBoolean(ENGINE_HEALTHY, false)
+                    .putString(LAST_ERROR, "");
+            String canonicalAuthorityId = canonicalAuthorityId(authorityId);
+            if (canonicalAuthorityId == null) {
+                editor.remove(PENDING_AUTHORITY_REVOCATION);
+            } else {
+                try {
+                    editor.putString(PENDING_AUTHORITY_REVOCATION, new JSONObject()
+                            .put("authorityId", canonicalAuthorityId)
+                            .put("targetGeneration", generation)
+                            .toString());
+                } catch (JSONException error) {
+                    throw new IllegalStateException("Could not queue native authority revocation", error);
+                }
+            }
+            if (!editor.commit()) throw new IllegalStateException("Could not reset native account state");
+            return generation;
+        }
+    }
+
     public void clearAccountState() {
         synchronized (ACCOUNT_LOCK) {
             if (!clearAccountStateLocked()) {
@@ -337,6 +395,25 @@ public final class NativeStore {
             preferences.edit()
                     .putBoolean(ENGINE_HEALTHY, false)
                     .putString(LAST_ERROR, "delivery-receipts-invalid")
+                    .commit();
+            return null;
+        }
+    }
+
+    private PendingAuthorityRevocation pendingAuthorityRevocationLocked() {
+        String raw = preferences.getString(PENDING_AUTHORITY_REVOCATION, null);
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            JSONObject object = new JSONObject(raw);
+            String authorityId = canonicalAuthorityId(object.optString("authorityId", ""));
+            int targetGeneration = object.optInt("targetGeneration", -1);
+            if (authorityId == null || targetGeneration < 0) throw new JSONException("Invalid pending authority revocation");
+            return new PendingAuthorityRevocation(authorityId, targetGeneration);
+        } catch (JSONException | RuntimeException error) {
+            preferences.edit()
+                    .remove(PENDING_AUTHORITY_REVOCATION)
+                    .putBoolean(ENGINE_HEALTHY, false)
+                    .putString(LAST_ERROR, "authority-revocation-invalid")
                     .commit();
             return null;
         }
@@ -396,11 +473,25 @@ public final class NativeStore {
 
     private int advanceAccountGenerationLocked() {
         int current = preferences.getInt(ACCOUNT_GENERATION, 0);
-        int next = current == Integer.MAX_VALUE ? 1 : current + 1;
+        int next = nextAccountGeneration(current);
         if (!preferences.edit().putInt(ACCOUNT_GENERATION, next).remove(DELIVERY_RECEIPTS).commit()) {
             throw new IllegalStateException("Could not advance native account generation");
         }
         return next;
+    }
+
+    private static int nextAccountGeneration(int current) {
+        return current == Integer.MAX_VALUE ? 1 : current + 1;
+    }
+
+    private static String canonicalAuthorityId(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            String canonical = UUID.fromString(value).toString();
+            return canonical.equalsIgnoreCase(value) ? canonical : null;
+        } catch (IllegalArgumentException error) {
+            return null;
+        }
     }
 
     private boolean clearAccountStateLocked() {
@@ -414,5 +505,15 @@ public final class NativeStore {
                 .putString(LAST_ERROR, "")
                 .remove(SCHEDULED_REQUEST_CODES)
                 .commit();
+    }
+
+    public static final class PendingAuthorityRevocation {
+        public final String authorityId;
+        public final int targetGeneration;
+
+        public PendingAuthorityRevocation(String authorityId, int targetGeneration) {
+            this.authorityId = authorityId;
+            this.targetGeneration = targetGeneration;
+        }
     }
 }

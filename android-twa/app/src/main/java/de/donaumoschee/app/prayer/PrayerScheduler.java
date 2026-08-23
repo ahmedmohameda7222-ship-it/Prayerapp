@@ -97,10 +97,16 @@ public final class PrayerScheduler {
                 "test:" + UUID.randomUUID(), prayer, kind, Instant.now().plusSeconds(delaySeconds), leadMinutes, soundId
         );
         if (!store.markDeliveryScheduled(event.eventId, event.kind.name(), event.dueAt.toEpochMilli())) return false;
-        AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent operation = operation(context, event, generation);
-        manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
         Set<String> requestCodes = Set.of(encodeScheduledRequest(generation, event));
+        try {
+            AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            PendingIntent operation = operation(context, event, generation);
+            manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
+        } catch (RuntimeException error) {
+            cancelRequests(context, store, requestCodes);
+            Log.e(TAG, "alarm.test schedule-failed=" + error.getClass().getSimpleName());
+            return false;
+        }
         if (!store.addScheduledRequestCodesIfGeneration(requestCodes, generation)) {
             cancelRequests(context, store, requestCodes);
             return false;

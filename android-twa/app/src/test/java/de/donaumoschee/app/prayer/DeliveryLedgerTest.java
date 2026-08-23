@@ -25,9 +25,11 @@ public final class DeliveryLedgerTest {
         assertTrue(ledger.cancelScheduled("event-cancel", "alarm-cancelled", 850L));
         assertEquals(DeliveryState.FAILED, ledger.record("event-cancel").state());
         assertEquals("alarm-cancelled", ledger.record("event-cancel").failureCode());
+        assertFalse(ledger.begin("event-cancel", "REMINDER", 900L, 860L));
 
         assertTrue(ledger.schedule("event-cancel", "REMINDER", 900L));
         assertEquals(DeliveryState.SCHEDULED, ledger.record("event-cancel").state());
+        assertTrue(ledger.begin("event-cancel", "REMINDER", 900L, 910L));
     }
 
     @Test

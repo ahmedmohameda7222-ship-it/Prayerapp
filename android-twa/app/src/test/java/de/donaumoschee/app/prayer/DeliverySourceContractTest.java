@@ -29,6 +29,24 @@ public final class DeliverySourceContractTest {
     }
 
     @Test
+    public void schedulerTracksRollbackBeforeExactAlarmInstallCanThrow() throws IOException {
+        String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        int methodStart = scheduler.indexOf("private static boolean scheduleCurrentGeneration");
+        int methodEnd = scheduler.indexOf("public static boolean scheduleTest", methodStart);
+        assertTrue(methodStart >= 0);
+        assertTrue(methodEnd > methodStart);
+
+        String scheduleMethod = scheduler.substring(methodStart, methodEnd);
+        int scheduled = scheduleMethod.indexOf("markDeliveryScheduled(");
+        int tracked = scheduleMethod.indexOf("installedByThisCall.add(encodeScheduledRequest(generation, event))");
+        int install = scheduleMethod.indexOf("manager.setExactAndAllowWhileIdle(");
+
+        assertTrue(scheduled >= 0);
+        assertTrue(tracked > scheduled);
+        assertTrue(install > tracked);
+    }
+
+    @Test
     public void schedulerPersistsCancellationWhenStoredAlarmIsRemoved() throws IOException {
         String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
         String store = source("de/donaumoschee/app/storage/NativeStore.java");

@@ -49,10 +49,10 @@ describe("Android server delivery v2 behavior", () => {
     expect(adhan).not.toBe(reminder);
   });
 
-  it("does not make reminder readiness depend on Adhan channel or audio", () => {
+  it("does not make reminder readiness depend on legacy nativeReady, Adhan channel, or audio", () => {
     const now = new Date("2026-08-23T12:00:00.000Z");
     expect(authority.nativeDeliveryCapability(
-      healthyLease({ adhan_channel_enabled: false, audio_ready: false }),
+      healthyLease({ native_ready: false, adhan_channel_enabled: false, audio_ready: false }),
       "reminder",
       now,
     )).toBe(true);

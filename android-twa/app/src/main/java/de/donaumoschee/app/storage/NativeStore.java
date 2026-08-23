@@ -6,6 +6,7 @@ import android.util.Base64;
 
 import de.donaumoschee.app.prayer.DeliveryLedger;
 import de.donaumoschee.app.prayer.DeliveryRecord;
+import de.donaumoschee.app.prayer.DeliveryState;
 import de.donaumoschee.app.prayer.NativeConfig;
 
 import org.json.JSONException;
@@ -129,6 +130,17 @@ public final class NativeStore {
             if (legacyDeliveredLocked(eventId)) return false;
             DeliveryLedger ledger = loadDeliveryLedgerLocked();
             if (ledger == null || !ledger.schedule(eventId, kind, dueAtMs)) return false;
+            return persistDeliveryLedgerLocked(ledger);
+        }
+    }
+
+    public boolean cancelDeliveryScheduled(String eventId, String failureCode, long cancelledAtMs) {
+        synchronized (ACCOUNT_LOCK) {
+            DeliveryLedger ledger = loadDeliveryLedgerLocked();
+            if (ledger == null) return false;
+            DeliveryRecord current = ledger.record(eventId);
+            if (current == null || current.state() != DeliveryState.SCHEDULED) return true;
+            if (!ledger.cancelScheduled(eventId, failureCode, cancelledAtMs)) return false;
             return persistDeliveryLedgerLocked(ledger);
         }
     }

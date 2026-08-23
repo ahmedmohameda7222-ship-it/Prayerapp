@@ -19,12 +19,29 @@ public final class DeliveryLedger {
     public boolean schedule(String eventId, String kind, long dueAtMs) {
         DeliveryRecord current = records.get(eventId);
         if (current != null) {
-            return current.state() == DeliveryState.SCHEDULED
+            if (current.state() == DeliveryState.SCHEDULED) {
+                return current.kind().equals(kind) && current.dueAtMs() == dueAtMs;
+            }
+            if (
+                    current.state() == DeliveryState.FAILED
+                    && current.failureCode().startsWith("alarm-cancelled")
                     && current.kind().equals(kind)
-                    && current.dueAtMs() == dueAtMs;
+                    && current.dueAtMs() == dueAtMs
+            ) {
+                records.put(eventId, DeliveryRecord.schedule(eventId, kind, dueAtMs));
+                return true;
+            }
+            return false;
         }
         if (!reserveSlot()) return false;
         records.put(eventId, DeliveryRecord.schedule(eventId, kind, dueAtMs));
+        return true;
+    }
+
+    public boolean cancelScheduled(String eventId, String failureCode, long cancelledAtMs) {
+        DeliveryRecord current = records.get(eventId);
+        if (current == null || current.state() != DeliveryState.SCHEDULED) return false;
+        records.put(eventId, current.cancelScheduled(failureCode, cancelledAtMs));
         return true;
     }
 

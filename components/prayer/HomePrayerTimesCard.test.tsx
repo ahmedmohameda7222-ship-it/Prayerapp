@@ -101,4 +101,13 @@ describe("HomePrayerTimesCard", () => {
     expect(container.querySelector('[data-prayer-row="asr"]')).toHaveClass("border-s-[var(--home-brand)]");
     expect(screen.getAllByRole("button").every((button) => button.hasAttribute("aria-pressed"))).toBe(true);
   });
+
+  it("reserves fixed mobile columns for times and the reminder control so long localized prayer names cannot overlap them", () => {
+    const { container } = render(<HomePrayerTimesCard prayer={prayer} />);
+
+    const fajrCells = container.querySelector('[data-prayer-row="fajr"] > div');
+    expect(fajrCells).not.toBeNull();
+    expect(fajrCells).toHaveClass("grid-cols-[minmax(0,1fr)_64px_64px_52px]");
+    expect(fajrCells).toHaveClass("gap-1");
+  });
 });

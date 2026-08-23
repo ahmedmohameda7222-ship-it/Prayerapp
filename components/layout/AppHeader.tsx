@@ -89,7 +89,7 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
             lang={locale}
             className={
               locale === "ar" && mosqueName === APP_NAMES.ar
-                ? "mosque-name-thuluth text-[40px] leading-[1.5] text-[#F2EBDD] sm:text-[42px]"
+                ? "mosque-name-thuluth text-[#F2EBDD]"
                 : "text-[28px] font-bold leading-tight text-[#F2EBDD]"
             }
           >

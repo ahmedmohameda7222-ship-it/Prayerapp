@@ -27,6 +27,14 @@ public record DeliveryRecord(
         return new DeliveryRecord(eventId, kind, DeliveryState.FIRING, dueAtMs, attemptedAtMs, 0L, "");
     }
 
+    public DeliveryRecord cancelScheduled(String failureCode, long cancelledAtMs) {
+        if (state != DeliveryState.SCHEDULED) {
+            throw new IllegalStateException("Only scheduled delivery may be cancelled");
+        }
+        String code = failureCode == null || failureCode.isBlank() ? "alarm-cancelled" : failureCode;
+        return new DeliveryRecord(eventId, kind, DeliveryState.FAILED, dueAtMs, cancelledAtMs, 0L, code);
+    }
+
     public DeliveryRecord markDelivered(long deliveredAtMs) {
         requireFiring();
         return new DeliveryRecord(eventId, kind, DeliveryState.DELIVERED, dueAtMs, attemptedAtMs, deliveredAtMs, "");

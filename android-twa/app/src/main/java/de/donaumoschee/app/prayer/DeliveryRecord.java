@@ -47,12 +47,12 @@ public record DeliveryRecord(
     }
 
     public DeliveryRecord restart(long attemptedAtMs) {
-        if (!canBeginAgain()) throw new IllegalStateException("Only failed delivery may restart");
+        if (!canBeginAgain()) throw new IllegalStateException("Delivery failure is not retryable");
         return begin(eventId, kind, dueAtMs, attemptedAtMs);
     }
 
     public boolean canBeginAgain() {
-        return state == DeliveryState.FAILED;
+        return state == DeliveryState.FAILED && !failureCode.startsWith("alarm-cancelled");
     }
 
     public long retentionTimestampMs() {

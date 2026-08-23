@@ -96,7 +96,7 @@ describe("native authority route generation isolation", () => {
 
   it("keeps a short lease for reminder-only capability even when legacy nativeReady is false", async () => {
     const lookup = query({ data: { authority_id: authorityId, credential_hash: credentialHash }, error: null });
-    const mutation = query((updates) => ({
+    const mutation = query(() => ({
       data: { authority_id: authorityId },
       error: null,
     }));

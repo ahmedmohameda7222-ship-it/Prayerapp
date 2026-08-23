@@ -35,4 +35,13 @@ describe("Android app-selected locale contract", () => {
     expect(prayer).toContain("AppLocale.localizedContext");
     expect(adhan).toContain("AppLocale.localizedContext");
   });
+
+  it("refreshes notification channel labels when app locale changes", () => {
+    const bridge = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeHandler.java");
+    const saveIndex = bridge.indexOf("store.saveConfig(payload, Instant.now())");
+    const refreshIndex = bridge.indexOf("PrayerNotifications.createChannels(context)", saveIndex);
+
+    expect(saveIndex).toBeGreaterThanOrEqual(0);
+    expect(refreshIndex).toBeGreaterThan(saveIndex);
+  });
 });

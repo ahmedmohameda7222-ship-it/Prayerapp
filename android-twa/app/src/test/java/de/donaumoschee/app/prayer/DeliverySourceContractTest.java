@@ -39,7 +39,7 @@ public final class DeliverySourceContractTest {
     public void schedulerTracksRollbackBeforeExactAlarmInstallCanThrow() throws IOException {
         String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
         int methodStart = scheduler.indexOf("private static boolean scheduleCurrentGeneration");
-        int methodEnd = scheduler.indexOf("public static boolean scheduleTest", methodStart);
+        int methodEnd = scheduler.indexOf("public static String scheduleTest", methodStart);
         assertTrue(methodStart >= 0);
         assertTrue(methodEnd > methodStart);
 
@@ -57,7 +57,7 @@ public final class DeliverySourceContractTest {
     public void schedulerFailsClosedWhenScheduleFinalizationCannotPersist() throws IOException {
         String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
         int methodStart = scheduler.indexOf("private static boolean scheduleCurrentGeneration");
-        int methodEnd = scheduler.indexOf("public static boolean scheduleTest", methodStart);
+        int methodEnd = scheduler.indexOf("public static String scheduleTest", methodStart);
         assertTrue(methodStart >= 0);
         assertTrue(methodEnd > methodStart);
 
@@ -75,7 +75,7 @@ public final class DeliverySourceContractTest {
     @Test
     public void testAlarmTracksRollbackBeforeInstallAndCleansRuntimeFailure() throws IOException {
         String scheduler = source("de/donaumoschee/app/prayer/PrayerScheduler.java");
-        int methodStart = scheduler.indexOf("public static boolean scheduleTest");
+        int methodStart = scheduler.indexOf("public static String scheduleTest");
         int methodEnd = scheduler.indexOf("public static void cancelAll", methodStart);
         assertTrue(methodStart >= 0);
         assertTrue(methodEnd > methodStart);

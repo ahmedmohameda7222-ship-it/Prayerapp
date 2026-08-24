@@ -21,6 +21,8 @@ const PRODUCTION_ORIGIN = "https://donaumoschee.vercel.app";
 const PUSH_STORAGE_KEY = "masjid-el-rahman-push-v1";
 const NATIVE_ACCOUNT_OWNER_KEY = "danube-native-account-owner-v1";
 const BRIDGE_READY_TIMEOUT_MS = 4_000;
+const NATIVE_TEST_RESULT_TIMEOUT_MS = 30_000;
+const NATIVE_TEST_STATUS_POLL_MS = 750;
 
 type NativeBridgeState = "probing" | "ready" | "unavailable";
 type NativeBridgeBootstrap = {
@@ -57,7 +59,12 @@ const NativeAndroidContext = createContext<ContextValue>({
   suspendNativeAuthority: async () => undefined,
 });
 
-type PendingTest = { resolve: (success: boolean) => void; timer: number };
+type PendingTest = {
+  resolve: (success: boolean) => void;
+  timer: number;
+  pollTimer: number | null;
+  eventId: string;
+};
 type NativeEnrollmentAttempt = {
   key: string;
   userId: string;
@@ -169,13 +176,34 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     } else if (message.type === "native.update.required.result") {
       const nested = message.payload.status;
       if (nested && typeof nested === "object") setStatus(nested as NativeBridgeStatus);
-    } else if (message.type === "native.test.result") {
+    } else if (message.type === "native.test.accepted") {
       const key = typeof message.payload.mode === "string" ? message.payload.mode : "";
       const pending = pendingTests.current.get(key);
-      if (pending) {
+      const eventId = typeof message.payload.eventId === "string" ? message.payload.eventId : "";
+      if (!pending) return;
+      if (message.payload.accepted !== true || !eventId.startsWith("test:")) {
         window.clearTimeout(pending.timer);
+        if (pending.pollTimer !== null) window.clearInterval(pending.pollTimer);
         pendingTests.current.delete(key);
-        pending.resolve(message.payload.success === true);
+        pending.resolve(false);
+        return;
+      }
+      pending.eventId = eventId;
+      send("native.test.status", { eventId: pending.eventId });
+      pending.pollTimer = window.setInterval(() => {
+        const current = pendingTests.current.get(key);
+        if (current?.eventId) send("native.test.status", { eventId: current.eventId });
+      }, NATIVE_TEST_STATUS_POLL_MS);
+    } else if (message.type === "native.test.status") {
+      const eventId = typeof message.payload.eventId === "string" ? message.payload.eventId : "";
+      const entry = Array.from(pendingTests.current.entries()).find(([, pending]) => pending.eventId === eventId);
+      if (!entry) return;
+      const [key, pending] = entry;
+      if (message.payload.state === "delivered" || message.payload.state === "failed") {
+        window.clearTimeout(pending.timer);
+        if (pending.pollTimer !== null) window.clearInterval(pending.pollTimer);
+        pendingTests.current.delete(key);
+        pending.resolve(message.payload.state === "delivered");
       }
     }
   }, [finishAccountTransition, send]);
@@ -469,10 +497,12 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     new Promise<boolean>((resolve) => {
       if (!portRef.current || pendingTests.current.has(mode)) return resolve(false);
       const timer = window.setTimeout(() => {
+        const pending = pendingTests.current.get(mode);
+        if (pending?.pollTimer != null) window.clearInterval(pending.pollTimer);
         pendingTests.current.delete(mode);
         resolve(false);
-      }, 5_000);
-      pendingTests.current.set(mode, { resolve, timer });
+      }, NATIVE_TEST_RESULT_TIMEOUT_MS);
+      pendingTests.current.set(mode, { resolve, timer, pollTimer: null, eventId: "" });
       send("native.test.schedule", { mode, prayer, adhanSoundId, delaySeconds: 10 });
     })
   ), [send]);
@@ -480,6 +510,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   useEffect(() => () => {
     for (const pending of pendingTests.current.values()) {
       window.clearTimeout(pending.timer);
+      if (pending.pollTimer !== null) window.clearInterval(pending.pollTimer);
       pending.resolve(false);
     }
     pendingTests.current.clear();

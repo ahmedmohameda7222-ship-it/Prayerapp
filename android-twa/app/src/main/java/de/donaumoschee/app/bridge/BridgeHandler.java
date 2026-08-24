@@ -9,6 +9,7 @@ import android.util.Log;
 import de.donaumoschee.app.NativePermissionActivity;
 import de.donaumoschee.app.adhan.AdhanCatalog;
 import de.donaumoschee.app.adhan.AdhanPlaybackService;
+import de.donaumoschee.app.prayer.DeliveryRecord;
 import de.donaumoschee.app.prayer.NativeStatus;
 import de.donaumoschee.app.prayer.Prayer;
 import de.donaumoschee.app.prayer.PrayerNotifications;
@@ -52,6 +53,7 @@ public final class BridgeHandler {
                 case "native.settings.open": openSettings(envelope.payload); break;
                 case "native.status.request": sendStatus(); break;
                 case "native.test.schedule": scheduleTest(envelope.payload); break;
+                case "native.test.status": testStatus(envelope.payload); break;
                 case "native.authority.enroll": enrollAuthority(envelope.payload); break;
                 case "native.authority.bind": bindAuthority(envelope.payload); break;
                 case "native.authority.clear": clearAuthority(); break;
@@ -99,9 +101,22 @@ public final class BridgeHandler {
         String soundId = payload.optString("adhanSoundId", "");
         if (!AdhanCatalog.isCompatible(prayer, soundId)) throw new JSONException("Invalid sound");
         int delaySeconds = payload.optInt("delaySeconds", 10);
-        boolean scheduled = PrayerScheduler.scheduleTest(context, mode, prayer, soundId, delaySeconds);
-        send("native.test.result", new JSONObject()
-                .put("success", scheduled).put("mode", mode).put("prayer", prayer.key).put("delaySeconds", delaySeconds));
+        String eventId = PrayerScheduler.scheduleTest(context, mode, prayer, soundId, delaySeconds);
+        send("native.test.accepted", new JSONObject()
+                .put("accepted", eventId != null)
+                .put("eventId", eventId == null ? JSONObject.NULL : eventId)
+                .put("mode", mode)
+                .put("prayer", prayer.key)
+                .put("delaySeconds", delaySeconds));
+    }
+
+    private void testStatus(JSONObject payload) throws JSONException {
+        String eventId = payload.optString("eventId", "");
+        if (!eventId.startsWith("test:")) throw new JSONException("Invalid test event id");
+        NativeStore store = new NativeStore(context);
+        DeliveryRecord record = store.deliveryRecord(eventId);
+        NativeTestDeliveryStatus deliveryStatus = NativeTestDeliveryStatus.from(record);
+        send("native.test.status", deliveryStatus.toJson());
     }
 
     private void enrollAuthority(JSONObject payload) throws JSONException {

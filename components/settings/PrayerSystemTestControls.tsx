@@ -159,16 +159,9 @@ export function PrayerSystemTestControls() {
     adhanCountdown.start(TEST_SECONDS);
 
     if (isNative) {
-      void scheduleTest("adhan", prayer, soundId).then((scheduled) => {
-        if (!scheduled) {
-          setAdhanStatus(copy.adhanFailed);
-          adhanCountdown.finish();
-          return;
-        }
-        window.setTimeout(() => {
-          setAdhanStatus(copy.adhanTriggered);
-          adhanCountdown.finish();
-        }, TEST_SECONDS * 1000);
+      void scheduleTest("adhan", prayer, soundId).then((delivered) => {
+        setAdhanStatus(delivered ? copy.adhanTriggered : copy.adhanFailed);
+        adhanCountdown.finish();
       });
     } else {
       void sendTestAdhan(prayer, TEST_SECONDS).then((sent) => {
@@ -183,16 +176,9 @@ export function PrayerSystemTestControls() {
     setReminderStatus(copy.reminderScheduled);
     reminderCountdown.start(TEST_SECONDS);
     if (isNative) {
-      void scheduleTest("reminder", prayer, soundId).then((scheduled) => {
-        if (!scheduled) {
-          setReminderStatus(copy.reminderFailed);
-          reminderCountdown.finish();
-          return;
-        }
-        window.setTimeout(() => {
-          setReminderStatus(copy.reminderSent);
-          reminderCountdown.finish();
-        }, TEST_SECONDS * 1000);
+      void scheduleTest("reminder", prayer, soundId).then((delivered) => {
+        setReminderStatus(delivered ? copy.reminderSent : copy.reminderFailed);
+        reminderCountdown.finish();
       });
     } else {
       void sendTestPrayerReminder(prayer, TEST_SECONDS).then((sent) => {

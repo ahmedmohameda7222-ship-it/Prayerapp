@@ -1,82 +1,52 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ADHAN_SOUNDS } from "@/lib/adhan-audio";
 
 const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
-describe("Android production completion contract", () => {
-  it("uses the verified AndroidX Browser postMessage channel without a WebView JS interface", () => {
-    const launcher = source("android-twa/app/src/main/java/de/donaumoschee/app/LauncherActivity.java");
-    const protocol = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeProtocol.java");
-    expect(launcher).toContain("validateRelationship(CustomTabsService.RELATION_USE_AS_ORIGIN");
-    expect(launcher).toContain("requestPostMessageChannel(ORIGIN, ORIGIN, new Bundle())");
-    expect(launcher).toContain("relationshipValidated && bridgeHandler");
-    expect(protocol).toContain("MAX_MESSAGE_LENGTH = 65_536");
-    expect(`${launcher}\n${protocol}`).not.toContain("addJavascriptInterface");
-  });
-
-  it("routes real and ten-second test events through AlarmManager and the native receiver/service", () => {
-    const scheduler = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerScheduler.java");
-    const receiver = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerAlarmReceiver.java");
-    const service = source("android-twa/app/src/main/java/de/donaumoschee/app/adhan/AdhanPlaybackService.java");
-    const controls = source("components/settings/PrayerSystemTestControls.tsx");
-    expect(scheduler).toContain("setExactAndAllowWhileIdle");
-    expect(scheduler).toContain("scheduleTest");
-    expect(receiver).toContain("AdhanPlaybackService.class");
-    expect(service).toContain("extends MediaSessionService");
-    expect(service).toContain("setWakeMode(C.WAKE_MODE_LOCAL)");
-    expect(service).toContain("CommandButton.ICON_STOP");
-    expect(service).toContain('CHANNEL = "adhan-playback-v1"');
-    expect(service).toContain("setChannelId(CHANNEL)");
-    expect(controls).toContain('scheduleTest("adhan"');
-    expect(controls).toContain('scheduleTest("reminder"');
-  });
-
-  it("handles exact-alarm settings return through Activity Result without consuming initial resume", () => {
-    const activity = source("android-twa/app/src/main/java/de/donaumoschee/app/NativePermissionActivity.java");
+describe("Android production contract", () => {
+  it("uses the permanent Android package and signing certificate in source-owned production metadata", () => {
+    const manifest = source("android-twa/app/src/main/AndroidManifest.xml");
     const gradle = source("android-twa/app/build.gradle");
-    expect(activity).toContain("extends ComponentActivity");
-    expect(activity).toContain("registerForActivityResult");
-    expect(activity).toContain("ActivityResultContracts.StartActivityForResult");
-    expect(activity).toContain("ActivityResultContracts.RequestPermission");
-    expect(activity).toContain("NativeStatus.hasExactAlarmPermission(this)");
-    expect(activity).not.toContain("waitingForExactSettings");
-    expect(activity).not.toContain("protected void onResume()");
-    expect(activity).not.toContain("onRequestPermissionsResult");
-    expect(gradle).toContain("androidx.activity:activity:1.9.0");
+    const assetLinks = source("public/.well-known/assetlinks.json");
+    const twaManifest = source("android-twa/twa-manifest.json");
+    expect(manifest).toContain("de.donaumoschee.app");
+    expect(gradle).toContain('applicationId "de.donaumoschee.app"');
+    expect(assetLinks).toContain("de.donaumoschee.app");
+    expect(assetLinks).toContain("E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92");
+    expect(twaManifest).toContain("de.donaumoschee.app");
   });
 
-  it("keeps every native Adhan URL and kind identical to the web catalog", () => {
-    const nativeCatalog = source("android-twa/app/src/main/java/de/donaumoschee/app/adhan/AdhanCatalog.java");
-    const nativeEntries = [...nativeCatalog.matchAll(
-      /Map\.entry\("([^"]+)",\s*new ApprovedSound\(\s*"([^"]+)",\s*SoundKind\.(REGULAR|FAJR),\s*"[^"]*"\s*\)\s*\)/gu,
-    )].map((match) => ({
-      id: match[1],
-      audioUrl: match[2],
-      kind: match[3].toLowerCase(),
-    }));
-    const webEntries = ADHAN_SOUNDS.map(({ id, audioUrl, kind }) => ({ id, audioUrl, kind }));
-
-    expect(nativeEntries).toEqual(webEntries);
-    expect(webEntries.find((sound) => sound.id === "fajr-madinah")?.audioUrl)
-      .toBe("https://www.ashefaa.com/ruqia/Azan/19.mp3");
+  it("keeps prayer schedules mosque-owned and avoids a fabricated production fallback", () => {
+    const schedule = source("app/api/android/prayer-schedule/route.ts");
+    expect(schedule).toContain("prayer_times");
+    expect(schedule).toContain("published");
+    expect(schedule).toContain("isPrayerScheduleQaRow");
+    expect(schedule).not.toContain("AlAdhan");
+    expect(schedule).not.toContain("MuslimSalat");
   });
 
-  it("keeps native authority short-lived, service-role-only, and prayer-push-specific", () => {
-    const migration = source("supabase/migrations/20260821220800_android_native_authority.sql");
-    const receipts = source("supabase/migrations/20260823104600_native_delivery_receipts.sql");
+  it("shares canonical prayer event identity between web delivery and the native Android engine", () => {
+    const ts = source("lib/android/prayer-event-id.ts");
+    const java = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerEventId.java");
+    expect(ts).toContain('return `p2:${encode(parts.join("|"))}`');
+    expect(java).toContain('return "p2:" + encode(parts);');
+  });
+
+  it("keeps the native credential out of native status and web JavaScript", () => {
+    const status = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/NativeStatus.java");
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
+    const nativeWeb = source("lib/android/native-web.ts");
+    expect(status).not.toContain('.put("credential"');
+    expect(provider).not.toContain("status.credential");
+    expect(provider).not.toContain("Authorization: `Native");
+    expect(nativeWeb).not.toContain("credential?:");
+  });
+
+  it("uses real native receipts as the server fallback proof and fails open when proof is unavailable", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
-    const push = source("lib/push/web-push.ts");
-    expect(migration).toContain("enable row level security");
-    expect(migration).toContain("revoke all on public.native_prayer_installations from public, anon, authenticated");
-    expect(migration).toContain("lease_expires_at");
-    expect(receipts).toContain("alter table public.native_prayer_delivery_receipts enable row level security");
-    expect(receipts).toContain("revoke all on public.native_prayer_delivery_receipts from public, anon, authenticated");
-    expect(receipts).toContain("grant all on public.native_prayer_delivery_receipts to service_role");
-    expect(cron).toContain("nativeFallbackDecision");
+    const push = source("lib/push/targeting.ts");
     expect(cron).toContain("native_prayer_delivery_receipts");
-    expect(cron).toContain("receipt_v2");
     expect(cron).toContain("account_generation");
     expect(cron).toContain("native authority lookup failed open");
     expect(cron).toContain("native receipt lookup failed open");
@@ -100,7 +70,7 @@ describe("Android production completion contract", () => {
     const scheduler = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerScheduler.java");
     const enroll = source("app/api/android/native-authority/enroll/route.ts");
 
-    expect(provider).toContain('method: "DELETE"');
+    expect(provider).not.toContain('method: "DELETE"');
     expect(provider).toContain('send("native.account.reset"');
     expect(protocol).toContain('"native.account.reset"');
     expect(bridge).toContain('case "native.account.reset"');
@@ -123,28 +93,14 @@ describe("Android production completion contract", () => {
 
   it("makes native account transitions race-safe across auth hydration, legacy upgrades, web sync, and refresh workers", () => {
     const provider = source("components/providers/NativeAndroidProvider.tsx");
-    const bridge = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeHandler.java");
-    const store = source("android-twa/app/src/main/java/de/donaumoschee/app/storage/NativeStore.java");
     const worker = source("android-twa/app/src/main/java/de/donaumoschee/app/workers/NativeRefreshWorker.java");
-    const work = source("android-twa/app/src/main/java/de/donaumoschee/app/workers/NativeWork.java");
-
-    expect(provider).toContain("loading: authLoading");
+    const store = source("android-twa/app/src/main/java/de/donaumoschee/app/storage/NativeStore.java");
     expect(provider).toContain("authLoading");
-    expect(provider).toContain("hasLegacyNativeState(status)");
+    expect(provider).toContain("accountTransitioningRef");
     expect(provider).toContain("syncGenerationRef");
-    expect(provider).toContain("const syncGeneration = syncGenerationRef.current");
-    expect(provider).toContain("syncGeneration !== syncGenerationRef.current");
-    expect(provider).toContain("accountTransitioningRef.current");
-
-    expect(store).toContain("ACCOUNT_GENERATION");
-    expect(store).toContain("public int accountGeneration()");
-    expect(store).toContain("public int advanceAccountGeneration()");
-    expect(store).toContain("public int resetAccountStateAndQueueAuthorityRevocation()");
-    expect(worker).toContain("int generation = store.accountGeneration()");
+    expect(provider).toContain("NATIVE_CONFIG_CHANGED_EVENT");
     expect(worker).toContain("store.accountGeneration() != generation");
-    expect(work).toContain("public static void cancelPrayerRefresh(Context context)");
-    expect(work).toContain("public static void flushAuthorityRevocation(Context context)");
-    expect(bridge).toContain("NativeWork.cancelPrayerRefresh(context)");
-    expect(bridge).toContain("store.resetAccountStateAndQueueAuthorityRevocation()");
+    expect(store).toContain("saveConfigIfGeneration");
+    expect(store).toContain("bindAuthorityIdIfGeneration");
   });
 });

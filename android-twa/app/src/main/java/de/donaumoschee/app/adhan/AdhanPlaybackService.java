@@ -21,6 +21,7 @@ import androidx.media3.session.CommandButton;
 import androidx.media3.session.DefaultMediaNotificationProvider;
 
 import de.donaumoschee.app.R;
+import de.donaumoschee.app.diagnostics.DeliveryDiagnostics;
 import de.donaumoschee.app.localization.AppLocale;
 import de.donaumoschee.app.prayer.PrayerScheduler;
 import de.donaumoschee.app.prayer.Prayer;
@@ -165,6 +166,7 @@ public final class AdhanPlaybackService extends MediaSessionService {
 
     private void markDeliveryFailed(String failureCode) {
         if (currentEventId == null || playbackAcknowledged) return;
+        DeliveryDiagnostics.emit("adhan_playback_failure", failureCode);
         NativeStore store = new NativeStore(this);
         if (!store.markDeliveryFailed(currentEventId, failureCode, System.currentTimeMillis())) {
             store.markEngineError("adhan-delivery-failure-persist-failed");

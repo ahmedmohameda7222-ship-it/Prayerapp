@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import de.donaumoschee.app.diagnostics.DeliveryDiagnostics;
 import de.donaumoschee.app.prayer.DeliveryReceiptQueue;
 import de.donaumoschee.app.storage.NativeStore;
 
@@ -55,10 +56,12 @@ public final class DeliveryReceiptWorker extends Worker {
                 ));
                 if (store.accountGeneration() != generation) return Result.success();
                 if (!store.acknowledgeDeliveryReceipt(receipt.eventId, generation)) {
+                    DeliveryDiagnostics.emit("receipt_retry_failure", "ack-persist-failed");
                     store.markEngineError("delivery-receipt-ack-persist-failed");
                     return Result.retry();
                 }
             } catch (IOException | JSONException | RuntimeException error) {
+                DeliveryDiagnostics.emit("receipt_retry_failure", "transport-or-parse-failed");
                 Log.w(TAG, "delivery.receipts retry=" + error.getClass().getSimpleName());
                 return Result.retry();
             }

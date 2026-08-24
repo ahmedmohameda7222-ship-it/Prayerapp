@@ -1,6 +1,8 @@
 package de.donaumoschee.app.adhan;
 
 import android.content.Context;
+import android.system.ErrnoException;
+import android.system.Os;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -9,7 +11,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
@@ -20,12 +21,13 @@ public final class AudioCache {
     private AudioCache() {}
 
     public static File verifiedFile(Context context, String soundId) {
+        if (!AdhanCatalog.isApproved(soundId)) return null;
+        String expectedSha256 = AdhanCatalog.approvedSha256(soundId);
+        if (expectedSha256 == null) return null;
         File audio = AdhanCatalog.audioFile(context.getFilesDir(), soundId);
-        File digest = new File(audio.getPath() + ".sha256");
-        if (!audio.isFile() || !digest.isFile() || audio.length() <= 0 || audio.length() > MAX_AUDIO_BYTES) return null;
+        if (!audio.isFile() || audio.length() <= 0 || audio.length() > MAX_AUDIO_BYTES) return null;
         try {
-            String expected = new String(readBounded(digest, 128), StandardCharsets.US_ASCII).trim();
-            return expected.equals(sha256(audio)) ? audio : null;
+            return expectedSha256.equals(sha256(audio)) ? audio : null;
         } catch (IOException error) {
             return null;
         }
@@ -33,6 +35,8 @@ public final class AudioCache {
 
     public static boolean download(Context context, String soundId) {
         if (!AdhanCatalog.isApproved(soundId)) return false;
+        String expectedSha256 = AdhanCatalog.approvedSha256(soundId);
+        if (expectedSha256 == null) return false;
         HttpURLConnection connection = null;
         File target = AdhanCatalog.audioFile(context.getFilesDir(), soundId);
         File directory = target.getParentFile();
@@ -62,36 +66,15 @@ public final class AudioCache {
                 output.getFD().sync();
             }
             if (total == 0) return false;
-            String hash = sha256(temporary);
-            if (target.exists() && !target.delete()) return false;
-            if (!temporary.renameTo(target)) return false;
-            File digest = new File(target.getPath() + ".sha256");
-            try (FileOutputStream output = new FileOutputStream(digest, false)) {
-                output.write(hash.getBytes(StandardCharsets.US_ASCII));
-                output.getFD().sync();
-            }
+            if (!expectedSha256.equals(sha256(temporary))) return false;
+            Os.rename(temporary.getAbsolutePath(), target.getAbsolutePath());
             return verifiedFile(context, soundId) != null;
-        } catch (IOException error) {
+        } catch (IOException | ErrnoException error) {
             return false;
         } finally {
             if (connection != null) connection.disconnect();
             if (temporary.exists()) temporary.delete();
         }
-    }
-
-    private static byte[] readBounded(File file, int maxBytes) throws IOException {
-        if (file.length() > maxBytes) throw new IOException("File too large");
-        byte[] bytes = new byte[(int) file.length()];
-        try (FileInputStream input = new FileInputStream(file)) {
-            int offset = 0;
-            while (offset < bytes.length) {
-                int count = input.read(bytes, offset, bytes.length - offset);
-                if (count < 0) break;
-                offset += count;
-            }
-            if (offset != bytes.length) throw new IOException("Incomplete read");
-        }
-        return bytes;
     }
 
     private static String sha256(File file) throws IOException {

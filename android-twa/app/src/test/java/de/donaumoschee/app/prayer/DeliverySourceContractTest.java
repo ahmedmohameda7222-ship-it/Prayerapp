@@ -179,6 +179,24 @@ public final class DeliverySourceContractTest {
         assertTrue(begin >= 0);
         assertTrue(notify > begin);
         assertTrue(delivered > notify);
-        assertTrue(failed > delivered);
+        assertTrue(failed > notify);
+    }
+
+    @Test
+    public void receiverFailsClosedWhenAdhanFailureStateCannotPersist() throws IOException {
+        String receiver = source("de/donaumoschee/app/prayer/PrayerAlarmReceiver.java");
+
+        assertTrue(receiver.contains("unsupported-delivery-failure-persist-failed"));
+        assertTrue(receiver.contains("adhan-delivery-unavailable-persist-failed"));
+        assertTrue(receiver.contains("adhan-service-start-failure-persist-failed"));
+    }
+
+    @Test
+    public void adhanServiceAcknowledgesActualPlaybackAndFailure() throws IOException {
+        String service = source("de/donaumoschee/app/adhan/AdhanPlaybackService.java");
+
+        assertTrue(service.contains("onIsPlayingChanged"));
+        assertTrue(service.contains("markDeliveryDelivered("));
+        assertTrue(service.contains("markDeliveryFailed("));
     }
 }

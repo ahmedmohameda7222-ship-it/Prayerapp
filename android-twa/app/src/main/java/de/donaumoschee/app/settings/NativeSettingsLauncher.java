@@ -10,27 +10,35 @@ import android.provider.Settings;
 import de.donaumoschee.app.NativePermissionActivity;
 
 public final class NativeSettingsLauncher {
+    private static final String ACTION_APPLICATION_DETAILS_SETTINGS = "android.settings.APPLICATION_DETAILS_SETTINGS";
+
     private NativeSettingsLauncher() { }
 
     public static void open(Context context, String target) {
-        NativeSettingsRoutes.Route route = NativeSettingsRoutes.resolve(
-                target,
-                Build.VERSION.SDK_INT,
-                context.getPackageName()
-        );
-        if ("permission".equals(route.kind())) {
+        int sdk = Build.VERSION.SDK_INT;
+        String packageName = context.getPackageName();
+        NativeSettingsRoutes.Route primary = NativeSettingsRoutes.resolve(target, sdk, packageName);
+        if ("permission".equals(primary.kind())) {
             context.startActivity(new Intent(context, NativePermissionActivity.class)
-                    .putExtra(NativePermissionActivity.EXTRA_MODE, route.permissionMode())
+                    .putExtra(NativePermissionActivity.EXTRA_MODE, primary.permissionMode())
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             return;
         }
 
-        Intent intent = intentFor(route);
-        if (canResolve(context, intent) && start(context, intent)) return;
+        Intent primaryIntent = intentFor(primary);
+        NativeSettingsRoutes.Route selected = NativeSettingsRoutes.resolveForAvailability(
+                target,
+                sdk,
+                packageName,
+                canResolve(context, primaryIntent)
+        );
+        Intent selectedIntent = intentFor(selected);
+        if (canResolve(context, selectedIntent) && start(context, selectedIntent)) return;
 
-        NativeSettingsRoutes.Route fallback = NativeSettingsRoutes.appDetails(context.getPackageName());
-        Intent fallbackIntent = intentFor(fallback);
-        if (canResolve(context, fallbackIntent)) start(context, fallbackIntent);
+        if (!ACTION_APPLICATION_DETAILS_SETTINGS.equals(selected.action())) {
+            Intent fallbackIntent = intentFor(NativeSettingsRoutes.appDetails(packageName));
+            if (canResolve(context, fallbackIntent)) start(context, fallbackIntent);
+        }
     }
 
     private static Intent intentFor(NativeSettingsRoutes.Route route) {

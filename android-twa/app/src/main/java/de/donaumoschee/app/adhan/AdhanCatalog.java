@@ -57,7 +57,7 @@ public final class AdhanCatalog {
             Map.entry("fajr-madinah", new ApprovedSound(
                     "https://www.ashefaa.com/ruqia/Azan/19.mp3",
                     SoundKind.FAJR,
-                    null
+                    ""
             ))
     );
 

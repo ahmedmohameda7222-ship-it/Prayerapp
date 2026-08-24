@@ -50,7 +50,7 @@ describe("Android production completion contract", () => {
   it("keeps every native Adhan URL and kind identical to the web catalog", () => {
     const nativeCatalog = source("android-twa/app/src/main/java/de/donaumoschee/app/adhan/AdhanCatalog.java");
     const nativeEntries = [...nativeCatalog.matchAll(
-      /Map\.entry\("([^"]+)", new ApprovedSound\("([^"]+)", SoundKind\.(REGULAR|FAJR)\)\)/gu,
+      /Map\.entry\("([^"]+)",\s*new ApprovedSound\(\s*"([^"]+)",\s*SoundKind\.(REGULAR|FAJR),\s*"[^"]*"\s*\)\s*\)/gu,
     )].map((match) => ({
       id: match[1],
       audioUrl: match[2],

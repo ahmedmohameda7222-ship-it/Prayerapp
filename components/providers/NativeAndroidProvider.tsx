@@ -6,6 +6,7 @@ import { useAppPreferences } from "@/components/providers/AppPreferencesProvider
 import { useLocale } from "@/lib/i18n/context";
 import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
 import type { AdhanPrayer, AdhanSoundId } from "@/lib/adhan-audio";
+import type { NativePermissionDiagnosticKey } from "@/lib/android/native-status";
 import {
   NATIVE_CONFIG_CHANGED_EVENT,
   isNativeAuthorityId,
@@ -39,6 +40,7 @@ type ContextValue = {
   bridgeState: NativeBridgeState;
   status: NativeBridgeStatus | null;
   requestPermissions: () => void;
+  openNativeSettings: (target: NativePermissionDiagnosticKey) => void;
   requestStatus: () => void;
   scheduleTest: (mode: "adhan" | "reminder", prayer: AdhanPrayer, adhanSoundId: AdhanSoundId) => Promise<boolean>;
   suspendNativeAuthority: () => Promise<void>;
@@ -49,6 +51,7 @@ const NativeAndroidContext = createContext<ContextValue>({
   bridgeState: "probing",
   status: null,
   requestPermissions: () => undefined,
+  openNativeSettings: () => undefined,
   requestStatus: () => undefined,
   scheduleTest: async () => false,
   suspendNativeAuthority: async () => undefined,
@@ -426,6 +429,10 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [accountRevision, authLoading, channelRevision, send, sessionAccessToken, sessionUserId, status, syncConfiguration]);
 
   const requestPermissions = useCallback(() => send("native.permissions.request", { mode: "both" }), [send]);
+  const openNativeSettings = useCallback(
+    (target: NativePermissionDiagnosticKey) => send("native.settings.open", { target }),
+    [send],
+  );
   const requestStatus = useCallback(() => send("native.status.request"), [send]);
   const suspendNativeAuthority = useCallback(async () => {
     nativeUpdateRequiredRef.current = true;
@@ -483,10 +490,11 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     bridgeState,
     status,
     requestPermissions,
+    openNativeSettings,
     requestStatus,
     scheduleTest,
     suspendNativeAuthority,
-  }), [bridgeState, requestPermissions, requestStatus, scheduleTest, status, suspendNativeAuthority]);
+  }), [bridgeState, openNativeSettings, requestPermissions, requestStatus, scheduleTest, status, suspendNativeAuthority]);
 
   return <NativeAndroidContext.Provider value={value}>{children}</NativeAndroidContext.Provider>;
 }

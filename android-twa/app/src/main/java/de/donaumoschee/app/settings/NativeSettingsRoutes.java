@@ -47,6 +47,17 @@ public final class NativeSettingsRoutes {
         };
     }
 
+    public static Route resolveForAvailability(
+            String target,
+            int sdk,
+            String packageName,
+            boolean primaryAvailable
+    ) {
+        Route primary = resolve(target, sdk, packageName);
+        if ("permission".equals(primary.kind()) || primaryAvailable) return primary;
+        return appDetails(packageName);
+    }
+
     public static Route appDetails(String packageName) {
         if (packageName == null || packageName.isBlank()) {
             throw new IllegalArgumentException("Invalid package name");

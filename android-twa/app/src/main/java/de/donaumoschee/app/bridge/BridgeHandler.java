@@ -13,6 +13,7 @@ import de.donaumoschee.app.prayer.NativeStatus;
 import de.donaumoschee.app.prayer.Prayer;
 import de.donaumoschee.app.prayer.PrayerNotifications;
 import de.donaumoschee.app.prayer.PrayerScheduler;
+import de.donaumoschee.app.settings.NativeSettingsLauncher;
 import de.donaumoschee.app.storage.NativeStore;
 import de.donaumoschee.app.workers.NativeAuthorityClient;
 import de.donaumoschee.app.workers.NativeWork;
@@ -48,6 +49,7 @@ public final class BridgeHandler {
                 case "web.configure": configure(envelope.payload); break;
                 case "web.bridge.ready": sendStatus(); break;
                 case "native.permissions.request": requestPermissions(envelope.payload); break;
+                case "native.settings.open": openSettings(envelope.payload); break;
                 case "native.status.request": sendStatus(); break;
                 case "native.test.schedule": scheduleTest(envelope.payload); break;
                 case "native.authority.enroll": enrollAuthority(envelope.payload); break;
@@ -81,6 +83,11 @@ public final class BridgeHandler {
         context.startActivity(new Intent(context, NativePermissionActivity.class)
                 .putExtra(NativePermissionActivity.EXTRA_MODE, mode)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+    }
+
+    private void openSettings(JSONObject payload) {
+        String target = payload.optString("target", "");
+        NativeSettingsLauncher.open(context, target);
     }
 
     private void scheduleTest(JSONObject payload) throws JSONException {

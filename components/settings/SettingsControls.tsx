@@ -15,10 +15,10 @@ import {
 } from "@/lib/android/native-status";
 
 const NATIVE_COPY = {
-  ar: { ready: "التنبيهات والأذان الأصليان جاهزان.", needsPermission: "راجع عناصر أندرويد أدناه؛ كل إذن أو قناة يظهر بحالته المستقلة.", unhealthy: "المحرك الأصلي غير جاهز؛ ستبقى إشعارات الويب الاحتياطية فعالة.", grant: "تفعيل أذونات أندرويد", refresh: "إعادة فحص الحالة", ok: "جاهز", action: "يحتاج تفعيل", advisory: "موصى به" },
-  en: { ready: "Native reminders and Adhan are ready.", needsPermission: "Review the Android checks below; each permission and channel has its own status.", unhealthy: "The native engine is not ready; fallback Web Push remains active.", grant: "Enable Android permissions", refresh: "Check status again", ok: "Ready", action: "Needs attention", advisory: "Recommended" },
-  de: { ready: "Native Erinnerungen und Adhan sind bereit.", needsPermission: "Prüfe die Android-Punkte unten; jede Berechtigung und jeder Kanal hat einen eigenen Status.", unhealthy: "Die native Engine ist nicht bereit; Web Push bleibt als Rückfall aktiv.", grant: "Android-Berechtigungen aktivieren", refresh: "Status erneut prüfen", ok: "Bereit", action: "Aktion nötig", advisory: "Empfohlen" },
-  tr: { ready: "Yerel hatırlatıcılar ve ezan hazır.", needsPermission: "Aşağıdaki Android kontrollerini inceleyin; her izin ve kanal ayrı durum gösterir.", unhealthy: "Yerel motor hazır değil; yedek Web Push etkin kalır.", grant: "Android izinlerini etkinleştir", refresh: "Durumu yeniden kontrol et", ok: "Hazır", action: "İşlem gerekli", advisory: "Önerilir" },
+  ar: { ready: "التنبيهات والأذان الأصليان جاهزان.", needsPermission: "راجع عناصر أندرويد أدناه؛ كل إذن أو قناة يظهر بحالته المستقلة.", unhealthy: "المحرك الأصلي غير جاهز؛ ستبقى إشعارات الويب الاحتياطية فعالة.", open: "فتح الإعدادات", refresh: "إعادة فحص الحالة", ok: "جاهز", action: "يحتاج تفعيل", advisory: "موصى به" },
+  en: { ready: "Native reminders and Adhan are ready.", needsPermission: "Review the Android checks below; each permission and channel has its own status.", unhealthy: "The native engine is not ready; fallback Web Push remains active.", open: "Open settings", refresh: "Check status again", ok: "Ready", action: "Needs attention", advisory: "Recommended" },
+  de: { ready: "Native Erinnerungen und Adhan sind bereit.", needsPermission: "Prüfe die Android-Punkte unten; jede Berechtigung und jeder Kanal hat einen eigenen Status.", unhealthy: "Die native Engine ist nicht bereit; Web Push bleibt als Rückfall aktiv.", open: "Einstellungen öffnen", refresh: "Status erneut prüfen", ok: "Bereit", action: "Aktion nötig", advisory: "Empfohlen" },
+  tr: { ready: "Yerel hatırlatıcılar ve ezan hazır.", needsPermission: "Aşağıdaki Android kontrollerini inceleyin; her izin ve kanal ayrı durum gösterir.", unhealthy: "Yerel motor hazır değil; yedek Web Push etkin kalır.", open: "Ayarları aç", refresh: "Durumu yeniden kontrol et", ok: "Hazır", action: "İşlem gerekli", advisory: "Önerilir" },
 } as const;
 
 const NATIVE_DIAGNOSTIC_LABELS: Record<string, Record<NativePermissionDiagnosticKey, string>> = {
@@ -65,7 +65,7 @@ export function SettingsControls() {
   const { t, locale } = useTranslation();
   const { timeFormat, setTimeFormat } = useTimeFormat();
   const { pushStatus, busy, enableNotifications, disableNotifications } = useAppPreferences();
-  const { isNative, bridgeState, status: nativeStatus, requestPermissions, requestStatus } = useNativeAndroid();
+  const { isNative, bridgeState, status: nativeStatus, openNativeSettings, requestStatus } = useNativeAndroid();
   const nativeCopy = NATIVE_COPY[locale];
   const nativeKind = nativeStatusKind(nativeStatus);
   const nativeDiagnostics = isNative && nativeStatus ? nativePermissionDiagnostics(nativeStatus) : [];
@@ -114,21 +114,27 @@ export function SettingsControls() {
               return (
                 <div
                   key={diagnostic.key}
-                  className="flex min-h-11 items-center gap-3 rounded-[12px] border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2"
+                  className="flex min-h-11 flex-wrap items-center gap-2 rounded-[12px] border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2"
                 >
                   <StateIcon className="h-4 w-4 shrink-0 text-[var(--app-brand)]" aria-hidden="true" />
                   <span className="min-w-0 flex-1 text-sm font-semibold text-[var(--app-text)]">{label}</span>
                   <span className="shrink-0 text-xs font-semibold text-[var(--app-text-secondary)]">{stateLabel}</span>
+                  {diagnostic.ok ? null : (
+                    <Button
+                      variant="ghost"
+                      className="min-h-9 shrink-0 px-3 py-1.5 text-xs"
+                      onClick={() => openNativeSettings(diagnostic.key)}
+                    >
+                      {nativeCopy.open}
+                    </Button>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
         {bridgeState === "probing" ? null : isNative ? (
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <Button className="w-full" onClick={requestPermissions}>{nativeCopy.grant}</Button>
-            <Button variant="ghost" className="w-full" onClick={requestStatus}>{nativeCopy.refresh}</Button>
-          </div>
+          <Button variant="ghost" className="mt-3 w-full" onClick={requestStatus}>{nativeCopy.refresh}</Button>
         ) : pushStatus === "enabled" ? (
           <Button variant="ghost" className="mt-3 w-full" disabled={busy} onClick={() => void disableNotifications()}>{t("settings.disablePush")}</Button>
         ) : pushStatus === "disabled" || pushStatus === "error" ? (

@@ -28,12 +28,16 @@ describe("Android CI coverage contract", () => {
     }
   });
 
-  it("runs the Android instrumentation suite on an emulator", () => {
+  it("runs the Android instrumentation suite on a managed emulator", () => {
     const source = workflow();
 
-    expect(source).toContain(":app:connectedDebugAndroidTest");
-    expect(source).toContain("system-images;android-");
-    expect(source).toContain("avdmanager create avd");
-    expect(source).toContain("sys.boot_completed");
+    expect(source).toContain("reactivecircus/android-emulator-runner@v2");
+    expect(source).toContain("static_node=kvm");
+    expect(source).toContain("api-level: 35");
+    expect(source).toContain("target: google_apis");
+    expect(source).toContain("arch: x86_64");
+    expect(source).toContain("working-directory: android-twa");
+    expect(source).toContain("./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace");
+    expect(source).not.toContain("adb wait-for-device");
   });
 });

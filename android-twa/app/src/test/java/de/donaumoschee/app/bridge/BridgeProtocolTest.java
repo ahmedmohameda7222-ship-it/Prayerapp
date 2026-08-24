@@ -15,6 +15,14 @@ public final class BridgeProtocolTest {
     }
 
     @Test
+    public void acceptsNativeTestStatusLookupCommand() throws Exception {
+        BridgeProtocol.Envelope envelope = BridgeProtocol.parseInbound(
+                "{\"version\":1,\"type\":\"native.test.status\",\"payload\":{\"eventId\":\"test:one\"}}"
+        );
+        assertEquals("native.test.status", envelope.type);
+    }
+
+    @Test
     public void acceptsAccountResetCommand() throws Exception {
         BridgeProtocol.Envelope envelope = BridgeProtocol.parseInbound(
                 "{\"version\":1,\"type\":\"native.account.reset\",\"payload\":{}}"

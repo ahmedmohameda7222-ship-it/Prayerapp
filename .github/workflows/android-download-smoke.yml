@@ -20,6 +20,7 @@ env:
   GH_TOKEN: ${{ github.token }}
   PRODUCTION_ORIGIN: https://donaumoschee.vercel.app
   DOWNLOAD_PATH: /download/android/danube-mosque.apk
+  EXPECTED_CERT_SHA256: E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92
 
 jobs:
   verify:
@@ -29,6 +30,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android verification tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
       - name: Verify production release and live download
         id: live
         shell: bash
@@ -37,8 +50,10 @@ jobs:
           version_name="$(jq -r '.versionName' android-twa/twa-manifest.json)"
           version_code="$(jq -r '.versionCode' android-twa/twa-manifest.json)"
           package_id="$(jq -r '.packageId' android-twa/twa-manifest.json)"
+          target_sdk="$(jq -r '.targetSdkVersion' android-twa/twa-manifest.json)"
           tag="android-v${version_name}"
           test "$package_id" = "de.donaumoschee.app"
+          test "$target_sdk" = "36"
 
           gh release view "$tag" --json tagName,isDraft,isPrerelease,assets \
             --jq '.tagName == "'"$tag"'" and .isDraft == false and .isPrerelease == false and ([.assets[].name] | index("danube-mosque.apk") != null) and ([.assets[].name] | index("android-release.json") != null)' \
@@ -53,6 +68,8 @@ jobs:
             '.packageId == $packageId and .versionName == $versionName and .versionCode == $versionCode and .apkAsset == "danube-mosque.apk" and (.apkSha256 | type == "string" and length == 64) and (.certificateSha256 | type == "string" and length > 0)' \
             /tmp/release/android-release.json >/dev/null
           expected_sha="$(jq -r '.apkSha256' /tmp/release/android-release.json)"
+          metadata_cert="$(jq -r '.certificateSha256' /tmp/release/android-release.json | tr '[:lower:]' '[:upper:]')"
+          test "$metadata_cert" = "$EXPECTED_CERT_SHA256"
 
           ready=false
           for attempt in $(seq 1 48); do
@@ -88,6 +105,16 @@ jobs:
           test "$(stat -c%s /tmp/danube-mosque.apk)" -gt 1000000
           printf '%s  %s\n' "$expected_sha" /tmp/danube-mosque.apk | sha256sum --check --status
           unzip -t /tmp/danube-mosque.apk >/dev/null
+
+          signature="$($ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs /tmp/danube-mosque.apk)"
+          actual_cert="$(printf '%s\n' "$signature" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1 | sed 's/../&:/g;s/:$//' | tr '[:lower:]' '[:upper:]')"
+          test "$actual_cert" = "$EXPECTED_CERT_SHA256"
+          test "$actual_cert" = "$metadata_cert"
+
+          badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging /tmp/danube-mosque.apk)"
+          printf '%s\n' "$badging" | grep -F "package: name='$package_id' versionCode='$version_code' versionName='$version_name'"
+          printf '%s\n' "$badging" | grep -F "targetSdkVersion:'$target_sdk'"
+          ! printf '%s\n' "$badging" | grep -F "$package_id.debug"
 
       - name: Publish observable commit status
         if: always()

@@ -21,6 +21,7 @@ export type AdhanSound = {
   id: AdhanSoundId;
   kind: AdhanSoundKind;
   audioUrl: string;
+  selectable?: boolean;
   label: Record<Locale, string>;
 };
 
@@ -117,6 +118,7 @@ export const ADHAN_SOUNDS: readonly AdhanSound[] = [
     id: "fajr-madinah",
     kind: "fajr",
     audioUrl: "https://www.ashefaa.com/ruqia/Azan/19.mp3",
+    selectable: false,
     label: {
       ar: "أذان الفجر · المدينة المنورة",
       en: "Fajr Adhan · Madinah",
@@ -149,7 +151,7 @@ export function getAdhanSound(id: AdhanSoundId): AdhanSound {
 
 export function getAdhanSoundsForPrayer(prayer: AdhanPrayer): readonly AdhanSound[] {
   const expectedKind: AdhanSoundKind = prayer === "fajr" ? "fajr" : "regular";
-  return ADHAN_SOUNDS.filter((sound) => sound.kind === expectedKind);
+  return ADHAN_SOUNDS.filter((sound) => sound.kind === expectedKind && sound.selectable !== false);
 }
 
 export function normalizeAdhanSoundId(value: unknown, prayer: AdhanPrayer): AdhanSoundId {

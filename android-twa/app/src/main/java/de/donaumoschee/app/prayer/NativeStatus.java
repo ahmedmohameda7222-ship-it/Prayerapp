@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.PowerManager;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -61,6 +62,15 @@ public final class NativeStatus {
         return Build.VERSION.SDK_INT < 31 || manager.canScheduleExactAlarms();
     }
 
+    public static BatteryOptimizationDiagnostics batteryOptimizationDiagnostics(Context context) {
+        if (Build.VERSION.SDK_INT < 23) {
+            return BatteryOptimizationDiagnostics.evaluate(Build.VERSION.SDK_INT, false);
+        }
+        PowerManager manager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        boolean exempt = manager != null && manager.isIgnoringBatteryOptimizations(context.getPackageName());
+        return BatteryOptimizationDiagnostics.evaluate(Build.VERSION.SDK_INT, exempt);
+    }
+
     public static JSONObject payload(Context context) throws JSONException {
         Instant now = Instant.now();
         PackageInfo packageInfo;
@@ -74,6 +84,7 @@ public final class NativeStatus {
         NativeStore store = new NativeStore(context);
         NativeConfig config = store.loadConfig(now);
         NotificationCapabilities notifications = notificationCapabilities(context);
+        BatteryOptimizationDiagnostics battery = batteryOptimizationDiagnostics(context);
         boolean exactAlarm = hasExactAlarmPermission(context);
         boolean scheduleFresh = config != null && config.scheduleValidUntil.isAfter(now);
         boolean installed = store.scheduleInstalled();
@@ -103,14 +114,18 @@ public final class NativeStatus {
                 .put("capabilities", new JSONArray()
                         .put("authority-generation-v1")
                         .put("delivery-receipt-v2")
-                        .put("native-secret-private-v2"))
+                        .put("native-secret-private-v2")
+                        .put("permission-diagnostics-v2"))
                 .put("receiptV2", true)
                 .put("accountGeneration", store.accountGeneration())
                 .put("notificationPermission", notifications.notificationPermission())
+                .put("appNotificationsEnabled", notifications.appNotificationsEnabled())
                 .put("notificationDeliveryEnabled", notifications.notificationDeliveryEnabled())
                 .put("reminderChannelEnabled", notifications.reminderChannelEnabled())
                 .put("adhanChannelEnabled", notifications.adhanChannelEnabled())
                 .put("exactAlarmPermission", exactAlarm)
+                .put("batteryOptimizationRelevant", battery.relevant())
+                .put("batteryOptimizationExempt", battery.exempt())
                 .put("scheduleFresh", scheduleFresh)
                 .put("alarmScheduleInstalled", installed)
                 .put("audioReady", audioReady)

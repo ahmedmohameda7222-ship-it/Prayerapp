@@ -36,8 +36,8 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
 
     expect(settingsInstall).toContain('data-testid="install-pwa"');
     expect(settingsInstall).toContain('data-testid="install-android-app"');
-    expect(settingsInstall).toContain('t("settings.installWebApp")');
-    expect(settingsInstall).toContain('t("settings.installAndroidApp")');
+    expect(settingsInstall).toContain("installCopy.webApp");
+    expect(settingsInstall).toContain("installCopy.androidApp");
     expect(settingsInstall).toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");
     expect(settingsInstall).not.toContain("prompt && !isAndroid");
     expect(settingsInstall).toContain("!isNative && isAndroid");
@@ -46,14 +46,15 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
   });
 
   it("localizes the two Android install choices in every supported locale", () => {
-    for (const locale of ["ar", "de", "en", "tr"]) {
-      const messages = JSON.parse(source(`messages/${locale}.json`)) as {
-        settings?: { installWebApp?: string; installAndroidApp?: string };
-      };
+    const settingsInstall = source("components/settings/InstallAppCard.tsx");
 
-      expect(messages.settings?.installWebApp).toBeTruthy();
-      expect(messages.settings?.installAndroidApp).toBeTruthy();
+    expect(settingsInstall).toContain("const INSTALL_COPY");
+    expect(settingsInstall).toContain("const installCopy = INSTALL_COPY[locale]");
+    for (const locale of ["ar", "de", "en", "tr"]) {
+      expect(settingsInstall).toContain(`${locale}: {`);
     }
+    expect(settingsInstall).toContain("webApp:");
+    expect(settingsInstall).toContain("androidApp:");
   });
 
   it("enables pull-to-refresh only for touch standalone mode at the top of public pages", () => {

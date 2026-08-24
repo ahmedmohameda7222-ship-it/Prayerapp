@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
 
+import de.donaumoschee.app.localization.AppLocale;
 import de.donaumoschee.app.prayer.DeliveryLedger;
 import de.donaumoschee.app.prayer.DeliveryReceiptQueue;
 import de.donaumoschee.app.prayer.DeliveryRecord;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public final class NativeStore {
     private static final String PREFERENCES = "native-prayer-engine-v1";
     private static final String CONFIG = "config";
+    private static final String APP_LOCALE = "app-locale";
     private static final String INSTALLATION_ID = "installation-id";
     private static final String CREDENTIAL = "credential";
     private static final String AUTHORITY_ID = "authority-id";
@@ -47,7 +49,12 @@ public final class NativeStore {
 
     public NativeConfig saveConfig(JSONObject object, Instant now) throws JSONException {
         NativeConfig config = NativeConfig.parse(object, now);
-        if (!preferences.edit().putString(CONFIG, config.source.toString()).putBoolean(ENGINE_HEALTHY, true).putString(LAST_ERROR, "").commit()) {
+        if (!preferences.edit()
+                .putString(CONFIG, config.source.toString())
+                .putString(APP_LOCALE, config.locale)
+                .putBoolean(ENGINE_HEALTHY, true)
+                .putString(LAST_ERROR, "")
+                .commit()) {
             throw new JSONException("Could not persist native config");
         }
         return config;
@@ -59,6 +66,7 @@ public final class NativeStore {
             NativeConfig config = NativeConfig.parse(object, now);
             return preferences.edit()
                     .putString(CONFIG, config.source.toString())
+                    .putString(APP_LOCALE, config.locale)
                     .putBoolean(ENGINE_HEALTHY, true)
                     .putString(LAST_ERROR, "")
                     .commit();
@@ -84,6 +92,10 @@ public final class NativeStore {
         } catch (JSONException error) {
             return null;
         }
+    }
+
+    public String appLocale() {
+        return AppLocale.normalize(preferences.getString(APP_LOCALE, "en"));
     }
 
     public synchronized String installationId() {

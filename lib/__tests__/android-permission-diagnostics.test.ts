@@ -6,7 +6,7 @@ import type { NativeBridgeStatus } from "@/lib/android/native-web";
 
 const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
-function baseStatus(overrides: Partial<NativeBridgeStatus> = {}): NativeBridgeStatus {
+function baseStatus(overrides: Partial<NativeBridgeStatus> & Record<string, unknown> = {}): NativeBridgeStatus {
   return {
     native: true,
     packageId: "de.donaumoschee.app",
@@ -23,7 +23,7 @@ function baseStatus(overrides: Partial<NativeBridgeStatus> = {}): NativeBridgeSt
     engineHealthy: true,
     nativeReady: true,
     ...overrides,
-  };
+  } as NativeBridgeStatus;
 }
 
 describe("Android permission diagnostics", () => {
@@ -88,6 +88,13 @@ describe("Android permission diagnostics", () => {
       batteryOptimizationExempt: true,
     }));
     expect(irrelevant.some((item) => item.key === "battery-optimization")).toBe(false);
+  });
+
+  it("requires Android to serialize the independent app-notification and battery diagnostics", () => {
+    const nativeStatus = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/NativeStatus.java");
+    expect(nativeStatus).toContain('.put("appNotificationsEnabled", notifications.appNotificationsEnabled())');
+    expect(nativeStatus).toContain('.put("batteryOptimizationRelevant", battery.relevant())');
+    expect(nativeStatus).toContain('.put("batteryOptimizationExempt", battery.exempt())');
   });
 
   it("renders the independent native checks instead of only one collapsed permission sentence", () => {

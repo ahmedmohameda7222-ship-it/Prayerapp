@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import de.donaumoschee.app.adhan.AdhanCatalog;
 import de.donaumoschee.app.adhan.AudioCache;
 import de.donaumoschee.app.prayer.NativeConfig;
 import de.donaumoschee.app.storage.NativeStore;
@@ -30,12 +31,16 @@ public final class AudioCacheWorker extends Worker {
         for (NativeConfig.Reminder reminder : config.reminders.values()) if (reminder.enabled) soundIds.add(reminder.adhanSoundId);
         boolean complete = true;
         for (String soundId : soundIds) {
+            if (!AdhanCatalog.hasPinnedAudio(soundId)) {
+                Log.w(TAG, "adhan.cache unavailable soundId=" + soundId);
+                continue;
+            }
             if (AudioCache.verifiedFile(getApplicationContext(), soundId) == null) {
                 complete &= AudioCache.download(getApplicationContext(), soundId);
             }
         }
         if (complete) {
-            Log.i(TAG, "adhan.cache ready sounds=" + soundIds.size());
+            Log.i(TAG, "adhan.cache fetch-complete sounds=" + soundIds.size());
             NativeWork.refreshNow(getApplicationContext());
             return Result.success();
         }

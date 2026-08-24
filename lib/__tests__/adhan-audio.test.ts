@@ -35,7 +35,8 @@ describe("prayer-aware Adhan catalog", () => {
   it("normalizes legacy and incompatible selections safely", () => {
     expect(normalizeAdhanSoundId("fajr", "fajr")).toBe("fajr-cairo");
     expect(normalizeAdhanSoundId("makkah", "fajr")).toBe("fajr-makkah");
-    expect(normalizeAdhanSoundId("madinah", "fajr")).toBe("fajr-madinah");
+    expect(normalizeAdhanSoundId("madinah", "fajr")).toBe("fajr-cairo");
+    expect(normalizeAdhanSoundId("fajr-madinah", "fajr")).toBe("fajr-madinah");
     expect(normalizeAdhanSoundId("adhan-1", "dhuhr")).toBe("abdul-basit-cairo");
     expect(normalizeAdhanSoundId("fajr-cairo", "asr")).toBe("abdul-basit-cairo");
   });

@@ -111,6 +111,10 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   const sessionUserIdRef = useRef<string | null>(sessionUserId);
   const nativeUpdateRequiredRef = useRef(false);
   const pendingTests = useRef(new Map<string, PendingTest>());
+  const nativeSecretPrivate = supportsNativeSecretPrivate(status);
+  const nativeAuthorityGeneration = supportsNativeAuthorityGeneration(status);
+  const nativeReceiptV2 = status?.receiptV2 === true;
+  const nativeLastError = status?.lastError;
 
   useEffect(() => {
     sessionUserIdRef.current = sessionUserId;
@@ -245,12 +249,12 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
       authLoading
       || !sessionUserId
       || !portRef.current
-      || !supportsNativeSecretPrivate(status)
-      || status?.receiptV2 !== true
-      || !supportsNativeAuthorityGeneration(status)
+      || !nativeSecretPrivate
+      || !nativeReceiptV2
+      || !nativeAuthorityGeneration
       || accountTransitioningRef.current
       || nativeUpdateRequiredRef.current
-      || status?.lastError === "required-update"
+      || nativeLastError === "required-update"
     ) return;
     const configuredOwnerId = localStorage.getItem(NATIVE_ACCOUNT_OWNER_KEY);
     if (configuredOwnerId !== sessionUserId) return;
@@ -296,7 +300,16 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     } catch (error) {
       console.warn("Native prayer configuration sync failed", error);
     }
-  }, [authLoading, locale, send, sessionUserId, status]);
+  }, [
+    authLoading,
+    locale,
+    nativeAuthorityGeneration,
+    nativeLastError,
+    nativeReceiptV2,
+    nativeSecretPrivate,
+    send,
+    sessionUserId,
+  ]);
 
   useEffect(() => {
     const sync = () => { void syncConfiguration(); };
@@ -329,19 +342,18 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [accountRevision, authLoading, channelRevision, send, sessionUserId, status]);
 
   useEffect(() => {
-    const nativeOwnsSecret = supportsNativeSecretPrivate(status);
     if (
       authLoading
-      || !nativeOwnsSecret
-      || status?.receiptV2 !== true
+      || !nativeSecretPrivate
+      || !nativeReceiptV2
       || !status?.installationId
       || !sessionAccessToken
       || !sessionUserId
       || channelRevision === 0
       || accountTransitioningRef.current
       || nativeUpdateRequiredRef.current
-      || status?.lastError === "required-update"
-      || !supportsNativeAuthorityGeneration(status)
+      || nativeLastError === "required-update"
+      || !nativeAuthorityGeneration
       || typeof status.accountGeneration !== "number"
       || !Number.isInteger(status.accountGeneration)
     ) return;
@@ -386,7 +398,19 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
       }
     };
     void enroll();
-  }, [accountRevision, authLoading, channelRevision, send, sessionAccessToken, sessionUserId, status]);
+  }, [
+    accountRevision,
+    authLoading,
+    channelRevision,
+    nativeAuthorityGeneration,
+    nativeLastError,
+    nativeReceiptV2,
+    nativeSecretPrivate,
+    send,
+    sessionAccessToken,
+    sessionUserId,
+    status,
+  ]);
 
   const requestPermissions = useCallback(() => send("native.permissions.request", { mode: "both" }), [send]);
   const openNativeSettings = useCallback(

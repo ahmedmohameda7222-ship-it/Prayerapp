@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
 
+import de.donaumoschee.app.diagnostics.DeliveryDiagnostics;
 import de.donaumoschee.app.localization.AppLocale;
 import de.donaumoschee.app.prayer.DeliveryLedger;
 import de.donaumoschee.app.prayer.DeliveryReceiptQueue;
@@ -251,6 +252,7 @@ public final class NativeStore {
     }
 
     public void markEngineError(String code) {
+        DeliveryDiagnostics.emit("native_unhealthy", code);
         preferences.edit().putBoolean(ENGINE_HEALTHY, false).putString(LAST_ERROR, code).apply();
     }
 

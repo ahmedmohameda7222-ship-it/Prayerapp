@@ -21,9 +21,8 @@ public final class AudioCache {
     private AudioCache() {}
 
     public static File verifiedFile(Context context, String soundId) {
-        if (!AdhanCatalog.isApproved(soundId)) return null;
+        if (!AdhanCatalog.hasPinnedAudio(soundId)) return null;
         String expectedSha256 = AdhanCatalog.approvedSha256(soundId);
-        if (expectedSha256 == null) return null;
         File audio = AdhanCatalog.audioFile(context.getFilesDir(), soundId);
         if (!audio.isFile() || audio.length() <= 0 || audio.length() > MAX_AUDIO_BYTES) return null;
         try {
@@ -34,9 +33,8 @@ public final class AudioCache {
     }
 
     public static boolean download(Context context, String soundId) {
-        if (!AdhanCatalog.isApproved(soundId)) return false;
+        if (!AdhanCatalog.hasPinnedAudio(soundId)) return false;
         String expectedSha256 = AdhanCatalog.approvedSha256(soundId);
-        if (expectedSha256 == null) return false;
         HttpURLConnection connection = null;
         File target = AdhanCatalog.audioFile(context.getFilesDir(), soundId);
         File directory = target.getParentFile();

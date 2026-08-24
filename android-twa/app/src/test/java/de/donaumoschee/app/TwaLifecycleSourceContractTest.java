@@ -12,8 +12,18 @@ import static org.junit.Assert.assertTrue;
 
 public final class TwaLifecycleSourceContractTest {
     private static Path projectRoot() {
-        Path current = Path.of(System.getProperty("user.dir"));
-        return Files.exists(current.resolve("app/src/main")) ? current : current.resolve("android-twa");
+        Path current = Path.of(System.getProperty("user.dir")).toAbsolutePath();
+        for (Path cursor = current; cursor != null; cursor = cursor.getParent()) {
+            if (Files.exists(cursor.resolve("android-twa/app/src/main"))) {
+                return cursor.resolve("android-twa");
+            }
+            if (cursor.getFileName() != null
+                    && "android-twa".equals(cursor.getFileName().toString())
+                    && Files.exists(cursor.resolve("app/src/main"))) {
+                return cursor;
+            }
+        }
+        throw new IllegalStateException("Android project root not found");
     }
 
     private static String source(String relativePath) throws IOException {

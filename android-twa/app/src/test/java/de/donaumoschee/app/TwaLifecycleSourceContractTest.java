@@ -31,6 +31,8 @@ public final class TwaLifecycleSourceContractTest {
         assertTrue(launcher.contains("CustomTabsClient.bindCustomTabsServicePreservePriority"));
         assertTrue(launcher.contains("buildCustomTabsIntent"));
         assertTrue(launcher.contains("setPackage(provider)"));
+        assertTrue(launcher.contains("SessionStore.makeSessionId(getTaskId())"));
+        assertTrue(launcher.contains("client.newSession(callback, sessionId)"));
     }
 
     @Test
@@ -55,6 +57,9 @@ public final class TwaLifecycleSourceContractTest {
         assertTrue(launcher.contains("if (browserLaunched)"));
         assertTrue(launcher.contains("protected void onSaveInstanceState"));
         assertTrue(launcher.contains("BROWSER_WAS_LAUNCHED_KEY"));
+        assertTrue(launcher.contains("restartInNewTask()"));
+        assertTrue(launcher.contains("Intent.FLAG_ACTIVITY_NEW_TASK"));
+        assertTrue(launcher.contains("~Intent.FLAG_ACTIVITY_NEW_DOCUMENT"));
         assertFalse(launcher.contains("if (twaLaunched) {\n            finish();\n            return;\n        }"));
     }
 

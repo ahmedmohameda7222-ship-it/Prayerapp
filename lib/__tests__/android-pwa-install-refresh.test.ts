@@ -22,19 +22,39 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
     expect(manifest.icons?.some((icon) => icon.sizes === "512x512")).toBe(true);
   });
 
-  it("routes Android users to the permanent APK-named native application download", () => {
+  it("keeps Android PWA install distinct from native Android app install", () => {
     const homeInstall = source("components/home/HomeInstallAction.tsx");
     const settingsInstall = source("components/settings/InstallAppCard.tsx");
     const release = source("lib/android-release.ts");
 
-    expect(release).toContain('"/download/android/danube-mosque.apk"');
-    expect(homeInstall).toContain("if (isAndroid())");
-    expect(homeInstall).toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");
-    expect(homeInstall).toContain("installed || isNative");
-    expect(homeInstall.indexOf("if (isAndroid())")).toBeLessThan(homeInstall.indexOf("currentPrompt.prompt()"));
+    expect(release).toContain('\"/download/android/danube-mosque.apk\"');
+
+    expect(homeInstall).toContain("currentPrompt.prompt()");
+    expect(homeInstall).toContain('window.location.assign("/settings#install-app")');
+    expect(homeInstall).not.toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");
+    expect(homeInstall).not.toContain("if (isAndroid())");
+
+    expect(settingsInstall).toContain('data-testid="install-pwa"');
+    expect(settingsInstall).toContain('data-testid="install-android-app"');
+    expect(settingsInstall).toContain("installCopy.webApp");
+    expect(settingsInstall).toContain("installCopy.androidApp");
     expect(settingsInstall).toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");
+    expect(settingsInstall).not.toContain("prompt && !isAndroid");
+    expect(settingsInstall).toContain("!isNative && isAndroid");
+    expect(settingsInstall).not.toContain("!appInstalled && isAndroid");
     expect(settingsInstall).toContain("installed || isNative");
-    expect(settingsInstall).not.toContain("ANDROID_INSTALL_STEPS");
+  });
+
+  it("localizes the two Android install choices in every supported locale", () => {
+    const settingsInstall = source("components/settings/InstallAppCard.tsx");
+
+    expect(settingsInstall).toContain("const INSTALL_COPY");
+    expect(settingsInstall).toContain("const installCopy = INSTALL_COPY[locale]");
+    for (const locale of ["ar", "de", "en", "tr"]) {
+      expect(settingsInstall).toContain(`${locale}: {`);
+    }
+    expect(settingsInstall).toContain("webApp:");
+    expect(settingsInstall).toContain("androidApp:");
   });
 
   it("enables pull-to-refresh only for touch standalone mode at the top of public pages", () => {

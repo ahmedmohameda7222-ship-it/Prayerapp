@@ -7,19 +7,27 @@ import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
 import { ANDROID_PUBLIC_DOWNLOAD_PATH } from "@/lib/android-release";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
+const INSTALL_COPY = {
+  ar: { webApp: "تثبيت تطبيق الويب", androidApp: "تثبيت تطبيق أندرويد" },
+  de: { webApp: "Web-App installieren", androidApp: "Android-App installieren" },
+  en: { webApp: "Install web app", androidApp: "Install Android app" },
+  tr: { webApp: "Web uygulamasını yükle", androidApp: "Android uygulamasını yükle" },
+} as const;
+
 function standaloneMode() {
   return window.matchMedia("(display-mode: standalone)").matches ||
     Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 }
 
 export function InstallAppCard() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { isNative } = useNativeAndroid();
   const [installed, setInstalled] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent>();
   const appInstalled = installed || isNative;
+  const installCopy = INSTALL_COPY[locale];
 
   useEffect(() => {
     const update = () => {
@@ -68,19 +76,24 @@ export function InstallAppCard() {
               ? t("settings.iosInstallInstructions")
               : t("settings.installAppDescription")}
         </p>
-        {!appInstalled && prompt && !isAndroid ? (
-          <Button className="mt-3 w-full" onClick={() => void install()}>
+        {!appInstalled && prompt ? (
+          <Button
+            className="mt-3 w-full"
+            onClick={() => void install()}
+            data-testid="install-pwa"
+          >
             <Download className="h-4 w-4" aria-hidden="true" />
-            {t("settings.install")}
+            {installCopy.webApp}
           </Button>
         ) : null}
-        {!appInstalled && isAndroid ? (
+        {!isNative && isAndroid ? (
           <a
             href={ANDROID_PUBLIC_DOWNLOAD_PATH}
             className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-emerald)] px-4 py-2 text-sm font-bold text-[var(--color-card)] shadow-[var(--shadow-card)] transition active:scale-[0.98]"
+            data-testid="install-android-app"
           >
             <Download className="h-4 w-4" aria-hidden="true" />
-            {t("settings.install")}
+            {installCopy.androidApp}
           </a>
         ) : null}
         {!appInstalled && isIos ? (

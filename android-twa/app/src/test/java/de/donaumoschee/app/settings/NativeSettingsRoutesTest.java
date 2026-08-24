@@ -18,6 +18,12 @@ public final class NativeSettingsRoutesTest {
         return resolve.invoke(null, target, sdk, PACKAGE);
     }
 
+    private Object resolveForAvailability(String target, int sdk, boolean primaryAvailable) throws Exception {
+        Class<?> routes = Class.forName("de.donaumoschee.app.settings.NativeSettingsRoutes");
+        Method resolve = routes.getMethod("resolveForAvailability", String.class, int.class, String.class, boolean.class);
+        return resolve.invoke(null, target, sdk, PACKAGE, primaryAvailable);
+    }
+
     private Object value(Object route, String method) throws Exception {
         return route.getClass().getMethod(method).invoke(route);
     }
@@ -70,6 +76,16 @@ public final class NativeSettingsRoutesTest {
         assertNull(value(route, "data"));
         assertNull(value(route, "appPackage"));
         assertTrue(!"android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS".equals(value(route, "action")));
+    }
+
+    @Test
+    public void unavailableOemSettingsRouteFallsBackToAppDetails() throws Exception {
+        Object primary = resolveForAvailability("reminder-channel", 36, true);
+        assertEquals("android.settings.CHANNEL_NOTIFICATION_SETTINGS", value(primary, "action"));
+
+        Object fallback = resolveForAvailability("reminder-channel", 36, false);
+        assertEquals("android.settings.APPLICATION_DETAILS_SETTINGS", value(fallback, "action"));
+        assertEquals("package:" + PACKAGE, value(fallback, "data"));
     }
 
     @Test

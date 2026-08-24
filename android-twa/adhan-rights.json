@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "publicReleaseApproved": false,
+  "reviewedAt": "2026-08-24",
+  "policy": "Public Android production release requires every Adhan catalog sound to have explicit cleared app-use/distribution evidence. Download availability alone is not clearance.",
+  "research": {
+    "provider": "Ashefaa / شبكة الشفاء الاسلامية",
+    "providerUrl": "https://www.ashefaa.com/",
+    "finding": "Provider pages expose listening/download access and display copyright ownership, but no explicit redistribution or Android-app-use license was located during the 2026-08-24 review."
+  },
+  "sounds": [
+    {
+      "id": "abdul-basit-cairo",
+      "status": "unverified",
+      "evidenceUrl": null,
+      "note": "No explicit app-use or redistribution permission evidence recorded."
+    },
+    {
+      "id": "mohamed-refaat-cairo",
+      "status": "unverified",
+      "evidenceUrl": null,
+      "note": "No explicit app-use or redistribution permission evidence recorded."
+    },
+    {
+      "id": "mostafa-ismail-cairo",
+      "status": "unverified",
+      "evidenceUrl": null,
+      "note": "No explicit app-use or redistribution permission evidence recorded."
+    },
+    {
+      "id": "mahmoud-hosary-cairo",
+      "status": "unverified",
+      "evidenceUrl": null,
+      "note": "No explicit app-use or redistribution permission evidence recorded."
+    },
+    {
+      "id": "makkah",
+      "status": "unverified",
+      "evidenceUrl": null,
+      "note": "No explicit app-use or redistribution permission evidence recorded."
+    },
+    {
+      "id": "madinah",
+      "status": "unverified",
+      "evidenceUrl": null,
+      "note": "No explicit app-use or redistribution permission evidence recorded."
+    },
+    {
+      "id": "fajr-cairo",
+      "status": "unverified",
+      "evidenceUrl": null,
+      "note": "No explicit app-use or redistribution permission evidence recorded."
+    },
+    {
+      "id": "fajr-makkah",
+      "status": "unverified",
+      "evidenceUrl": null,
+      "note": "No explicit app-use or redistribution permission evidence recorded."
+    },
+    {
+      "id": "fajr-madinah",
+      "status": "unverified",
+      "evidenceUrl": null,
+      "note": "No explicit app-use or redistribution permission evidence recorded; the currently published source URL is also unavailable."
+    }
+  ]
+}

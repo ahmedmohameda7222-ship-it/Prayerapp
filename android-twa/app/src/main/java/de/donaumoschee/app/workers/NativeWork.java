@@ -7,6 +7,7 @@ import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.OutOfQuotaPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
@@ -43,7 +44,10 @@ public final class NativeWork {
         WorkManager.getInstance(context).enqueueUniqueWork(
                 RECEIPT_FLUSH,
                 ExistingWorkPolicy.KEEP,
-                new OneTimeWorkRequest.Builder(DeliveryReceiptWorker.class).setConstraints(network).build()
+                new OneTimeWorkRequest.Builder(DeliveryReceiptWorker.class)
+                        .setConstraints(network)
+                        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                        .build()
         );
     }
 

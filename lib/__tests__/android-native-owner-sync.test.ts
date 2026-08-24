@@ -10,8 +10,10 @@ describe("Android native owner synchronization", () => {
     const value = provider();
     expect(value).toContain("const configuredOwnerId = localStorage.getItem(NATIVE_ACCOUNT_OWNER_KEY)");
     expect(value).toContain("configuredOwnerId !== sessionUserId");
-    expect(value).toContain("supportsNativeSecretPrivate(status)");
-    expect(value).toContain("status?.receiptV2 !== true");
+    expect(value).toContain("const nativeSecretPrivate = supportsNativeSecretPrivate(status)");
+    expect(value).toContain("const nativeReceiptV2 = status?.receiptV2 === true");
+    expect(value).toContain("|| !nativeSecretPrivate");
+    expect(value).toContain("|| !nativeReceiptV2");
   });
 
   it("invalidates local native work and delegates authority revocation to the bounded native reset", () => {

@@ -25,7 +25,10 @@ public final class AndroidInstrumentationSuiteSourceContractTest {
     }
 
     private static String source(String relativePath) throws IOException {
-        return Files.readString(repositoryRoot().resolve(relativePath), StandardCharsets.UTF_8);
+        return new String(
+                Files.readAllBytes(repositoryRoot().resolve(relativePath)),
+                StandardCharsets.UTF_8
+        );
     }
 
     @Test

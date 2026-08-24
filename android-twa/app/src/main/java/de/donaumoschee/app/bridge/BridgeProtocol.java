@@ -15,6 +15,7 @@ public final class BridgeProtocol {
             "native.permissions.request",
             "native.status.request",
             "native.test.schedule",
+            "native.test.status",
             "native.authority.enroll",
             "native.authority.bind",
             "native.authority.clear",

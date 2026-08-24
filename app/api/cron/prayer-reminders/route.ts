@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
+import { logFallbackActivation } from "@/lib/android/delivery-diagnostics";
 import { prayerEventId } from "@/lib/android/prayer-event-id";
 import {
   NATIVE_DELIVERY_GRACE_MS,
@@ -78,6 +79,7 @@ async function fallbackTargetsForEvent({
   eventId,
   dueAtMs,
   now,
+  nativeLeaseLookupFailed,
 }: {
   client: NonNullable<ReturnType<typeof createServerClient>>;
   targets: PushSubscriptionRecord[];
@@ -86,6 +88,7 @@ async function fallbackTargetsForEvent({
   eventId: string;
   dueAtMs: number;
   now: Date;
+  nativeLeaseLookupFailed: boolean;
 }) {
   const candidateLeases = targets.flatMap((target) =>
     (leasesByPushId.get(target.id) || []).filter((lease) =>
@@ -133,11 +136,13 @@ async function fallbackTargetsForEvent({
   const subscriptions: PushSubscriptionRecord[] = [];
   let waiting = 0;
   let nativeDelivered = 0;
+  let fallbackActivated = 0;
 
   for (const target of targets) {
     const leases = leasesByPushId.get(target.id) || [];
     if (leases.length === 0) {
       subscriptions.push(target);
+      if (nativeLeaseLookupFailed) fallbackActivated += 1;
       continue;
     }
 
@@ -157,7 +162,12 @@ async function fallbackTargetsForEvent({
       waiting += 1;
     } else {
       subscriptions.push(target);
+      fallbackActivated += 1;
     }
+  }
+
+  if (fallbackActivated > 0) {
+    logFallbackActivation({ kind, count: fallbackActivated, receiptLookupFailed });
   }
 
   return { subscriptions, waiting, nativeDelivered };
@@ -239,12 +249,14 @@ export async function GET(request: Request) {
 
   const pushTargets = (subscriptions || []) as PushSubscriptionRecord[];
   let nativeLeases: NativeAuthorityLease[] | null = null;
+  let nativeLeaseLookupFailed = false;
   if (pushTargets.length > 0) {
     const { data: leaseData, error: leaseError } = await client
       .from("native_prayer_installations")
       .select("installation_id, push_subscription_id, receipt_v2, account_generation, native_ready, notification_permission, notification_delivery_enabled, reminder_channel_enabled, adhan_channel_enabled, exact_alarm_permission, schedule_fresh, alarm_schedule_installed, audio_ready, engine_healthy, schedule_valid_until, lease_expires_at")
       .in("push_subscription_id", pushTargets.map((target) => target.id));
     if (leaseError) {
+      nativeLeaseLookupFailed = true;
       console.warn("[prayer reminder cron] native authority lookup failed open", leaseError.message);
     } else {
       nativeLeases = (leaseData || []) as NativeAuthorityLease[];
@@ -301,6 +313,7 @@ export async function GET(request: Request) {
           eventId,
           dueAtMs: prePrayerAt,
           now,
+          nativeLeaseLookupFailed,
         });
         waiting += fallback.waiting;
         nativeDelivered += fallback.nativeDelivered;
@@ -344,6 +357,7 @@ export async function GET(request: Request) {
         eventId,
         dueAtMs: adhanAt,
         now,
+        nativeLeaseLookupFailed,
       });
       waiting += fallback.waiting;
       nativeDelivered += fallback.nativeDelivered;

@@ -8,14 +8,15 @@ import {
 } from "@/lib/adhan-audio";
 
 describe("prayer-aware Adhan catalog", () => {
-  it("keeps Fajr recordings separate from regular prayer recordings", () => {
+  it("keeps selectable Fajr recordings separate from regular prayer recordings", () => {
     const fajrSounds = getAdhanSoundsForPrayer("fajr");
     const dhuhrSounds = getAdhanSoundsForPrayer("dhuhr");
 
-    expect(fajrSounds.length).toBeGreaterThanOrEqual(3);
+    expect(fajrSounds.length).toBeGreaterThanOrEqual(2);
     expect(dhuhrSounds.length).toBeGreaterThanOrEqual(6);
     expect(fajrSounds.every((sound) => sound.kind === "fajr")).toBe(true);
     expect(dhuhrSounds.every((sound) => sound.kind === "regular")).toBe(true);
+    expect(fajrSounds.some((sound) => sound.id === "fajr-madinah")).toBe(false);
   });
 
   it("uses stable prayer-specific defaults", () => {

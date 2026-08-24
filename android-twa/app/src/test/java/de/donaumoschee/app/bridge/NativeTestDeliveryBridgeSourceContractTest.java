@@ -19,7 +19,7 @@ public final class NativeTestDeliveryBridgeSourceContractTest {
     }
 
     private static String source(String relativePath) throws IOException {
-        return Files.readString(sourcePath(relativePath), StandardCharsets.UTF_8);
+        return new String(Files.readAllBytes(sourcePath(relativePath)), StandardCharsets.UTF_8);
     }
 
     @Test

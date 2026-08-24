@@ -76,7 +76,7 @@ jobs:
       - name: Test, lint, and build debug plus unsigned release artifacts
         run: >-
           ./gradlew --no-daemon
-          :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+          :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest
           :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease :app:bundleRelease
           --stacktrace
 

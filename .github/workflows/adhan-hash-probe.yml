@@ -16,21 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Inspect current Fajr Madinah source
+      - uses: actions/checkout@v4
+      - name: Trace broken Fajr Madinah catalog exposure
         shell: bash
         run: |
           set -euo pipefail
-          page="$(mktemp)"
-          trap 'rm -f "$page"' EXIT
-          curl --fail --location --silent --show-error \
-            --connect-timeout 15 --max-time 60 \
-            --user-agent 'Prayerapp-recovery-hash-probe/1.0' \
-            --output "$page" https://www.ashefaa.com/play-14344.html
-          echo 'ADHAN_PAGE_LINKS_BEGIN'
-          grep -Eoi 'https?://[^"'"'"' <>]+\.mp3|[^"'"'"' <>]+/Azan/[^"'"'"' <>]+\.mp3|href=["'"'"'][^"'"'"']+["'"'"']' "$page" \
-            | grep -Ei 'mp3|Azan|download|14344' \
-            | head -n 80 || true
-          echo 'ADHAN_PAGE_LINKS_END'
-          echo 'ADHAN_PAGE_CONTEXT_BEGIN'
-          grep -Ein -C 2 'تحميل|download|\.mp3|Azan' "$page" | head -n 120 || true
-          echo 'ADHAN_PAGE_CONTEXT_END'
+          echo 'FAJR_MADINAH_REFERENCES_BEGIN'
+          grep -RIn --exclude-dir=.git --exclude='*.map' 'fajr-madinah\|19\.mp3' . || true
+          echo 'FAJR_MADINAH_REFERENCES_END'

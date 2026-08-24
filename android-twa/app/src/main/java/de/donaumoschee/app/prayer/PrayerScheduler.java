@@ -88,8 +88,8 @@ public final class PrayerScheduler {
         }
     }
 
-    public static boolean scheduleTest(Context context, String mode, Prayer prayer, String soundId, int delaySeconds) {
-        if (!NativeStatus.hasExactAlarmPermission(context) || delaySeconds < 1 || delaySeconds > 60) return false;
+    public static String scheduleTest(Context context, String mode, Prayer prayer, String soundId, int delaySeconds) {
+        if (!NativeStatus.hasExactAlarmPermission(context) || delaySeconds < 1 || delaySeconds > 60) return null;
         NativeStore store = new NativeStore(context);
         int generation = store.accountGeneration();
         AlarmEvent.Kind kind = "adhan".equals(mode) ? AlarmEvent.Kind.ADHAN : AlarmEvent.Kind.REMINDER;
@@ -97,7 +97,7 @@ public final class PrayerScheduler {
         AlarmEvent event = new AlarmEvent(
                 "test:" + UUID.randomUUID(), prayer, kind, Instant.now().plusSeconds(delaySeconds), leadMinutes, soundId
         );
-        if (!store.markDeliveryScheduled(event.eventId, event.kind.name(), event.dueAt.toEpochMilli())) return false;
+        if (!store.markDeliveryScheduled(event.eventId, event.kind.name(), event.dueAt.toEpochMilli())) return null;
         Set<String> requestCodes = Set.of(encodeScheduledRequest(generation, event));
         try {
             AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -106,14 +106,14 @@ public final class PrayerScheduler {
         } catch (RuntimeException error) {
             cancelRequests(context, store, requestCodes);
             Log.e(TAG, "alarm.test schedule-failed=" + error.getClass().getSimpleName());
-            return false;
+            return null;
         }
         if (!store.addScheduledRequestCodesIfGeneration(requestCodes, generation)) {
             cancelRequests(context, store, requestCodes);
-            return false;
+            return null;
         }
         Log.i(TAG, "alarm.test scheduled kind=" + kind + " prayer=" + prayer.key + " delaySeconds=" + delaySeconds + " generation=" + generation);
-        return true;
+        return event.eventId;
     }
 
     public static void cancelAll(Context context) {

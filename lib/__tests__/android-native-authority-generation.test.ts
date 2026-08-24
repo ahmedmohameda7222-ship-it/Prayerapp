@@ -60,7 +60,7 @@ describe("Android native authority generation", () => {
     expect(provider).toContain("supportsNativeSecretPrivate(status)");
     expect(provider).toContain("enrollmentAttemptRef");
     expect(provider).toContain("const enrollmentGeneration = syncGenerationRef.current");
-    expect(provider).toContain("enrollmentGeneration !== syncGenerationRef.current");
+    expect(provider).toContain("syncGenerationRef.current !== attempt.syncGeneration");
     expect(provider).not.toContain("let active = true");
     expect(provider).toContain('send("native.authority.enroll"');
     expect(bridge).toContain('case "native.authority.enroll"');

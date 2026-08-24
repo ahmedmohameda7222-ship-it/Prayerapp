@@ -128,8 +128,14 @@ public final class AdhanPlaybackService extends MediaSessionService {
 
         try {
             File cached = AudioCache.verifiedFile(this, soundId);
-            Log.i(TAG, "adhan.playback start prayer=" + prayer + " source=" + (cached == null ? "remote" : "cache"));
-            Uri uri = cached == null ? Uri.parse(AdhanCatalog.approvedUrl(soundId)) : Uri.fromFile(cached);
+            if (cached == null) {
+                markDeliveryFailed("adhan-audio-unavailable");
+                Log.e(TAG, "adhan.playback verified-cache-unavailable soundId=" + soundId);
+                stopAndReleasePlayback();
+                return START_NOT_STICKY;
+            }
+            Log.i(TAG, "adhan.playback start prayer=" + prayer + " source=cache");
+            Uri uri = Uri.fromFile(cached);
             Context localizedContext = localizedContext();
             String prayerName = prayer;
             try {

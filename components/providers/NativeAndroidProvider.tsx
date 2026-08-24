@@ -498,7 +498,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
       if (!portRef.current || pendingTests.current.has(mode)) return resolve(false);
       const timer = window.setTimeout(() => {
         const pending = pendingTests.current.get(mode);
-        if (pending?.pollTimer !== null) window.clearInterval(pending.pollTimer);
+        if (pending?.pollTimer != null) window.clearInterval(pending.pollTimer);
         pendingTests.current.delete(mode);
         resolve(false);
       }, NATIVE_TEST_RESULT_TIMEOUT_MS);

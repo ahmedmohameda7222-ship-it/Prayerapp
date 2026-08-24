@@ -157,7 +157,7 @@ export function getAdhanSoundsForPrayer(prayer: AdhanPrayer): readonly AdhanSoun
 export function normalizeAdhanSoundId(value: unknown, prayer: AdhanPrayer): AdhanSoundId {
   if (prayer === "fajr") {
     if (value === "makkah") return "fajr-makkah";
-    if (value === "madinah") return "fajr-madinah";
+    if (value === "madinah") return DEFAULT_FAJR_ADHAN_SOUND_ID;
     if (isAdhanSoundId(value) && getAdhanSound(value).kind === "fajr") return value;
     return DEFAULT_FAJR_ADHAN_SOUND_ID;
   }

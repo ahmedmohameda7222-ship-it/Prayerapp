@@ -39,8 +39,6 @@ export type NativeBridgeStatus = {
   scheduleValidUntil?: string;
   lastError?: string;
   installationId?: string;
-  /** Legacy v1 APK compatibility only. New APKs never serialize this value. */
-  credential?: string;
   authorityId?: string;
   capabilities?: string[];
 };

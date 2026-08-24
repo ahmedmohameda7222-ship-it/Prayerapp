@@ -100,7 +100,7 @@ describe("Android production completion contract", () => {
     const scheduler = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerScheduler.java");
     const enroll = source("app/api/android/native-authority/enroll/route.ts");
 
-    expect(provider).toContain('method: "DELETE"');
+    expect(provider).not.toContain('method: "DELETE"');
     expect(provider).toContain('send("native.account.reset"');
     expect(protocol).toContain('"native.account.reset"');
     expect(bridge).toContain('case "native.account.reset"');

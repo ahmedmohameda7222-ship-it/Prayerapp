@@ -82,10 +82,11 @@ describe("Android direct-APK update system", () => {
     const enrollmentGateEnd = provider.indexOf("const storedOwnerId", accessTokenGate);
     const enrollmentGate = provider.slice(enrollmentEffectStart, enrollmentGateEnd);
 
+    expect(provider).toContain("const nativeLastError = status?.lastError");
     expect(syncStart).toBeGreaterThanOrEqual(0);
     expect(syncEnd).toBeGreaterThan(syncStart);
-    expect(syncSection).toContain('status?.lastError === "required-update"');
-    expect(enrollmentGate).toContain('status?.lastError === "required-update"');
+    expect(syncSection).toContain('nativeLastError === "required-update"');
+    expect(enrollmentGate).toContain('nativeLastError === "required-update"');
   });
 
   it("shows native-only installed/latest/update controls in Settings", () => {

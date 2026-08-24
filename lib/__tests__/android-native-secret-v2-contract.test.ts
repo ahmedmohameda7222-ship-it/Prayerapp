@@ -11,13 +11,19 @@ describe("Android native secret boundary v2", () => {
     expect(status).not.toContain('.put("credential"');
   });
 
-  it("uses native-owned enrollment for v2 while retaining an explicit legacy compatibility branch", () => {
+  it("keeps raw native credentials out of web JavaScript and uses bounded native bridge operations", () => {
     const provider = source("components/providers/NativeAndroidProvider.tsx");
     const nativeWeb = source("lib/android/native-web.ts");
 
     expect(nativeWeb).toContain("supportsNativeSecretPrivate");
     expect(nativeWeb).toContain('capabilities.includes("native-secret-private-v2")');
+    expect(nativeWeb).not.toContain("credential?:");
+    expect(provider).not.toContain("status.credential");
+    expect(provider).not.toContain("Authorization: `Native");
+    expect(provider).not.toContain("credential: status");
     expect(provider).toContain('send("native.authority.enroll"');
+    expect(provider).toContain('send("native.account.reset"');
+    expect(provider).toContain('send("native.update.required"');
     expect(provider).toContain('message.type === "native.authority.enroll.result"');
     expect(provider).toContain("supportsNativeSecretPrivate(status)");
   });

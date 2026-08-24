@@ -40,6 +40,8 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
     expect(settingsInstall).toContain('t("settings.installAndroidApp")');
     expect(settingsInstall).toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");
     expect(settingsInstall).not.toContain("prompt && !isAndroid");
+    expect(settingsInstall).toContain("!isNative && isAndroid");
+    expect(settingsInstall).not.toContain("!appInstalled && isAndroid");
     expect(settingsInstall).toContain("installed || isNative");
   });
 

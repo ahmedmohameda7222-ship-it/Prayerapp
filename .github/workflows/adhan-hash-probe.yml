@@ -1,0 +1,50 @@
+name: Adhan hash probe
+
+on:
+  pull_request:
+    branches:
+      - recovery/android-v2
+    paths:
+      - '.github/workflows/adhan-hash-probe.yml'
+      - 'android-twa/app/src/test/java/de/donaumoschee/app/adhan/AdhanHashProbeTest.java'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Hash approved Adhan source bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          hash_one() {
+            id="$1"
+            url="$2"
+            file="$tmp/$id.mp3"
+            curl --fail --location --silent --show-error \
+              --connect-timeout 15 --max-time 90 \
+              --user-agent 'Prayerapp-recovery-hash-probe/1.0' \
+              --header 'Accept: audio/mpeg,audio/*;q=0.9,*/*;q=0.1' \
+              --output "$file" "$url"
+            size="$(wc -c < "$file" | tr -d ' ')"
+            if [ "$size" -le 0 ] || [ "$size" -gt 20971520 ]; then
+              echo "PROBE_ERROR|$id|size=$size"
+              return 1
+            fi
+            hash="$(sha256sum "$file" | awk '{print $1}')"
+            echo "ADHAN_HASH|$id|$size|$hash|$url"
+          }
+          hash_one abdul-basit-cairo https://www.ashefaa.com/ruqia/Azan/62.mp3
+          hash_one mohamed-refaat-cairo https://www.ashefaa.com/ruqia/Azan/7.mp3
+          hash_one mostafa-ismail-cairo https://www.ashefaa.com/ruqia/Azan/27.mp3
+          hash_one mahmoud-hosary-cairo https://www.ashefaa.com/ruqia/Azan/22.mp3
+          hash_one makkah https://www.ashefaa.com/ruqia/Azan/50.mp3
+          hash_one madinah https://www.ashefaa.com/ruqia/Azan/58.mp3
+          hash_one fajr-cairo https://www.ashefaa.com/ruqia/Azan/10.mp3
+          hash_one fajr-makkah https://www.ashefaa.com/ruqia/Azan/48.mp3
+          hash_one fajr-madinah https://www.ashefaa.com/ruqia/Azan/19.mp3

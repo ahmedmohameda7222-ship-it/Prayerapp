@@ -22,10 +22,13 @@ export type NativeBridgeStatus = {
   versionCode: number;
   versionName: string;
   notificationPermission: boolean;
+  appNotificationsEnabled?: boolean;
   notificationDeliveryEnabled: boolean;
   reminderChannelEnabled: boolean;
   adhanChannelEnabled: boolean;
   exactAlarmPermission: boolean;
+  batteryOptimizationRelevant?: boolean;
+  batteryOptimizationExempt?: boolean;
   scheduleFresh: boolean;
   alarmScheduleInstalled: boolean;
   audioReady: boolean;

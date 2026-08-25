@@ -31,6 +31,7 @@ describe("Android CI coverage contract", () => {
   it("runs the Android instrumentation suite on the minimum and Android 17 boundaries", () => {
     const source = workflow();
 
+    expect(source).toContain("uses: android-actions/setup-android@v4");
     expect(source).toContain("api_level: 23");
     expect(source).toContain("api_level: 37");
     expect(source).toContain("reactivecircus/android-emulator-runner@v2");

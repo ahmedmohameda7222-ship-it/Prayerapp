@@ -60,13 +60,17 @@ jobs:
           version_code="$(jq -r ".versionCode" android-twa/twa-manifest.json)"
           version_name="$(jq -r ".versionName" android-twa/twa-manifest.json)"
           minimum_supported_version_code="$(jq -r ".minimumSupportedVersionCode" android-twa/twa-manifest.json)"
+          compile_sdk="$(jq -r ".compileSdkVersion" android-twa/twa-manifest.json)"
           target_sdk="$(jq -r ".targetSdkVersion" android-twa/twa-manifest.json)"
+          min_sdk="$(jq -r ".minSdkVersion" android-twa/twa-manifest.json)"
           test "$package_id" = "de.donaumoschee.app"
           [[ "$version_code" =~ ^[1-9][0-9]*$ ]]
           [[ "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           [[ "$minimum_supported_version_code" =~ ^[1-9][0-9]*$ ]]
           test "$minimum_supported_version_code" -le "$version_code"
-          [[ "$target_sdk" =~ ^[1-9][0-9]*$ ]]
+          test "$compile_sdk" = "37"
+          test "$target_sdk" = "37"
+          test "$min_sdk" = "23"
           test '${{ inputs.confirmation }}' = 'PUBLISH_ANDROID_PRODUCTION'
           test "${{ inputs.tag }}" = "android-v$version_name"
           {
@@ -74,7 +78,9 @@ jobs:
             printf 'version_code=%s\n' "$version_code"
             printf 'version_name=%s\n' "$version_name"
             printf 'minimum_supported_version_code=%s\n' "$minimum_supported_version_code"
+            printf 'compile_sdk=%s\n' "$compile_sdk"
             printf 'target_sdk=%s\n' "$target_sdk"
+            printf 'min_sdk=%s\n' "$min_sdk"
           } >> "$GITHUB_OUTPUT"
 
       - name: Verify source workflow is green on current main
@@ -103,7 +109,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install verification tools
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Enforce monotonic versionCode against latest Android release
         shell: bash
@@ -176,6 +182,7 @@ jobs:
           test "$actual" = "$EXPECTED_CERT_SHA256"
           badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging danube-mosque.apk)"
           printf '%s\n' "$badging" | grep -F "package: name='$PACKAGE_ID' versionCode='$VERSION_CODE' versionName='$VERSION_NAME'"
+          printf '%s\n' "$badging" | grep -F "sdkVersion:'23'"
           printf '%s\n' "$badging" | grep -F "targetSdkVersion:'$TARGET_SDK'"
           jarsigner -verify -verbose -certs danube-mosque.aab
           aab_certificate="$(keytool -printcert -jarfile danube-mosque.aab)"

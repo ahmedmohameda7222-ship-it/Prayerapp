@@ -45,7 +45,8 @@ describe("Android CI coverage contract", () => {
     expect(source).not.toContain("reactivecircus/android-emulator-runner@660ac26f5bd4cb6c1d98b2143e66ded57bee724f");
     expect(instrumentation).toContain("- name: Update SDK command-line tools for Android 17");
     expect(instrumentation).toContain("if: matrix.api_level == 37");
-    expect(instrumentation).toContain('sdkmanager" --install "cmdline-tools;latest"');
+    expect(instrumentation).toContain('"$SDK/cmdline-tools/latest/bin/sdkmanager" --install "cmdline-tools;latest" > /dev/null');
+    expect(instrumentation).not.toContain('yes | "$SDK/cmdline-tools/latest/bin/sdkmanager"');
     expect(instrumentation).toContain('if [ -d "$SDK/cmdline-tools/latest-2" ]; then');
     expect(instrumentation).toContain('mv "$SDK/cmdline-tools/latest-2" "$SDK/cmdline-tools/latest"');
     expect(source).toContain("api-level: ${{ matrix.sdk_api_level }}");

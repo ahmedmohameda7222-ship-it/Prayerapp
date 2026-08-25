@@ -53,4 +53,43 @@ describe("Android direct APK distribution regression", () => {
     expect(smoke).toContain("content-disposition");
     expect(smoke).toContain("unzip -t");
   });
+
+  it("accepts only a selected release whose code and name match the expected app identity", async () => {
+    const releaseModule = await import("@/lib/android-release");
+    const matcher = (releaseModule as {
+      matchesExpectedAndroidRelease?: (
+        release: Record<string, unknown> | null,
+        expected: { versionCode: number; versionName: string },
+      ) => boolean;
+    }).matchesExpectedAndroidRelease;
+
+    expect(matcher).toBeTypeOf("function");
+    if (!matcher) return;
+
+    const selected = {
+      packageId: "de.donaumoschee.app",
+      versionCode: 5,
+      versionName: "1.0.2",
+      minimumSupportedVersionCode: 3,
+      publishedAt: "2026-08-24T12:00:00Z",
+      apkAsset: "danube-mosque.apk",
+      apkSha256: "a".repeat(64),
+      certificateSha256: "E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92",
+      tagName: "android-v1.0.2",
+      downloadUrl: "https://github.com/example/releases/download/android-v1.0.2/danube-mosque.apk",
+    };
+
+    expect(matcher(selected, { versionCode: 5, versionName: "1.0.2" })).toBe(true);
+    expect(matcher(selected, { versionCode: 6, versionName: "1.0.2" })).toBe(false);
+    expect(matcher(selected, { versionCode: 5, versionName: "1.0.3" })).toBe(false);
+    expect(matcher(null, { versionCode: 5, versionName: "1.0.2" })).toBe(false);
+  });
+
+  it("fails the public release closed when GitHub's selected release does not match twa-manifest identity", () => {
+    const server = source("lib/android-release-server.ts");
+    expect(server).toContain('import twaManifest from "@/android-twa/twa-manifest.json"');
+    expect(server).toContain("matchesExpectedAndroidRelease");
+    expect(server).toContain("versionCode: twaManifest.versionCode");
+    expect(server).toContain("versionName: twaManifest.versionName");
+  });
 });

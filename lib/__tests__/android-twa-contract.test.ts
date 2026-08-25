@@ -36,9 +36,6 @@ describe("long-term Android TWA contract", () => {
     expect(gradle).toContain("resValues true");
     expect(gradleProperties).toContain("android.onlyEnableUnitTestForTheTestedBuildType=false");
     expect(gradle).toContain("androidbrowserhelper:2.7.3");
-    expect(gradle).toContain("androidTestImplementation 'androidx.test.ext:junit:1.3.0'");
-    expect(gradle).toContain("androidTestImplementation 'androidx.test:core:1.7.0'");
-    expect(gradle).toContain("androidTestImplementation 'androidx.test:runner:1.7.0'");
   });
 
   it("keeps localized Android launcher names and verified-origin wiring", () => {

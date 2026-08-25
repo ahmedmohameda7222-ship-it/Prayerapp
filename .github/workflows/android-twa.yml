@@ -82,7 +82,7 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Install Android API 37
-        run: sdkmanager "platforms;android-37" "build-tools;36.0.0"
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
@@ -147,10 +147,12 @@ jobs:
       matrix:
         include:
           - api_level: 23
+            sdk_api_level: "23"
             target: default
             arch: x86
           - api_level: 37
-            target: google_apis
+            sdk_api_level: "37.0"
+            target: google_apis_ps16k
             arch: x86_64
     steps:
       - uses: actions/checkout@v4
@@ -173,7 +175,7 @@ jobs:
       - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ matrix.api_level }}
+          api-level: ${{ matrix.sdk_api_level }}
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
           profile: pixel_7_pro

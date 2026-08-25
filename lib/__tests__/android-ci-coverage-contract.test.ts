@@ -47,6 +47,9 @@ describe("Android CI coverage contract", () => {
     expect(instrumentation).toContain("script: ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace");
     expect(instrumentation).not.toContain("script: |");
     expect(instrumentation).not.toContain("script: >-");
+    expect(instrumentation).toContain("disable_animations: true");
+    expect(instrumentation).toContain("disable_animations: false");
+    expect(instrumentation).toContain("disable-animations: ${{ matrix.disable_animations }}");
     expect(source).not.toContain("adb wait-for-device");
   });
 });

@@ -30,6 +30,10 @@ describe("Android CI coverage contract", () => {
 
   it("runs the Android instrumentation suite on the minimum and Android 17 boundaries", () => {
     const source = workflow();
+    const instrumentation = source.slice(
+      source.indexOf("  instrumentation:"),
+      source.indexOf("  signed_release_candidate:"),
+    );
 
     expect(source).toContain("uses: android-actions/setup-android@v4");
     expect(source).toContain("api_level: 23");
@@ -40,8 +44,8 @@ describe("Android CI coverage contract", () => {
     expect(source).toContain("reactivecircus/android-emulator-runner@v2");
     expect(source).toContain("api-level: ${{ matrix.sdk_api_level }}");
     expect(source).toContain("disk-size: 8G");
-    expect(source).toContain("set -eu");
-    expect(source).not.toContain("set -euo pipefail");
+    expect(instrumentation).toContain("set -eu\n");
+    expect(instrumentation).not.toContain("set -euo pipefail");
     expect(source).toContain("if ! ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace; then");
     expect(source).toContain("adb shell service list || true");
     expect(source).toContain("adb logcat -d -b all -v threadtime");

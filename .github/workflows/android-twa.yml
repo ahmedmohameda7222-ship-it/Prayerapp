@@ -181,7 +181,7 @@ jobs:
         run: |
           set -eu
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "cmdline-tools;latest" > /dev/null
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "cmdline-tools;latest" > /dev/null
           if [ -d "$SDK/cmdline-tools/latest-2" ]; then
             rm -rf "$SDK/cmdline-tools/latest"
             mv "$SDK/cmdline-tools/latest-2" "$SDK/cmdline-tools/latest"

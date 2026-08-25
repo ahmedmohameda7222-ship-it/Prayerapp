@@ -1,7 +1,7 @@
 # Android 17 / Play Protect Hardening Design
 
 Date: 2026-08-25
-Status: Approved design, pending written-spec review
+Status: Approved design; written spec ready for review
 Scope: Danube Mosque Android TWA application (`de.donaumoschee.app`)
 
 ## 1. Objective
@@ -262,6 +262,8 @@ Do not publish `1.0.3` merely to test it on the S25.
 
 Use the existing isolated signing workflow to create a production-certificate-signed release candidate from an exact tested PR-head artifact.
 
+The RC used for P0 physical-device acceptance must already carry the intended production identity `1.0.3 / versionCode 6 / targetSdkVersion 37`. This ensures that the device test covers the same package/version/target/signing identity intended for publication.
+
 This preserves:
 
 - source provenance;
@@ -295,12 +297,12 @@ A failed P0 blocks merge/public release.
 2. Implement API-37 migration using TDD and focused commits.
 3. Keep `minSdkVersion 23` unless an independently verified hard platform/toolchain incompatibility makes that impossible; any proposal to raise it requires explicit user approval.
 4. Make Android-17/API-37 CI and instrumentation green.
-5. Produce an exact-head production-signed RC using the protected isolated signing job.
-6. Run P0-A/P0-B/P0-C on the physical modern Android device.
-7. Do not merge if any P0 fails.
-8. After all P0 gates pass, merge through the normal reviewed workflow.
-9. Re-run CI and Android TWA verification on the exact `main` merge SHA.
-10. Set/finalize release metadata as `1.0.3 / versionCode 6` if not already finalized during the branch work.
+5. Finalize branch release identity as `1.0.3 / versionCode 6 / targetSdkVersion 37` and re-run the required automated verification on that exact head.
+6. Produce an exact-head production-signed RC using the protected isolated signing job.
+7. Run P0-A/P0-B/P0-C on the physical modern Android device using that exact RC.
+8. Do not merge if any P0 fails.
+9. After all P0 gates pass, merge through the normal reviewed workflow.
+10. Re-run CI and Android TWA verification on the exact `main` merge SHA and confirm the merged release identity is unchanged.
 11. Trigger the protected Android production release workflow from the exact green `main` run.
 12. Publish immutable APK/AAB/checksums/release metadata with the permanent certificate.
 13. Run the live public-download smoke against the website route.

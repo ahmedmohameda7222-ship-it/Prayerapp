@@ -19,6 +19,7 @@ describe("long-term Android TWA contract", () => {
     const config = JSON.parse(read("android-twa/twa-manifest.json")) as Record<string, unknown>;
     const gradle = read("android-twa/app/build.gradle");
     const rootGradle = read("android-twa/build.gradle");
+    const gradleProperties = read("android-twa/gradle.properties");
     const wrapper = read("android-twa/gradle/wrapper/gradle-wrapper.properties");
 
     expect(config.packageId).toBe("de.donaumoschee.app");
@@ -33,6 +34,7 @@ describe("long-term Android TWA contract", () => {
     expect(wrapper).toContain("gradle-9.3.1-bin.zip");
     expect(gradle).toContain("buildFeatures");
     expect(gradle).toContain("resValues true");
+    expect(gradleProperties).toContain("android.onlyEnableUnitTestForTheTestedBuildType=false");
     expect(gradle).toContain("androidbrowserhelper:2.7.3");
   });
 

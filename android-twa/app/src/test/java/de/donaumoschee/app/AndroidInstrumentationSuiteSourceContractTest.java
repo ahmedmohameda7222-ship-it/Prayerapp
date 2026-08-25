@@ -34,6 +34,7 @@ public final class AndroidInstrumentationSuiteSourceContractTest {
     @Test
     public void androidTestSourceSetCoversCriticalRuntimeContracts() {
         List<String> requiredTests = List.of(
+                "android-twa/app/src/androidTest/java/de/donaumoschee/app/Android17PlatformInstrumentationTest.java",
                 "android-twa/app/src/androidTest/java/de/donaumoschee/app/bridge/BridgeHandlerInstrumentationTest.java",
                 "android-twa/app/src/androidTest/java/de/donaumoschee/app/prayer/PrayerNotificationsInstrumentationTest.java",
                 "android-twa/app/src/androidTest/java/de/donaumoschee/app/storage/NativeStoreInstrumentationTest.java",

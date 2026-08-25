@@ -31,6 +31,8 @@ describe("long-term Android TWA contract", () => {
     expect(config.minimumSupportedVersionCode).toBe(3);
     expect(rootGradle).toContain("com.android.application' version '9.1.1'");
     expect(wrapper).toContain("gradle-9.3.1-bin.zip");
+    expect(gradle).toContain("buildFeatures");
+    expect(gradle).toContain("resValues true");
     expect(gradle).toContain("androidbrowserhelper:2.7.3");
   });
 

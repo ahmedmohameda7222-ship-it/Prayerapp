@@ -150,10 +150,12 @@ jobs:
             sdk_api_level: "23"
             target: default
             arch: x86
+            disable_animations: true
           - api_level: 37
             sdk_api_level: "37.0"
             target: google_apis_ps16k
             arch: x86_64
+            disable_animations: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -181,6 +183,7 @@ jobs:
           profile: pixel_7_pro
           disk-size: 8G
           emulator-boot-timeout: 600
+          disable-animations: ${{ matrix.disable_animations }}
           disable-linux-hw-accel: auto
           working-directory: android-twa
           script: ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace

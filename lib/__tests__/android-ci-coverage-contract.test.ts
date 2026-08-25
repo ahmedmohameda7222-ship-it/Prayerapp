@@ -40,6 +40,8 @@ describe("Android CI coverage contract", () => {
     expect(source).toContain("reactivecircus/android-emulator-runner@v2");
     expect(source).toContain("api-level: ${{ matrix.sdk_api_level }}");
     expect(source).toContain("disk-size: 8G");
+    expect(source).toContain("set -eu");
+    expect(source).not.toContain("set -euo pipefail");
     expect(source).toContain("if ! ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace; then");
     expect(source).toContain("adb shell service list || true");
     expect(source).toContain("adb logcat -d -b all -v threadtime");

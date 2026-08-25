@@ -184,7 +184,7 @@ jobs:
           disable-linux-hw-accel: auto
           working-directory: android-twa
           script: |
-            set -euo pipefail
+            set -eu
             adb shell getprop ro.build.fingerprint || true
             adb shell service check package || true
             adb shell service check activity || true

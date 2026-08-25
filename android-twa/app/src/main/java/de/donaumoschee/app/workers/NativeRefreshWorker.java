@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import de.donaumoschee.app.diagnostics.DeliveryDiagnostics;
 import de.donaumoschee.app.prayer.NativeStatus;
 import de.donaumoschee.app.prayer.PrayerScheduler;
 import de.donaumoschee.app.storage.NativeStore;
@@ -45,6 +46,9 @@ public final class NativeRefreshWorker extends Worker {
             Log.i(TAG, "schedule.refresh stale-before-reschedule generation=" + generation);
             return Result.success();
         }
+        if (!scheduleRefreshed) {
+            DeliveryDiagnostics.emit("schedule_refresh_failure", "refresh-failed");
+        }
 
         Log.i(TAG, "schedule.refresh success=" + scheduleRefreshed + " generation=" + generation);
         PrayerScheduler.reschedule(getApplicationContext(), generation);
@@ -81,6 +85,8 @@ public final class NativeRefreshWorker extends Worker {
             if (store.accountGeneration() != generation) return;
             Object scheduleValidUntil = status.opt("scheduleValidUntil");
             JSONObject body = new JSONObject()
+                    .put("receiptV2", true)
+                    .put("accountGeneration", generation)
                     .put("notificationPermission", status.getBoolean("notificationPermission"))
                     .put("notificationDeliveryEnabled", status.getBoolean("notificationDeliveryEnabled"))
                     .put("reminderChannelEnabled", status.getBoolean("reminderChannelEnabled"))

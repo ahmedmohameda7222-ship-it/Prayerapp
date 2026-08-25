@@ -50,7 +50,7 @@ describe("Android production completion contract", () => {
   it("keeps every native Adhan URL and kind identical to the web catalog", () => {
     const nativeCatalog = source("android-twa/app/src/main/java/de/donaumoschee/app/adhan/AdhanCatalog.java");
     const nativeEntries = [...nativeCatalog.matchAll(
-      /Map\.entry\("([^"]+)", new ApprovedSound\("([^"]+)", SoundKind\.(REGULAR|FAJR)\)\)/gu,
+      /Map\.entry\("([^"]+)",\s*new ApprovedSound\(\s*"([^"]+)",\s*SoundKind\.(REGULAR|FAJR),\s*"[^"]*"\s*\)\s*\)/gu,
     )].map((match) => ({
       id: match[1],
       audioUrl: match[2],
@@ -65,13 +65,22 @@ describe("Android production completion contract", () => {
 
   it("keeps native authority short-lived, service-role-only, and prayer-push-specific", () => {
     const migration = source("supabase/migrations/20260821220800_android_native_authority.sql");
+    const receipts = source("supabase/migrations/20260823104600_native_delivery_receipts.sql");
     const cron = source("app/api/cron/prayer-reminders/route.ts");
     const push = source("lib/push/web-push.ts");
     expect(migration).toContain("enable row level security");
     expect(migration).toContain("revoke all on public.native_prayer_installations from public, anon, authenticated");
     expect(migration).toContain("lease_expires_at");
-    expect(cron).toContain("filterPrayerPushTargets");
+    expect(receipts).toContain("alter table public.native_prayer_delivery_receipts enable row level security");
+    expect(receipts).toContain("revoke all on public.native_prayer_delivery_receipts from public, anon, authenticated");
+    expect(receipts).toContain("grant all on public.native_prayer_delivery_receipts to service_role");
+    expect(cron).toContain("nativeFallbackDecision");
+    expect(cron).toContain("native_prayer_delivery_receipts");
+    expect(cron).toContain("receipt_v2");
+    expect(cron).toContain("account_generation");
     expect(cron).toContain("native authority lookup failed open");
+    expect(cron).toContain("native receipt lookup failed open");
+    expect(cron).not.toContain("const targets = filterPrayerPushTargets(pushTargets, nativeLeases, now)");
     expect(push).not.toContain("native_prayer_installations");
   });
 
@@ -91,16 +100,17 @@ describe("Android production completion contract", () => {
     const scheduler = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerScheduler.java");
     const enroll = source("app/api/android/native-authority/enroll/route.ts");
 
-    expect(provider).toContain('method: "DELETE"');
+    expect(provider).not.toContain('method: "DELETE"');
     expect(provider).toContain('send("native.account.reset"');
     expect(protocol).toContain('"native.account.reset"');
     expect(bridge).toContain('case "native.account.reset"');
     expect(bridge).toContain("PrayerScheduler.cancelAll(context)");
-    expect(bridge).toContain("store.resetAccountState()");
+    expect(bridge).toContain("store.resetAccountStateAndQueueAuthorityRevocation()");
+    expect(bridge).toContain("NativeWork.flushAuthorityRevocation(context)");
     expect(scheduler).toContain("public static void cancelAll");
-    expect(store).toContain("public int resetAccountState()");
-    expect(enroll).toContain('select("user_id, credential_hash, authority_id, revoked_at")');
-    expect(enroll).toContain("credentialMatches(body.credential");
+    expect(store).toContain("public int resetAccountStateAndQueueAuthorityRevocation()");
+    expect(enroll).toContain('select("user_id, credential_hash, authority_id, revoked_at, account_generation")');
+    expect(enroll).toContain("credentialMatches(credential");
   });
 
   it("does not start native Adhan playback when Android notification delivery or the Adhan channel is disabled", () => {
@@ -129,11 +139,12 @@ describe("Android production completion contract", () => {
     expect(store).toContain("ACCOUNT_GENERATION");
     expect(store).toContain("public int accountGeneration()");
     expect(store).toContain("public int advanceAccountGeneration()");
-    expect(store).toContain("public int resetAccountState()");
+    expect(store).toContain("public int resetAccountStateAndQueueAuthorityRevocation()");
     expect(worker).toContain("int generation = store.accountGeneration()");
     expect(worker).toContain("store.accountGeneration() != generation");
     expect(work).toContain("public static void cancelPrayerRefresh(Context context)");
+    expect(work).toContain("public static void flushAuthorityRevocation(Context context)");
     expect(bridge).toContain("NativeWork.cancelPrayerRefresh(context)");
-    expect(bridge).toContain("store.resetAccountState()");
+    expect(bridge).toContain("store.resetAccountStateAndQueueAuthorityRevocation()");
   });
 });

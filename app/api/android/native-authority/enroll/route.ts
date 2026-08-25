@@ -14,6 +14,7 @@ import { createServerClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const MAX_ACCOUNT_GENERATION = 2_147_483_647;
 
 function validEndpoint(value: unknown): value is string {
   if (typeof value !== "string" || value.length > 4096) return false;
@@ -27,13 +28,24 @@ function validEndpoint(value: unknown): value is string {
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const body = await request.json().catch(() => null);
+  const headerCredential = request.headers.get("x-native-credential");
+  const credential = headerCredential || body?.credential;
+  const privateNativeSecret = isNativeCredential(headerCredential);
   if (
     !isInstallationId(body?.installationId)
-    || !isNativeCredential(body?.credential)
+    || !isNativeCredential(credential)
     || (body?.authorityId != null && !isAuthorityId(body.authorityId))
     || typeof body?.browserId !== "string"
     || !uuidPattern.test(body.browserId)
     || (body?.endpoint != null && !validEndpoint(body.endpoint))
+    || (
+      body?.accountGeneration != null
+      && (
+        !Number.isInteger(body.accountGeneration)
+        || body.accountGeneration < 0
+        || body.accountGeneration > MAX_ACCOUNT_GENERATION
+      )
+    )
   ) {
     return NextResponse.json({ error: "Invalid native installation" }, { status: 400 });
   }
@@ -47,7 +59,7 @@ export async function POST(request: Request) {
 
   const { data: existingInstallationData, error: existingInstallationError } = await client
     .from("native_prayer_installations")
-    .select("user_id, credential_hash, authority_id, revoked_at")
+    .select("user_id, credential_hash, authority_id, revoked_at, account_generation")
     .eq("installation_id", body.installationId)
     .maybeSingle();
   if (existingInstallationError) return NextResponse.json({ error: "Could not validate native installation" }, { status: 500 });
@@ -56,6 +68,7 @@ export async function POST(request: Request) {
     credential_hash?: string;
     authority_id?: string;
     revoked_at?: string | null;
+    account_generation?: number;
   } | null;
   if (!existingInstallation && body.authorityId != null) {
     return NextResponse.json({
@@ -68,7 +81,7 @@ export async function POST(request: Request) {
     && (
       !existingInstallation.credential_hash
       || !existingInstallation.authority_id
-      || !credentialMatches(body.credential, existingInstallation.credential_hash)
+      || !credentialMatches(credential, existingInstallation.credential_hash)
       || (body.authorityId != null && body.authorityId !== existingInstallation.authority_id)
       || (
         body.authorityId == null
@@ -79,10 +92,17 @@ export async function POST(request: Request) {
         body.authorityId == null
         && existingInstallation.user_id === userData.user.id
         && Boolean(existingInstallation.revoked_at)
+        && !privateNativeSecret
       )
     )
   ) {
     return NextResponse.json({ error: "Native installation ownership mismatch" }, { status: 403 });
+  }
+
+  // Legacy enrollment requests do not know about account generations. Preserve
+  // an existing generation in that case; brand-new legacy installs start at 0.
+  if (body.accountGeneration == null) {
+    body.accountGeneration = existingInstallation?.account_generation ?? 0;
   }
 
   let pushSubscriptionId: string | null = null;
@@ -116,7 +136,9 @@ export async function POST(request: Request) {
     authority_id: authorityId,
     user_id: userData.user.id,
     push_subscription_id: pushSubscriptionId,
-    credential_hash: hashNativeCredential(body.credential),
+    credential_hash: hashNativeCredential(credential),
+    account_generation: body.accountGeneration,
+    receipt_v2: false,
     native_ready: false,
     lease_expires_at: null,
     revoked_at: null,

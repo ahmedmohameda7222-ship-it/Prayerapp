@@ -1,5 +1,6 @@
-import { cookies } from "next/headers";
-import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "./types";
+import { cookies, headers } from "next/headers";
+import { detectSupportedLocale, isLocale, type Locale } from "./types";
+import { getPrayerTranslationOverride } from "./prayer-names";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 import de from "../../messages/de.json";
@@ -9,13 +10,21 @@ const messages = { ar, en, de, tr };
 
 export async function getServerLocale(): Promise<Locale> {
   const cookieStore = await cookies();
-  return normalizeLocale(cookieStore.get("locale")?.value || DEFAULT_LOCALE);
+  const storedLocale = cookieStore.get("locale")?.value;
+  if (isLocale(storedLocale)) return storedLocale;
+
+  const requestHeaders = await headers();
+  const acceptLanguage = requestHeaders.get("accept-language");
+  return detectSupportedLocale(acceptLanguage ? acceptLanguage.split(",") : []);
 }
 
 export function getTranslation(locale: Locale) {
   const current = messages[locale] || messages.ar;
 
   function t(key: string, values?: Record<string, string | number>): string {
+    const prayerOverride = getPrayerTranslationOverride(locale, key);
+    if (prayerOverride) return interpolate(prayerOverride, values);
+
     const keys = key.split(".");
     let value: unknown = current;
     for (const k of keys) {

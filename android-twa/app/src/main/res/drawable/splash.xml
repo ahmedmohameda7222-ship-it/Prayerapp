@@ -1,12 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/twa_background_color" />
-    <item
-        android:width="112dp"
-        android:height="112dp"
-        android:gravity="center">
-        <bitmap
-            android:gravity="fill"
-            android:src="@drawable/app_icon" />
-    </item>
+    <item android:drawable="@drawable/app_icon_foreground" />
 </layer-list>

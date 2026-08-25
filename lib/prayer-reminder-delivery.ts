@@ -43,14 +43,18 @@ export function beforeReminderBody(locale: Locale, prayer: ReminderPrayer, minut
 }
 
 export async function deliverPrayerReminderEvent({
-  eventKey,
+  eventId,
+  dueAt,
+  expiresAt,
   prayer,
   date,
   leadMinutes,
   subscriptions,
   sourceId,
 }: {
-  eventKey: string;
+  eventId: string;
+  dueAt: string;
+  expiresAt: string;
   prayer: ReminderPrayer;
   date: string;
   leadMinutes: ReminderLeadMinutes;
@@ -60,7 +64,7 @@ export async function deliverPrayerReminderEvent({
   const isAdhan = leadMinutes === 0;
 
   return deliverPushNotifications({
-    eventKey,
+    eventKey: eventId,
     notificationType: "prayer_reminder",
     sourceId,
     subscriptions,
@@ -70,10 +74,13 @@ export async function deliverPrayerReminderEvent({
         ? adhanReminderBody(locale, prayer)
         : beforeReminderBody(locale, prayer, leadMinutes),
       url: "/#prayer-times",
-      tag: eventKey,
+      tag: eventId,
       kind: isAdhan ? "adhan" : "prayer-reminder",
       prayer,
       date,
+      eventId,
+      dueAt,
+      expiresAt,
     }),
   });
 }

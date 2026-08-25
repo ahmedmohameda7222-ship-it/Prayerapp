@@ -93,6 +93,20 @@ jobs:
           test "$head_sha" = "$GITHUB_SHA"
           printf 'head_sha=%s\n' "$head_sha" >> "$GITHUB_OUTPUT"
 
+      - name: Require cleared Adhan rights
+        shell: bash
+        run: |
+          set -euo pipefail
+          rights_file="android-twa/adhan-rights.json"
+          jq -e '
+            .schemaVersion == 1 and
+            .publicReleaseApproved == true and
+            (.sounds | type == "array" and length > 0) and
+            (.sounds | all(.status == "cleared")) and
+            (.sounds | all(.evidenceUrl != null and (.evidenceUrl | length) > 0)) and
+            ((.sounds | map(.id) | unique | length) == (.sounds | length))
+          ' "$rights_file" >/dev/null
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:

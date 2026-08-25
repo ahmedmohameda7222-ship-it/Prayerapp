@@ -94,6 +94,74 @@ describe("native authority route generation isolation", () => {
     ]));
   });
 
+  it("keeps a short lease for reminder-only capability even when legacy nativeReady is false", async () => {
+    const lookup = query({ data: { authority_id: authorityId, credential_hash: credentialHash }, error: null });
+    const mutation = query(() => ({
+      data: { authority_id: authorityId },
+      error: null,
+    }));
+    const from = vi.fn()
+      .mockReturnValueOnce(lookup)
+      .mockReturnValueOnce(mutation);
+    mocks.client = { from };
+
+    const response = await POST(new Request("https://donaumoschee.vercel.app/api/android/native-authority/heartbeat", {
+      method: "POST",
+      headers: nativeHeaders(),
+      body: JSON.stringify({
+        ...heartbeatBody(),
+        adhanChannelEnabled: false,
+        audioReady: false,
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(expect.objectContaining({
+      success: true,
+      nativeReady: false,
+      leaseExpiresAt: expect.any(String),
+    }));
+    expect(mutation.updates[0]).toEqual(expect.objectContaining({
+      native_ready: false,
+      reminder_channel_enabled: true,
+      adhan_channel_enabled: false,
+      audio_ready: false,
+      lease_expires_at: expect.any(String),
+    }));
+  });
+
+  it("accepts Android-private enrollment without a browser Origin header", async () => {
+    const lookup = query({ data: null, error: null });
+    const insertion = query({ data: { authority_id: authorityId }, error: null });
+    const from = vi.fn()
+      .mockReturnValueOnce(lookup)
+      .mockReturnValueOnce(insertion);
+    mocks.client = {
+      auth: { getUser: vi.fn(async () => ({ data: { user: { id: "user-a" } }, error: null })) },
+      from,
+    };
+
+    const response = await ENROLL(new Request("https://donaumoschee.vercel.app/api/android/native-authority/enroll", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer account-token",
+        "X-Native-Credential": credential,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        installationId,
+        accountGeneration: 0,
+        browserId: "7a34b15a-1da7-4f3b-ab2d-a2f899de9a6b",
+        endpoint: null,
+        authorityId: null,
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true, pushPaired: false, authorityId });
+    expect(from).toHaveBeenCalledTimes(2);
+  });
+
   it("rejects a stale non-null generation when revocation removed the row", async () => {
     const lookup = query({ data: null, error: null });
     mocks.client = {
@@ -156,5 +224,30 @@ describe("native authority route generation isolation", () => {
       lease_expires_at: null,
       revoked_at: expect.any(String),
     }));
+  });
+
+  it("treats a retry of an already-revoked generation as idempotent success", async () => {
+    const tombstoneAuthorityId = "56cd571a-cbae-4f2c-915c-65f604dbd265";
+    const lookup = query({
+      data: {
+        authority_id: tombstoneAuthorityId,
+        credential_hash: credentialHash,
+        revoked_at: "2026-08-23T15:00:00.000Z",
+      },
+      error: null,
+    });
+    const from = vi.fn(() => lookup);
+    mocks.client = { from };
+
+    const response = await DELETE(new Request("https://donaumoschee.vercel.app/api/android/native-authority/heartbeat", {
+      method: "DELETE",
+      headers: nativeHeaders(true),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true, authorityId: tombstoneAuthorityId });
+    expect(from).toHaveBeenCalledTimes(1);
+    expect(lookup.filters).toEqual([["installation_id", installationId]]);
+    expect(lookup.updates).toHaveLength(0);
   });
 });

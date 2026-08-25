@@ -25,6 +25,10 @@ final class NativeHttp {
         return request("POST", url, body, headers);
     }
 
+    static JSONObject delete(String url, Map<String, String> headers) throws IOException, JSONException {
+        return request("DELETE", url, null, headers);
+    }
+
     private static JSONObject request(String method, String url, JSONObject body, Map<String, String> headers) throws IOException, JSONException {
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         try {

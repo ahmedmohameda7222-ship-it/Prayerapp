@@ -2,6 +2,7 @@ package de.donaumoschee.app.prayer;
 
 public record NotificationCapabilities(
         boolean notificationPermission,
+        boolean appNotificationsEnabled,
         boolean notificationDeliveryEnabled,
         boolean reminderChannelEnabled,
         boolean adhanChannelEnabled
@@ -19,9 +20,9 @@ public record NotificationCapabilities(
     ) {
         boolean permission = sdk < API_RUNTIME_NOTIFICATIONS || runtimePermissionGranted;
         boolean delivery = permission && appNotificationsEnabled;
-        boolean reminderChannel = sdk < API_NOTIFICATION_CHANNELS || reminderChannelImportance != IMPORTANCE_NONE;
-        boolean adhanChannel = sdk < API_NOTIFICATION_CHANNELS || adhanChannelImportance != IMPORTANCE_NONE;
-        return new NotificationCapabilities(permission, delivery, reminderChannel, adhanChannel);
+        boolean reminderChannel = sdk < API_NOTIFICATION_CHANNELS || reminderChannelImportance > IMPORTANCE_NONE;
+        boolean adhanChannel = sdk < API_NOTIFICATION_CHANNELS || adhanChannelImportance > IMPORTANCE_NONE;
+        return new NotificationCapabilities(permission, appNotificationsEnabled, delivery, reminderChannel, adhanChannel);
     }
 
     public boolean reminderDeliveryReady() {

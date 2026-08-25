@@ -11,9 +11,12 @@ public final class BridgeProtocol {
 
     private static final Set<String> INBOUND_TYPES = Set.of(
             "web.configure",
+            "web.bridge.ready",
             "native.permissions.request",
             "native.status.request",
             "native.test.schedule",
+            "native.test.status",
+            "native.authority.enroll",
             "native.authority.bind",
             "native.authority.clear",
             "native.update.required",

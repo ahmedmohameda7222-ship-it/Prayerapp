@@ -23,6 +23,7 @@ public final class PrayerScheduler {
     public static final String EXTRA_LEAD_MINUTES = "lead-minutes";
     public static final String EXTRA_ADHAN_SOUND_ID = "adhan-sound-id";
     public static final String EXTRA_ACCOUNT_GENERATION = "account-generation";
+    public static final String EXTRA_DUE_AT_MS = "due-at-ms";
 
     private PrayerScheduler() {}
 
@@ -56,33 +57,39 @@ public final class PrayerScheduler {
             AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             for (AlarmEvent event : events) {
                 if (store.accountGeneration() != generation) {
-                    cancelRequests(context, installedByThisCall);
+                    cancelRequests(context, store, installedByThisCall);
                     return false;
                 }
+                if (!store.markDeliveryScheduled(event.eventId, event.kind.name(), event.dueAt.toEpochMilli())) {
+                    cancelRequests(context, store, installedByThisCall);
+                    store.markScheduleFailureIfGeneration("delivery-state-unavailable", generation);
+                    return false;
+                }
+                installedByThisCall.add(encodeScheduledRequest(generation, event));
                 PendingIntent operation = operation(context, event, generation);
                 manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
-                installedByThisCall.add(encodeScheduledRequest(generation, event));
             }
             if (
                     store.accountGeneration() != generation
                     || !store.addScheduledRequestCodesIfGeneration(installedByThisCall, generation)
                     || !store.markScheduleInstalledIfGeneration(generation)
             ) {
-                cancelRequests(context, installedByThisCall);
+                cancelRequests(context, store, installedByThisCall);
+                store.markScheduleFailureIfGeneration("alarm-schedule-finalize-failed", generation);
                 return false;
             }
             Log.i(TAG, "alarm.schedule installed count=" + events.size() + " generation=" + generation);
             return true;
         } catch (RuntimeException error) {
-            cancelRequests(context, installedByThisCall);
+            cancelRequests(context, store, installedByThisCall);
             Log.e(TAG, "alarm.schedule failed=" + error.getClass().getSimpleName());
             store.markScheduleFailureIfGeneration("alarm-schedule-failed", generation);
             return false;
         }
     }
 
-    public static boolean scheduleTest(Context context, String mode, Prayer prayer, String soundId, int delaySeconds) {
-        if (!NativeStatus.hasExactAlarmPermission(context) || delaySeconds < 1 || delaySeconds > 60) return false;
+    public static String scheduleTest(Context context, String mode, Prayer prayer, String soundId, int delaySeconds) {
+        if (!NativeStatus.hasExactAlarmPermission(context) || delaySeconds < 1 || delaySeconds > 60) return null;
         NativeStore store = new NativeStore(context);
         int generation = store.accountGeneration();
         AlarmEvent.Kind kind = "adhan".equals(mode) ? AlarmEvent.Kind.ADHAN : AlarmEvent.Kind.REMINDER;
@@ -90,16 +97,23 @@ public final class PrayerScheduler {
         AlarmEvent event = new AlarmEvent(
                 "test:" + UUID.randomUUID(), prayer, kind, Instant.now().plusSeconds(delaySeconds), leadMinutes, soundId
         );
-        AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        PendingIntent operation = operation(context, event, generation);
-        manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
+        if (!store.markDeliveryScheduled(event.eventId, event.kind.name(), event.dueAt.toEpochMilli())) return null;
         Set<String> requestCodes = Set.of(encodeScheduledRequest(generation, event));
+        try {
+            AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            PendingIntent operation = operation(context, event, generation);
+            manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, event.dueAt.toEpochMilli(), operation);
+        } catch (RuntimeException error) {
+            cancelRequests(context, store, requestCodes);
+            Log.e(TAG, "alarm.test schedule-failed=" + error.getClass().getSimpleName());
+            return null;
+        }
         if (!store.addScheduledRequestCodesIfGeneration(requestCodes, generation)) {
-            cancelRequests(context, requestCodes);
-            return false;
+            cancelRequests(context, store, requestCodes);
+            return null;
         }
         Log.i(TAG, "alarm.test scheduled kind=" + kind + " prayer=" + prayer.key + " delaySeconds=" + delaySeconds + " generation=" + generation);
-        return true;
+        return event.eventId;
     }
 
     public static void cancelAll(Context context) {
@@ -117,7 +131,8 @@ public final class PrayerScheduler {
                 .putExtra(EXTRA_PRAYER, event.prayer.key)
                 .putExtra(EXTRA_LEAD_MINUTES, event.leadMinutes)
                 .putExtra(EXTRA_ADHAN_SOUND_ID, event.adhanSoundId)
-                .putExtra(EXTRA_ACCOUNT_GENERATION, generation);
+                .putExtra(EXTRA_ACCOUNT_GENERATION, generation)
+                .putExtra(EXTRA_DUE_AT_MS, event.dueAt.toEpochMilli());
         return PendingIntent.getBroadcast(context, event.requestCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
@@ -133,6 +148,7 @@ public final class PrayerScheduler {
         Set<String> stored = store.scheduledRequestCodes();
         Set<String> retained = new HashSet<>();
         int cancelled = 0;
+        boolean deliveryStateUpdated = true;
         for (String raw : stored) {
             ScheduledRequest request = parseScheduledRequest(raw);
             if (request == null) {
@@ -141,28 +157,39 @@ public final class PrayerScheduler {
             }
             boolean shouldCancel = generationFilter == null || request.legacy || request.generation == generationFilter;
             if (shouldCancel) {
-                cancelRequest(context, request);
+                boolean cancelledCleanly = cancelRequest(context, store, request);
+                if (!cancelledCleanly) {
+                    retained.add(raw);
+                    deliveryStateUpdated = false;
+                }
                 cancelled += 1;
             } else {
                 retained.add(raw);
             }
         }
         if (cancelled > 0) Log.i(TAG, "alarm.cancel count=" + cancelled + " generation=" + generationFilter);
+        boolean metadataUpdated;
         if (generationFilter == null) {
             store.setScheduledRequestCodes(retained);
-            return true;
+            metadataUpdated = true;
+        } else {
+            metadataUpdated = store.setScheduledRequestCodesIfGeneration(retained, generationFilter);
         }
-        return store.setScheduledRequestCodesIfGeneration(retained, generationFilter);
+        if (!deliveryStateUpdated) store.markEngineError("delivery-cancellation-persist-failed");
+        return deliveryStateUpdated && metadataUpdated;
     }
 
-    private static void cancelRequests(Context context, Set<String> requests) {
+    private static boolean cancelRequests(Context context, NativeStore store, Set<String> requests) {
+        boolean success = true;
         for (String raw : requests) {
             ScheduledRequest request = parseScheduledRequest(raw);
-            if (request != null) cancelRequest(context, request);
+            if (request != null && !cancelRequest(context, store, request)) success = false;
         }
+        if (!success) store.markEngineError("delivery-cancellation-persist-failed");
+        return success;
     }
 
-    private static void cancelRequest(Context context, ScheduledRequest request) {
+    private static boolean cancelRequest(Context context, NativeStore store, ScheduledRequest request) {
         AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Uri data = request.legacy
                 ? Uri.parse("danube://prayer-event/" + Uri.encode(request.eventId))
@@ -180,6 +207,7 @@ public final class PrayerScheduler {
             manager.cancel(existing);
             existing.cancel();
         }
+        return store.cancelDeliveryScheduled(request.eventId, "alarm-cancelled", System.currentTimeMillis());
     }
 
     private static ScheduledRequest parseScheduledRequest(String raw) {

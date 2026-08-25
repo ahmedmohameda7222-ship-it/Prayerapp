@@ -3,6 +3,8 @@ package de.donaumoschee.app.prayer;
 import android.content.Context;
 
 import de.donaumoschee.app.R;
+import de.donaumoschee.app.localization.AppLocale;
+import de.donaumoschee.app.storage.NativeStore;
 
 public enum Prayer {
     FAJR("fajr"),
@@ -23,12 +25,13 @@ public enum Prayer {
     }
 
     public String displayName(Context context) {
+        Context localizedContext = AppLocale.localizedContext(context, new NativeStore(context).appLocale());
         switch (this) {
-            case FAJR: return context.getString(R.string.prayer_fajr);
-            case DHUHR: return context.getString(R.string.prayer_dhuhr);
-            case ASR: return context.getString(R.string.prayer_asr);
-            case MAGHRIB: return context.getString(R.string.prayer_maghrib);
-            case ISHA: return context.getString(R.string.prayer_isha);
+            case FAJR: return localizedContext.getString(R.string.prayer_fajr);
+            case DHUHR: return localizedContext.getString(R.string.prayer_dhuhr);
+            case ASR: return localizedContext.getString(R.string.prayer_asr);
+            case MAGHRIB: return localizedContext.getString(R.string.prayer_maghrib);
+            case ISHA: return localizedContext.getString(R.string.prayer_isha);
             default: throw new IllegalStateException("Unsupported prayer");
         }
     }

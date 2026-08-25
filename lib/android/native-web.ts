@@ -22,19 +22,23 @@ export type NativeBridgeStatus = {
   versionCode: number;
   versionName: string;
   notificationPermission: boolean;
+  appNotificationsEnabled?: boolean;
   notificationDeliveryEnabled: boolean;
   reminderChannelEnabled: boolean;
   adhanChannelEnabled: boolean;
   exactAlarmPermission: boolean;
+  batteryOptimizationRelevant?: boolean;
+  batteryOptimizationExempt?: boolean;
   scheduleFresh: boolean;
   alarmScheduleInstalled: boolean;
   audioReady: boolean;
   engineHealthy: boolean;
   nativeReady: boolean;
+  receiptV2?: boolean;
+  accountGeneration?: number;
   scheduleValidUntil?: string;
   lastError?: string;
   installationId?: string;
-  credential?: string;
   authorityId?: string;
   capabilities?: string[];
 };
@@ -52,6 +56,11 @@ export function isNativeAuthorityId(value: unknown): value is string {
 export function supportsNativeAuthorityGeneration(status: NativeBridgeStatus | null) {
   return Array.isArray(status?.capabilities)
     && status.capabilities.includes("authority-generation-v1");
+}
+
+export function supportsNativeSecretPrivate(status: NativeBridgeStatus | null) {
+  return Array.isArray(status?.capabilities)
+    && status.capabilities.includes("native-secret-private-v2");
 }
 
 export function parseNativeMessage(value: unknown): NativeMessage | null {

@@ -1,6 +1,7 @@
 package de.donaumoschee.app.prayer;
 
 import de.donaumoschee.app.adhan.AdhanCatalog;
+import de.donaumoschee.app.localization.AppLocale;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,6 +20,7 @@ import java.util.Map;
 public final class NativeConfig {
     public static final ZoneId ZONE = ZoneId.of("Europe/Berlin");
     public final String revision;
+    public final String locale;
     public final Instant scheduleValidUntil;
     public final List<ScheduleRow> rows;
     public final Map<Prayer, Reminder> reminders;
@@ -26,12 +28,14 @@ public final class NativeConfig {
 
     private NativeConfig(
             String revision,
+            String locale,
             Instant scheduleValidUntil,
             List<ScheduleRow> rows,
             Map<Prayer, Reminder> reminders,
             JSONObject source
     ) {
         this.revision = revision;
+        this.locale = locale;
         this.scheduleValidUntil = scheduleValidUntil;
         this.rows = Collections.unmodifiableList(rows);
         this.reminders = Collections.unmodifiableMap(reminders);
@@ -43,6 +47,7 @@ public final class NativeConfig {
         if (!"Europe/Berlin".equals(object.optString("timeZone"))) throw new JSONException("Invalid time zone");
         String revision = object.optString("revision", "");
         if (revision.length() == 0 || revision.length() > 128) throw new JSONException("Invalid revision");
+        String locale = AppLocale.normalize(object.optString("locale", "en"));
         Instant validUntil;
         try {
             validUntil = Instant.parse(object.getString("scheduleValidUntil"));
@@ -67,15 +72,20 @@ public final class NativeConfig {
             }
             if (previous != null && !date.isAfter(previous)) throw new JSONException("Prayer rows must be ordered and unique");
             previous = date;
+            String scheduleId = row.optString("id", "");
+            if (scheduleId.length() > 128) throw new JSONException("Invalid prayer schedule id");
             EnumMap<Prayer, LocalTime> times = new EnumMap<>(Prayer.class);
+            EnumMap<Prayer, String> revisions = new EnumMap<>(Prayer.class);
             for (Prayer prayer : Prayer.values()) {
                 try {
-                    times.put(prayer, LocalTime.parse(row.getString(prayer.key)));
+                    String rawTime = row.getString(prayer.key);
+                    times.put(prayer, LocalTime.parse(rawTime));
+                    revisions.put(prayer, rawTime);
                 } catch (RuntimeException error) {
                     throw new JSONException("Invalid prayer time");
                 }
             }
-            rows.add(new ScheduleRow(date, times));
+            rows.add(new ScheduleRow(scheduleId, date, times, revisions));
         }
 
         EnumMap<Prayer, Reminder> reminders = new EnumMap<>(Prayer.class);
@@ -99,20 +109,29 @@ public final class NativeConfig {
                 throw new JSONException("Duplicate reminder prayer");
             }
         }
-        return new NativeConfig(revision, validUntil, rows, reminders, new JSONObject(object.toString()));
+        JSONObject source = new JSONObject(object.toString()).put("locale", locale);
+        return new NativeConfig(revision, locale, validUntil, rows, reminders, source);
     }
 
     public static final class ScheduleRow {
+        public final String id;
         public final LocalDate date;
         private final Map<Prayer, LocalTime> times;
+        private final Map<Prayer, String> revisions;
 
-        private ScheduleRow(LocalDate date, Map<Prayer, LocalTime> times) {
+        private ScheduleRow(String id, LocalDate date, Map<Prayer, LocalTime> times, Map<Prayer, String> revisions) {
+            this.id = id;
             this.date = date;
             this.times = times;
+            this.revisions = revisions;
         }
 
         public LocalTime time(Prayer prayer) {
             return times.get(prayer);
+        }
+
+        public String prayerRevision(Prayer prayer) {
+            return revisions.get(prayer);
         }
     }
 

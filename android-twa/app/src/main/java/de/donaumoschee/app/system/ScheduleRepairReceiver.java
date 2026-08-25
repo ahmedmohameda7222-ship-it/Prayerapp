@@ -19,6 +19,7 @@ public final class ScheduleRepairReceiver extends BroadcastReceiver {
             Intent.ACTION_LOCKED_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_DATE_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
             "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"
     );
@@ -32,5 +33,6 @@ public final class ScheduleRepairReceiver extends BroadcastReceiver {
         PrayerScheduler.reschedule(context);
         NativeWork.initialize(context);
         NativeWork.refreshNow(context);
+        NativeWork.flushReceipts(context);
     }
 }

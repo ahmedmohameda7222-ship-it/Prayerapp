@@ -61,8 +61,8 @@ public final class Android17PlatformInstrumentationTest {
         ServiceInfo service = packageManager.getServiceInfo(
                 new ComponentName(context, AdhanPlaybackService.class), 0);
         assertFalse(service.exported);
-        if (Build.VERSION.SDK_INT >= 28) {
-            assertTrue((service.foregroundServiceType
+        if (Build.VERSION.SDK_INT >= 29) {
+            assertTrue((service.getForegroundServiceType()
                     & ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK) != 0);
         }
     }

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hashNativeCredential } from "@/lib/android/native-credentials";
 
 const mocks = vi.hoisted(() => ({ client: null as unknown }));
@@ -68,6 +68,12 @@ function validBody(accountGeneration = 3) {
 describe("native delivery receipt v2 ingestion", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-24T12:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("accepts a current generation receipt idempotently", async () => {

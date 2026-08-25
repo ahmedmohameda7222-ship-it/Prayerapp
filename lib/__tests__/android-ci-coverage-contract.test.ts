@@ -34,8 +34,11 @@ describe("Android CI coverage contract", () => {
     expect(source).toContain("uses: android-actions/setup-android@v4");
     expect(source).toContain("api_level: 23");
     expect(source).toContain("api_level: 37");
+    expect(source).toContain('sdk_api_level: "23"');
+    expect(source).toContain('sdk_api_level: "37.0"');
+    expect(source).toContain("target: google_apis_ps16k");
     expect(source).toContain("reactivecircus/android-emulator-runner@v2");
-    expect(source).toContain("api-level: ${{ matrix.api_level }}");
+    expect(source).toContain("api-level: ${{ matrix.sdk_api_level }}");
     expect(source).toContain("./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace");
     expect(source).not.toContain("adb wait-for-device");
   });

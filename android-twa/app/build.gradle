@@ -18,6 +18,10 @@ android {
     namespace twa.packageId
     compileSdk twa.compileSdkVersion as int
 
+    buildFeatures {
+        resValues true
+    }
+
     defaultConfig {
         applicationId twa.packageId
         minSdk twa.minSdkVersion as int

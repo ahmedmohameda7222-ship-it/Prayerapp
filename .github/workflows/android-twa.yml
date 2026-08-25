@@ -174,8 +174,25 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm || true
 
+      - name: Update SDK command-line tools for Android 17
+        if: matrix.api_level == 37
+        id: cmdline-tools
+        shell: bash
+        run: |
+          set -eu
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "cmdline-tools;latest" > /dev/null
+          if [ -d "$SDK/cmdline-tools/latest-2" ]; then
+            rm -rf "$SDK/cmdline-tools/latest"
+            mv "$SDK/cmdline-tools/latest-2" "$SDK/cmdline-tools/latest"
+          fi
+          "$SDK/cmdline-tools/latest/bin/avdmanager" list device > /dev/null
+          version="$("$SDK/cmdline-tools/latest/bin/sdkmanager" --version 2>/dev/null | grep -Eo '^[0-9][0-9.]*' | head -1)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Run instrumentation tests
-        uses: reactivecircus/android-emulator-runner@660ac26f5bd4cb6c1d98b2143e66ded57bee724f
+        uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.sdk_api_level }}
           target: ${{ matrix.target }}
@@ -187,6 +204,7 @@ jobs:
           disable-linux-hw-accel: auto
           working-directory: android-twa
           script: ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace
+
   signed_release_candidate:
     name: Sign approved exact-head release candidate in isolation
     if: github.event_name == 'workflow_dispatch' && inputs.confirmation == 'SIGN_ANDROID_RC'

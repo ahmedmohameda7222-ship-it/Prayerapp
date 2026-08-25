@@ -52,6 +52,12 @@ describe("Android direct APK distribution regression", () => {
     expect(smoke).toContain("expected_sha");
     expect(smoke).toContain("content-disposition");
     expect(smoke).toContain("unzip -t");
+    expect(smoke).toContain("release:");
+    expect(smoke).toContain("types: [published]");
+    expect(smoke).toContain("workflow_dispatch:");
+    expect(smoke).toContain("startsWith(github.event.release.tag_name, 'android-v')");
+    expect(smoke).not.toContain('      - "android-twa/twa-manifest.json"');
+    expect(smoke).toContain('      - "lib/android-release-server.ts"');
   });
 
   it("accepts only a selected release whose code and name match the expected app identity", async () => {

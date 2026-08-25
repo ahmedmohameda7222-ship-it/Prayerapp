@@ -54,7 +54,7 @@ function heartbeatBody() {
     alarmScheduleInstalled: true,
     audioReady: true,
     engineHealthy: true,
-    scheduleValidUntil: "2026-08-25T00:00:00.000Z",
+    scheduleValidUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   };
 }
 

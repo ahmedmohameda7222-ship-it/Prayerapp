@@ -39,6 +39,17 @@ export type AndroidRelease = AndroidReleaseMetadata & {
   downloadUrl: string;
 };
 
+export type AndroidReleaseIdentity = Pick<AndroidReleaseMetadata, "versionCode" | "versionName">;
+
+export function matchesExpectedAndroidRelease(
+  release: AndroidRelease | null,
+  expected: AndroidReleaseIdentity,
+): release is AndroidRelease {
+  return release !== null
+    && release.versionCode === expected.versionCode
+    && release.versionName === expected.versionName;
+}
+
 export type PublicAndroidRelease = Pick<AndroidRelease,
   "packageId" | "versionCode" | "versionName" | "minimumSupportedVersionCode" | "publishedAt"
 > & {

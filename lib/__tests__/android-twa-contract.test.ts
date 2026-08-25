@@ -83,7 +83,7 @@ describe("long-term Android TWA contract", () => {
   it("keeps automatic Android PR CI unsigned and isolates manual RC signing", () => {
     const workflow = read(".github/workflows/android-twa.yml");
     expect(workflow).toContain("./gradlew");
-    expect(workflow).toContain('sdkmanager "platforms;android-37" "build-tools;36.0.0"');
+    expect(workflow).toContain('sdkmanager "platforms;android-37.0" "build-tools;36.0.0"');
     expect(workflow).toContain(":app:testDebugUnitTest :app:lintDebug :app:assembleDebug");
     expect(workflow).toContain(":app:testReleaseUnitTest :app:lintRelease :app:assembleRelease :app:bundleRelease");
     expect(workflow).toContain("danube-mosque-unsigned-candidate");

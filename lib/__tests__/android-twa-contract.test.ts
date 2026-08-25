@@ -15,20 +15,22 @@ function collectFiles(path: string, out: string[] = []) {
 }
 
 describe("long-term Android TWA contract", () => {
-  it("pins the permanent Android identity and current API-36 toolchain", () => {
+  it("pins the permanent Android identity and current API-37 toolchain", () => {
     const config = JSON.parse(read("android-twa/twa-manifest.json")) as Record<string, unknown>;
     const gradle = read("android-twa/app/build.gradle");
     const rootGradle = read("android-twa/build.gradle");
+    const wrapper = read("android-twa/gradle/wrapper/gradle-wrapper.properties");
 
     expect(config.packageId).toBe("de.donaumoschee.app");
     expect(config.host).toBe("donaumoschee.vercel.app");
-    expect(config.compileSdkVersion).toBe(36);
-    expect(config.targetSdkVersion).toBe(36);
+    expect(config.compileSdkVersion).toBe(37);
+    expect(config.targetSdkVersion).toBe(37);
     expect(config.minSdkVersion).toBe(23);
     expect(config.versionCode).toBe(5);
     expect(config.versionName).toBe("1.0.2");
     expect(config.minimumSupportedVersionCode).toBe(3);
-    expect(rootGradle).toContain("com.android.application' version '8.11.1'");
+    expect(rootGradle).toContain("com.android.application' version '9.1.1'");
+    expect(wrapper).toContain("gradle-9.3.1-bin.zip");
     expect(gradle).toContain("androidbrowserhelper:2.7.3");
   });
 

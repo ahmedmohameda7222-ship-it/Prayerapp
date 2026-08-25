@@ -179,6 +179,7 @@ jobs:
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
           profile: pixel_7_pro
+          disk-size: 8G
           emulator-boot-timeout: 600
           disable-linux-hw-accel: auto
           working-directory: android-twa

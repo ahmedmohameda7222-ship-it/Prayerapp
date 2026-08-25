@@ -183,20 +183,7 @@ jobs:
           emulator-boot-timeout: 600
           disable-linux-hw-accel: auto
           working-directory: android-twa
-          script: >-
-            set -eu;
-            if ! ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace; then
-              echo "::group::Android emulator failure diagnostics";
-              adb shell getprop ro.build.fingerprint || true;
-              adb shell service check package || true;
-              adb shell service check activity || true;
-              adb shell service list || true;
-              adb shell getprop || true;
-              adb shell df /data || true;
-              adb logcat -d -b all -v threadtime | tail -n 4000 || true;
-              echo "::endgroup::";
-              exit 1;
-            fi
+          script: ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace
 
   signed_release_candidate:
     name: Sign approved exact-head release candidate in isolation

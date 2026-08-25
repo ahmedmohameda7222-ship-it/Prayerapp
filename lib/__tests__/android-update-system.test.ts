@@ -99,10 +99,10 @@ describe("Android direct-APK update system", () => {
     expect(page).toContain("<AndroidUpdateCard />");
   });
 
-  it("uses the next immutable Android version after the published v1.0.0 code 3", () => {
+  it("uses the next immutable Android version after the published v1.0.1 code 4", () => {
     const manifest = JSON.parse(source("android-twa/twa-manifest.json")) as Record<string, unknown>;
-    expect(manifest.versionCode).toBe(4);
-    expect(manifest.versionName).toBe("1.0.1");
+    expect(manifest.versionCode).toBe(5);
+    expect(manifest.versionName).toBe("1.0.2");
     expect(manifest.minimumSupportedVersionCode).toBe(3);
   });
 });

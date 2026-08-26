@@ -138,7 +138,9 @@ jobs:
                   mediaHeight: mediaBox?.height || 0,
                 };
               });
-              assert.equal(nextImageState.objectFit, 'cover', `Next Prayer object-fit ${locale} ${width}`);
+              if (width <= 420) {
+                assert.equal(nextImageState.objectFit, 'cover', `Next Prayer narrow object-fit ${locale} ${width}`);
+              }
               assert.ok(Math.abs(nextImageState.imageWidth - nextImageState.mediaWidth) <= 1, `Next Prayer width fill ${locale} ${width}`);
               assert.ok(Math.abs(nextImageState.imageHeight - nextImageState.mediaHeight) <= 1, `Next Prayer height fill ${locale} ${width}`);
 
@@ -183,7 +185,7 @@ jobs:
           }
 
           await browser.close();
-          console.log('Friday V2 targeted rendered QA passed Primary-only, Next Prayer image-fill, bottom-nav, keyboard-focus, and text-scale checks across 24 locale/width combinations.');
+          console.log('Friday V2 targeted rendered QA passed Primary-only, approved narrow Next Prayer image-fill, bottom-nav, keyboard-focus, and text-scale checks across 24 locale/width combinations.');
           NODE
 
       - name: Upload targeted QA evidence

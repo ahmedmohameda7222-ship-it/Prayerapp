@@ -185,6 +185,25 @@
   }
 }
 
+/*
+ * At narrow widths (including the effective layout under large text zoom),
+ * content height wins over the decorative 4:3 image ratio so prayer details
+ * can reflow without clipping or shrinking the elderly-friendly type scale.
+ */
+@media (max-width: 420px) {
+  .home-page-shell .home-next-prayer-surface {
+    aspect-ratio: auto;
+  }
+
+  .home-page-shell .home-next-prayer-content {
+    min-height: 20rem;
+  }
+
+  .home-page-shell .home-next-prayer-instrument {
+    width: 100%;
+  }
+}
+
 @media (min-width: 1024px) {
   /*
    * The page content keeps its reading gutters, while the header itself becomes

@@ -83,8 +83,8 @@
   overflow: hidden;
   margin: 0;
   color: var(--app-text);
-  font-size: 20px;
-  font-weight: 720;
+  font-size: 22px;
+  font-weight: 700;
   line-height: 1.2;
   text-align: center;
   text-overflow: ellipsis;
@@ -92,7 +92,7 @@
 }
 
 .page-shell:not(.home-page-shell) .app-page-header-prominent h1 {
-  font-size: 21px;
+  font-size: 24px;
 }
 
 .page-shell:not(.home-page-shell) .app-page-header-control,
@@ -175,8 +175,8 @@
 
 .native-list-row-title {
   min-width: 0;
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .native-list-row-chevron {
@@ -258,8 +258,8 @@
   align-items: center;
   gap: 8px;
   color: var(--app-text-secondary);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .prayer-browser .prayer-range-nav {
@@ -288,7 +288,7 @@
   overflow: hidden;
   color: var(--app-text);
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -347,22 +347,22 @@
 
 .mobile-prayer-cell-name {
   color: var(--app-text-secondary);
-  font-size: 11px;
-  font-weight: 650;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .mobile-prayer-cell-time {
   margin-top: 2px;
   color: var(--app-text);
   font-size: 16px;
-  font-weight: 720;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .mobile-prayer-cell-iqama {
   margin-top: 1px;
   color: var(--app-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .desktop-prayer-table {
@@ -409,7 +409,7 @@
 .mosque-profile-name {
   color: var(--app-text);
   font-size: 24px;
-  font-weight: 730;
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -424,7 +424,7 @@
   padding: 10px 16px;
   color: var(--app-text);
   font-size: 14px;
-  font-weight: 620;
+  font-weight: 600;
 }
 
 .mosque-contact-row::before,
@@ -457,7 +457,7 @@
 
 .ramadan-screen .ramadan-day-summary h2 {
   font-size: 28px;
-  font-weight: 720;
+  font-weight: 700;
 }
 
 .ramadan-screen .ramadan-today-grid {
@@ -479,14 +479,14 @@
 .ramadan-screen .ramadan-time-label {
   color: var(--app-text-secondary);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .ramadan-screen .ramadan-time-value {
   margin-top: 2px;
   color: var(--app-text);
   font-size: 22px;
-  font-weight: 720;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -504,7 +504,7 @@
   border: 1px solid var(--app-divider);
   border-radius: 14px;
   background: var(--app-surface);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .ramadan-mobile-day[data-today="true"] {
@@ -513,7 +513,7 @@
 }
 
 .ramadan-mobile-day strong {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .ramadan-mobile-day span:not(:first-child) {
@@ -601,7 +601,7 @@
 
 .settings-screen .settings-section h2 {
   color: var(--app-text);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -621,7 +621,7 @@
 .privacy-screen .privacy-title {
   color: var(--app-text);
   font-size: 28px;
-  font-weight: 740;
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -649,7 +649,7 @@
   padding: 10px 16px;
   color: var(--app-text);
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .account-screen .account-action-row + .account-action-row::before {
@@ -679,7 +679,7 @@
 .auth-screen .auth-surface h1 {
   color: var(--app-text);
   font-size: 30px;
-  font-weight: 740;
+  font-weight: 700;
 }
 
 .auth-screen .auth-surface > p {
@@ -695,7 +695,7 @@
 .privacy-screen .privacy-body {
   margin-top: 22px;
   color: var(--app-text);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.8;
 }
 
@@ -714,8 +714,8 @@
 .privacy-screen .legal-section h2 {
   margin-bottom: 6px;
   color: var(--app-text);
-  font-size: 17px;
-  font-weight: 760;
+  font-size: 20px;
+  font-weight: 700;
   line-height: 1.35;
 }
 
@@ -726,14 +726,14 @@
   border-radius: 14px;
   background: var(--app-brand-soft);
   color: var(--app-brand-strong);
-  font-weight: 680;
+  font-weight: 700;
 }
 
 .privacy-screen .legal-related-link {
   display: inline-flex;
   margin-top: 18px;
   color: var(--app-brand);
-  font-weight: 720;
+  font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -755,8 +755,8 @@
 .system-state-screen h1 {
   margin-top: 12px;
   color: #171a18;
-  font-size: 27px;
-  font-weight: 740;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 .system-state-screen p {
@@ -888,7 +888,7 @@
   }
 
   .page-shell:not(.home-page-shell) .app-page-header h1 {
-    font-size: 26px;
+    font-size: 24px;
   }
 
   .page-shell:not(.home-page-shell) .app-container {

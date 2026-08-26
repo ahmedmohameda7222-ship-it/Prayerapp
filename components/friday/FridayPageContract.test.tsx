@@ -15,6 +15,26 @@ describe("Friday public page contract", () => {
     expect(page).not.toContain("<AppHeader");
   });
 
+  it("derives the schedule from published prayer times plus optional additional rows", () => {
+    const page = source("app/friday/page.tsx");
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(page).toContain("getPrayerTimes(false");
+    expect(page).toContain("getJumuahTimes()");
+    expect(page).toContain("Promise.allSettled");
+    expect(friday).toContain("resolveUpcomingFridaySchedule");
+    expect(friday).toContain("prayerTimes");
+    expect(friday).toContain("jumuahTimes");
+  });
+
+  it("keeps Primary renderable when additional Jumuah loading fails", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("additionalTimesLoadFailed");
+    expect(friday).toContain("prayerTimesLoadFailed");
+    expect(friday).not.toContain("if (additionalTimesLoadFailed)");
+  });
+
   it("makes the image a live next-prayer surface using prayerTime only", () => {
     const friday = source("components/friday/FridayPageClient.tsx");
 
@@ -34,23 +54,21 @@ describe("Friday public page contract", () => {
     expect(friday).not.toContain('<span dir="ltr">{countdown}</span>');
   });
 
-  it("keeps multiple published services dynamic and exposes the shared location inside the schedule", () => {
+  it("numbers Primary as service one even when it is the only service", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain('return `Jumu\'ah ${index + 1}`');
+    expect(friday).toContain('const labels = ["الجمعة الأولى", "الجمعة الثانية", "الجمعة الثالثة"]');
+    expect(friday).not.toContain("if (total === 1)");
+  });
+
+  it("keeps multiple services dynamic and exposes available additional metadata", () => {
     const friday = source("components/friday/FridayPageClient.tsx");
 
     expect(friday).toContain("schedule.items.length");
     expect(friday).toContain("localizedItems.map");
     expect(friday).toContain("friday-shared-details");
     expect(friday).toContain("sharedLocationAddress");
-  });
-
-  it("uses Supabase Jumuah rows directly and preserves real empty/load-failure states", () => {
-    const page = source("app/friday/page.tsx");
-    const data = source("lib/data/jumuah.ts");
-
-    expect(page).toContain("getJumuahTimes()");
-    expect(page).not.toContain("getFridayPreviewMockData");
-    expect(data).not.toContain("previewJumuahTimes");
-    expect(data).toContain("if (!client) return []");
   });
 
   it("uses a moving iOS glass selection with optimistic route motion", () => {

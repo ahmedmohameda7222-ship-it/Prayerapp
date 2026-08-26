@@ -66,7 +66,7 @@ async function validateAgainstPrimary(
   if (metadataError) return metadataError;
 
   const [{ data: primary, error: primaryError }, { data: existing, error: existingError }] = await Promise.all([
-    client.from("prayer_times").select("id,date,dhuhr").eq("date", data.date).maybeSingle(),
+    client.from("prayer_times").select("date,dhuhr").eq("date", data.date).maybeSingle(),
     client.from("jumuah_times").select("id,prayer_time").eq("date", data.date),
   ]);
 
@@ -76,7 +76,7 @@ async function validateAgainstPrimary(
     date: data.date,
     prayerTime: data.prayerTime,
     primaryPrayer: primary
-      ? { id: String(primary.id), date: String(primary.date), dhuhr: String(primary.dhuhr) }
+      ? { date: String(primary.date), dhuhr: String(primary.dhuhr) }
       : undefined,
     existing: (existing || []).map((row: Record<string, unknown>) => ({
       id: String(row.id),

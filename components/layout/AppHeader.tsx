@@ -7,7 +7,8 @@ import { NotificationButton } from "@/components/notifications/NotificationButto
 import { LanguageMenu } from "@/components/home/LanguageMenu";
 import { HomeInstallAction } from "@/components/home/HomeInstallAction";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
-import { todayIso, formatHijriDate, formatLongDate } from "@/lib/date-utils";
+import { FormattedHijriDate } from "@/components/ui/FormattedHijriDate";
+import { todayIso, formatLongDate } from "@/lib/date-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { APP_NAMES, ASSOCIATION_NAME } from "@/lib/app-brand";
 import { safeExternalUrl } from "@/lib/public-links";
@@ -37,7 +38,6 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
   const { user } = usePublicAuth();
   const currentDateIso = todayIso();
   const currentDate = formatLongDate(currentDateIso, locale);
-  const hijriDate = formatHijriDate(currentDateIso, locale);
   const mosqueName = title || APP_NAMES[locale];
   const useArabicBrandLogo = !title && locale === "ar";
   const whatsappHref = safeExternalUrl(whatsappLink, "whatsapp");
@@ -110,7 +110,9 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
         </div>
 
         <div className="mt-4 grid grid-cols-2 items-center gap-4 text-[13px] font-semibold text-[rgba(255,255,255,0.82)]" dir="ltr">
-          <span className="text-left" data-testid="header-hijri-date">{hijriDate}</span>
+          <span className="text-left" data-testid="header-hijri-date">
+            <FormattedHijriDate date={currentDateIso} locale={locale} />
+          </span>
           <time className="text-right" dateTime={currentDateIso} data-testid="header-gregorian-date">{currentDate}</time>
         </div>
       </div>

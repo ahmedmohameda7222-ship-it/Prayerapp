@@ -12,15 +12,22 @@ jobs:
   rendered-qa:
     if: github.head_ref == 'feat/friday-v2-khutbah-automation'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
       - uses: supabase/setup-cli@v2
         with:
           version: latest
           github-token: ${{ github.token }}
 
-      - name: Start disposable local Supabase
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Start disposable local Supabase and export app environment
         run: |
           supabase start
           supabase db reset --local --no-seed
@@ -30,61 +37,374 @@ jobs:
           set +a
           echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
 
-      - name: Seed deterministic Friday rows
+      - name: Seed deterministic Friday V2 rendered-QA data
         run: |
           DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
           test -n "$DB_CONTAINER"
-          docker exec "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
           INSERT INTO public.prayer_times (
             date, fajr, sunrise, dhuhr, asr, maghrib, isha,
             fajr_iqama, dhuhr_iqama, asr_iqama, maghrib_iqama, isha_iqama,
             published
           ) VALUES
             ('2026-08-26', '04:45', '06:18', '12:18', '16:20', '20:05', '21:30', '05:05', '13:00', '16:35', '20:10', '21:45', true),
-            ('2026-08-28', '04:49', '06:21', '12:18', '16:17', '20:01', '21:25', '05:09', '13:00', '16:32', '20:06', '21:40', true)
-          ON CONFLICT (date) DO UPDATE SET published = true, dhuhr = EXCLUDED.dhuhr, dhuhr_iqama = EXCLUDED.dhuhr_iqama;
+            ('2026-08-28', '04:49', '06:21', '12:18', '16:17', '20:01', '21:25', '05:09', '13:00', '16:32', '20:06', '21:40', true),
+            ('2026-09-04', '05:00', '06:32', '12:17', '16:05', '19:43', '21:06', '05:20', '13:00', '16:20', '19:48', '21:21', true),
+            ('2026-09-11', '05:11', '06:43', '12:15', '15:52', '19:24', '20:47', '05:31', '13:00', '16:07', '19:29', '21:02', true),
+            ('2026-09-18', '05:22', '06:54', '12:13', '15:38', '19:05', '20:28', '05:42', '13:00', '15:53', '19:10', '20:43', true)
+          ON CONFLICT (date) DO UPDATE SET
+            fajr = EXCLUDED.fajr,
+            sunrise = EXCLUDED.sunrise,
+            dhuhr = EXCLUDED.dhuhr,
+            asr = EXCLUDED.asr,
+            maghrib = EXCLUDED.maghrib,
+            isha = EXCLUDED.isha,
+            fajr_iqama = EXCLUDED.fajr_iqama,
+            dhuhr_iqama = EXCLUDED.dhuhr_iqama,
+            asr_iqama = EXCLUDED.asr_iqama,
+            maghrib_iqama = EXCLUDED.maghrib_iqama,
+            isha_iqama = EXCLUDED.isha_iqama,
+            published = true;
 
           DELETE FROM public.jumuah_times WHERE date = '2026-08-28';
           INSERT INTO public.jumuah_times (
             date, khutbah_time, prayer_time, location_name, location_address,
-            khateeb_name, language, published
+            khateeb_name, language, language_ar, language_en, language_de, language_tr,
+            notes, notes_ar, notes_en, notes_de, notes_tr, published
           ) VALUES
-            ('2026-08-28', NULL, '13:30', 'Danube Mosque', 'Deggendorf, Germany', '', 'Arabic / German', true),
-            ('2026-08-28', NULL, '14:30', 'Danube Mosque', 'Deggendorf, Germany', '', 'Arabic / German', true);
+            ('2026-08-28', NULL, '12:00', 'Legacy early row', 'Deggendorf, Germany', '', 'Legacy', 'Legacy', 'Legacy', 'Legacy', 'Legacy', '', '', '', '', '', true),
+            ('2026-08-28', NULL, '12:18', 'Legacy Primary duplicate', 'Deggendorf, Germany', '', 'Legacy', 'Legacy', 'Legacy', 'Legacy', 'Legacy', '', '', '', '', '', true),
+            ('2026-08-28', NULL, '13:30', 'Danube Mosque', 'Deggendorf, Germany', '', 'العربية / Deutsch', 'العربية', 'Arabic', 'Deutsch', 'Türkçe', '', '', '', '', '', true),
+            ('2026-08-28', NULL, '14:30', 'Danube Mosque', 'Deggendorf, Germany', '', 'العربية / Deutsch', 'العربية', 'Arabic', 'Deutsch', 'Türkçe', '', '', '', '', '', true);
 
-          INSERT INTO public.friday_khutbahs (date, content_ar, content_en, content_de, content_tr, published)
-          VALUES ('2026-08-28', 'نص عربي', 'English text', 'Deutscher Text', 'Türkçe metin', true)
-          ON CONFLICT (date) DO UPDATE SET published = true, content_ar = EXCLUDED.content_ar;
+          INSERT INTO public.friday_khutbahs (
+            date, title_ar, content_ar, title_en, content_en,
+            title_de, content_de, title_tr, content_tr, published
+          ) VALUES
+            (
+              '2026-08-28',
+              'خطبة الجمعة التجريبية الطويلة',
+              repeat('هذا نص عربي طويل لاختبار القراءة والتفاف السطور في خطبة الجمعة. ', 12) || E'\n\n' || repeat('ط', 180),
+              'Rendered QA Friday Khutbah',
+              repeat('This is a long English khutbah paragraph used to verify readable wrapping and responsive layout. ', 12) || E'\n\n' || repeat('W', 180),
+              'Freitagspredigt für die Darstellungsprüfung',
+              repeat('Dies ist ein langer deutscher Predigttext zur Prüfung von Umbruch und responsivem Layout. ', 12) || E'\n\n' || repeat('W', 180),
+              'Görüntüleme testi Cuma hutbesi',
+              repeat('Bu uzun Türkçe hutbe metni satır kaydırma ve duyarlı düzeni doğrulamak için kullanılır. ', 12) || E'\n\n' || repeat('W', 180),
+              true
+            ),
+            ('2026-09-04', NULL, NULL, NULL, NULL, NULL, NULL, 'Yalnızca Türkçe hutbe', 'Yalnızca Türkçe yayımlanmış hutbe metni.', true),
+            ('2026-09-11', 'خطبة عربية وتركية', 'نص الخطبة العربية.', NULL, NULL, NULL, NULL, 'Arapça ve Türkçe hutbe', 'Türkçe hutbe metni.', true),
+            ('2026-09-18', NULL, NULL, 'Draft only', 'This draft must never be public.', NULL, NULL, NULL, NULL, false)
+          ON CONFLICT (date) DO UPDATE SET
+            title_ar = EXCLUDED.title_ar,
+            content_ar = EXCLUDED.content_ar,
+            title_en = EXCLUDED.title_en,
+            content_en = EXCLUDED.content_en,
+            title_de = EXCLUDED.title_de,
+            content_de = EXCLUDED.content_de,
+            title_tr = EXCLUDED.title_tr,
+            content_tr = EXCLUDED.content_tr,
+            published = EXCLUDED.published,
+            updated_at = NOW();
           SQL
 
-      - name: Diagnose DB role and REST authentication
+      - name: Verify disposable public data boundary
         run: |
           set -euo pipefail
           DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
-          echo '=== postgres owner visibility ==='
-          docker exec "$DB_CONTAINER" psql -U postgres -d postgres -Atc "select date||'|'||dhuhr||'|'||published from public.prayer_times where date between '2026-08-26' and '2026-08-28' order by date"
-          echo '=== anon role visibility ==='
-          docker exec "$DB_CONTAINER" psql -U postgres -d postgres -Atc "set role anon; select date||'|'||dhuhr||'|'||published from public.prayer_times where date between '2026-08-26' and '2026-08-28' order by date"
-          echo '=== policies ==='
-          docker exec "$DB_CONTAINER" psql -U postgres -d postgres -Atc "select tablename||'|'||policyname||'|'||roles::text||'|'||qual from pg_policies where schemaname='public' and tablename in ('prayer_times','jumuah_times','friday_khutbahs') order by tablename,policyname"
-          echo '=== grants ==='
-          docker exec "$DB_CONTAINER" psql -U postgres -d postgres -Atc "select table_name||'|'||grantee||'|'||privilege_type from information_schema.role_table_grants where table_schema='public' and table_name in ('prayer_times','jumuah_times','friday_khutbahs') and grantee in ('anon','authenticated') order by table_name,grantee,privilege_type"
+          OWNER_ROWS="$(docker exec "$DB_CONTAINER" psql -U postgres -d postgres -Atc "select count(*) from public.prayer_times where date between '2026-08-26' and '2026-09-18' and published = true")"
+          test "$OWNER_ROWS" = "5"
+          ANON_ROWS="$(docker exec "$DB_CONTAINER" psql -U postgres -d postgres -Atc "set role anon; select count(*) from public.prayer_times where date between '2026-08-26' and '2026-09-18' and published = true" | tail -n 1)"
+          test "$ANON_ROWS" = "5"
 
-          if [[ "$NEXT_PUBLIC_SUPABASE_ANON_KEY" == sb_publishable_* ]]; then echo 'anon key type=publishable'; else echo 'anon key type=legacy-jwt'; fi
-
-          echo '=== REST apikey only ==='
-          curl --fail --silent --show-error \
-            -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
-            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/prayer_times?select=date,dhuhr,published&date=gte.2026-08-26&date=lte.2026-08-28&order=date.asc"
-          echo
-          echo '=== REST apikey plus bearer ==='
           curl --fail --silent --show-error \
             -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
-            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/prayer_times?select=date,dhuhr,published&date=gte.2026-08-26&date=lte.2026-08-28&order=date.asc"
-          echo
+            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/prayer_times?select=date,dhuhr,dhuhr_iqama,published&date=gte.2026-08-26&date=lte.2026-09-18&order=date.asc" \
+            > /tmp/friday-v2-prayers.json
+          curl --fail --silent --show-error \
+            -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/jumuah_times?select=date,prayer_time,khutbah_time,published&date=eq.2026-08-28&order=prayer_time.asc" \
+            > /tmp/friday-v2-jumuah.json
+          curl --fail --silent --show-error \
+            -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/friday_khutbahs?select=date,published,content_ar,content_en,content_de,content_tr&order=date.asc" \
+            > /tmp/friday-v2-khutbah.json
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const prayers = JSON.parse(fs.readFileSync('/tmp/friday-v2-prayers.json', 'utf8'));
+          const jumuah = JSON.parse(fs.readFileSync('/tmp/friday-v2-jumuah.json', 'utf8'));
+          const khutbah = JSON.parse(fs.readFileSync('/tmp/friday-v2-khutbah.json', 'utf8'));
+          assert.equal(prayers.length, 5);
+          assert.deepEqual(prayers.slice(0, 2).map((row) => [row.date, row.dhuhr, row.dhuhr_iqama]), [
+            ['2026-08-26', '12:18', '13:00'],
+            ['2026-08-28', '12:18', '13:00'],
+          ]);
+          assert.deepEqual(jumuah.map((row) => [row.prayer_time, row.khutbah_time]), [
+            ['12:00', null],
+            ['12:18', null],
+            ['13:30', null],
+            ['14:30', null],
+          ]);
+          assert.deepEqual(khutbah.map((row) => row.date), ['2026-08-28', '2026-09-04', '2026-09-11']);
+          assert.ok(khutbah.every((row) => row.published === true));
+          console.log('Disposable public data boundary exposes only the expected published Friday V2 rows.');
+          NODE
+
+      - name: Build app against disposable local data
+        run: npm run build
+
+      - name: Install Chromium QA runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start local production server
+        run: |
+          npm start -- -p 3000 > /tmp/friday-v2-next.log 2>&1 &
+          echo $! > /tmp/friday-v2-next.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3000/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/friday-v2-next.log
+          exit 1
+
+      - name: Run Chromium rendered QA matrix
+        run: |
+          mkdir -p artifacts/friday-v2-rendered-qa
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          import { chromium } from 'playwright';
+
+          const baseUrl = 'http://127.0.0.1:3000';
+          const widths = [320, 375, 390, 430, 768, 1440];
+          const locales = ['ar', 'en', 'de', 'tr'];
+          const expectedDirection = { ar: 'rtl', en: 'ltr', de: 'ltr', tr: 'ltr' };
+          const expectedReaderTab = { ar: 'العربية', en: 'English', de: 'Deutsch', tr: 'Türkçe' };
+          const report = [];
+          const browser = await chromium.launch({ headless: true });
+
+          async function assertNoHorizontalOverflow(page, width, surface, locale) {
+            const dimensions = await page.evaluate(() => ({
+              htmlScrollWidth: document.documentElement.scrollWidth,
+              htmlClientWidth: document.documentElement.clientWidth,
+              bodyScrollWidth: document.body.scrollWidth,
+            }));
+            assert.ok(
+              dimensions.htmlScrollWidth <= width + 1 && dimensions.bodyScrollWidth <= width + 1,
+              `${surface} ${locale} ${width}px overflow: ${JSON.stringify(dimensions)}`,
+            );
+            return dimensions;
+          }
+
+          async function open(page, path) {
+            const response = await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle' });
+            assert.ok(response && response.ok(), `${path} returned ${response?.status()}`);
+            await page.waitForTimeout(250);
+            return response;
+          }
+
+          for (const locale of locales) {
+            for (const width of widths) {
+              const context = await browser.newContext({
+                viewport: { width, height: 1100 },
+                serviceWorkers: 'block',
+                locale: locale === 'ar' ? 'ar-EG' : locale === 'de' ? 'de-DE' : locale === 'tr' ? 'tr-TR' : 'en-US',
+              });
+              await context.addCookies([{ name: 'locale', value: locale, url: baseUrl }]);
+              const page = await context.newPage();
+              await page.emulateMedia({ reducedMotion: 'reduce' });
+
+              await open(page, '/');
+              const root = await page.evaluate(() => ({ lang: document.documentElement.lang, dir: document.documentElement.dir }));
+              assert.equal(root.lang, locale, `home ${width}px locale mismatch`);
+              assert.equal(root.dir, expectedDirection[locale], `home ${locale} ${width}px direction mismatch`);
+              const homeDimensions = await assertNoHorizontalOverflow(page, width, 'home', locale);
+              await page.locator('[data-home-section="hero"]').waitFor({ state: 'visible' });
+
+              const homeJumuah = page.getByTestId('home-jumuah-card');
+              await homeJumuah.waitFor({ state: 'visible' });
+              const homeJumuahText = await homeJumuah.innerText();
+              for (const time of ['12:18', '13:30', '14:30']) {
+                assert.ok(homeJumuahText.includes(time), `home ${locale} ${width}px missing Jumu'ah ${time}`);
+              }
+              assert.ok(!homeJumuahText.includes('12:00'), `home ${locale} ${width}px leaked invalid legacy 12:00 row`);
+              assert.ok(!homeJumuahText.includes('13:00'), `home ${locale} ${width}px used Dhuhr Iqama as Primary`);
+              assert.equal(await homeJumuah.locator('.home-jumuah-time-row').count(), 3, `home ${locale} ${width}px service count`);
+
+              const hijriTypes = await page.locator('[data-testid="header-hijri-date"] [data-hijri-part]').evaluateAll(
+                (parts) => parts.map((part) => part.getAttribute('data-hijri-part')),
+              );
+              assert.deepEqual(hijriTypes, ['day', 'month', 'year', 'era'], `Hijri DOM order ${locale} ${width}px`);
+              await page.getByText('Deggendorfer Integrations und Bildungsverein e.V', { exact: true }).first().waitFor({ state: 'visible' });
+
+              if (locale === 'ar') {
+                const logo = page.locator('img[src="/branding/masjid-al-danube-ar.svg"]');
+                await logo.waitFor({ state: 'visible' });
+                assert.equal(await logo.getAttribute('alt'), 'مَسْجِدُ الدُّونَاوْ');
+                const logoState = await logo.evaluate((img) => {
+                  const box = img.getBoundingClientRect();
+                  return {
+                    complete: img.complete,
+                    naturalWidth: img.naturalWidth,
+                    left: box.left,
+                    right: box.right,
+                  };
+                });
+                assert.ok(logoState.complete && logoState.naturalWidth > 0, `Arabic logo failed to load at ${width}px`);
+                assert.ok(logoState.left >= -1 && logoState.right <= width + 1, `Arabic logo escapes viewport at ${width}px`);
+              } else {
+                assert.equal(await page.locator('img[src="/branding/masjid-al-danube-ar.svg"]').count(), 0, `non-Arabic logo rendered in ${locale}`);
+              }
+              await page.screenshot({ path: `artifacts/friday-v2-rendered-qa/home-${locale}-${width}.png`, fullPage: true });
+
+              await open(page, '/friday');
+              const fridayDimensions = await assertNoHorizontalOverflow(page, width, 'friday', locale);
+              await page.getByTestId('friday-page').waitFor({ state: 'visible' });
+              const serviceRows = page.locator('.friday-service-row');
+              assert.equal(await serviceRows.count(), 3, `Friday ${locale} ${width}px should render Primary + two valid extras`);
+              const primary = page.locator('.friday-service-row[data-primary="true"]');
+              assert.equal(await primary.count(), 1, `Friday ${locale} ${width}px Primary count`);
+              const primaryText = await primary.innerText();
+              assert.ok(primaryText.includes('12:18'), `Friday ${locale} ${width}px Primary must use Dhuhr 12:18`);
+              assert.ok(!primaryText.includes('13:00'), `Friday ${locale} ${width}px Primary must not use Dhuhr Iqama 13:00`);
+              const fridayText = await page.getByTestId('friday-page').innerText();
+              assert.ok(!fridayText.includes('12:00'), `Friday ${locale} ${width}px leaked invalid legacy 12:00 row`);
+              const cta = page.getByTestId('friday-khutbah-cta');
+              await cta.waitFor({ state: 'visible' });
+              const ctaBox = await cta.boundingBox();
+              assert.ok(ctaBox && ctaBox.height >= 44 && ctaBox.x >= -1 && ctaBox.x + ctaBox.width <= width + 1, `Friday CTA target/layout ${locale} ${width}px`);
+              await page.screenshot({ path: `artifacts/friday-v2-rendered-qa/friday-${locale}-${width}.png`, fullPage: true });
+
+              await open(page, '/friday/khutbah/2026-08-28');
+              const readerDimensions = await assertNoHorizontalOverflow(page, width, 'reader', locale);
+              await page.getByTestId('friday-khutbah-reader').waitFor({ state: 'visible' });
+              assert.equal(await page.locator('main').count(), 1, `reader ${locale} ${width}px main landmark count`);
+              assert.equal(await page.locator('main h1').count(), 1, `reader ${locale} ${width}px route h1 count`);
+              assert.equal(await page.locator('main h2').count(), 1, `reader ${locale} ${width}px khutbah h2 count`);
+              assert.equal(await page.locator('[role="tab"]').count(), 4, `reader ${locale} ${width}px language count`);
+              const selectedTab = page.locator('[role="tab"][aria-selected="true"]');
+              assert.equal((await selectedTab.innerText()).trim(), expectedReaderTab[locale], `reader ${locale} ${width}px default language`);
+              const tabBoxes = await page.locator('[role="tab"]').evaluateAll((tabs) => tabs.map((tab) => {
+                const box = tab.getBoundingClientRect();
+                return { height: box.height, left: box.left, right: box.right };
+              }));
+              for (const box of tabBoxes) {
+                assert.ok(box.height >= 44, `reader ${locale} ${width}px tab below 44px`);
+                assert.ok(box.left >= -1 && box.right <= width + 1, `reader ${locale} ${width}px tab escapes viewport`);
+              }
+              const article = page.getByTestId('friday-khutbah-content');
+              await article.waitFor({ state: 'visible' });
+              const articleState = await article.evaluate((element) => {
+                const style = getComputedStyle(element);
+                const box = element.getBoundingClientRect();
+                return {
+                  dir: element.getAttribute('dir'),
+                  lang: element.getAttribute('lang'),
+                  userSelect: style.userSelect,
+                  whiteSpace: style.whiteSpace,
+                  overflowWrap: style.overflowWrap,
+                  boxWidth: box.width,
+                  scrollWidth: element.scrollWidth,
+                  clientWidth: element.clientWidth,
+                };
+              });
+              assert.equal(articleState.dir, expectedDirection[locale], `reader ${locale} ${width}px content direction`);
+              assert.equal(articleState.lang, locale, `reader ${locale} ${width}px content lang`);
+              assert.equal(articleState.userSelect, 'text', `reader ${locale} ${width}px selectable text`);
+              assert.equal(articleState.whiteSpace, 'pre-wrap', `reader ${locale} ${width}px line-break preservation`);
+              assert.ok(['break-word', 'anywhere'].includes(articleState.overflowWrap), `reader ${locale} ${width}px long-token wrapping`);
+              assert.ok(articleState.scrollWidth <= articleState.clientWidth + 1, `reader ${locale} ${width}px long-token overflow`);
+              assert.ok(width < 768 || articleState.boxWidth <= 760, `reader ${locale} ${width}px desktop line length`);
+              if (locale === 'ar') {
+                assert.equal(await page.locator('main h2').getAttribute('dir'), 'rtl', `Arabic reader title direction ${width}px`);
+              }
+              await page.screenshot({ path: `artifacts/friday-v2-rendered-qa/reader-${locale}-${width}.png`, fullPage: true });
+
+              report.push({ locale, width, homeDimensions, fridayDimensions, readerDimensions, articleState });
+              await context.close();
+            }
+          }
+
+          // Published future Turkish-only khutbah: no silent English fallback.
+          {
+            const context = await browser.newContext({ viewport: { width: 390, height: 900 }, serviceWorkers: 'block', locale: 'en-US' });
+            await context.addCookies([{ name: 'locale', value: 'en', url: baseUrl }]);
+            const page = await context.newPage();
+            await open(page, '/friday/khutbah/2026-09-04');
+            assert.equal(await page.locator('[role="tab"]').count(), 1, 'Turkish-only reader must expose exactly one content language');
+            assert.equal((await page.locator('[role="tab"]').innerText()).trim(), 'Türkçe');
+            assert.equal(await page.locator('[role="tab"][aria-selected="true"]').count(), 0, 'English locale must not silently select Turkish');
+            assert.equal(await page.getByTestId('friday-khutbah-content').count(), 0, 'chooser state must not render fallback content');
+            await page.locator('[role="tab"]').click();
+            const article = page.getByTestId('friday-khutbah-content');
+            await article.waitFor({ state: 'visible' });
+            assert.equal(await article.getAttribute('lang'), 'tr');
+            assert.equal(await article.getAttribute('dir'), 'ltr');
+            await page.screenshot({ path: 'artifacts/friday-v2-rendered-qa/reader-chooser-turkish-only-en-390.png', fullPage: true });
+            await context.close();
+          }
+
+          // Mixed Arabic/Turkish khutbah under German locale: explicit chooser, then RTL Arabic.
+          {
+            const context = await browser.newContext({ viewport: { width: 320, height: 900 }, serviceWorkers: 'block', locale: 'de-DE' });
+            await context.addCookies([{ name: 'locale', value: 'de', url: baseUrl }]);
+            const page = await context.newPage();
+            await open(page, '/friday/khutbah/2026-09-11');
+            assert.equal(await page.locator('[role="tab"]').count(), 2, 'mixed reader must expose only Arabic and Turkish');
+            assert.equal(await page.locator('[role="tab"][aria-selected="true"]').count(), 0, 'German locale must not silently fall back');
+            await page.getByRole('tab', { name: 'العربية' }).click();
+            const article = page.getByTestId('friday-khutbah-content');
+            await article.waitFor({ state: 'visible' });
+            assert.equal(await article.getAttribute('lang'), 'ar');
+            assert.equal(await article.getAttribute('dir'), 'rtl');
+            await assertNoHorizontalOverflow(page, 320, 'mixed-reader', 'de');
+            await page.screenshot({ path: 'artifacts/friday-v2-rendered-qa/reader-chooser-mixed-de-320.png', fullPage: true });
+            await context.close();
+          }
+
+          // Unpublished drafts are never public.
+          {
+            const context = await browser.newContext({ viewport: { width: 390, height: 900 }, serviceWorkers: 'block', locale: 'en-US' });
+            await context.addCookies([{ name: 'locale', value: 'en', url: baseUrl }]);
+            const page = await context.newPage();
+            const response = await page.goto(`${baseUrl}/friday/khutbah/2026-09-18`, { waitUntil: 'networkidle' });
+            assert.equal(response?.status(), 404, 'unpublished khutbah route must return 404');
+            assert.equal(await page.getByTestId('friday-khutbah-reader').count(), 0, 'unpublished khutbah must not render reader');
+            await context.close();
+          }
+
+          await browser.close();
+          fs.writeFileSync('artifacts/friday-v2-rendered-qa/report.json', JSON.stringify(report, null, 2));
+          console.log(`Friday V2 rendered QA passed ${report.length} width/locale combinations across Home, Friday, and reader surfaces plus chooser/draft scenarios.`);
+          NODE
+
+      - name: Upload rendered QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: friday-v2-rendered-qa
+          path: artifacts/friday-v2-rendered-qa
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Show local server log on failure
+        if: failure()
+        run: cat /tmp/friday-v2-next.log || true
 
       - name: Stop local services
         if: always()
-        run: supabase stop --no-backup || true
+        run: |
+          if test -f /tmp/friday-v2-next.pid; then kill "$(cat /tmp/friday-v2-next.pid)" || true; fi
+          supabase stop --no-backup || true

@@ -14,6 +14,7 @@
   --app-brand-strong: var(--ui-brand-strong);
   --app-brand-soft: var(--ui-brand-soft);
   --app-danger: var(--ui-urgent);
+  --app-danger-soft: var(--ui-urgent-soft);
   min-height: 100dvh;
   padding-top: 0;
   background: var(--app-canvas);
@@ -205,8 +206,8 @@
 }
 
 .native-feed-item[data-urgent="true"] {
-  border-inline-start: 3px solid var(--app-danger);
-  background: color-mix(in srgb, #fdf1ee 58%, var(--app-surface));
+  border: 1px solid color-mix(in srgb, var(--app-danger) 32%, var(--app-divider));
+  background: var(--app-danger-soft);
 }
 
 .native-feed-item-title {

@@ -55,14 +55,17 @@ describe("Friday public page contract", () => {
     expect(page).toContain("khutbahLoadFailed={khutbahLoadFailed}");
   });
 
-  it("refreshes server-backed khutbah data when the live resolver rolls to another Friday", () => {
+  it("refreshes server-backed khutbah data once when the live resolver rolls to another Friday", () => {
     const page = source("app/friday/page.tsx");
     const friday = source("components/friday/FridayPageClient.tsx");
 
     expect(page).toContain("initialScheduleDate={schedule?.date || \"\"}");
     expect(friday).toContain('import { useRouter } from "next/navigation"');
+    expect(friday).toContain("useRef");
     expect(friday).toContain("initialScheduleDate");
-    expect(friday).toContain("schedule.date !== initialScheduleDate");
+    expect(friday).toContain("schedule.date === initialScheduleDate");
+    expect(friday).toContain("refreshedScheduleDateRef.current === schedule.date");
+    expect(friday).toContain("refreshedScheduleDateRef.current = schedule.date");
     expect(friday).toContain("router.refresh()");
   });
 

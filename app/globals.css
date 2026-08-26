@@ -32,6 +32,44 @@
   --shadow-soft: 0 8px 24px rgba(27, 31, 35, 0.08);
   --shadow-card: 0 12px 28px rgba(14, 61, 54, 0.1);
   --shadow-gold: 0 10px 28px rgba(212, 175, 55, 0.18);
+
+  --ui-text-meta: 0.75rem;
+  --ui-text-secondary: 0.875rem;
+  --ui-text-body: 1rem;
+  --ui-text-card-title: 1.0625rem;
+  --ui-text-section-title: 1.25rem;
+  --ui-text-page-title: 1.5rem;
+  --ui-text-prominent: 2rem;
+  --ui-weight-regular: 400;
+  --ui-weight-medium: 500;
+  --ui-weight-semibold: 600;
+  --ui-weight-bold: 700;
+  --ui-radius-control: 0.875rem;
+  --ui-radius-card: 1.125rem;
+  --ui-radius-large: 1.5rem;
+  --ui-radius-pill: 999px;
+  --ui-space-1: 0.25rem;
+  --ui-space-2: 0.5rem;
+  --ui-space-3: 0.75rem;
+  --ui-space-4: 1rem;
+  --ui-space-6: 1.5rem;
+  --ui-space-8: 2rem;
+  --ui-canvas: #f3efe7;
+  --ui-surface: #fcfaf6;
+  --ui-surface-subtle: #f7f2ea;
+  --ui-text: #20231f;
+  --ui-text-secondary-color: #696860;
+  --ui-divider: #d6cdbf;
+  --ui-brand: #245847;
+  --ui-brand-strong: #173f34;
+  --ui-brand-soft: #f1f0ec;
+  --ui-urgent: #a3463d;
+  --ui-urgent-soft: #f7e9e6;
+  --ui-success: #3a755e;
+  --ui-disabled: #85827a;
+  --ui-focus: #245847;
+  --ui-brass: #8d642d;
+  --ui-brass-soft: #f0e3cd;
 }
 
 @theme inline {
@@ -101,20 +139,22 @@ textarea {
 }
 
 .home-page-shell {
-  --home-brand: #005a52;
-  --home-brand-strong: #00463f;
-  --home-brand-soft: #e8f1ef;
-  --home-canvas: #f7f3ea;
-  --home-surface: #fffdf8;
-  --home-surface-subtle: #f5f0e7;
-  --home-text: #171a18;
-  --home-text-secondary: #5f645f;
-  --home-divider: #e5ded2;
-  --home-urgent: #b42318;
-  --home-urgent-soft: #fdf1ee;
-  --home-success: #005a52;
-  --home-disabled: #5b6662;
-  --home-focus: #005a52;
+  --home-brand: var(--ui-brand);
+  --home-brand-strong: var(--ui-brand-strong);
+  --home-brand-soft: var(--ui-brand-soft);
+  --home-canvas: var(--ui-canvas);
+  --home-surface: var(--ui-surface);
+  --home-surface-subtle: var(--ui-surface-subtle);
+  --home-text: var(--ui-text);
+  --home-text-secondary: var(--ui-text-secondary-color);
+  --home-divider: var(--ui-divider);
+  --home-urgent: var(--ui-urgent);
+  --home-urgent-soft: var(--ui-urgent-soft);
+  --home-success: var(--ui-success);
+  --home-disabled: var(--ui-disabled);
+  --home-focus: var(--ui-focus);
+  --home-brass: var(--ui-brass);
+  --home-brass-soft: var(--ui-brass-soft);
   padding-top: 0;
   background: var(--home-canvas);
   color: var(--home-text);

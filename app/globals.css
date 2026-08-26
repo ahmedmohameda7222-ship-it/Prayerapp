@@ -57,6 +57,9 @@
   --ui-canvas: #f3efe7;
   --ui-surface: #fcfaf6;
   --ui-surface-subtle: #f7f2ea;
+  --ui-section-header: #eceae5;
+  --ui-section-header-soft: var(--ui-surface);
+  --ui-section-header-text: var(--ui-brand-strong);
   --ui-text: #20231f;
   --ui-text-secondary-color: #696860;
   --ui-divider: #d6cdbf;
@@ -145,6 +148,9 @@ textarea {
   --home-canvas: var(--ui-canvas);
   --home-surface: var(--ui-surface);
   --home-surface-subtle: var(--ui-surface-subtle);
+  --home-section-header: var(--ui-section-header);
+  --home-section-header-soft: var(--ui-section-header-soft);
+  --home-section-header-text: var(--ui-section-header-text);
   --home-text: var(--ui-text);
   --home-text-secondary: var(--ui-text-secondary-color);
   --home-divider: var(--ui-divider);
@@ -243,7 +249,6 @@ textarea {
 .home-page-shell .home-urgent-surface {
   overflow: hidden;
   border: 1px solid var(--home-divider);
-  border-inline-start: 3px solid var(--home-urgent);
   border-radius: 14px;
   background: var(--home-urgent-soft);
   box-shadow: none;

@@ -24,7 +24,7 @@ describe("Home Next Prayer elderly-readability contract", () => {
   });
 
   it("uses the approved mobile readability scale", () => {
-    const css = source("app/home-palette-preview.css");
+    const css = source("app/home-ui.css");
 
     expect(css).toMatch(/\.home-page-shell \.home-next-prayer-label\s*\{[\s\S]*?font-size:\s*16px;/);
     expect(css).toMatch(/\.home-page-shell \.home-next-prayer-name\s*\{[\s\S]*?font-size:\s*32px;/);
@@ -34,7 +34,7 @@ describe("Home Next Prayer elderly-readability contract", () => {
   });
 
   it("uses the approved desktop readability scale", () => {
-    const css = source("app/home-palette-preview.css");
+    const css = source("app/home-ui.css");
     const desktop = css.slice(css.indexOf("@media (min-width: 1024px)"));
 
     expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-label\s*\{[\s\S]*?font-size:\s*17px;/);

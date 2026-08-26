@@ -8,7 +8,7 @@ import { HomeInstallAction } from "@/components/home/HomeInstallAction";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { todayIso, formatHijriDate, formatLongDate } from "@/lib/date-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { APP_NAMES } from "@/lib/app-brand";
+import { APP_NAMES, ASSOCIATION_NAME } from "@/lib/app-brand";
 import { safeExternalUrl } from "@/lib/public-links";
 
 function WhatsAppIcon({ className = "" }: { className?: string }) {
@@ -114,7 +114,10 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
               {mosqueName}
             </h1>
           )}
-          <p className="mt-1 text-[13px] font-semibold text-[rgba(255,255,255,0.78)]">Deggendorf</p>
+          <p className="home-app-header-association-name mx-auto mt-2 max-w-[min(88vw,520px)] text-[14px] font-medium leading-snug text-[rgba(255,255,255,0.88)] sm:text-[15px]">
+            {ASSOCIATION_NAME}
+          </p>
+          <p className="mt-1 text-[13px] font-semibold text-[rgba(255,255,255,0.72)]">Deggendorf</p>
         </div>
 
         <div className="mt-4 grid grid-cols-2 items-center gap-4 text-[13px] font-semibold text-[rgba(255,255,255,0.82)]" dir="ltr">

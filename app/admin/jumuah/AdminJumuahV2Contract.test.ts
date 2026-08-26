@@ -33,6 +33,13 @@ describe("Friday Admin V2 contract", () => {
     expect(page).not.toContain("khutbahTime");
   });
 
+  it("persists optional khateeb metadata compatibly with the legacy NOT NULL column", () => {
+    const actions = source("app/admin/jumuah/actions.ts");
+
+    expect(actions).toContain('khateeb_name: data.khateebName?.trim() || ""');
+    expect(actions).toContain("khutbah_time: null");
+  });
+
   it("passes Primary authority to the additional-service table for legacy warnings", () => {
     const page = source("app/admin/jumuah/page.tsx");
     const table = source("components/admin/JumuahTable.tsx");

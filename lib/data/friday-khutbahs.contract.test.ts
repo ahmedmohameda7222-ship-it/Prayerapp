@@ -69,8 +69,9 @@ describe("Friday khutbah persistence contract", () => {
     expect(data).toContain("saveToPersistentCache");
     expect(data).toContain("loadFromPersistentCache");
     expect(data).not.toContain("loadFromPersistentCacheStale");
-    expect(data).toContain("clearPersistentCachePrefix");
+    expect(data).toContain('const FRIDAY_KHUTBAH_CACHE_PREFIX = "friday_khutbah_"');
+    expect(data).toContain("clearPersistentCachePrefix(FRIDAY_KHUTBAH_CACHE_PREFIX)");
     expect(data).toContain("invalidateFridayKhutbahCaches");
-    expect(data).toContain('invalidateCachePrefix("friday_khutbah_")');
+    expect(data).toContain("invalidateCachePrefix(FRIDAY_KHUTBAH_CACHE_PREFIX)");
   });
 });

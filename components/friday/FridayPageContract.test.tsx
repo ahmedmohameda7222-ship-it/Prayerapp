@@ -28,11 +28,21 @@ describe("Friday public page contract", () => {
   });
 
   it("keeps Primary renderable when additional Jumuah loading fails", () => {
+    const page = source("app/friday/page.tsx");
     const friday = source("components/friday/FridayPageClient.tsx");
 
+    expect(page).toContain('jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : []');
     expect(friday).toContain("additionalTimesLoadFailed");
     expect(friday).toContain("prayerTimesLoadFailed");
     expect(friday).not.toContain("if (additionalTimesLoadFailed)");
+  });
+
+  it("does not fabricate Primary when prayer-times loading fails", () => {
+    const page = source("app/friday/page.tsx");
+
+    expect(page).toContain('prayerTimesResult.status === "fulfilled"\n    ? resolveUpcomingFridaySchedule');
+    expect(page).toContain(": undefined;");
+    expect(page).toContain('prayerTimesLoadFailed={prayerTimesResult.status === "rejected"}');
   });
 
   it("loads a published khutbah independently after resolving the displayed Friday", () => {

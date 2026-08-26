@@ -114,7 +114,7 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
               {mosqueName}
             </h1>
           )}
-          <p className="home-app-header-association-name mx-auto mt-2 max-w-[min(88vw,520px)] text-[14px] font-medium leading-snug text-[rgba(255,255,255,0.88)] sm:text-[15px]">
+          <p className="home-app-header-association-name mx-auto mt-2 max-w-[min(88vw,520px)] break-words text-[14px] font-medium leading-snug text-[rgba(255,255,255,0.88)] sm:text-[15px]">
             {ASSOCIATION_NAME}
           </p>
           <p className="mt-1 text-[13px] font-semibold text-[rgba(255,255,255,0.72)]">Deggendorf</p>

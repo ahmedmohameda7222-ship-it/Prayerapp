@@ -75,8 +75,8 @@ export function HomePageClient({
   }, [now, schedule, today]);
   const smartAction = useMemo(() => schedule.length ? getSmartNextAction(schedule, now) : undefined, [now, schedule]);
   const jumuahSchedule = useMemo(
-    () => getHomeJumuahSchedule(jumuahTimes, now, { allowAnyFutureFriday: allowAnyFutureJumuah }),
-    [allowAnyFutureJumuah, jumuahTimes, now],
+    () => getHomeJumuahSchedule(schedule, jumuahTimes, now, { allowAnyFutureFriday: allowAnyFutureJumuah }),
+    [allowAnyFutureJumuah, jumuahTimes, now, schedule],
   );
 
   useEffect(() => {

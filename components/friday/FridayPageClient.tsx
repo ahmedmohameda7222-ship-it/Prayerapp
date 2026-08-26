@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { formatLongDate } from "@/lib/date-utils";
 import { getFridayLivePrayer, resolveUpcomingFridaySchedule } from "@/lib/friday";
@@ -121,7 +121,7 @@ type FridayPageClientProps = {
   jumuahTimes: JumuahTime[];
   fridayKhutbah?: FridayKhutbah;
   initialNow: string;
-  initialScheduleDate: string;
+  initialScheduleDate?: string;
   prayerTimesLoadFailed?: boolean;
   additionalTimesLoadFailed?: boolean;
   khutbahLoadFailed?: boolean;
@@ -132,7 +132,7 @@ export function FridayPageClient({
   jumuahTimes,
   fridayKhutbah,
   initialNow,
-  initialScheduleDate,
+  initialScheduleDate = "",
   prayerTimesLoadFailed = false,
   additionalTimesLoadFailed = false,
   khutbahLoadFailed = false,
@@ -140,6 +140,7 @@ export function FridayPageClient({
   const router = useRouter();
   const { t, locale } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
+  const refreshedScheduleDateRef = useRef("");
   const schedule = useMemo(
     () => resolveUpcomingFridaySchedule(prayerTimes, jumuahTimes, now),
     [jumuahTimes, now, prayerTimes],
@@ -154,9 +155,14 @@ export function FridayPageClient({
   }, []);
 
   useEffect(() => {
-    if (schedule?.date && initialScheduleDate && schedule.date !== initialScheduleDate) {
-      router.refresh();
-    }
+    if (
+      !initialScheduleDate
+      || !schedule?.date
+      || schedule.date === initialScheduleDate
+      || refreshedScheduleDateRef.current === schedule.date
+    ) return;
+    refreshedScheduleDateRef.current = schedule.date;
+    router.refresh();
   }, [initialScheduleDate, router, schedule?.date]);
 
   const localizedItems = schedule?.items.map((item) => ({
@@ -350,7 +356,7 @@ export function FridayPageClient({
           <Link
             href={`/friday/khutbah/${schedule.date}`}
             data-testid="friday-khutbah-cta"
-            className="flex min-h-12 w-full items-center justify-center rounded-[14px] bg-[var(--ui-brand)] px-4 text-base font-bold text-white transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="flex min-h-12 w-full items-center justify-center rounded-[14px] bg-[var(--ui-brand)] px-4 text-base font-bold text-[#FCFAF6] transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             {copy.readKhutbah}
           </Link>

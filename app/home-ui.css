@@ -202,6 +202,10 @@
   .home-page-shell .home-next-prayer-instrument {
     width: 100%;
   }
+
+  .home-page-shell .home-donation-verse {
+    white-space: normal;
+  }
 }
 
 @media (min-width: 1024px) {

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   getAvailableKhutbahLanguages,
@@ -57,5 +59,17 @@ describe("Friday khutbah reader language selection", () => {
       content: "النص العربي",
     });
     expect(getKhutbahContentForLanguage(item, "de")).toBeNull();
+  });
+
+  it("preserves long-form readability, selection, line breaks, and narrow-screen overflow safety", () => {
+    const reader = readFileSync(join(process.cwd(), "components/friday/FridayKhutbahReader.tsx"), "utf8");
+
+    expect(reader).toContain("max-w-[760px]");
+    expect(reader).toContain("select-text");
+    expect(reader).toContain("whitespace-pre-wrap");
+    expect(reader).toContain("break-words");
+    expect(reader).toContain('const contentDirection = selectedLanguage === "ar" ? "rtl" : "ltr"');
+    expect(reader).toContain("dir={contentDirection}");
+    expect(reader).toContain("lang={selectedLanguage}");
   });
 });

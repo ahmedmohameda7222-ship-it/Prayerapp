@@ -81,6 +81,17 @@ describe("Friday khutbah reader language selection", () => {
     expect(reader).toContain('className="mt-2 break-words');
   });
 
+  it("keeps RootPageHeader as the route h1, then uses h2 for the khutbah title and h3 for its chooser", () => {
+    const reader = readFileSync(join(process.cwd(), "components/friday/FridayKhutbahReader.tsx"), "utf8");
+
+    expect(reader).not.toContain("<h1");
+    expect(reader).not.toContain("</h1>");
+    expect(reader).toContain("<h2");
+    expect(reader).toContain("</h2>");
+    expect(reader).toContain('<h3 id="khutbah-language-heading"');
+    expect(reader).toContain("</h3>");
+  });
+
   it("uses repository-defined UI brand tokens instead of undefined app-brand variables", () => {
     const reader = readFileSync(join(process.cwd(), "components/friday/FridayKhutbahReader.tsx"), "utf8");
 

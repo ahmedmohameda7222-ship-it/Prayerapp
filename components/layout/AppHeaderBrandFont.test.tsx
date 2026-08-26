@@ -7,19 +7,17 @@ function source(path: string) {
 }
 
 describe("mosque name header brand mark", () => {
-  it("renders the Arabic brand as inline SVG so it is available in the first header render", () => {
+  it("uses the approved standalone Arabic Thuluth SVG asset", () => {
     const header = source("components/layout/AppHeader.tsx");
 
-    expect(header).not.toContain('import Image from "next/image"');
+    expect(header).toContain('import Image from "next/image"');
     expect(header).toContain('const useArabicBrandLogo = !title && locale === "ar";');
     expect(header).toContain("{useArabicBrandLogo ? (");
-    expect(header).toContain('<svg');
-    expect(header).toContain('viewBox="0 0 1852 584"');
-    expect(header).toContain('aria-label={APP_NAMES.ar}');
+    expect(header).toContain('src="/branding/masjid-al-danube-ar.svg"');
+    expect(header).toContain('alt="مَسْجِدُ الدُّونَاوْ"');
     expect(header).toContain('className="mosque-name-logo h-auto w-[clamp(190px,54vw,230px)]"');
-    expect(header).toContain('fill="#F2EBDD"');
-    expect(header).not.toContain('src="/brand/masjid-al-donau.svg"');
-    expect(existsSync(join(process.cwd(), "public/brand/masjid-al-donau.svg"))).toBe(false);
+    expect(header).not.toContain("function ArabicMosqueBrandMark()");
+    expect(existsSync(join(process.cwd(), "public/branding/masjid-al-danube-ar.svg"))).toBe(true);
   });
 
   it("keeps the old localized text header for non-Arabic languages and custom titles", () => {

@@ -50,9 +50,9 @@
 }
 
 .home-page-shell .home-section-card .home-urgent-surface {
-  border: 0;
-  border-inline-start: 3px solid var(--home-urgent);
-  border-radius: 0;
+  border: 1px solid var(--home-divider);
+  border-radius: var(--ui-radius-control);
+  background: var(--home-urgent-soft);
   box-shadow: none;
 }
 

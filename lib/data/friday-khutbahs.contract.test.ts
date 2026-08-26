@@ -10,6 +10,15 @@ const migrationPath = "supabase/migrations/20260826160500_friday_v2_khutbahs.sql
 const dataPath = "lib/data/friday-khutbahs.ts";
 
 describe("Friday khutbah persistence contract", () => {
+  it("makes the legacy khutbah_time column nullable for V2 additional-service rows", () => {
+    expect(existsSync(join(process.cwd(), migrationPath))).toBe(true);
+    if (!existsSync(join(process.cwd(), migrationPath))) return;
+
+    const migration = source(migrationPath);
+    expect(migration).toContain("ALTER TABLE public.jumuah_times");
+    expect(migration).toContain("ALTER COLUMN khutbah_time DROP NOT NULL");
+  });
+
   it("creates one multilingual khutbah row per Friday date with the approved fields", () => {
     expect(existsSync(join(process.cwd(), migrationPath))).toBe(true);
     if (!existsSync(join(process.cwd(), migrationPath))) return;
@@ -27,7 +36,7 @@ describe("Friday khutbah persistence contract", () => {
     expect(migration).toContain("updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()");
   });
 
-  it("enables RLS and grants public roles SELECT only for published rows", () => {
+  it("enables RLS, keeps service-role writes, and grants public roles SELECT only for published rows", () => {
     expect(existsSync(join(process.cwd(), migrationPath))).toBe(true);
     if (!existsSync(join(process.cwd(), migrationPath))) return;
 
@@ -39,6 +48,7 @@ describe("Friday khutbah persistence contract", () => {
     expect(migration).toContain("USING (published = true)");
     expect(migration).toContain("REVOKE ALL ON TABLE public.friday_khutbahs FROM anon, authenticated");
     expect(migration).toContain("GRANT SELECT ON TABLE public.friday_khutbahs TO anon, authenticated");
+    expect(migration).toContain("GRANT ALL ON TABLE public.friday_khutbahs TO service_role");
   });
 
   it("loads exact localized fields by date without translating or fabricating content", () => {

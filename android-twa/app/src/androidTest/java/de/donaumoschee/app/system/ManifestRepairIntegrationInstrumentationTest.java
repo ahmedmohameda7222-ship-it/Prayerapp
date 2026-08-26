@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.os.Build;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -45,7 +46,9 @@ public final class ManifestRepairIntegrationInstrumentationTest {
 
         assertFalse(prayerAlarm.exported);
         assertFalse(repair.exported);
-        assertTrue(repair.directBootAware);
+        if (Build.VERSION.SDK_INT >= 24) {
+            assertTrue(repair.directBootAware);
+        }
     }
 
     @Test

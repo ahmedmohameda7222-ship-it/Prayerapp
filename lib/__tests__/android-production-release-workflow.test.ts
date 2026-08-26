@@ -24,5 +24,10 @@ describe("Android production release workflow policy", () => {
     expect(workflow).toContain("Independently verify production artifacts");
     expect(workflow).toContain("PUBLISH_ANDROID_PRODUCTION");
     expect(workflow).toContain("test \"$head_sha\" = \"$GITHUB_SHA\"");
+    expect(workflow).toContain('sdkmanager "platforms;android-37.0" "build-tools;36.0.0"');
+    expect(workflow).toContain('test "$target_sdk" = "37"');
+    expect(workflow).toContain('test "$compile_sdk" = "37"');
+    expect(workflow).toContain('test "$min_sdk" = "23"');
+    expect(workflow).toContain("sdkVersion:'23'");
   });
 });

@@ -15,20 +15,26 @@ function collectFiles(path: string, out: string[] = []) {
 }
 
 describe("long-term Android TWA contract", () => {
-  it("pins the permanent Android identity and current API-36 toolchain", () => {
+  it("pins the permanent Android identity and current API-37 toolchain", () => {
     const config = JSON.parse(read("android-twa/twa-manifest.json")) as Record<string, unknown>;
     const gradle = read("android-twa/app/build.gradle");
     const rootGradle = read("android-twa/build.gradle");
+    const gradleProperties = read("android-twa/gradle.properties");
+    const wrapper = read("android-twa/gradle/wrapper/gradle-wrapper.properties");
 
     expect(config.packageId).toBe("de.donaumoschee.app");
     expect(config.host).toBe("donaumoschee.vercel.app");
-    expect(config.compileSdkVersion).toBe(36);
-    expect(config.targetSdkVersion).toBe(36);
+    expect(config.compileSdkVersion).toBe(37);
+    expect(config.targetSdkVersion).toBe(37);
     expect(config.minSdkVersion).toBe(23);
-    expect(config.versionCode).toBe(5);
-    expect(config.versionName).toBe("1.0.2");
+    expect(config.versionCode).toBe(6);
+    expect(config.versionName).toBe("1.0.3");
     expect(config.minimumSupportedVersionCode).toBe(3);
-    expect(rootGradle).toContain("com.android.application' version '8.11.1'");
+    expect(rootGradle).toContain("com.android.application' version '9.1.1'");
+    expect(wrapper).toContain("gradle-9.3.1-bin.zip");
+    expect(gradle).toContain("buildFeatures");
+    expect(gradle).toContain("resValues true");
+    expect(gradleProperties).toContain("android.onlyEnableUnitTestForTheTestedBuildType=false");
     expect(gradle).toContain("androidbrowserhelper:2.7.3");
   });
 
@@ -77,7 +83,7 @@ describe("long-term Android TWA contract", () => {
   it("keeps automatic Android PR CI unsigned and isolates manual RC signing", () => {
     const workflow = read(".github/workflows/android-twa.yml");
     expect(workflow).toContain("./gradlew");
-    expect(workflow).toContain('sdkmanager "platforms;android-36"');
+    expect(workflow).toContain('sdkmanager "platforms;android-37.0" "build-tools;36.0.0"');
     expect(workflow).toContain(":app:testDebugUnitTest :app:lintDebug :app:assembleDebug");
     expect(workflow).toContain(":app:testReleaseUnitTest :app:lintRelease :app:assembleRelease :app:bundleRelease");
     expect(workflow).toContain("danube-mosque-unsigned-candidate");
@@ -117,8 +123,8 @@ describe("long-term Android TWA contract", () => {
     expect(productionWorkflow).toContain("gh release create");
 
     const config = JSON.parse(read("android-twa/twa-manifest.json")) as Record<string, unknown>;
-    expect(config.versionCode).toBe(5);
-    expect(config.versionName).toBe("1.0.2");
+    expect(config.versionCode).toBe(6);
+    expect(config.versionName).toBe("1.0.3");
   });
 
   it("preserves main-only Vercel deployment", () => {

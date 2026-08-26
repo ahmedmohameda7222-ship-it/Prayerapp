@@ -6,11 +6,14 @@ on:
       - main
     paths:
       - ".github/workflows/android-download-smoke.yml"
-      - "android-twa/twa-manifest.json"
       - "app/download/android/**"
       - "app/api/android/release/**"
       - "lib/android-release.ts"
+      - "lib/android-release-server.ts"
       - ".github/workflows/android-production-release.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -25,6 +28,7 @@ env:
 jobs:
   verify:
     name: Verify live APK download path
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'android-v')
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -40,7 +44,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android verification tools
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Verify production release and live download
         id: live
@@ -51,9 +55,11 @@ jobs:
           version_code="$(jq -r '.versionCode' android-twa/twa-manifest.json)"
           package_id="$(jq -r '.packageId' android-twa/twa-manifest.json)"
           target_sdk="$(jq -r '.targetSdkVersion' android-twa/twa-manifest.json)"
+          min_sdk="$(jq -r '.minSdkVersion' android-twa/twa-manifest.json)"
           tag="android-v${version_name}"
           test "$package_id" = "de.donaumoschee.app"
-          test "$target_sdk" = "36"
+          test "$target_sdk" = "37"
+          test "$min_sdk" = "23"
 
           gh release view "$tag" --json tagName,isDraft,isPrerelease,assets \
             --jq '.tagName == "'"$tag"'" and .isDraft == false and .isPrerelease == false and ([.assets[].name] | index("danube-mosque.apk") != null) and ([.assets[].name] | index("android-release.json") != null)' \
@@ -113,6 +119,7 @@ jobs:
 
           badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging /tmp/danube-mosque.apk)"
           printf '%s\n' "$badging" | grep -F "package: name='$package_id' versionCode='$version_code' versionName='$version_name'"
+          printf '%s\n' "$badging" | grep -F "sdkVersion:'$min_sdk'"
           printf '%s\n' "$badging" | grep -F "targetSdkVersion:'$target_sdk'"
           ! printf '%s\n' "$badging" | grep -F "$package_id.debug"
 

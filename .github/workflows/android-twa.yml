@@ -79,10 +79,10 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
-      - name: Install Android API 36
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Install Android API 37
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
@@ -137,11 +137,25 @@ jobs:
           retention-days: 14
 
   instrumentation:
-    name: Run Android instrumentation tests
+    name: Run Android instrumentation tests (API ${{ matrix.api_level }})
     if: github.event_name != 'workflow_dispatch' || inputs.confirmation != 'SIGN_ANDROID_RC'
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api_level: 23
+            sdk_api_level: "23"
+            target: default
+            arch: x86
+            disable_animations: true
+          - api_level: 37
+            sdk_api_level: "37.0"
+            target: google_apis_ps16k
+            arch: x86_64
+            disable_animations: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -160,14 +174,33 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm || true
 
-      - name: Run instrumentation tests on Android 35 emulator
+      - name: Update SDK command-line tools for Android 17
+        if: matrix.api_level == 37
+        id: cmdline-tools
+        shell: bash
+        run: |
+          set -eu
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "cmdline-tools;latest" > /dev/null
+          if [ -d "$SDK/cmdline-tools/latest-2" ]; then
+            rm -rf "$SDK/cmdline-tools/latest"
+            mv "$SDK/cmdline-tools/latest-2" "$SDK/cmdline-tools/latest"
+          fi
+          "$SDK/cmdline-tools/latest/bin/avdmanager" list device > /dev/null
+          version="$("$SDK/cmdline-tools/latest/bin/sdkmanager" --version 2>/dev/null | grep -Eo '^[0-9][0-9.]*' | head -1)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
+          api-level: ${{ matrix.sdk_api_level }}
+          target: ${{ matrix.target }}
+          arch: ${{ matrix.arch }}
           profile: pixel_7_pro
+          disk-size: 8G
           emulator-boot-timeout: 600
+          disable-animations: ${{ matrix.disable_animations }}
           disable-linux-hw-accel: auto
           working-directory: android-twa
           script: ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace
@@ -220,11 +253,15 @@ jobs:
           package_id="$(jq -r '.android.packageId' source-metadata.json)"
           version_code="$(jq -r '.android.versionCode' source-metadata.json)"
           version_name="$(jq -r '.android.versionName' source-metadata.json)"
+          compile_sdk="$(jq -r '.android.compileSdkVersion' source-metadata.json)"
           target_sdk="$(jq -r '.android.targetSdkVersion' source-metadata.json)"
+          min_sdk="$(jq -r '.android.minSdkVersion' source-metadata.json)"
           test "$package_id" = "de.donaumoschee.app"
           [[ "$version_code" =~ ^[1-9][0-9]*$ ]]
           [[ "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          test "$target_sdk" = "36"
+          test "$compile_sdk" = "37"
+          test "$target_sdk" = "37"
+          test "$min_sdk" = "23"
           {
             printf 'package_id=%s\n' "$package_id"
             printf 'version_code=%s\n' "$version_code"

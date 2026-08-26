@@ -28,16 +28,35 @@ describe("Android CI coverage contract", () => {
     }
   });
 
-  it("runs the Android instrumentation suite on a managed emulator", () => {
+  it("runs the Android instrumentation suite on the minimum and Android 17 boundaries", () => {
     const source = workflow();
+    const instrumentation = source.slice(
+      source.indexOf("  instrumentation:"),
+      source.indexOf("  signed_release_candidate:"),
+    );
 
+    expect(source).toContain("uses: android-actions/setup-android@v4");
+    expect(source).toContain("api_level: 23");
+    expect(source).toContain("api_level: 37");
+    expect(source).toContain('sdk_api_level: "23"');
+    expect(source).toContain('sdk_api_level: "37.0"');
+    expect(source).toContain("target: google_apis_ps16k");
     expect(source).toContain("reactivecircus/android-emulator-runner@v2");
-    expect(source).toContain("static_node=kvm");
-    expect(source).toContain("api-level: 35");
-    expect(source).toContain("target: google_apis");
-    expect(source).toContain("arch: x86_64");
-    expect(source).toContain("working-directory: android-twa");
-    expect(source).toContain("./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace");
+    expect(source).not.toContain("reactivecircus/android-emulator-runner@660ac26f5bd4cb6c1d98b2143e66ded57bee724f");
+    expect(instrumentation).toContain("- name: Update SDK command-line tools for Android 17");
+    expect(instrumentation).toContain("if: matrix.api_level == 37");
+    expect(instrumentation).toContain('"$SDK/cmdline-tools/latest/bin/sdkmanager" --install "cmdline-tools;latest" > /dev/null');
+    expect(instrumentation).not.toContain('yes | "$SDK/cmdline-tools/latest/bin/sdkmanager"');
+    expect(instrumentation).toContain('if [ -d "$SDK/cmdline-tools/latest-2" ]; then');
+    expect(instrumentation).toContain('mv "$SDK/cmdline-tools/latest-2" "$SDK/cmdline-tools/latest"');
+    expect(source).toContain("api-level: ${{ matrix.sdk_api_level }}");
+    expect(source).toContain("disk-size: 8G");
+    expect(instrumentation).toContain("script: ./gradlew --no-daemon :app:connectedDebugAndroidTest --stacktrace");
+    expect(instrumentation).not.toContain("script: |");
+    expect(instrumentation).not.toContain("script: >-");
+    expect(instrumentation).toContain("disable_animations: true");
+    expect(instrumentation).toContain("disable_animations: false");
+    expect(instrumentation).toContain("disable-animations: ${{ matrix.disable_animations }}");
     expect(source).not.toContain("adb wait-for-device");
   });
 });

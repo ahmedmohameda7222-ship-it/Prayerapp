@@ -1,6 +1,8 @@
 import "server-only";
+import twaManifest from "@/android-twa/twa-manifest.json";
 import {
   ANDROID_RELEASE_METADATA_ASSET_NAME,
+  matchesExpectedAndroidRelease,
   selectLatestAndroidRelease,
   type GitHubRelease,
 } from "@/lib/android-release";
@@ -36,5 +38,9 @@ export async function getLatestAndroidRelease() {
     }
   }));
   const metadataByTag = Object.fromEntries(metadataEntries.filter((entry) => entry !== null));
-  return selectLatestAndroidRelease(releases, metadataByTag);
+  const selected = selectLatestAndroidRelease(releases, metadataByTag);
+  return matchesExpectedAndroidRelease(selected, {
+    versionCode: twaManifest.versionCode,
+    versionName: twaManifest.versionName,
+  }) ? selected : null;
 }

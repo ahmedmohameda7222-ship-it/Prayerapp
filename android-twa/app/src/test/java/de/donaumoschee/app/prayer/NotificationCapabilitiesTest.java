@@ -33,7 +33,7 @@ public final class NotificationCapabilitiesTest {
 
     @Test
     public void globalAppDisableBlocksDelivery() {
-        NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, false, ENABLED, ENABLED);
+        NotificationCapabilities state = NotificationCapabilities.evaluate(37, true, false, ENABLED, ENABLED);
         assertFalse(state.notificationDeliveryEnabled());
         assertFalse(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
@@ -41,7 +41,7 @@ public final class NotificationCapabilitiesTest {
 
     @Test
     public void appNotificationSettingIsReportedIndependentlyFromRuntimePermission() throws Exception {
-        NotificationCapabilities state = NotificationCapabilities.evaluate(36, false, true, ENABLED, ENABLED);
+        NotificationCapabilities state = NotificationCapabilities.evaluate(37, false, true, ENABLED, ENABLED);
         Method method = state.getClass().getMethod("appNotificationsEnabled");
         assertEquals(Boolean.TRUE, method.invoke(state));
         assertFalse(state.notificationPermission());
@@ -50,7 +50,7 @@ public final class NotificationCapabilitiesTest {
 
     @Test
     public void disabledReminderChannelBlocksNativeAuthorityWithoutBlockingAdhanCapability() {
-        NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, DISABLED, ENABLED);
+        NotificationCapabilities state = NotificationCapabilities.evaluate(37, true, true, DISABLED, ENABLED);
         assertFalse(state.reminderChannelEnabled());
         assertTrue(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
@@ -58,7 +58,7 @@ public final class NotificationCapabilitiesTest {
 
     @Test
     public void disabledAdhanChannelBlocksAdhanAndNativeAuthority() {
-        NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, ENABLED, DISABLED);
+        NotificationCapabilities state = NotificationCapabilities.evaluate(37, true, true, ENABLED, DISABLED);
         assertFalse(state.adhanChannelEnabled());
         assertFalse(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
@@ -66,7 +66,7 @@ public final class NotificationCapabilitiesTest {
 
     @Test
     public void missingReminderChannelIsNotTreatedAsEnabled() {
-        NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, MISSING, ENABLED);
+        NotificationCapabilities state = NotificationCapabilities.evaluate(37, true, true, MISSING, ENABLED);
         assertFalse(state.reminderChannelEnabled());
         assertFalse(state.reminderDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
@@ -74,7 +74,7 @@ public final class NotificationCapabilitiesTest {
 
     @Test
     public void missingAdhanChannelIsNotTreatedAsEnabled() {
-        NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, ENABLED, MISSING);
+        NotificationCapabilities state = NotificationCapabilities.evaluate(37, true, true, ENABLED, MISSING);
         assertFalse(state.adhanChannelEnabled());
         assertFalse(state.adhanDeliveryReady());
         assertFalse(state.nativeDeliveryReady());
@@ -82,7 +82,7 @@ public final class NotificationCapabilitiesTest {
 
     @Test
     public void allNotificationCapabilitiesEnabledAllowsNativeDelivery() {
-        NotificationCapabilities state = NotificationCapabilities.evaluate(36, true, true, ENABLED, ENABLED);
+        NotificationCapabilities state = NotificationCapabilities.evaluate(37, true, true, ENABLED, ENABLED);
         assertTrue(state.notificationPermission());
         assertTrue(state.notificationDeliveryEnabled());
         assertTrue(state.reminderChannelEnabled());
@@ -100,7 +100,7 @@ public final class NotificationCapabilitiesTest {
         assertEquals(Boolean.FALSE, pre23.getClass().getMethod("relevant").invoke(pre23));
         assertEquals(Boolean.TRUE, pre23.getClass().getMethod("exempt").invoke(pre23));
 
-        Object optimized = evaluate.invoke(null, 36, false);
+        Object optimized = evaluate.invoke(null, 37, false);
         assertEquals(Boolean.TRUE, optimized.getClass().getMethod("relevant").invoke(optimized));
         assertEquals(Boolean.FALSE, optimized.getClass().getMethod("exempt").invoke(optimized));
     }

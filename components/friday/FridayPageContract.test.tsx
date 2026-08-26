@@ -87,6 +87,13 @@ describe("Friday public page contract", () => {
     expect(friday).not.toContain("--app-brand");
   });
 
+  it("uses an explicit approved light foreground for readable CTA contrast", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("text-[#FCFAF6]");
+    expect(friday).not.toContain("text-white transition-opacity");
+  });
+
   it("keeps khutbah load failure isolated from the Friday schedule", () => {
     const friday = source("components/friday/FridayPageClient.tsx");
 

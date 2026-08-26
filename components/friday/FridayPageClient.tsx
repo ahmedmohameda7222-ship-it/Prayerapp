@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { formatLongDate } from "@/lib/date-utils";
@@ -120,6 +121,7 @@ type FridayPageClientProps = {
   jumuahTimes: JumuahTime[];
   fridayKhutbah?: FridayKhutbah;
   initialNow: string;
+  initialScheduleDate: string;
   prayerTimesLoadFailed?: boolean;
   additionalTimesLoadFailed?: boolean;
   khutbahLoadFailed?: boolean;
@@ -130,10 +132,12 @@ export function FridayPageClient({
   jumuahTimes,
   fridayKhutbah,
   initialNow,
+  initialScheduleDate,
   prayerTimesLoadFailed = false,
   additionalTimesLoadFailed = false,
   khutbahLoadFailed = false,
 }: FridayPageClientProps) {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
   const schedule = useMemo(
@@ -148,6 +152,12 @@ export function FridayPageClient({
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (schedule?.date && initialScheduleDate && schedule.date !== initialScheduleDate) {
+      router.refresh();
+    }
+  }, [initialScheduleDate, router, schedule?.date]);
 
   const localizedItems = schedule?.items.map((item) => ({
     item,

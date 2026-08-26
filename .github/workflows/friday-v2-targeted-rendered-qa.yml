@@ -140,9 +140,9 @@ jobs:
               });
               if (width <= 420) {
                 assert.equal(nextImageState.objectFit, 'cover', `Next Prayer narrow object-fit ${locale} ${width}`);
+                assert.ok(Math.abs(nextImageState.imageWidth - nextImageState.mediaWidth) <= 1, `Next Prayer narrow width fill ${locale} ${width}`);
+                assert.ok(Math.abs(nextImageState.imageHeight - nextImageState.mediaHeight) <= 1, `Next Prayer narrow height fill ${locale} ${width}`);
               }
-              assert.ok(Math.abs(nextImageState.imageWidth - nextImageState.mediaWidth) <= 1, `Next Prayer width fill ${locale} ${width}`);
-              assert.ok(Math.abs(nextImageState.imageHeight - nextImageState.mediaHeight) <= 1, `Next Prayer height fill ${locale} ${width}`);
 
               const nav = page.locator('.bottom-nav-shell');
               await nav.waitFor({ state: 'visible' });

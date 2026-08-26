@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { formatTime } from "@/lib/time-format";
 import { getIqama, prayerOrder } from "@/lib/prayer-utils";
+import { getPrayerDisplayNameKey } from "@/lib/prayer-display-name";
 import {
   defaultAdhanSoundIdForPrayer,
   getAdhanSoundLabel,
@@ -408,6 +409,7 @@ export function HomePrayerTimesCard({
           const canRemind = name !== "sunrise";
           const preference = canRemind ? preferences.get(name as ReminderPrayer) : undefined;
           const isEnabled = Boolean(preference?.enabled);
+          const displayName = t(getPrayerDisplayNameKey(name, prayer.date));
           const leadLabel = isEnabled
             ? preference?.leadMinutes
               ? copy.savedBefore(preference.leadMinutes)
@@ -417,7 +419,7 @@ export function HomePrayerTimesCard({
           return (
             <div key={name} className={`border-s-[3px] ${isActive ? "border-s-[var(--home-brand)] bg-[var(--home-brand-soft)]" : "border-s-transparent"}`} data-prayer-row={name} data-active={isActive ? "true" : undefined}>
               <div className="grid min-h-14 grid-cols-[minmax(0,1.15fr)_0.8fr_0.8fr_60px] items-center gap-2 px-3 py-2.5 sm:px-4">
-                <span className={`min-w-0 text-start text-[15px] font-bold ${isActive ? "text-[var(--home-brand-strong)]" : "text-[var(--home-text)]"}`}>{t(`prayer.${name}`)}</span>
+                <span className={`min-w-0 text-start text-[15px] font-bold ${isActive ? "text-[var(--home-brand-strong)]" : "text-[var(--home-text)]"}`}>{displayName}</span>
                 <span dir="ltr" className="home-tabular text-center text-[15px] font-bold text-[var(--home-text)]">{formatTime(adhan, timeFormat)}</span>
                 <span dir="ltr" className="home-tabular text-center text-[15px] font-bold text-[var(--home-text-secondary)]">{iqama ? formatTime(iqama, timeFormat) : "—"}</span>
                 {canRemind ? (
@@ -426,7 +428,7 @@ export function HomePrayerTimesCard({
                     disabled={!loaded || savingPrayer === name}
                     onClick={() => clickReminder(name as ReminderPrayer)}
                     aria-pressed={isEnabled}
-                    aria-label={`${t(`prayer.${name}`)}: ${isEnabled ? reminderOn : reminderOff}`}
+                    aria-label={`${displayName}: ${isEnabled ? reminderOn : reminderOff}`}
                     className={`flex h-12 w-[56px] flex-col items-center justify-center rounded-[10px] transition-colors disabled:text-[var(--home-disabled)] disabled:opacity-60 ${isEnabled ? "bg-[var(--home-brand-soft)] text-[var(--home-brand-strong)]" : "bg-transparent text-[var(--home-brand)] hover:bg-[var(--home-brand-soft)]"}`}
                   >
                     <Bell className={`h-[19px] w-[19px] ${isEnabled ? "fill-current" : ""}`} aria-hidden="true" />
@@ -464,7 +466,7 @@ export function HomePrayerTimesCard({
           <button type="button" aria-label={copy.close} className="absolute inset-0 bg-black/35" onClick={closeEditor} />
           <div ref={editorPanelRef} role="dialog" aria-modal="true" aria-labelledby="prayer-reminder-dialog-title" className="relative z-10 flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[22px] border border-[var(--home-divider)] bg-[var(--home-surface)] shadow-2xl sm:max-h-[82dvh] sm:rounded-[22px]">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--home-divider)] px-4 py-3.5">
-              <p id="prayer-reminder-dialog-title" className="min-w-0 text-lg font-extrabold text-[var(--home-text)]">{copy.title} · {t(`prayer.${editingPrayer}`)}</p>
+              <p id="prayer-reminder-dialog-title" className="min-w-0 text-lg font-extrabold text-[var(--home-text)]">{copy.title} · {t(getPrayerDisplayNameKey(editingPrayer, prayer.date))}</p>
               <button type="button" aria-label={copy.close} onClick={closeEditor} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--home-surface-subtle)] text-[var(--home-text-secondary)]">
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>

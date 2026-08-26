@@ -99,6 +99,15 @@ describe("localization authority contract", () => {
     }
   });
 
+  it("provides the approved Friday Jumuah labels without changing normal Dhuhr translations", () => {
+    expect(getTranslation("ar").t("prayer.jumuah")).toBe("الجمعة");
+    expect(getTranslation("en").t("prayer.jumuah")).toBe("Jumu'ah");
+    expect(getTranslation("de").t("prayer.jumuah")).toBe("Freitagsgebet");
+    expect(getTranslation("tr").t("prayer.jumuah")).toBe("Cuma");
+    expect(getTranslation("en").t("prayer.dhuhr")).toBe("Dhuhr");
+    expect(getTranslation("tr").t("prayer.dhuhr")).toBe("Öğle");
+  });
+
   it("loads a scoped mobile prayer-grid rule that reserves fixed time and control columns", () => {
     const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
     const cssPath = join(process.cwd(), "app/prayer-table-localization.css");

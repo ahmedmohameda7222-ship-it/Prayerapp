@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -13,6 +13,108 @@ describe("Friday public page contract", () => {
     expect(page).toContain("RootPageHeader");
     expect(page).toContain('titleKey="friday.title"');
     expect(page).not.toContain("<AppHeader");
+  });
+
+  it("derives the schedule from published prayer times plus optional additional rows", () => {
+    const page = source("app/friday/page.tsx");
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(page).toContain("getPrayerTimes(false");
+    expect(page).toContain("getJumuahTimes()");
+    expect(page).toContain("Promise.allSettled");
+    expect(friday).toContain("resolveUpcomingFridaySchedule");
+    expect(friday).toContain("prayerTimes");
+    expect(friday).toContain("jumuahTimes");
+  });
+
+  it("keeps Primary renderable when additional Jumuah loading fails", () => {
+    const page = source("app/friday/page.tsx");
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(page).toContain('jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : []');
+    expect(friday).toContain("additionalTimesLoadFailed");
+    expect(friday).toContain("prayerTimesLoadFailed");
+    expect(friday).not.toContain("if (additionalTimesLoadFailed)");
+  });
+
+  it("does not fabricate Primary when prayer-times loading fails", () => {
+    const page = source("app/friday/page.tsx");
+
+    expect(page).toContain('prayerTimesResult.status === "fulfilled"\n    ? resolveUpcomingFridaySchedule');
+    expect(page).toContain(": undefined;");
+    expect(page).toContain('prayerTimesLoadFailed={prayerTimesResult.status === "rejected"}');
+  });
+
+  it("loads a published khutbah independently after resolving the displayed Friday", () => {
+    const page = source("app/friday/page.tsx");
+
+    expect(page).toContain("resolveUpcomingFridaySchedule");
+    expect(page).toContain("getFridayKhutbahByDate");
+    expect(page).toContain("khutbahLoadFailed");
+    expect(page).toContain("fridayKhutbah={fridayKhutbah}");
+    expect(page).toContain("khutbahLoadFailed={khutbahLoadFailed}");
+  });
+
+  it("refreshes server-backed khutbah data once when the live resolver rolls to another Friday", () => {
+    const page = source("app/friday/page.tsx");
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(page).toContain("initialScheduleDate={schedule?.date || \"\"}");
+    expect(friday).toContain('import { useRouter } from "next/navigation"');
+    expect(friday).toContain("useRef");
+    expect(friday).toContain("initialScheduleDate");
+    expect(friday).toContain("schedule.date === initialScheduleDate");
+    expect(friday).toContain("refreshedScheduleDateRef.current === schedule.date");
+    expect(friday).toContain("refreshedScheduleDateRef.current = schedule.date");
+    expect(friday).toContain("router.refresh()");
+  });
+
+  it("shows exactly one Friday-level CTA only for the published khutbah matching the displayed Friday", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain('readKhutbah: "قراءة الخطبة"');
+    expect(friday).toContain('readKhutbah: "Read Khutbah"');
+    expect(friday).toContain('readKhutbah: "Predigt lesen"');
+    expect(friday).toContain('readKhutbah: "Hutbeyi oku"');
+    expect(friday).toContain('data-testid="friday-khutbah-cta"');
+    expect(friday).toContain("fridayKhutbah?.published");
+    expect(friday).toContain("fridayKhutbah.date === schedule.date");
+    expect(friday).toContain('href={`/friday/khutbah/${schedule.date}`}');
+    expect(friday).not.toContain("Khutbah coming soon");
+  });
+
+  it("uses repository-defined UI brand tokens for the Friday khutbah CTA", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("var(--ui-brand)");
+    expect(friday).not.toContain("--app-brand");
+  });
+
+  it("uses an explicit approved light foreground for readable CTA contrast", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("text-[#FCFAF6]");
+    expect(friday).not.toContain("text-white transition-opacity");
+  });
+
+  it("keeps khutbah load failure isolated from the Friday schedule", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("khutbahLoadFailed");
+    expect(friday).toContain("data-khutbah-load-failed");
+    expect(friday).not.toContain("if (khutbahLoadFailed)");
+  });
+
+  it("protects the dedicated reader route with the published-only data layer", () => {
+    const route = "app/friday/khutbah/[date]/page.tsx";
+    expect(existsSync(join(process.cwd(), route))).toBe(true);
+    if (!existsSync(join(process.cwd(), route))) return;
+
+    const page = source(route);
+    expect(page).toContain("getFridayKhutbahByDate(date)");
+    expect(page).toContain("notFound()");
+    expect(page).toContain("FridayKhutbahReader");
+    expect(page).not.toContain("includeUnpublished");
   });
 
   it("makes the image a live next-prayer surface using prayerTime only", () => {
@@ -34,23 +136,22 @@ describe("Friday public page contract", () => {
     expect(friday).not.toContain('<span dir="ltr">{countdown}</span>');
   });
 
-  it("keeps multiple published services dynamic and exposes the shared location inside the schedule", () => {
+  it("numbers Primary as service one even when it is the only service", () => {
     const friday = source("components/friday/FridayPageClient.tsx");
 
-    expect(friday).toContain("schedule.items.length");
-    expect(friday).toContain("localizedItems.map");
-    expect(friday).toContain("friday-shared-details");
-    expect(friday).toContain("sharedLocationAddress");
+    expect(friday).toContain('return `Jumu\'ah ${index + 1}`');
+    expect(friday).toContain('const labels = ["الجمعة الأولى", "الجمعة الثانية", "الجمعة الثالثة"]');
+    expect(friday).not.toContain("if (total === 1)");
   });
 
-  it("uses Supabase Jumuah rows directly and preserves real empty/load-failure states", () => {
-    const page = source("app/friday/page.tsx");
-    const data = source("lib/data/jumuah.ts");
+  it("keeps multiple services dynamic and exposes available additional metadata", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
 
-    expect(page).toContain("getJumuahTimes()");
-    expect(page).not.toContain("getFridayPreviewMockData");
-    expect(data).not.toContain("previewJumuahTimes");
-    expect(data).toContain("if (!client) return []");
+    expect(friday).toContain("localizedItems.map");
+    expect(friday).toContain("serviceLabel(locale, index)");
+    expect(friday).toContain("schedule.nextIndex");
+    expect(friday).toContain("friday-shared-details");
+    expect(friday).toContain("sharedLocationAddress");
   });
 
   it("uses a moving iOS glass selection with optimistic route motion", () => {

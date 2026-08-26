@@ -3,6 +3,7 @@
 import { ChevronRight, Clock, Moon, Sun, Sunrise } from "lucide-react";
 import type { PrayerName, PrayerTime } from "@/lib/types";
 import { getIqama } from "@/lib/prayer-utils";
+import { getPrayerDisplayNameKey } from "@/lib/prayer-display-name";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { formatTime } from "@/lib/time-format";
@@ -33,7 +34,8 @@ export function PrayerRow({
   const iqama = getIqama(prayer, name);
   const formattedTime = formatTime(prayer[name], timeFormat);
   const formattedIqama = iqama ? formatTime(iqama, timeFormat) : undefined;
-  const label = name === "sunrise" ? t(`prayer.${name}`) : `${t("prayer.azan")} ${t(`prayer.${name}`)}`;
+  const displayNameKey = getPrayerDisplayNameKey(name, prayer.date);
+  const label = name === "sunrise" ? t(displayNameKey) : `${t("prayer.azan")} ${t(displayNameKey)}`;
   return (
     <div className={`grid min-h-14 grid-cols-[42px_1fr_auto_20px] items-center gap-3 rounded-2xl px-3 py-2 ${active ? "bg-[var(--color-emerald-soft)]" : ""}`}>
       <div className={`grid h-10 w-10 place-items-center rounded-full ${active ? "bg-[var(--color-emerald)] text-[var(--color-gold)]" : "bg-[var(--color-cream-deep)] text-[var(--color-emerald)]"}`}>

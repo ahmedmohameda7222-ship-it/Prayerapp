@@ -9,6 +9,11 @@ const intlLocales: Record<Locale, string> = {
   tr: "tr-TR",
 };
 
+export type HijriDatePart = {
+  type: "day" | "month" | "year" | "era";
+  value: string;
+};
+
 function atNoonUtc(date: string) {
   return new Date(`${date}T12:00:00Z`);
 }
@@ -19,10 +24,28 @@ export function formatLongDate(date: string, locale: Locale = "ar") {
   }).format(atNoonUtc(date));
 }
 
+export function formatHijriDateParts(date: string, locale: Locale = "ar"): HijriDatePart[] {
+  const formatter = new Intl.DateTimeFormat(`${intlLocales[locale]}-u-ca-islamic-umalqura`, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: APP_TIME_ZONE,
+    ...(locale === "ar" ? { numberingSystem: "arab" } : {}),
+  });
+  const values = Object.fromEntries(
+    formatter
+      .formatToParts(atNoonUtc(date))
+      .filter((part) => part.type === "day" || part.type === "month" || part.type === "year" || part.type === "era")
+      .map((part) => [part.type, part.value]),
+  );
+
+  return (["day", "month", "year", "era"] as const)
+    .filter((type) => typeof values[type] === "string")
+    .map((type) => ({ type, value: values[type] as string }));
+}
+
 export function formatHijriDate(date: string, locale: Locale = "ar") {
-  return new Intl.DateTimeFormat(`${intlLocales[locale]}-u-ca-islamic-umalqura`, {
-    day: "numeric", month: "long", year: "numeric", timeZone: APP_TIME_ZONE,
-  }).format(atNoonUtc(date));
+  return formatHijriDateParts(date, locale).map((part) => part.value).join(" ");
 }
 
 export function formatShortDate(date: string, locale: Locale = "ar") {

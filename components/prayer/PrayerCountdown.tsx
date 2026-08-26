@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { PrayerName, PrayerTime } from "@/lib/types";
 import { formatCountdown, getIqama, getNextPrayerFromSchedule } from "@/lib/prayer-utils";
+import { getPrayerDisplayNameKey } from "@/lib/prayer-display-name";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 type CountdownState = {
@@ -52,12 +53,13 @@ export function PrayerCountdown({
   }, [effectiveSchedule]);
 
   if (!state) return null;
+  const prayerName = t(getPrayerDisplayNameKey(state.name, state.date));
 
   if (variant === "instrument") {
     return (
       <div className="home-next-prayer-instrument text-[var(--home-text)]">
         <p className="home-next-prayer-label font-extrabold text-[var(--home-text)]">{t("prayer.nextPrayer")}</p>
-        <h2 className="home-next-prayer-name mt-1 font-bold leading-tight text-[var(--home-brand-strong)]">{t(`prayer.${state.name}`)}</h2>
+        <h2 className="home-next-prayer-name mt-1 font-bold leading-tight text-[var(--home-brand-strong)]">{prayerName}</h2>
         <p className="home-next-prayer-adhan home-tabular mt-4 font-bold leading-none text-[var(--home-text)]" data-testid="next-prayer-adhan"><span dir="ltr">{state.time}</span></p>
         <p className="home-next-prayer-countdown home-tabular mt-2 font-bold leading-tight text-[var(--home-brand)]" aria-live="polite" data-testid="next-prayer-countdown"><span dir="ltr">{state.countdown}</span></p>
         {state.iqama ? (
@@ -72,7 +74,7 @@ export function PrayerCountdown({
   return (
     <>
       <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--color-gold)] sm:text-xs">{t("prayer.nextPrayer")}</p>
-      <h2 className="font-brand text-[34px] font-semibold leading-none sm:text-4xl lg:text-[42px]">{t(`prayer.${state.name}`)}</h2>
+      <h2 className="font-brand text-[34px] font-semibold leading-none sm:text-4xl lg:text-[42px]">{prayerName}</h2>
       <p className="mt-2 text-lg font-extrabold text-white">{state.time}</p>
       <p className="font-brand text-[30px] font-semibold leading-tight sm:text-4xl" aria-live="polite">{state.countdown}</p>
       {state.iqama ? (

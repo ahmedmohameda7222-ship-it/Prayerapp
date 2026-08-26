@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { formatLongDate } from "@/lib/date-utils";
-import { getFridayLivePrayer, getUpcomingFridaySchedule } from "@/lib/friday";
+import { getFridayLivePrayer, resolveUpcomingFridaySchedule } from "@/lib/friday";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
 import type { Locale } from "@/lib/i18n/types";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import type { JumuahTime } from "@/lib/types";
+import type { FridayKhutbah, JumuahTime, PrayerTime } from "@/lib/types";
 
 const COPY = {
   ar: {
@@ -21,6 +23,8 @@ const COPY = {
     address: "العنوان",
     language: "اللغة",
     note: "ملاحظة مهمة",
+    primary: "الصلاة الرئيسية",
+    readKhutbah: "قراءة الخطبة",
     empty: "لم يتم نشر موعد صلاة الجمعة القادمة بعد.",
   },
   en: {
@@ -34,6 +38,8 @@ const COPY = {
     address: "Address",
     language: "Language",
     note: "Important note",
+    primary: "Primary prayer",
+    readKhutbah: "Read Khutbah",
     empty: "The next Friday prayer schedule has not been published yet.",
   },
   de: {
@@ -47,6 +53,8 @@ const COPY = {
     address: "Adresse",
     language: "Sprache",
     note: "Wichtiger Hinweis",
+    primary: "Hauptgebet",
+    readKhutbah: "Predigt lesen",
     empty: "Der nächste Freitagsgebetsplan wurde noch nicht veröffentlicht.",
   },
   tr: {
@@ -60,23 +68,19 @@ const COPY = {
     address: "Adres",
     language: "Dil",
     note: "Önemli not",
+    primary: "Ana namaz",
+    readKhutbah: "Hutbeyi oku",
     empty: "Bir sonraki cuma namazı programı henüz yayımlanmadı.",
   },
 } as const;
 
-function serviceLabel(locale: Locale, index: number, total: number) {
-  if (total === 1) {
-    if (locale === "ar") return "صلاة الجمعة";
-    if (locale === "de") return "Freitagsgebet";
-    if (locale === "tr") return "Cuma namazı";
-    return "Jumu'ah prayer";
-  }
+function serviceLabel(locale: Locale, index: number) {
   if (locale === "ar") {
     const labels = ["الجمعة الأولى", "الجمعة الثانية", "الجمعة الثالثة"];
     return labels[index] || `الجمعة ${index + 1}`;
   }
   if (locale === "de") return `Freitagsgebet ${index + 1}`;
-  if (locale === "tr") return `${index + 1}. Cuma namazı`;
+  if (locale === "tr") return `Cuma ${index + 1}`;
   return `Jumu'ah ${index + 1}`;
 }
 
@@ -113,15 +117,34 @@ function countdownParts(ms: number, locale: Locale) {
 }
 
 type FridayPageClientProps = {
+  prayerTimes: PrayerTime[];
   jumuahTimes: JumuahTime[];
+  fridayKhutbah?: FridayKhutbah;
   initialNow: string;
-  loadFailed?: boolean;
+  initialScheduleDate?: string;
+  prayerTimesLoadFailed?: boolean;
+  additionalTimesLoadFailed?: boolean;
+  khutbahLoadFailed?: boolean;
 };
 
-export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }: FridayPageClientProps) {
+export function FridayPageClient({
+  prayerTimes,
+  jumuahTimes,
+  fridayKhutbah,
+  initialNow,
+  initialScheduleDate = "",
+  prayerTimesLoadFailed = false,
+  additionalTimesLoadFailed = false,
+  khutbahLoadFailed = false,
+}: FridayPageClientProps) {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
-  const schedule = useMemo(() => getUpcomingFridaySchedule(jumuahTimes, now), [jumuahTimes, now]);
+  const refreshedScheduleDateRef = useRef("");
+  const schedule = useMemo(
+    () => resolveUpcomingFridaySchedule(prayerTimes, jumuahTimes, now),
+    [jumuahTimes, now, prayerTimes],
+  );
   const livePrayer = useMemo(() => getFridayLivePrayer(schedule, now), [schedule, now]);
   const copy = COPY[locale];
   const direction = locale === "ar" ? "rtl" : "ltr";
@@ -130,6 +153,17 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (
+      !initialScheduleDate
+      || !schedule?.date
+      || schedule.date === initialScheduleDate
+      || refreshedScheduleDateRef.current === schedule.date
+    ) return;
+    refreshedScheduleDateRef.current = schedule.date;
+    router.refresh();
+  }, [initialScheduleDate, router, schedule?.date]);
 
   const localizedItems = schedule?.items.map((item) => ({
     item,
@@ -152,9 +186,20 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
     : "";
 
   const countdown = livePrayer ? countdownParts(livePrayer.remainingMs, locale) : null;
+  const showKhutbah = Boolean(
+    schedule
+    && fridayKhutbah?.published
+    && fridayKhutbah.date === schedule.date,
+  );
 
   return (
-    <div className="friday-page" dir={direction} data-testid="friday-page">
+    <div
+      className="friday-page"
+      dir={direction}
+      data-testid="friday-page"
+      data-additional-times-load-failed={additionalTimesLoadFailed ? "true" : "false"}
+      data-khutbah-load-failed={khutbahLoadFailed ? "true" : "false"}
+    >
       <section
         className="friday-live-hero"
         data-imminent={livePrayer?.imminent ? "true" : "false"}
@@ -166,7 +211,7 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
           <div className="friday-live-content">
             <div className="friday-live-copy">
               <p className="friday-live-eyebrow">{copy.nextPrayer}</p>
-              <h2 id="friday-live-title">{serviceLabel(locale, livePrayer.index, schedule.items.length)}</h2>
+              <h2 id="friday-live-title">{serviceLabel(locale, livePrayer.index)}</h2>
               <div className="friday-live-primary">
                 <p className="friday-live-time">
                   <bdi dir="ltr" className="inline-block [unicode-bidi:isolate]">
@@ -203,7 +248,7 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
           {schedule?.isToday ? <strong className="friday-today-status">{copy.today}</strong> : null}
         </header>
 
-        {loadFailed ? (
+        {prayerTimesLoadFailed ? (
           <div className="friday-empty-state" role="status">
             <p>{t("common.dataLoadFailed")}</p>
           </div>
@@ -219,17 +264,20 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
                 const showOwnLocation = !hasSharedLocation && Boolean(clean(item.locationName) || ownAddress);
                 const showOwnNote = Boolean(note) && note !== sharedNote;
                 const isNext = index === schedule.nextIndex;
+                const isPrimary = item.source === "prayer-times";
 
                 return (
                   <article
                     key={item.id}
                     className="friday-service-row"
                     data-next={isNext ? "true" : "false"}
+                    data-primary={isPrimary ? "true" : "false"}
                     role="listitem"
                   >
                     <div className="friday-service-main">
                       <div className="friday-service-heading">
-                        <h3>{serviceLabel(locale, index, schedule.items.length)}</h3>
+                        <h3>{serviceLabel(locale, index)}</h3>
+                        {isPrimary ? <span className="friday-next-label">{copy.primary}</span> : null}
                         {schedule.isToday && isNext ? <span className="friday-next-label">{copy.nextPrayer}</span> : null}
                       </div>
                       <dl className="friday-service-prayer">
@@ -302,6 +350,18 @@ export function FridayPageClient({ jumuahTimes, initialNow, loadFailed = false }
           </>
         )}
       </section>
+
+      {showKhutbah && schedule ? (
+        <div className="px-4 sm:px-5">
+          <Link
+            href={`/friday/khutbah/${schedule.date}`}
+            data-testid="friday-khutbah-cta"
+            className="flex min-h-12 w-full items-center justify-center rounded-[14px] bg-[var(--ui-brand)] px-4 text-base font-bold text-[#FCFAF6] transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            {copy.readKhutbah}
+          </Link>
+        </div>
+      ) : null}
 
       {sharedNote ? (
         <aside className="friday-important-note" aria-label={copy.note} data-testid="friday-note">

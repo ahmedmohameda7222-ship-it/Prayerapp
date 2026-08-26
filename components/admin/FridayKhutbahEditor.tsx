@@ -128,6 +128,23 @@ const COPY: Record<Locale, {
   },
 };
 
+type EditorState = {
+  date: string;
+  form: FridayKhutbahForm;
+  published: boolean;
+  loadStatus: "ready" | "error";
+};
+
+type LanguageSelection = {
+  locale: Locale;
+  language: Locale;
+};
+
+type MessageState = {
+  date: string;
+  message: string;
+};
+
 export function FridayKhutbahEditor({
   selectedFriday,
   token,
@@ -139,64 +156,91 @@ export function FridayKhutbahEditor({
 }) {
   const { locale } = useTranslation();
   const copy = COPY[locale];
-  const [form, setForm] = useState<FridayKhutbahForm>(EMPTY_FORM);
-  const [activeLanguage, setActiveLanguage] = useState<Locale>(locale);
-  const [published, setPublished] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [editorState, setEditorState] = useState<EditorState | null>(null);
+  const [languageSelection, setLanguageSelection] = useState<LanguageSelection | null>(null);
+  const [errorState, setErrorState] = useState<MessageState | null>(null);
+  const [successState, setSuccessState] = useState<MessageState | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    setActiveLanguage(locale);
-  }, [locale]);
+  const hasCurrentEditorState = editorState?.date === selectedFriday;
+  const form = hasCurrentEditorState ? editorState.form : EMPTY_FORM;
+  const published = hasCurrentEditorState ? editorState.published : false;
+  const loading = Boolean(selectedFriday && token && !hasCurrentEditorState);
+  const loadFailed = Boolean(hasCurrentEditorState && editorState.loadStatus === "error");
+  const error = errorState?.date === selectedFriday ? errorState.message : "";
+  const success = successState?.date === selectedFriday ? successState.message : "";
+  const activeLanguage = languageSelection?.locale === locale ? languageSelection.language : locale;
 
   useEffect(() => {
     let active = true;
-    setForm(EMPTY_FORM);
-    setPublished(false);
-    setError("");
-    setSuccess("");
     if (!selectedFriday || !token) return () => { active = false; };
 
-    setLoading(true);
     void getFridayKhutbahAdminAction(token, selectedFriday)
       .then((result) => {
         if (!active) return;
         if (!result.success) {
-          setError(copy.loadFailed);
+          setEditorState({
+            date: selectedFriday,
+            form: EMPTY_FORM,
+            published: false,
+            loadStatus: "error",
+          });
           return;
         }
         const khutbah = result.khutbah;
-        setForm({
-          titleAr: khutbah?.titleAr || "",
-          contentAr: khutbah?.contentAr || "",
-          titleEn: khutbah?.titleEn || "",
-          contentEn: khutbah?.contentEn || "",
-          titleDe: khutbah?.titleDe || "",
-          contentDe: khutbah?.contentDe || "",
-          titleTr: khutbah?.titleTr || "",
-          contentTr: khutbah?.contentTr || "",
+        setEditorState({
+          date: selectedFriday,
+          form: {
+            titleAr: khutbah?.titleAr || "",
+            contentAr: khutbah?.contentAr || "",
+            titleEn: khutbah?.titleEn || "",
+            contentEn: khutbah?.contentEn || "",
+            titleDe: khutbah?.titleDe || "",
+            contentDe: khutbah?.contentDe || "",
+            titleTr: khutbah?.titleTr || "",
+            contentTr: khutbah?.contentTr || "",
+          },
+          published: Boolean(khutbah?.published),
+          loadStatus: "ready",
         });
-        setPublished(Boolean(khutbah?.published));
       })
       .catch(() => {
-        if (active) setError(copy.loadFailed);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setEditorState({
+          date: selectedFriday,
+          form: EMPTY_FORM,
+          published: false,
+          loadStatus: "error",
+        });
       });
 
     return () => { active = false; };
-  }, [copy.loadFailed, selectedFriday, token]);
+  }, [selectedFriday, token]);
 
   const active = useMemo(
     () => LANGUAGES.find((language) => language.code === activeLanguage) || LANGUAGES[0],
     [activeLanguage],
   );
 
+  function setError(message: string) {
+    setErrorState(message ? { date: selectedFriday, message } : null);
+  }
+
+  function setSuccess(message: string) {
+    setSuccessState(message ? { date: selectedFriday, message } : null);
+  }
+
   function setField(key: keyof FridayKhutbahForm, value: string) {
-    setForm((current) => ({ ...current, [key]: value }));
+    setEditorState((current) => {
+      const currentForm = current?.date === selectedFriday ? current.form : EMPTY_FORM;
+      const currentPublished = current?.date === selectedFriday ? current.published : false;
+      return {
+        date: selectedFriday,
+        form: { ...currentForm, [key]: value },
+        published: currentPublished,
+        loadStatus: "ready",
+      };
+    });
     setError("");
     setSuccess("");
   }
@@ -216,7 +260,12 @@ export function FridayKhutbahEditor({
         setError(result.error === "khutbahContentRequired" ? copy.publishRequiresContent : copy.saveFailed);
         return;
       }
-      setPublished(Boolean(result.khutbah.published));
+      setEditorState((current) => ({
+        date: selectedFriday,
+        form: current?.date === selectedFriday ? current.form : form,
+        published: Boolean(result.khutbah.published),
+        loadStatus: "ready",
+      }));
       setSuccess(publish ? copy.published : copy.saved);
     });
   }
@@ -231,12 +280,17 @@ export function FridayKhutbahEditor({
         setError(copy.saveFailed);
         return;
       }
-      setPublished(false);
+      setEditorState((current) => ({
+        date: selectedFriday,
+        form: current?.date === selectedFriday ? current.form : form,
+        published: false,
+        loadStatus: "ready",
+      }));
       setSuccess(copy.unpublished);
     });
   }
 
-  const controlsDisabled = disabled || loading || isPending || !selectedFriday || !token;
+  const controlsDisabled = disabled || loading || loadFailed || isPending || !selectedFriday || !token;
 
   return (
     <Card data-testid="friday-khutbah-editor">
@@ -258,7 +312,7 @@ export function FridayKhutbahEditor({
             type="button"
             role="tab"
             aria-selected={activeLanguage === language.code}
-            onClick={() => setActiveLanguage(language.code)}
+            onClick={() => setLanguageSelection({ locale, language: language.code })}
             className={`min-h-11 rounded-xl border px-4 text-sm font-bold ${activeLanguage === language.code ? "border-[var(--color-emerald)] bg-[var(--color-emerald-soft)] text-[var(--color-emerald)]" : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-charcoal)]"}`}
           >
             {language.label}
@@ -267,6 +321,7 @@ export function FridayKhutbahEditor({
       </div>
 
       {loading ? <p className="mt-4 text-sm text-[var(--color-muted)]">{copy.loading}</p> : null}
+      {loadFailed ? <p role="alert" className="mt-4 text-sm font-bold text-[var(--color-danger)]">{copy.loadFailed}</p> : null}
 
       <div role="tabpanel" className="mt-4 grid gap-4" dir={active.direction}>
         <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">

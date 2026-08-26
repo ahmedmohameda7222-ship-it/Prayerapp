@@ -13,6 +13,7 @@ describe("canonical Home UI authority", () => {
     expect(layout).toContain('import "./responsive-prayer-nav.css";\nimport "./home-ui.css";');
     expect(layout).not.toContain("home-palette-preview.css");
     expect(existsSync(join(process.cwd(), "app/home-ui.css"))).toBe(true);
+    expect(existsSync(join(process.cwd(), "app/home-palette-preview.css"))).toBe(false);
   });
 
   it("keeps canonical Home color roles in globals instead of a second hard-coded palette", () => {

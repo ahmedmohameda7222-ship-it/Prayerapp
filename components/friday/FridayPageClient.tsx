@@ -340,7 +340,7 @@ export function FridayPageClient({
           <Link
             href={`/friday/khutbah/${schedule.date}`}
             data-testid="friday-khutbah-cta"
-            className="flex min-h-12 w-full items-center justify-center rounded-[14px] bg-[var(--app-brand)] px-4 text-base font-bold text-white transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="flex min-h-12 w-full items-center justify-center rounded-[14px] bg-[var(--ui-brand)] px-4 text-base font-bold text-white transition-opacity hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             {copy.readKhutbah}
           </Link>

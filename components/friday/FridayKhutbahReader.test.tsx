@@ -73,6 +73,14 @@ describe("Friday khutbah reader language selection", () => {
     expect(reader).toContain("lang={selectedLanguage}");
   });
 
+  it("applies selected-language direction and wrapping to the khutbah title as well as content", () => {
+    const reader = readFileSync(join(process.cwd(), "components/friday/FridayKhutbahReader.tsx"), "utf8");
+
+    expect(reader).toContain("dir={selectedLanguage ? contentDirection : undefined}");
+    expect(reader).toContain("lang={selectedLanguage || locale}");
+    expect(reader).toContain('className="mt-2 break-words');
+  });
+
   it("uses repository-defined UI brand tokens instead of undefined app-brand variables", () => {
     const reader = readFileSync(join(process.cwd(), "components/friday/FridayKhutbahReader.tsx"), "utf8");
 

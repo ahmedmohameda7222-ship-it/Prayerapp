@@ -7,6 +7,8 @@ export const APP_NAMES = {
   tr: "Tuna Camii",
 } as const satisfies Record<Locale, string>;
 
+export const ASSOCIATION_NAME = "Deggendorfer Integrations und Bildungsverein e.V";
+
 export const DEFAULT_APP_NAME = APP_NAMES.ar;
 
 const BRAND_TRANSLATION_OVERRIDES: Record<Locale, Record<string, string>> = {

@@ -1,34 +1,12 @@
 /*
- * Home-only visual palette preview.
- * This layer is intentionally scoped to .home-page-shell so the rest of Prayerapp
- * keeps its current palette until the Home direction is explicitly approved.
+ * Canonical Home UI layer.
+ * Global semantic tokens live in globals.css; this file owns Home-specific selectors,
+ * responsive presentation, and platform-aware visual treatment.
  */
-
-.home-page-shell {
-  --home-brand: #245847;
-  --home-brand-strong: #173f34;
-  --home-brand-soft: #f1f0ec;
-  --home-canvas: #f3efe7;
-  --home-surface: #fcfaf6;
-  --home-surface-subtle: #f7f2ea;
-  --home-section-header: #eceae5;
-  --home-section-header-soft: #fcfaf6;
-  --home-section-header-text: #173f34;
-  --home-text: #20231f;
-  --home-text-secondary: #696860;
-  --home-divider: #d6cdbf;
-  --home-urgent: #a3463d;
-  --home-urgent-soft: #f7e9e6;
-  --home-success: #3a755e;
-  --home-disabled: #85827a;
-  --home-focus: #245847;
-  --home-brass: #8d642d;
-  --home-brass-soft: #f0e3cd;
-}
 
 /* The Home header uses the deepest forest tone as its stable visual anchor. */
 .home-page-shell .home-app-header-chrome {
-  background: #173f34;
+  background: var(--home-brand-strong);
 }
 
 /* Warm, low-glare surfaces with neutral section separation. */
@@ -71,8 +49,7 @@
 }
 
 .home-page-shell .home-urgent-surface {
-  border-color: var(--home-divider);
-  border-inline-start-color: var(--home-urgent);
+  border: 1px solid var(--home-divider);
   background: var(--home-urgent-soft);
 }
 
@@ -82,15 +59,15 @@
   border-color: var(--home-divider);
 }
 
-/* Force the Home PayPal CTA to retain high-contrast off-white text and icon. */
+/* Force the Home PayPal CTA to retain high-contrast light text and icon. */
 .home-page-shell .home-paypal-surface a {
-  background: #173f34;
-  color: #fcfaf6 !important;
+  background: var(--home-brand-strong);
+  color: var(--home-surface) !important;
 }
 
 .home-page-shell .home-paypal-surface a:hover {
-  background: #245847;
-  color: #fcfaf6 !important;
+  background: var(--home-brand);
+  color: var(--home-surface) !important;
 }
 
 .home-page-shell .home-paypal-surface a svg {
@@ -110,6 +87,27 @@
   line-height: 1.28;
 }
 
+/* Elderly-friendly Next Prayer scale. Home owns the visual size authority. */
+.home-page-shell .home-next-prayer-label {
+  font-size: 16px;
+}
+
+.home-page-shell .home-next-prayer-name {
+  font-size: 32px;
+}
+
+.home-page-shell .home-next-prayer-adhan {
+  font-size: 40px;
+}
+
+.home-page-shell .home-next-prayer-countdown {
+  font-size: 28px;
+}
+
+.home-page-shell .home-next-prayer-iqama {
+  font-size: 16px;
+}
+
 /* Keep the Home overlays warm instead of stark white. */
 .home-page-shell .language-menu[open] > div {
   border-color: var(--home-divider);
@@ -120,12 +118,12 @@
 @media (max-width: 1023px) {
   /*
    * iOS standalone mode exposes the document background through the status/safe-area.
-   * Scope the document chrome to Home so the status region joins the #173F34 header
-   * instead of exposing the legacy #005A52 page background.
+   * Scope the document chrome to Home so the status region joins the canonical
+   * deep-forest header instead of exposing the legacy page background.
    */
   html:has(.home-page-shell),
   body:has(.home-page-shell) {
-    background-color: #173f34;
+    background-color: var(--ui-brand-strong);
   }
 
   .home-page-shell .home-next-prayer-surface,
@@ -145,12 +143,12 @@
   .home-page-shell .home-next-prayer-instrument,
   .home-page-shell .home-next-prayer-label,
   .home-page-shell .home-next-prayer-adhan {
-    color: #fcfaf6;
+    color: var(--home-surface);
   }
 
   .home-page-shell .home-next-prayer-name,
   .home-page-shell .home-next-prayer-countdown {
-    color: #f0e3cd;
+    color: var(--home-brass-soft);
   }
 
   .home-page-shell .home-next-prayer-iqama {
@@ -187,6 +185,29 @@
   }
 }
 
+/*
+ * At narrow widths (including the effective layout under large text zoom),
+ * content height wins over the decorative 4:3 image ratio so prayer details
+ * can reflow without clipping or shrinking the elderly-friendly type scale.
+ */
+@media (max-width: 420px) {
+  .home-page-shell .home-next-prayer-surface {
+    aspect-ratio: auto;
+  }
+
+  .home-page-shell .home-next-prayer-content {
+    min-height: 20rem;
+  }
+
+  .home-page-shell .home-next-prayer-instrument {
+    width: 100%;
+  }
+
+  .home-page-shell .home-donation-verse {
+    white-space: normal;
+  }
+}
+
 @media (min-width: 1024px) {
   /*
    * The page content keeps its reading gutters, while the header itself becomes
@@ -209,6 +230,26 @@
 
   .home-page-shell .home-app-header-chrome h1[lang="ar"] {
     font-size: 48px;
+  }
+
+  .home-page-shell .home-next-prayer-label {
+    font-size: 17px;
+  }
+
+  .home-page-shell .home-next-prayer-name {
+    font-size: 36px;
+  }
+
+  .home-page-shell .home-next-prayer-adhan {
+    font-size: 48px;
+  }
+
+  .home-page-shell .home-next-prayer-countdown {
+    font-size: 32px;
+  }
+
+  .home-page-shell .home-next-prayer-iqama {
+    font-size: 18px;
   }
 
   .home-page-shell .bottom-nav-shell {

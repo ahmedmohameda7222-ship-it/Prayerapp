@@ -54,7 +54,7 @@
   margin: 0;
   color: rgba(255, 253, 248, 0.82);
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 700;
   line-height: 1.4;
 }
 
@@ -78,7 +78,7 @@
   margin: 0;
   color: #fffdf8;
   font-size: 42px;
-  font-weight: 850;
+  font-weight: 800;
   font-variant-numeric: tabular-nums lining-nums;
   line-height: 0.95;
 }
@@ -110,7 +110,7 @@
   margin-top: 10px;
   color: rgba(255, 253, 248, 0.74);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.45;
 }
 
@@ -154,7 +154,7 @@
   margin-top: 3px;
   color: var(--home-text-secondary);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.5;
 }
 
@@ -182,9 +182,8 @@
 }
 
 .home-page-shell .friday-service-row[data-next="true"] {
-  padding-inline-start: 15px;
-  border-inline-start: 3px solid var(--home-brand);
-  background: rgba(232, 241, 239, 0.58);
+  border: 1px solid var(--home-divider);
+  background: var(--home-brand-soft);
 }
 
 .home-page-shell .friday-service-main {
@@ -211,7 +210,7 @@
   margin-top: 4px;
   color: var(--home-brand-strong);
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 700;
   line-height: 1.35;
 }
 
@@ -232,7 +231,7 @@
   margin: 3px 0 0;
   color: var(--home-brand-strong);
   font-size: 30px;
-  font-weight: 850;
+  font-weight: 800;
   font-variant-numeric: tabular-nums lining-nums;
   line-height: 1;
 }
@@ -298,15 +297,14 @@
   margin: 0;
   color: var(--home-text-secondary);
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.75;
 }
 
 .home-page-shell .friday-important-note {
   padding: 16px 18px;
   border: 1px solid var(--home-divider);
-  border-inline-start: 3px solid var(--home-brand);
-  border-radius: 12px;
+  border-radius: var(--ui-radius-control);
   background: var(--home-brand-soft);
   box-shadow: none;
 }
@@ -370,10 +368,6 @@
 
   .home-page-shell .friday-service-row {
     padding: 16px;
-  }
-
-  .home-page-shell .friday-service-row[data-next="true"] {
-    padding-inline-start: 13px;
   }
 
   .home-page-shell .friday-service-main {
@@ -465,10 +459,6 @@
 
   .home-page-shell .friday-service-row {
     padding: 20px 24px;
-  }
-
-  .home-page-shell .friday-service-row[data-next="true"] {
-    padding-inline-start: 21px;
   }
 
   .home-page-shell .friday-service-main {

@@ -40,19 +40,23 @@ describe("Responsive Prayerapp navigation and Next Prayer contract", () => {
     expect(css).toContain("var(--nav-sidebar-index, 0)");
   });
 
-  it("keeps major Home content visibly grouped into section cards with distinct section headers", () => {
+  it("keeps major Home content visibly grouped into section cards with semantic section headers", () => {
     const home = source("components/home/HomePageClient.tsx");
     const title = source("components/home/HomeSectionTitle.tsx");
     const css = source("app/responsive-prayer-nav.css");
+    const globals = source("app/globals.css");
 
     expect(home).toContain("home-section-urgent home-section-card");
     expect(home).toContain("home-section-events home-section-card");
     expect(home).toContain("home-section-donations home-section-card");
     expect(home).toContain("home-section-card-header");
     expect(title).toContain("home-section-title");
-    expect(css).toContain("--home-section-header: #e2ece7");
-    expect(css).toContain("--home-section-header-soft: #edf3f0");
-    expect(css).toContain("--home-section-header-text: #173d37");
+    expect(globals).toContain("--home-section-header: var(--ui-section-header);");
+    expect(globals).toContain("--home-section-header-soft: var(--ui-section-header-soft);");
+    expect(globals).toContain("--home-section-header-text: var(--ui-section-header-text);");
+    expect(css).toContain("background: var(--home-section-header)");
+    expect(css).toContain("background: var(--home-section-header-soft)");
+    expect(css).toContain("color: var(--home-section-header-text)");
     expect(css).toContain(".home-section-card-header");
     expect(css).toContain(".home-section-empty-message");
     expect(home).toContain("لا توجد فعاليات قادمة في المسجد حاليًا.");

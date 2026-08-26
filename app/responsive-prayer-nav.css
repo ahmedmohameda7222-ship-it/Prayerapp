@@ -5,12 +5,6 @@
  * Home: bounded sections, distinct section headers, and deliberate typography hierarchy.
  */
 
-.home-page-shell {
-  --home-section-header: #e2ece7;
-  --home-section-header-soft: #edf3f0;
-  --home-section-header-text: #173d37;
-}
-
 .desktop-sidebar-toggle {
   display: none;
 }
@@ -50,9 +44,9 @@
 }
 
 .home-page-shell .home-section-card .home-urgent-surface {
-  border: 0;
-  border-inline-start: 3px solid var(--home-urgent);
-  border-radius: 0;
+  border: 1px solid var(--home-divider);
+  border-radius: var(--ui-radius-control);
+  background: var(--home-urgent-soft);
   box-shadow: none;
 }
 

@@ -137,8 +137,8 @@
     gap: 2px;
     border-radius: 0;
     background: transparent;
-    font-size: 10.5px;
-    font-weight: 560;
+    font-size: 12px;
+    font-weight: 600;
     line-height: 1.1;
     -webkit-tap-highlight-color: transparent;
     transition:
@@ -157,7 +157,7 @@
   .bottom-nav-shell.bottom-nav-ios .bottom-nav-link-active {
     background: transparent;
     color: #006f65;
-    font-weight: 680;
+    font-weight: 700;
   }
 
   html[data-platform="ios"] .bottom-nav-link-inactive,
@@ -260,7 +260,7 @@
 
   html[data-platform="ios"] .root-page-header h1 {
     font-size: 23px;
-    font-weight: 750;
+    font-weight: 700;
   }
 
   html[data-platform="android"] .root-page-header-inner {

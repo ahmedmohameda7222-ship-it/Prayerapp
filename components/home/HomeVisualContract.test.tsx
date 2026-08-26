@@ -42,12 +42,16 @@ describe("Home UI V2 visual contract", () => {
     expect(timetable).toContain("maghrib-program");
   });
 
-  it("uses a warm Home canvas without returning to decorative gold", () => {
+  it("uses the approved warm Home palette through semantic aliases without decorative gold", () => {
     const css = source("app/globals.css");
-    expect(css).toContain("--home-canvas: #f7f3ea");
-    expect(css).toContain("--home-surface: #fffdf8");
-    expect(css).toContain("--home-divider: #e5ded2");
-    expect(css).toContain("--home-text: #171a18");
+    expect(css).toContain("--ui-canvas: #f3efe7");
+    expect(css).toContain("--ui-surface: #fcfaf6");
+    expect(css).toContain("--ui-divider: #d6cdbf");
+    expect(css).toContain("--ui-text: #20231f");
+    expect(css).toContain("--home-canvas: var(--ui-canvas)");
+    expect(css).toContain("--home-surface: var(--ui-surface)");
+    expect(css).toContain("--home-divider: var(--ui-divider)");
+    expect(css).toContain("--home-text: var(--ui-text)");
   });
 
   it("uses one floating shared navigation selection with reduced-motion support", () => {

@@ -3,6 +3,8 @@
 import type { PrayerName, PrayerTime } from "@/lib/types";
 import { formatShortDate } from "@/lib/date-utils";
 import { getIqama, prayerOrder } from "@/lib/prayer-utils";
+import { getPrayerDisplayNameKey } from "@/lib/prayer-display-name";
+import { isFridayIso } from "@/lib/friday";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { formatTime } from "@/lib/time-format";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -18,6 +20,14 @@ export function WeeklyPrayerTable({
 }) {
   const { timeFormat } = useTimeFormat();
   const { t, locale } = useTranslation();
+  const includesFriday = times.some((day) => isFridayIso(day.date));
+  const includesNonFriday = times.some((day) => !isFridayIso(day.date));
+
+  function columnLabel(name: PrayerName) {
+    if (name !== "dhuhr") return t(`prayer.${name}`);
+    if (includesFriday && includesNonFriday) return `${t("prayer.dhuhr")} / ${t("prayer.jumuah")}`;
+    return t(getPrayerDisplayNameKey(name, times[0]?.date || selectedDate));
+  }
 
   return (
     <>
@@ -33,7 +43,7 @@ export function WeeklyPrayerTable({
                 const isActive = day.date === selectedDate && name === activePrayer;
                 return (
                   <div key={name} className="mobile-prayer-cell" data-active={isActive ? "true" : undefined}>
-                    <p className="mobile-prayer-cell-name">{t(`prayer.${name}`)}</p>
+                    <p className="mobile-prayer-cell-name">{t(getPrayerDisplayNameKey(name, day.date))}</p>
                     <p className="mobile-prayer-cell-time">{formatTime(day[name], timeFormat)}</p>
                     <p className="mobile-prayer-cell-iqama">
                       {iqama ? `${t("prayer.iqama")} ${formatTime(iqama, timeFormat)}` : "—"}
@@ -52,7 +62,7 @@ export function WeeklyPrayerTable({
             <tr>
               <th className="px-4 py-3">{t("times.day")}</th>
               {prayerOrder.map((name) => (
-                <th key={name} className="px-3 py-3">{t(`prayer.${name}`)}</th>
+                <th key={name} className="px-3 py-3">{columnLabel(name)}</th>
               ))}
             </tr>
           </thead>
@@ -64,6 +74,7 @@ export function WeeklyPrayerTable({
                   const iqama = getIqama(day, name);
                   return (
                     <td key={name} className={`px-3 py-3 ${day.date === selectedDate && name === activePrayer ? "text-[var(--color-emerald)]" : ""}`}>
+                      <div className="sr-only">{t(getPrayerDisplayNameKey(name, day.date))}</div>
                       <div className="font-extrabold">{formatTime(day[name], timeFormat)}</div>
                       {iqama ? <div className="text-xs text-[var(--color-muted)]">{t("prayer.iqama")} {formatTime(iqama, timeFormat)}</div> : <div className="text-xs text-[var(--color-muted)]">—</div>}
                     </td>

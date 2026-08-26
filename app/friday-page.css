@@ -492,3 +492,7 @@
     transition: none;
   }
 }
+
+.home-page-shell .friday-page [data-testid="friday-khutbah-cta"] {
+  color: #fcfaf6;
+}

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -33,6 +33,50 @@ describe("Friday public page contract", () => {
     expect(friday).toContain("additionalTimesLoadFailed");
     expect(friday).toContain("prayerTimesLoadFailed");
     expect(friday).not.toContain("if (additionalTimesLoadFailed)");
+  });
+
+  it("loads a published khutbah independently after resolving the displayed Friday", () => {
+    const page = source("app/friday/page.tsx");
+
+    expect(page).toContain("resolveUpcomingFridaySchedule");
+    expect(page).toContain("getFridayKhutbahByDate");
+    expect(page).toContain("khutbahLoadFailed");
+    expect(page).toContain("fridayKhutbah={fridayKhutbah}");
+    expect(page).toContain("khutbahLoadFailed={khutbahLoadFailed}");
+  });
+
+  it("shows exactly one Friday-level CTA only for the published khutbah matching the displayed Friday", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain('readKhutbah: "قراءة الخطبة"');
+    expect(friday).toContain('readKhutbah: "Read Khutbah"');
+    expect(friday).toContain('readKhutbah: "Predigt lesen"');
+    expect(friday).toContain('readKhutbah: "Hutbeyi oku"');
+    expect(friday).toContain('data-testid="friday-khutbah-cta"');
+    expect(friday).toContain("fridayKhutbah?.published");
+    expect(friday).toContain("fridayKhutbah.date === schedule.date");
+    expect(friday).toContain('href={`/friday/khutbah/${schedule.date}`}');
+    expect(friday).not.toContain("Khutbah coming soon");
+  });
+
+  it("keeps khutbah load failure isolated from the Friday schedule", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("khutbahLoadFailed");
+    expect(friday).toContain("data-khutbah-load-failed");
+    expect(friday).not.toContain("if (khutbahLoadFailed)");
+  });
+
+  it("protects the dedicated reader route with the published-only data layer", () => {
+    const route = "app/friday/khutbah/[date]/page.tsx";
+    expect(existsSync(join(process.cwd(), route))).toBe(true);
+    if (!existsSync(join(process.cwd(), route))) return;
+
+    const page = source(route);
+    expect(page).toContain("getFridayKhutbahByDate(date)");
+    expect(page).toContain("notFound()");
+    expect(page).toContain("FridayKhutbahReader");
+    expect(page).not.toContain("includeUnpublished");
   });
 
   it("makes the image a live next-prayer surface using prayerTime only", () => {

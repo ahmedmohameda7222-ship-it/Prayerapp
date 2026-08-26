@@ -74,5 +74,30 @@ describe("public design system contract", () => {
     expect(publicUi).toContain("--app-brand-strong: var(--ui-brand-strong);");
     expect(publicUi).toContain("--app-brand-soft: var(--ui-brand-soft);");
     expect(publicUi).toContain("--app-danger: var(--ui-urgent);");
+    expect(publicUi).toContain("--app-danger-soft: var(--ui-urgent-soft);");
+  });
+
+  it("keeps the shared Button primitive on semantic palette and radius tokens", () => {
+    const button = source("components/ui/Button.tsx");
+
+    expect(button).not.toContain("#f3d98b");
+    expect(button).toContain("var(--ui-brand)");
+    expect(button).toContain("var(--ui-surface)");
+    expect(button).toContain("var(--ui-brass)");
+    expect(button).toContain("var(--ui-brass-soft)");
+    expect(button).toContain("rounded-[var(--ui-radius-control)]");
+  });
+
+  it("uses full subtle status borders instead of 3px one-sided stripes", () => {
+    const home = source("app/responsive-prayer-nav.css");
+    const friday = source("app/friday-page.css");
+    const publicUi = source("app/public-ui-refresh.css");
+    const publicStatusCss = `${home}\n${friday}\n${publicUi}`;
+
+    expect(publicStatusCss).not.toMatch(/border-inline-start:\s*3px/);
+    expect(home).toContain("border: 1px solid var(--home-divider);");
+    expect(home).toContain("background: var(--home-urgent-soft);");
+    expect(friday).toContain("border: 1px solid var(--home-divider);");
+    expect(publicUi).toContain("background: var(--app-danger-soft);");
   });
 });

@@ -16,7 +16,7 @@ describe("public typography contract", () => {
 
   it("keeps Home typography on the approved weight scale", () => {
     const responsive = source("app/responsive-prayer-nav.css");
-    const home = source("app/home-palette-preview.css");
+    const home = source("app/home-ui.css");
     expect(responsive).not.toMatch(FORBIDDEN_INTERMEDIATE_WEIGHTS);
     expect(home).not.toMatch(FORBIDDEN_INTERMEDIATE_WEIGHTS);
   });

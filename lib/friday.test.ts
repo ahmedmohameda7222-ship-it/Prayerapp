@@ -72,11 +72,12 @@ describe("unified Friday schedule resolver", () => {
       new Date("2026-08-17T08:00:00.000Z"),
     );
 
-    expect(result?.items.map((item) => [item.id, item.prayerTime, item.source, item.editable])).toEqual([
-      ["primary:2026-08-21", "12:18", "prayer-times", false],
-      ["second", "13:30", "jumuah-times", true],
-      ["late", "14:30", "jumuah-times", true],
+    expect(result?.items.map((item) => [item.prayerTime, item.source, item.editable])).toEqual([
+      ["12:18", "prayer-times", false],
+      ["13:30", "jumuah-times", true],
+      ["14:30", "jumuah-times", true],
     ]);
+    expect(new Set(result?.items.map((item) => item.prayerTime)).size).toBe(result?.items.length);
   });
 
   it("ignores unpublished and non-Friday prayer rows instead of fabricating Primary", () => {

@@ -29,15 +29,35 @@ jobs:
 
       - name: Start disposable local Supabase and export app environment
         run: |
+          set -euo pipefail
           supabase start
           supabase db reset --local --no-seed
-          supabase status -o env > /tmp/supabase.env
-          set -a
-          source /tmp/supabase.env
-          set +a
-          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
-          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          STATUS_ENV="$(supabase status -o env)"
+          printf '%s\n' "$STATUS_ENV" | sed -n -E 's/^([A-Z0-9_]+)=.*/Supabase local status key: \1/p'
+          get_status_value() {
+            local keys="$1"
+            printf '%s\n' "$STATUS_ENV" \
+              | grep -E "^(${keys})=" \
+              | head -n 1 \
+              | sed -E 's/^[^=]+=//' \
+              | sed -E 's/^"//; s/"$//'
+          }
+          API_URL_VALUE="$(get_status_value 'API_URL')"
+          PUBLIC_KEY_VALUE="$(get_status_value 'PUBLISHABLE_KEY|ANON_KEY')"
+          SERVER_KEY_VALUE="$(get_status_value 'SECRET_KEY|SERVICE_ROLE_KEY')"
+          test -n "$API_URL_VALUE"
+          test -n "$PUBLIC_KEY_VALUE"
+          test -n "$SERVER_KEY_VALUE"
+          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL_VALUE" >> "$GITHUB_ENV"
+          echo "QA_PUBLIC_KEY=$PUBLIC_KEY_VALUE" >> "$GITHUB_ENV"
+          case "$PUBLIC_KEY_VALUE" in
+            sb_publishable_*) echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLIC_KEY_VALUE" >> "$GITHUB_ENV" ;;
+            *) echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_KEY_VALUE" >> "$GITHUB_ENV" ;;
+          esac
+          case "$SERVER_KEY_VALUE" in
+            sb_secret_*) echo "SUPABASE_SECRET_KEY=$SERVER_KEY_VALUE" >> "$GITHUB_ENV" ;;
+            *) echo "SUPABASE_SERVICE_ROLE_KEY=$SERVER_KEY_VALUE" >> "$GITHUB_ENV" ;;
+          esac
 
       - name: Seed deterministic Friday V2 rendered-QA data
         run: |
@@ -105,17 +125,24 @@ jobs:
       - name: Verify disposable public data boundary
         run: |
           set -euo pipefail
-          AUTH=(-H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" -H "Authorization: Bearer $NEXT_PUBLIC_SUPABASE_ANON_KEY")
-          curl --fail --silent --show-error "${AUTH[@]}" \
-            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/prayer_times?select=date,dhuhr,dhuhr_iqama,published&date=gte.2026-08-26&date=lte.2026-08-28&order=date.asc" \
+          curl_public() {
+            local url="$1"
+            if [[ "$QA_PUBLIC_KEY" == sb_publishable_* ]]; then
+              curl --fail --silent --show-error -H "apikey: $QA_PUBLIC_KEY" "$url"
+            else
+              curl --fail --silent --show-error \
+                -H "apikey: $QA_PUBLIC_KEY" \
+                -H "Authorization: Bearer $QA_PUBLIC_KEY" \
+                "$url"
+            fi
+          }
+          curl_public "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/prayer_times?select=date,dhuhr,dhuhr_iqama,published&date=gte.2026-08-26&date=lte.2026-08-28&order=date.asc" \
             | tee /tmp/friday-v2-prayers.json
           echo
-          curl --fail --silent --show-error "${AUTH[@]}" \
-            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/jumuah_times?select=date,prayer_time,khutbah_time,published&date=eq.2026-08-28&order=prayer_time.asc" \
+          curl_public "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/jumuah_times?select=date,prayer_time,khutbah_time,published&date=eq.2026-08-28&order=prayer_time.asc" \
             | tee /tmp/friday-v2-jumuah.json
           echo
-          curl --fail --silent --show-error "${AUTH[@]}" \
-            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/friday_khutbahs?select=date,published,content_ar,content_en,content_de,content_tr&date=eq.2026-08-28" \
+          curl_public "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/friday_khutbahs?select=date,published,content_ar,content_en,content_de,content_tr&date=eq.2026-08-28" \
             | tee /tmp/friday-v2-khutbah.json
           echo
           node --input-type=module <<'NODE'

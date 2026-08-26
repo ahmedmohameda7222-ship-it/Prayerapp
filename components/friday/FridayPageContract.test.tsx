@@ -69,6 +69,13 @@ describe("Friday public page contract", () => {
     expect(friday).not.toContain("Khutbah coming soon");
   });
 
+  it("uses repository-defined UI brand tokens for the Friday khutbah CTA", () => {
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(friday).toContain("var(--ui-brand)");
+    expect(friday).not.toContain("--app-brand");
+  });
+
   it("keeps khutbah load failure isolated from the Friday schedule", () => {
     const friday = source("components/friday/FridayPageClient.tsx");
 

@@ -81,4 +81,11 @@ describe("Friday khutbah reader language selection", () => {
     expect(reader).toContain("var(--ui-brand-soft)");
     expect(reader).not.toContain("--app-brand");
   });
+
+  it("does not nest a second main landmark inside AppShell", () => {
+    const reader = readFileSync(join(process.cwd(), "components/friday/FridayKhutbahReader.tsx"), "utf8");
+
+    expect(reader).not.toContain("<main");
+    expect(reader).not.toContain("</main>");
+  });
 });

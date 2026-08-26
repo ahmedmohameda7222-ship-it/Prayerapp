@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { formatLongDate } from "@/lib/date-utils";
 import {
   getAvailableKhutbahLanguages,
@@ -54,17 +54,24 @@ const COPY: Record<Locale, {
   },
 };
 
+type LanguageSelection = {
+  locale: Locale;
+  khutbahId: string;
+  language: FridayKhutbahLanguage;
+};
+
 export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
   const { locale } = useTranslation();
   const copy = COPY[locale];
   const availableLanguages = useMemo(() => getAvailableKhutbahLanguages(khutbah), [khutbah]);
-  const [selectedLanguage, setSelectedLanguage] = useState<FridayKhutbahLanguage | null>(
-    () => getDefaultKhutbahLanguage(khutbah, locale),
-  );
-
-  useEffect(() => {
-    setSelectedLanguage(getDefaultKhutbahLanguage(khutbah, locale));
-  }, [khutbah, locale]);
+  const [languageSelection, setLanguageSelection] = useState<LanguageSelection | null>(null);
+  const defaultLanguage = getDefaultKhutbahLanguage(khutbah, locale);
+  const selectedLanguage = languageSelection
+    && languageSelection.locale === locale
+    && languageSelection.khutbahId === khutbah.id
+    && availableLanguages.includes(languageSelection.language)
+    ? languageSelection.language
+    : defaultLanguage;
 
   const selected = selectedLanguage
     ? getKhutbahContentForLanguage(khutbah, selectedLanguage)
@@ -106,7 +113,7 @@ export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
               type="button"
               role="tab"
               aria-selected={selectedLanguage === language}
-              onClick={() => setSelectedLanguage(language)}
+              onClick={() => setLanguageSelection({ locale, khutbahId: khutbah.id, language })}
               className={`min-h-11 rounded-[14px] border px-4 text-sm font-bold ${selectedLanguage === language ? "border-[var(--ui-brand)] bg-[var(--ui-brand-soft)] text-[var(--ui-brand-strong)]" : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-charcoal)]"}`}
             >
               {LANGUAGE_LABELS[language]}

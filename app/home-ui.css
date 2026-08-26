@@ -195,6 +195,10 @@
     aspect-ratio: auto;
   }
 
+  .home-page-shell .home-next-prayer-media img {
+    object-fit: cover;
+  }
+
   .home-page-shell .home-next-prayer-content {
     min-height: 20rem;
   }

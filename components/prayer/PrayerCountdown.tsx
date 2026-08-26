@@ -56,12 +56,12 @@ export function PrayerCountdown({
   if (variant === "instrument") {
     return (
       <div className="home-next-prayer-instrument text-[var(--home-text)]">
-        <p className="home-next-prayer-label text-[15px] font-extrabold text-[var(--home-text)]">{t("prayer.nextPrayer")}</p>
-        <h2 className="home-next-prayer-name mt-1 text-[26px] font-bold leading-tight text-[var(--home-brand-strong)]">{t(`prayer.${state.name}`)}</h2>
-        <p className="home-next-prayer-adhan home-tabular mt-4 text-[32px] font-bold leading-none text-[var(--home-text)]" data-testid="next-prayer-adhan"><span dir="ltr">{state.time}</span></p>
-        <p className="home-next-prayer-countdown home-tabular mt-2 text-[23px] font-bold leading-tight text-[var(--home-brand)]" aria-live="polite" data-testid="next-prayer-countdown"><span dir="ltr">{state.countdown}</span></p>
+        <p className="home-next-prayer-label font-extrabold text-[var(--home-text)]">{t("prayer.nextPrayer")}</p>
+        <h2 className="home-next-prayer-name mt-1 font-bold leading-tight text-[var(--home-brand-strong)]">{t(`prayer.${state.name}`)}</h2>
+        <p className="home-next-prayer-adhan home-tabular mt-4 font-bold leading-none text-[var(--home-text)]" data-testid="next-prayer-adhan"><span dir="ltr">{state.time}</span></p>
+        <p className="home-next-prayer-countdown home-tabular mt-2 font-bold leading-tight text-[var(--home-brand)]" aria-live="polite" data-testid="next-prayer-countdown"><span dir="ltr">{state.countdown}</span></p>
         {state.iqama ? (
-          <p className="home-next-prayer-iqama home-tabular mt-3 text-sm font-bold text-[var(--home-text-secondary)]">
+          <p className="home-next-prayer-iqama home-tabular mt-3 font-bold text-[var(--home-text-secondary)]">
             {t("prayer.iqama")} <span dir="ltr">{state.iqama}</span>
           </p>
         ) : null}

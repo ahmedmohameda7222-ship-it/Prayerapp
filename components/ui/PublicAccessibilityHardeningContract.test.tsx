@@ -18,6 +18,15 @@ describe("public responsive, localization, and accessibility hardening", () => {
     expect(narrow).toMatch(/\.home-page-shell \.home-next-prayer-instrument\s*\{[\s\S]*?width:\s*100%;/);
   });
 
+  it("lets the mobile donation verse wrap under enlarged text instead of forcing horizontal overflow", () => {
+    const css = source("app/home-ui.css");
+    const narrowStart = css.indexOf("@media (max-width: 420px)");
+
+    expect(narrowStart).toBeGreaterThan(-1);
+    const narrow = css.slice(narrowStart);
+    expect(narrow).toMatch(/\.home-page-shell \.home-donation-verse\s*\{[\s\S]*?white-space:\s*normal;/);
+  });
+
   it("allows the exact German legal association name to wrap safely under text enlargement", () => {
     const header = source("components/layout/AppHeader.tsx");
 

@@ -1,0 +1,61 @@
+import { describe, expect, it } from "vitest";
+import {
+  getAvailableKhutbahLanguages,
+  getDefaultKhutbahLanguage,
+  getKhutbahContentForLanguage,
+} from "@/lib/friday-khutbah";
+import type { FridayKhutbah } from "@/lib/types";
+
+function khutbah(overrides: Partial<FridayKhutbah> = {}): FridayKhutbah {
+  return {
+    id: "khutbah-1",
+    date: "2026-08-28",
+    published: true,
+    createdAt: "2026-08-26T00:00:00.000Z",
+    updatedAt: "2026-08-26T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+describe("Friday khutbah reader language selection", () => {
+  it("offers only Arabic and Turkish and makes no automatic selection for German locale", () => {
+    const item = khutbah({ contentAr: "نص عربي", contentTr: "Türkçe metin" });
+
+    expect(getAvailableKhutbahLanguages(item)).toEqual(["ar", "tr"]);
+    expect(getDefaultKhutbahLanguage(item, "de")).toBeNull();
+  });
+
+  it("auto-selects Turkish when Turkish content exists and the app locale is Turkish", () => {
+    const item = khutbah({ contentTr: "Türkçe metin" });
+
+    expect(getAvailableKhutbahLanguages(item)).toEqual(["tr"]);
+    expect(getDefaultKhutbahLanguage(item, "tr")).toBe("tr");
+  });
+
+  it("offers only English and German and makes no automatic selection for Arabic locale", () => {
+    const item = khutbah({ contentEn: "English text", contentDe: "Deutscher Text" });
+
+    expect(getAvailableKhutbahLanguages(item)).toEqual(["en", "de"]);
+    expect(getDefaultKhutbahLanguage(item, "ar")).toBeNull();
+  });
+
+  it("does not make title-only languages available", () => {
+    const item = khutbah({ titleAr: "عنوان", contentEn: "English text" });
+
+    expect(getAvailableKhutbahLanguages(item)).toEqual(["en"]);
+  });
+
+  it("returns exact selected-language content without cross-language fallback", () => {
+    const item = khutbah({
+      titleAr: "عنوان عربي",
+      contentAr: "النص العربي",
+      contentEn: "English text",
+    });
+
+    expect(getKhutbahContentForLanguage(item, "ar")).toEqual({
+      title: "عنوان عربي",
+      content: "النص العربي",
+    });
+    expect(getKhutbahContentForLanguage(item, "de")).toBeNull();
+  });
+});

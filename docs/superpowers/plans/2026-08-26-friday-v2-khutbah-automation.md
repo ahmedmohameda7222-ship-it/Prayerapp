@@ -211,88 +211,95 @@ npm test -- components/layout/AppHeaderBrandContract.test.tsx components/layout/
 - [ ] **Step 6: Commit**
 
 ```bash
-git add public/branding/masjid-al-danube-ar.svg components/layout/AppHeader.tsx components/layout/*Brand*.test.tsx
+git add public/branding/masjid-al-danube-ar.svg components/layout/AppHeader.tsx components/layout/*Brand*test* components/layout/AppHeaderAssociationName.test.tsx
 git commit -m "feat: replace Arabic header with approved Thuluth wordmark"
 ```
 
 ---
 
-### Task 3: Make Arabic Hijri Date Part-Structured and Bidi-Safe
+### Task 3: Fix Arabic Hijri Date Ordering and Bidi Safety
 
 **Files:**
+- Modify: `lib/date-utils.ts`
 - Create: `components/ui/FormattedHijriDate.tsx`
 - Create: `components/ui/FormattedHijriDate.test.tsx`
-- Modify: `lib/date-utils.ts`
 - Modify: `components/layout/AppHeader.tsx`
-- Modify: related header/date tests.
 
 **Interfaces:**
+- Produces:
 
 ```ts
-export interface HijriDateParts {
+export type HijriDateParts = {
   day: string;
   month: string;
   year: string;
-  era?: string;
-}
+  era: string;
+};
 
-export function formatHijriParts(date: Date, locale: Locale): HijriDateParts;
+export function formatHijriDateParts(date: string, locale?: Locale): HijriDateParts;
 ```
 
-- [ ] **Step 1: Write RED unit tests for formatter**
+- [ ] **Step 1: Write failing formatter tests**
 
-Test Arabic and one non-Arabic locale. For Arabic, assert semantic parts are captured separately instead of a raw string.
+Assert that Arabic `formatHijriDateParts()` returns non-empty day/month/year and an era, with Arabic-localized numeric parts. Do not test only a single concatenated string.
 
-- [ ] **Step 2: Write RED render test for Arabic order**
+- [ ] **Step 2: Write failing rendered bidi test**
 
-Rendered order must be:
-
-`DAY MONTH YEAR هـ`
-
-Use separate elements or isolation spans for numeric parts. Prefer:
+Render:
 
 ```tsx
-<bdi>{parts.day}</bdi>
-<span>{parts.month}</span>
-<bdi>{parts.year}</bdi>
-<span>{parts.era ?? "هـ"}</span>
+<FormattedHijriDate date="2026-08-26" locale="ar" />
 ```
 
-wrapped in one RTL container. Do not reverse the full string with `flex-row-reverse`.
+Assert DOM child order is `day`, `month`, `year`, `era`, and numeric values are each inside bidi-isolated nodes.
 
-- [ ] **Step 3: Implement `formatHijriParts()`**
+- [ ] **Step 3: Run RED**
 
-Use:
+```bash
+npm test -- components/ui/FormattedHijriDate.test.tsx
+```
+
+- [ ] **Step 4: Implement `formatToParts()` formatter**
+
+Use exactly:
 
 ```ts
-new Intl.DateTimeFormat(hijriLocale, {
+new Intl.DateTimeFormat(`${intlLocales[locale]}-u-ca-islamic-umalqura`, {
   day: "numeric",
   month: "long",
   year: "numeric",
-  era: "short",
-  calendar: "islamic-umalqura",
-  numberingSystem: locale === "ar" ? "arab" : "latn",
-  timeZone: BERLIN_TIMEZONE,
-}).formatToParts(date)
+  timeZone: APP_TIME_ZONE,
+}).formatToParts(atNoonUtc(date));
 ```
 
-Map `day`, `month`, `year`, `era`. Ignore literal punctuation; compose visually in controlled order.
+Extract parts explicitly. For Arabic, normalize era presentation to `هـ` if needed by runtime output while preserving calendar calculation.
 
-- [ ] **Step 4: Integrate AppHeader**
+- [ ] **Step 5: Implement structured rendered component**
 
-Replace raw `{hijriDate}` string rendering with `<FormattedHijriDate />`. Preserve existing `en-US` Gregorian line under it.
+Render logical part order with isolated numeric nodes, e.g.:
 
-- [ ] **Step 5: Run targeted tests**
+```tsx
+<span dir={locale === "ar" ? "rtl" : "ltr"}>
+  <bdi>{parts.day}</bdi>{" "}
+  <span>{parts.month}</span>{" "}
+  <bdi>{parts.year}</bdi>{" "}
+  <span>{parts.era}</span>
+</span>
+```
+
+For non-Arabic, preserve expected locale order if the existing UX depends on it; the hard requirement is correct Arabic rendering.
+
+- [ ] **Step 6: Wire AppHeader and run tests**
 
 ```bash
-npm test -- components/ui/FormattedHijriDate.test.tsx components/layout
+npm test -- components/ui/FormattedHijriDate.test.tsx components/layout/AppHeaderBrandContract.test.tsx
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add lib/date-utils.ts components/ui/FormattedHijriDate.tsx components/ui/FormattedHijriDate.test.tsx components/layout/AppHeader.tsx
-git commit -m "fix: render Arabic Hijri dates in stable semantic order"
+git commit -m "fix: render Arabic Hijri date in stable bidi order"
 ```
 
 ---
@@ -301,322 +308,328 @@ git commit -m "fix: render Arabic Hijri dates in stable semantic order"
 
 **Files:**
 - Modify: `lib/types.ts`
-- Modify: `lib/friday.ts`
+- Rewrite/Modify: `lib/friday.ts`
 - Modify: `lib/friday.test.ts`
-- Modify: `lib/data/jumuah.ts` only as needed.
+- Modify/remove adapter logic: `lib/home-jumuah.ts`
+- Modify: `lib/home-jumuah.test.ts`
 
 **Interfaces:**
 
+Define a focused resolver shape similar to:
+
 ```ts
-export interface ResolvedFridayService {
+export type FridayService = {
   id: string;
-  label: "Primary" | "Jumu'ah 2" | "Jumu'ah 3" | string;
-  prayerTime: string;
-  khateebName?: string;
-  isPrimary: boolean;
-  isLegacyInvalid?: boolean;
-}
-
-export interface ResolvedFridaySchedule {
   date: string;
-  services: ResolvedFridayService[];
-  nextServiceId?: string;
-}
+  prayerTime: string;
+  source: "prayer-times" | "admin";
+  editable: boolean;
+  jumuah?: JumuahTime;
+};
 
-export interface ResolveFridayScheduleInput {
-  now: Date;
-  prayerTimes: PrayerTime[];
-  additionalJumuah: JumuahTime[];
-}
+export type FridaySchedule = {
+  date: string;
+  primaryPrayer: PrayerTime;
+  services: FridayService[];
+  nextIndex: number;
+  isToday: boolean;
+};
 
-export function resolveFridaySchedule(
-  input: ResolveFridayScheduleInput,
-): ResolvedFridaySchedule | undefined;
+export function resolveUpcomingFridaySchedule(
+  prayerTimes: PrayerTime[],
+  jumuahTimes: JumuahTime[],
+  now: Date,
+): FridaySchedule | undefined;
 ```
 
-Primary ID must be deterministic and virtual, e.g.:
+Exact naming may vary only if all consumers/tests are updated consistently; do not split domain logic between Home and Friday again.
+
+- [ ] **Step 1: Replace tests with Primary-first RED cases**
+
+Add tests for:
 
 ```ts
-const primaryId = `primary:${date}`;
+// no jumuah rows, prayer Friday exists
+expect(schedule.services).toHaveLength(1);
+expect(schedule.services[0]).toMatchObject({
+  prayerTime: fridayPrayer.dhuhr,
+  source: "prayer-times",
+  editable: false,
+});
 ```
 
-- [ ] **Step 1: Write RED tests for zero-DB-row Primary**
+Also assert `dhuhrIqama` does not affect Primary.
 
-At minimum:
+- [ ] **Step 2: Add RED normalization cases**
 
-```text
-published Friday prayer row + no jumuah rows → one Primary service at prayer_times.dhuhr
-Primary is isPrimary=true
-Primary is not sourced from dhuhrIqama
-```
+- additional rows sorted ascending;
+- equal-to-Primary legacy row deduped;
+- earlier-than-Primary legacy row ignored publicly;
+- unpublished additional row ignored;
+- non-Friday row ignored.
 
-- [ ] **Step 2: Write RED tests for additional services**
+- [ ] **Step 3: Add RED transition cases**
 
-```text
-Primary 13:15 + extras 14:00, 15:00 → sorted [Primary, 14:00, 15:00]
-extra exactly 13:15 → public deduped/omitted
-extra before 13:15 → public omitted
-extra 14:00 + duplicate 14:00 → one additional public row
-```
+- weekday → upcoming Friday;
+- current Friday before Primary → Primary next;
+- current Friday between services → next extra;
+- after final service → next Friday;
+- weekend → next Friday;
+- missing published prayer Friday → undefined, never synthesized.
 
-Use existing `JumuahTime` rows, but ignore legacy `khutbahTime` for service scheduling.
+- [ ] **Step 4: Run RED**
 
-- [ ] **Step 3: Write RED Friday progression tests**
-
-```text
-Thursday 12:00 → upcoming Friday is next day
-Friday before last service → same Friday
-Friday after last service → next Friday prayer row
-Saturday → next Friday
-```
-
-Use Berlin-aware date helpers; do not base this on local CI machine timezone.
-
-- [ ] **Step 4: Write RED next-service tests preserving current five-minute imminent rule**
-
-```text
-now 13:11, service 13:15 → Primary next
-now 13:20, extra 14:00 → extra next
-now after last service → no nextServiceId for same-date schedule; resolver advances Friday according to progression policy
+```bash
+npm test -- lib/friday.test.ts lib/home-jumuah.test.ts
 ```
 
 - [ ] **Step 5: Implement minimal resolver**
 
-Implementation rules:
-
-1. Consider published Friday `PrayerTime` rows only.
-2. Derive each Primary from `.dhuhr`.
-3. Normalize extras from same-date `jumuah_times` rows.
-4. Deduplicate by `prayerTime` with Primary precedence.
-5. Omit public extras `<= Primary`.
-6. Sort by parsed time.
-7. Choose target Friday based on existing five-minute next-service rule.
-8. Never write to database.
-
-Do not make Admin-warning decisions in the public resolver; expose helper flags separately if needed.
-
-- [ ] **Step 6: Run RED→GREEN**
-
-```bash
-npm test -- lib/friday.test.ts
-```
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add lib/types.ts lib/friday.ts lib/friday.test.ts lib/data/jumuah.ts
-git commit -m "feat: derive automatic Friday Primary from prayer schedule"
-```
-
----
-
-### Task 5: Move Friday Page and Home onto the Unified Resolver
-
-**Files:**
-- Modify: `app/page.tsx`
-- Modify: `app/friday/page.tsx`
-- Modify: `components/friday/FridayPageClient.tsx`
-- Modify: `components/home/HomePageClient.tsx`
-- Modify: `components/home/HomeJumuahCard.tsx`
-- Modify: `lib/home-jumuah.ts`
-- Modify: `lib/home-jumuah.test.ts`
-- Modify: `components/friday/FridayPageContract.test.tsx`
-- Modify: `components/home/HomeJumuahContract.test.tsx`
-
-**Interfaces:**
-- Consumes: `PrayerTime[]`, `JumuahTime[]`, `resolveFridaySchedule()`.
-- Produces: one shared schedule shape for Home and Friday.
-
-- [ ] **Step 1: Write RED Friday page contracts**
-
-Assert source/rendered behavior for:
-
-- zero additional DB rows still render Primary;
-- Primary time is prayer `dhuhr`;
-- additional rows render after Primary;
-- existing BottomNav route remains `/friday`.
-
-- [ ] **Step 2: Write RED Home contract**
-
-Preserve current Home visibility policy (Wednesday through Friday) but expect services from resolved schedule instead of direct `JumuahTime[]` semantics.
-
-- [ ] **Step 3: Refactor `home-jumuah.ts`**
-
-Keep only visibility-window policy if it remains Home-specific. Schedule time/progression selection must delegate to `lib/friday.ts`.
-
-- [ ] **Step 4: Update server loaders**
-
-Home and Friday both load enough published prayer rows to resolve current/next Friday plus additional `jumuah_times` rows. Do not fabricate prayer rows.
-
-- [ ] **Step 5: Update cards/pages to `ResolvedFridayService[]`**
-
-Rendering:
-
-```text
-Primary
-Jumu'ah 2
-Jumu'ah 3
-```
-
-Do not display or ask for `khutbahTime` in public schedule rows.
-
-- [ ] **Step 6: Run focused tests**
-
-```bash
-npm test -- lib/home-jumuah.test.ts components/home/HomeJumuahContract.test.tsx components/friday/FridayPageContract.test.tsx
-```
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add app/page.tsx app/friday components/home lib/home-jumuah.ts lib/home-jumuah.test.ts
-git commit -m "refactor: share Friday resolver across home and Friday page"
-```
-
----
-
-### Task 6: Add Friday-Only Dhuhr Display Naming Everywhere Public
-
-**Files:**
-- Create: `lib/prayer-display-name.ts`
-- Create: `lib/prayer-display-name.test.ts`
-- Modify: `lib/i18n/prayer-names.ts`
-- Modify:
-  - `components/prayer/PrayerRow.tsx`
-  - `components/prayer/HomePrayerTimesCard.tsx`
-  - `components/prayer/PrayerTimesCard.tsx`
-  - `components/prayer/WeeklyPrayerTable.tsx`
-  - `components/prayer/PrayerTimesBrowser.tsx`
-- Modify related prayer tests/contracts.
-
-**Interfaces:**
+Primary ID must be deterministic and non-colliding, e.g.:
 
 ```ts
-export function getPrayerDisplayNameKey(
-  prayer: PrayerName,
-  date: string,
-): PrayerName | "jumuah";
+id: `primary:${prayer.date}`
 ```
 
-- [ ] **Step 1: Write RED helper tests**
+Additional service object wraps the original `JumuahTime` row.
 
-```text
-dhuhr + Friday → jumuah
-dhuhr + Thursday → dhuhr
-fajr + Friday → fajr
-```
+Use `todayIso()` / `zonedDateTime()` and `APP_TIME_ZONE` helpers rather than browser-local date assumptions.
 
-Use ISO date input and Berlin weekday helper.
+- [ ] **Step 6: Make Home logic a visibility adapter only**
 
-- [ ] **Step 2: Add translations**
+Preserve Home-specific days-until / Wednesday-to-Friday visibility behavior without recomputing service semantics.
 
-```ts
-jumuah: {
-  ar: "الجمعة",
-  en: "Jumu'ah",
-  de: "Freitagsgebet",
-  tr: "Cuma",
-}
-```
-
-Adapt to existing translation-object shape.
-
-- [ ] **Step 3: Migrate each public prayer consumer**
-
-For rows/cards with a date, use the display helper only at render time. Do not mutate the `PrayerName` used by reminders/countdown/storage.
-
-- [ ] **Step 4: Preserve internal countdown semantics**
-
-Any `PrayerCountdown` / reminder code should still receive `dhuhr` as the internal prayer key. Only visible text changes.
-
-- [ ] **Step 5: Run focused tests**
+- [ ] **Step 7: Run GREEN**
 
 ```bash
-npm test -- lib/prayer-display-name.test.ts components/prayer
-```
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add lib/prayer-display-name.ts lib/prayer-display-name.test.ts lib/i18n/prayer-names.ts components/prayer
-git commit -m "feat: show Jumu'ah labels for Friday Dhuhr rows"
-```
-
----
-
-### Task 7: Rebuild Friday Admin Around Locked Primary and Additional Services
-
-**Files:**
-- Modify: `app/admin/jumuah/page.tsx`
-- Modify: `app/admin/jumuah/actions.ts`
-- Modify: `components/admin/JumuahTable.tsx`
-- Add/modify related Admin tests.
-
-**Interfaces:**
-
-Pure validation recommendation:
-
-```ts
-export interface ValidateAdditionalFridayServiceInput {
-  date: string;
-  prayerTime: string;
-  primaryTime: string;
-  existingTimes: string[];
-}
-
-export function validateAdditionalFridayService(
-  input: ValidateAdditionalFridayServiceInput,
-): { ok: true } | { ok: false; error: string };
-```
-
-- [ ] **Step 1: Write RED validation tests**
-
-```text
-extra > Primary → valid
-extra == Primary → invalid
-extra < Primary → invalid
-duplicate extra → invalid
-```
-
-- [ ] **Step 2: Write RED page/form source contract**
-
-Assert:
-
-- Admin loads published Friday prayer rows;
-- Friday selector is derived from prayer schedule;
-- Primary control is read-only/locked and uses `dhuhr`;
-- Add Service form has one prayer-time input, not separate khutbah/prayer time fields;
-- no action can edit/delete Primary.
-
-- [ ] **Step 3: Implement server-side authoritative validation**
-
-Every create/update reads that Friday's published `prayer_times` row server-side and uses `.dhuhr` as Primary. Never trust client-supplied Primary.
-
-- [ ] **Step 4: Preserve role/auth model**
-
-Keep `getAdminSessionFromCookies()` and `requireAllowedAdmin()` unchanged. Do not broaden auth scope.
-
-- [ ] **Step 5: Handle legacy rows**
-
-Admin table should retain old rows but mark any `prayer_time <= Primary` as legacy-invalid with correction guidance. Public resolver already hides invalid rows.
-
-For valid new rows, store `khutbah_time = null` when schema permits; otherwise do not rely on it and document legacy status.
-
-- [ ] **Step 6: Preserve push behavior narrowly**
-
-Existing additional-service publish push remains unchanged. Do not add a khutbah-content push.
-
-- [ ] **Step 7: Run targeted tests**
-
-```bash
-npm test -- app/admin/jumuah components/admin/JumuahTable.test.tsx
+npm test -- lib/friday.test.ts lib/home-jumuah.test.ts
 ```
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add app/admin/jumuah components/admin/JumuahTable.tsx
-git commit -m "feat: lock automatic Primary in Friday admin"
+git add lib/types.ts lib/friday.ts lib/friday.test.ts lib/home-jumuah.ts lib/home-jumuah.test.ts
+git commit -m "feat: derive Primary Jumuah from Friday Dhuhr"
+```
+
+---
+
+### Task 5: Feed Unified Friday Schedule into Home and Friday Page
+
+**Files:**
+- Modify: `app/page.tsx`
+- Modify: `components/home/HomePageClient.tsx`
+- Modify: `components/home/HomeJumuahCard.tsx`
+- Modify: `components/home/HomeJumuahContract.test.tsx`
+- Modify: `app/friday/page.tsx`
+- Modify: `components/friday/FridayPageClient.tsx`
+- Modify: `components/friday/FridayPageContract.test.tsx`
+
+**Interfaces:**
+- Consumes: unified Friday resolver from Task 4.
+- Produces: public Primary schedule with no Jumuah DB dependency.
+
+- [ ] **Step 1: Add failing Home contract with zero Jumuah rows**
+
+Given `initialPrayerTimes` containing upcoming Friday `dhuhr` and `jumuahTimes=[]`, Home's Jumu'ah card must render Primary in the existing display window.
+
+- [ ] **Step 2: Add failing Friday page contract with zero Jumuah rows**
+
+Render Friday page client with prayer data + empty additional rows and assert Primary is visible.
+
+If current props do not carry prayer times, change the component API under test first and let compilation/test failure prove RED.
+
+- [ ] **Step 3: Run RED**
+
+```bash
+npm test -- components/home/HomeJumuahContract.test.tsx components/friday/FridayPageContract.test.tsx
+```
+
+- [ ] **Step 4: Update server loaders**
+
+`app/friday/page.tsx` must load an adequate upcoming prayer range via `getPrayerTimes()` plus published `getJumuahTimes()` independently, preserving failure isolation.
+
+`app/page.tsx` already loads prayer range + Jumuah rows; reuse them.
+
+- [ ] **Step 5: Update client schedule computation**
+
+Do not duplicate Primary synthesis inside components. Call resolver/adapter only.
+
+- [ ] **Step 6: Adapt presentation shape**
+
+Home and Friday labels should number services based on `schedule.services`, with Primary always index 0.
+
+- [ ] **Step 7: Run GREEN + relevant old tests**
+
+```bash
+npm test -- components/home/HomeJumuahContract.test.tsx components/friday/FridayPageContract.test.tsx lib/friday.test.ts lib/home-jumuah.test.ts
+```
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add app/page.tsx app/friday/page.tsx components/home components/friday
+git commit -m "feat: show automatic Primary Jumuah across public Friday surfaces"
+```
+
+---
+
+### Task 6: Add Friday-Only Dhuhr → Jumu'ah Display Semantics
+
+**Files:**
+- Create: `lib/prayer-display-name.ts`
+- Create: `lib/prayer-display-name.test.ts`
+- Modify: `lib/i18n/prayer-names.ts`
+- Modify all affected public prayer renderers and their tests.
+
+**Interfaces:**
+
+Recommended helper:
+
+```ts
+export function getPrayerDisplayTranslationKey(name: PrayerName, date: string): string {
+  return name === "dhuhr" && isFridayIso(date) ? "prayer.jumuah" : `prayer.${name}`;
+}
+```
+
+Do not pass locale into the domain decision if the translation layer can handle it.
+
+- [ ] **Step 1: Write failing domain tests**
+
+```ts
+expect(getPrayerDisplayTranslationKey("dhuhr", "2026-08-28")).toBe("prayer.jumuah");
+expect(getPrayerDisplayTranslationKey("dhuhr", "2026-08-27")).toBe("prayer.dhuhr");
+expect(getPrayerDisplayTranslationKey("asr", "2026-08-28")).toBe("prayer.asr");
+```
+
+- [ ] **Step 2: Write failing localization contract**
+
+Add translations:
+
+```text
+ar: الجمعة
+en: Jumu'ah
+de: Freitagsgebet
+tr: Cuma
+```
+
+- [ ] **Step 3: Run RED**
+
+```bash
+npm test -- lib/prayer-display-name.test.ts lib/i18n/localization-contract.test.ts
+```
+
+- [ ] **Step 4: Implement helper and translation overrides**
+
+Reuse one Friday-date predicate; do not scatter `getUTCDay() === 5` through components.
+
+- [ ] **Step 5: Wire every public prayer-name renderer**
+
+At minimum inspect and update:
+
+- `PrayerRow.tsx`
+- `HomePrayerTimesCard.tsx`
+- `PrayerTimesCard.tsx`
+- `WeeklyPrayerTable.tsx`
+- `PrayerTimesBrowser.tsx`
+- Next Prayer label renderer if it independently translates the prayer name.
+
+Each call must have the actual prayer row's date, not `new Date()` browser-local assumptions.
+
+- [ ] **Step 6: Run prayer regression tests**
+
+```bash
+npm test -- components/prayer lib/prayer-display-name.test.ts lib/i18n/localization-contract.test.ts
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add lib/prayer-display-name.ts lib/prayer-display-name.test.ts lib/i18n/prayer-names.ts components/prayer lib/i18n/localization-contract.test.ts
+git commit -m "feat: label Friday Dhuhr as Jumuah in public UI"
+```
+
+---
+
+### Task 7: Rework Admin Friday Management Around Locked Primary
+
+**Files:**
+- Modify: `app/admin/jumuah/page.tsx`
+- Modify: `app/admin/jumuah/actions.ts`
+- Modify: `components/admin/JumuahTable.tsx`
+- Add/modify Admin tests for page/actions.
+- Modify: `lib/data/jumuah.ts` only as required for filtering/compatibility.
+
+**Interfaces:**
+- Consumes: selected Friday prayer row and additional Jumuah rows.
+- Produces: additional-service CRUD only.
+
+- [ ] **Step 1: Write failing server validation tests**
+
+Create action-level/domain-level validation tests proving:
+
+- 13:30 accepted when Primary is 12:18;
+- 12:18 rejected;
+- 12:00 rejected;
+- duplicate 13:30 rejected;
+- non-Friday selected date rejected;
+- missing prayer-times row rejected;
+- malformed time rejected.
+
+If direct server-action testing is awkward, extract a pure validation function into a focused `lib/admin-jumuah-validation.ts` and test it directly, then have server actions call it.
+
+- [ ] **Step 2: Write failing Admin UI contract**
+
+Assert:
+
+- Primary appears locked/read-only from Dhuhr;
+- no editable `khutbahTime` control exists;
+- additional form requires one prayer time;
+- date is selected from Friday prayer rows rather than arbitrary record creation.
+
+- [ ] **Step 3: Run RED**
+
+```bash
+npm test -- app/admin/jumuah components/admin/JumuahTable.test.tsx
+```
+
+Use exact discovered test paths if repository naming differs.
+
+- [ ] **Step 4: Implement protected server validation**
+
+Server action flow must:
+
+1. `requireAllowedAdmin(token)`;
+2. fetch authoritative published/unpublished prayer row for selected Friday as appropriate to Admin management;
+3. confirm Friday date;
+4. compare additional time to `dhuhr`;
+5. query same-date additional rows to reject duplicates excluding current edit ID;
+6. insert/update `jumuah_times` with `khutbah_time = null` for new V2 rows;
+7. preserve existing optional metadata and publication behavior.
+
+Do not rely on client-submitted Primary time.
+
+- [ ] **Step 5: Implement Admin Friday-centered UI**
+
+Default to upcoming Friday. Provide future Friday selector sourced from prayer-times Friday rows. Primary card is locked. Additional list is editable.
+
+Invalid legacy rows earlier/equal to Primary must display a warning and correction action; never silently delete them.
+
+- [ ] **Step 6: Preserve existing push behavior narrowly**
+
+Do not invent Primary weekly pushes or khutbah pushes. Ensure any existing push call still triggers only from existing Admin additional-service publication semantics and remains deduplicated per Friday.
+
+- [ ] **Step 7: Run GREEN**
+
+```bash
+npm test -- app/admin/jumuah components/admin
+```
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add app/admin/jumuah components/admin/JumuahTable.tsx lib/data/jumuah.ts
+git commit -m "feat: manage additional Jumuah services around locked Primary"
 ```
 
 ---

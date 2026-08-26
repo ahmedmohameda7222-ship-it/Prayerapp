@@ -42,6 +42,7 @@ export default async function FridayPage() {
         jumuahTimes={jumuahTimes}
         fridayKhutbah={fridayKhutbah}
         initialNow={initialNow}
+        initialScheduleDate={schedule?.date || ""}
         prayerTimesLoadFailed={prayerTimesResult.status === "rejected"}
         additionalTimesLoadFailed={jumuahTimesResult.status === "rejected"}
         khutbahLoadFailed={khutbahLoadFailed}

@@ -40,4 +40,15 @@ describe("public navigation contract", () => {
     expect(css).toContain('.bottom-nav-track[data-ios-dragging="true"] .bottom-nav-selection');
     expect(css).toContain("transition: none");
   });
+
+  it("keeps iOS tab labels readable without dropping below the approved minimum", () => {
+    const css = source("app/native-pwa.css");
+    const iosSection = css.slice(
+      css.indexOf('html[data-platform="ios"] .bottom-nav-link,'),
+      css.indexOf('html[data-platform="android"] .bottom-nav-shell,'),
+    );
+
+    expect(iosSection).toContain("font-size: 12px;");
+    expect(iosSection).not.toContain("font-size: 10.5px;");
+  });
 });

@@ -96,7 +96,7 @@ function toAdditionalDb(data: Record<string, string>) {
     prayer_time: data.prayerTime,
     location_name: data.locationName?.trim() || "",
     location_address: data.locationAddress?.trim() || "",
-    khateeb_name: data.khateebName?.trim() || null,
+    khateeb_name: data.khateebName?.trim() || "",
     language: languageAr,
     language_ar: languageAr || null,
     language_en: data.languageEn?.trim() || null,

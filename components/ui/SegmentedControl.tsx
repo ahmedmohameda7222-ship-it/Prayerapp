@@ -20,7 +20,7 @@ export function SegmentedControl({
             type="button"
             aria-pressed={value === optionValue}
             onClick={() => onChange(optionValue)}
-            className={`min-h-10 rounded-xl px-3 text-sm font-bold transition ${
+            className={`min-h-11 rounded-xl px-3 text-sm font-bold transition ${
               value === optionValue ? "bg-[var(--color-emerald)] text-[var(--color-card)]" : "text-[var(--color-muted)]"
             }`}
           >

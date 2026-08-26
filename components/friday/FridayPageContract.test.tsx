@@ -55,6 +55,17 @@ describe("Friday public page contract", () => {
     expect(page).toContain("khutbahLoadFailed={khutbahLoadFailed}");
   });
 
+  it("refreshes server-backed khutbah data when the live resolver rolls to another Friday", () => {
+    const page = source("app/friday/page.tsx");
+    const friday = source("components/friday/FridayPageClient.tsx");
+
+    expect(page).toContain("initialScheduleDate={schedule?.date || \"\"}");
+    expect(friday).toContain('import { useRouter } from "next/navigation"');
+    expect(friday).toContain("initialScheduleDate");
+    expect(friday).toContain("schedule.date !== initialScheduleDate");
+    expect(friday).toContain("router.refresh()");
+  });
+
   it("shows exactly one Friday-level CTA only for the published khutbah matching the displayed Friday", () => {
     const friday = source("components/friday/FridayPageClient.tsx");
 

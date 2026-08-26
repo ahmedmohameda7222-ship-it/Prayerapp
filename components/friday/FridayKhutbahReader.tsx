@@ -84,7 +84,11 @@ export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
         <time dateTime={khutbah.date} className="text-sm font-semibold text-[var(--color-muted)]">
           {formatLongDate(khutbah.date, locale)}
         </time>
-        <h1 className="mt-2 text-[clamp(1.5rem,4vw,2rem)] font-bold leading-tight text-[var(--color-charcoal)]">
+        <h1
+          dir={selectedLanguage ? contentDirection : undefined}
+          lang={selectedLanguage || locale}
+          className="mt-2 break-words text-[clamp(1.5rem,4vw,2rem)] font-bold leading-tight text-[var(--color-charcoal)]"
+        >
           {selectedLanguage && selected
             ? selected.title || GENERIC_TITLES[selectedLanguage]
             : COPY[locale].chooseLanguage}

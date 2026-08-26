@@ -72,7 +72,7 @@ export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
   const contentDirection = selectedLanguage === "ar" ? "rtl" : "ltr";
 
   return (
-    <main className="mx-auto w-full max-w-[760px] px-4 pb-[calc(32px+env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pt-7" data-testid="friday-khutbah-reader">
+    <div className="mx-auto w-full max-w-[760px] px-4 pb-[calc(32px+env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pt-7" data-testid="friday-khutbah-reader">
       <Link
         href="/friday"
         className="inline-flex min-h-11 items-center rounded-[14px] px-3 text-sm font-bold text-[var(--ui-brand-strong)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -125,6 +125,6 @@ export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
           {selected.content}
         </article>
       )}
-    </main>
+    </div>
   );
 }

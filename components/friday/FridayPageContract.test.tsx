@@ -65,8 +65,9 @@ describe("Friday public page contract", () => {
   it("keeps multiple services dynamic and exposes available additional metadata", () => {
     const friday = source("components/friday/FridayPageClient.tsx");
 
-    expect(friday).toContain("schedule.items.length");
     expect(friday).toContain("localizedItems.map");
+    expect(friday).toContain("serviceLabel(locale, index)");
+    expect(friday).toContain("schedule.nextIndex");
     expect(friday).toContain("friday-shared-details");
     expect(friday).toContain("sharedLocationAddress");
   });

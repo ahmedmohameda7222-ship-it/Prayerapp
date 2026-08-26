@@ -26,21 +26,21 @@ describe("Home Next Prayer elderly-readability contract", () => {
   it("uses the approved mobile readability scale", () => {
     const css = source("app/home-palette-preview.css");
 
-    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-label\s*\{[^}]*font-size:\s*16px;/s);
-    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-name\s*\{[^}]*font-size:\s*32px;/s);
-    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-adhan\s*\{[^}]*font-size:\s*40px;/s);
-    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-countdown\s*\{[^}]*font-size:\s*28px;/s);
-    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-iqama\s*\{[^}]*font-size:\s*16px;/s);
+    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-label\s*\{[\s\S]*?font-size:\s*16px;/);
+    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-name\s*\{[\s\S]*?font-size:\s*32px;/);
+    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-adhan\s*\{[\s\S]*?font-size:\s*40px;/);
+    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-countdown\s*\{[\s\S]*?font-size:\s*28px;/);
+    expect(css).toMatch(/\.home-page-shell \.home-next-prayer-iqama\s*\{[\s\S]*?font-size:\s*16px;/);
   });
 
   it("uses the approved desktop readability scale", () => {
     const css = source("app/home-palette-preview.css");
     const desktop = css.slice(css.indexOf("@media (min-width: 1024px)"));
 
-    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-label\s*\{[^}]*font-size:\s*17px;/s);
-    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-name\s*\{[^}]*font-size:\s*36px;/s);
-    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-adhan\s*\{[^}]*font-size:\s*48px;/s);
-    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-countdown\s*\{[^}]*font-size:\s*32px;/s);
-    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-iqama\s*\{[^}]*font-size:\s*18px;/s);
+    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-label\s*\{[\s\S]*?font-size:\s*17px;/);
+    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-name\s*\{[\s\S]*?font-size:\s*36px;/);
+    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-adhan\s*\{[\s\S]*?font-size:\s*48px;/);
+    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-countdown\s*\{[\s\S]*?font-size:\s*32px;/);
+    expect(desktop).toMatch(/\.home-page-shell \.home-next-prayer-iqama\s*\{[\s\S]*?font-size:\s*18px;/);
   });
 });

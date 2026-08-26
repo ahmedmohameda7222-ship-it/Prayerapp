@@ -4,16 +4,16 @@
  */
 
 .page-shell:not(.home-page-shell) {
-  --app-canvas: #f7f3ea;
-  --app-surface: #fffdf8;
-  --app-surface-soft: #f2ede4;
-  --app-divider: #e4ddd2;
-  --app-text: #171a18;
-  --app-text-secondary: #626761;
-  --app-brand: #005a52;
-  --app-brand-strong: #00463f;
-  --app-brand-soft: #e7f0ec;
-  --app-danger: #a6362b;
+  --app-canvas: var(--ui-canvas);
+  --app-surface: var(--ui-surface);
+  --app-surface-soft: var(--ui-surface-subtle);
+  --app-divider: var(--ui-divider);
+  --app-text: var(--ui-text);
+  --app-text-secondary: var(--ui-text-secondary-color);
+  --app-brand: var(--ui-brand);
+  --app-brand-strong: var(--ui-brand-strong);
+  --app-brand-soft: var(--ui-brand-soft);
+  --app-danger: var(--ui-urgent);
   min-height: 100dvh;
   padding-top: 0;
   background: var(--app-canvas);

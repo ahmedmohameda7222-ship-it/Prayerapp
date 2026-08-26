@@ -6,7 +6,7 @@ function source(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8");
 }
 
-const migrationPath = "supabase/migrations/20260826170000_create_friday_khutbahs.sql";
+const migrationPath = "supabase/migrations/20260826160500_friday_v2_khutbahs.sql";
 const dataPath = "lib/data/friday-khutbahs.ts";
 
 describe("Friday khutbah persistence contract", () => {
@@ -60,13 +60,15 @@ describe("Friday khutbah persistence contract", () => {
     expect(data).not.toContain("getLocalizedField");
   });
 
-  it("uses the public cache pattern and exposes immediate invalidation for Admin writes", () => {
+  it("uses the public cache pattern without stale unpublished fallback and exposes immediate invalidation", () => {
     expect(existsSync(join(process.cwd(), dataPath))).toBe(true);
     if (!existsSync(join(process.cwd(), dataPath))) return;
 
     const data = source(dataPath);
     expect(data).toContain("getCached");
     expect(data).toContain("saveToPersistentCache");
+    expect(data).toContain("loadFromPersistentCache");
+    expect(data).not.toContain("loadFromPersistentCacheStale");
     expect(data).toContain("clearPersistentCachePrefix");
     expect(data).toContain("invalidateFridayKhutbahCaches");
     expect(data).toContain('invalidateCachePrefix("friday_khutbah_")');

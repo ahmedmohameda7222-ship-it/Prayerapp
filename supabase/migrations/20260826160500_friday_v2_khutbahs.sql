@@ -1,5 +1,9 @@
--- Friday V2: one optional multilingual khutbah per Friday date.
+-- Friday V2: additional Jumu'ah rows no longer own a separate khutbah time.
+-- Preserve the legacy column for compatibility, but allow V2 rows to store NULL.
+ALTER TABLE public.jumuah_times
+  ALTER COLUMN khutbah_time DROP NOT NULL;
 
+-- Friday V2: one optional multilingual khutbah per Friday date.
 CREATE TABLE IF NOT EXISTS public.friday_khutbahs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   date DATE UNIQUE NOT NULL,
@@ -30,3 +34,4 @@ USING (published = true);
 -- service-role server client after requireAllowedAdmin(), which bypasses RLS.
 REVOKE ALL ON TABLE public.friday_khutbahs FROM anon, authenticated;
 GRANT SELECT ON TABLE public.friday_khutbahs TO anon, authenticated;
+GRANT ALL ON TABLE public.friday_khutbahs TO service_role;

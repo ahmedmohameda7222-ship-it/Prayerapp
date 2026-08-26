@@ -81,6 +81,52 @@ export interface JumuahTime {
   published: boolean;
 }
 
+export type FridayServiceSource = "prayer-times" | "jumuah-times";
+
+export interface FridayService {
+  id: string;
+  date: string;
+  prayerTime: string;
+  source: FridayServiceSource;
+  editable: boolean;
+  locationName?: string;
+  locationAddress?: string;
+  khateebName?: string;
+  language?: string;
+  languageAr?: string;
+  languageEn?: string;
+  languageDe?: string;
+  languageTr?: string;
+  notes?: string;
+  notesAr?: string;
+  notesEn?: string;
+  notesDe?: string;
+  notesTr?: string;
+}
+
+export interface FridaySchedule {
+  date: string;
+  items: FridayService[];
+  nextIndex: number;
+  isToday: boolean;
+}
+
+export type FridayKhutbah = {
+  id: string;
+  date: string;
+  titleAr?: string;
+  contentAr?: string;
+  titleEn?: string;
+  contentEn?: string;
+  titleDe?: string;
+  contentDe?: string;
+  titleTr?: string;
+  contentTr?: string;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type AnnouncementType = "General" | "Urgent" | "Location update" | "Community" | "Ramadan" | "Eid" | "Donation";
 
 export interface Announcement extends LocalizedTitleFields, LocalizedMessageFields {

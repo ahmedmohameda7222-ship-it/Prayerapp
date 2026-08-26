@@ -75,7 +75,7 @@ export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
     <main className="mx-auto w-full max-w-[760px] px-4 pb-[calc(32px+env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pt-7" data-testid="friday-khutbah-reader">
       <Link
         href="/friday"
-        className="inline-flex min-h-11 items-center rounded-[14px] px-3 text-sm font-bold text-[var(--app-brand-strong)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="inline-flex min-h-11 items-center rounded-[14px] px-3 text-sm font-bold text-[var(--ui-brand-strong)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {copy.back}
       </Link>
@@ -103,7 +103,7 @@ export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
               role="tab"
               aria-selected={selectedLanguage === language}
               onClick={() => setSelectedLanguage(language)}
-              className={`min-h-11 rounded-[14px] border px-4 text-sm font-bold ${selectedLanguage === language ? "border-[var(--app-brand)] bg-[var(--app-brand-soft)] text-[var(--app-brand-strong)]" : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-charcoal)]"}`}
+              className={`min-h-11 rounded-[14px] border px-4 text-sm font-bold ${selectedLanguage === language ? "border-[var(--ui-brand)] bg-[var(--ui-brand-soft)] text-[var(--ui-brand-strong)]" : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-charcoal)]"}`}
             >
               {LANGUAGE_LABELS[language]}
             </button>

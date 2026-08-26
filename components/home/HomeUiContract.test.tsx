@@ -37,4 +37,10 @@ describe("canonical Home UI authority", () => {
     expect(css).toContain("color: var(--home-surface) !important;");
     expect(css).not.toMatch(/--home-(?:brand|canvas|surface|text|divider|urgent|success|disabled|focus|brass):\s*#/);
   });
+
+  it("does not let responsive Home CSS override canonical section color aliases", () => {
+    const responsive = source("app/responsive-prayer-nav.css");
+
+    expect(responsive).not.toMatch(/--home-section-header(?:-soft|-text)?:\s*#/);
+  });
 });

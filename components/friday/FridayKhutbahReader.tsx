@@ -84,7 +84,7 @@ export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
         <time dateTime={khutbah.date} className="text-sm font-semibold text-[var(--color-muted)]">
           {formatLongDate(khutbah.date, locale)}
         </time>
-        <h1
+        <h2
           dir={selectedLanguage ? contentDirection : undefined}
           lang={selectedLanguage || locale}
           className="mt-2 break-words text-[clamp(1.5rem,4vw,2rem)] font-bold leading-tight text-[var(--color-charcoal)]"
@@ -92,13 +92,13 @@ export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
           {selectedLanguage && selected
             ? selected.title || GENERIC_TITLES[selectedLanguage]
             : COPY[locale].chooseLanguage}
-        </h1>
+        </h2>
       </header>
 
       <section className="mt-5" aria-labelledby="khutbah-language-heading">
-        <h2 id="khutbah-language-heading" className="text-sm font-bold text-[var(--color-charcoal)]">
+        <h3 id="khutbah-language-heading" className="text-sm font-bold text-[var(--color-charcoal)]">
           {copy.chooseLanguage}
-        </h2>
+        </h3>
         <div className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label={copy.chooseLanguage}>
           {availableLanguages.map((language) => (
             <button

@@ -122,7 +122,7 @@ export function SettingsControls() {
                   {diagnostic.ok ? null : (
                     <Button
                       variant="ghost"
-                      className="min-h-9 shrink-0 px-3 py-1.5 text-xs"
+                      className="min-h-11 shrink-0 px-3 py-1.5 text-xs"
                       onClick={() => openNativeSettings(diagnostic.key)}
                     >
                       {nativeCopy.open}

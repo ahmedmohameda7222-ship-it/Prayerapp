@@ -117,7 +117,7 @@ export function FridayKhutbahReader({ khutbah }: { khutbah: FridayKhutbah }) {
         </p>
       ) : (
         <article
-          className="mt-7 select-text whitespace-pre-wrap text-[17px] leading-[1.9] text-[var(--color-charcoal)] sm:text-[18px]"
+          className="mt-7 break-words select-text whitespace-pre-wrap text-[17px] leading-[1.9] text-[var(--color-charcoal)] sm:text-[18px]"
           dir={contentDirection}
           lang={selectedLanguage}
           data-testid="friday-khutbah-content"

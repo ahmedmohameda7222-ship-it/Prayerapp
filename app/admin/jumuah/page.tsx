@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { AlertTriangle, LockKeyhole, Plus } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
+import { FridayKhutbahEditor } from "@/components/admin/FridayKhutbahEditor";
 import { LocalizedContentFields } from "@/components/admin/LocalizedContentFields";
 import { JumuahTable } from "@/components/admin/JumuahTable";
 import { Button } from "@/components/ui/Button";
@@ -299,6 +300,14 @@ export default function AdminJumuahPage() {
             onCorrectLegacy={fillForm}
             onTogglePublish={handleTogglePublish}
             onDelete={handleDelete}
+          />
+        ) : null}
+
+        {selectedPrayer ? (
+          <FridayKhutbahEditor
+            selectedFriday={selectedFriday}
+            token={session?.access_token || ""}
+            disabled={!hasSupabase || isPending}
           />
         ) : null}
       </div>

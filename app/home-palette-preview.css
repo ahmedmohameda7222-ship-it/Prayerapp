@@ -110,6 +110,27 @@
   line-height: 1.28;
 }
 
+/* Elderly-friendly Next Prayer scale. Home owns the visual size authority. */
+.home-page-shell .home-next-prayer-label {
+  font-size: 16px;
+}
+
+.home-page-shell .home-next-prayer-name {
+  font-size: 32px;
+}
+
+.home-page-shell .home-next-prayer-adhan {
+  font-size: 40px;
+}
+
+.home-page-shell .home-next-prayer-countdown {
+  font-size: 28px;
+}
+
+.home-page-shell .home-next-prayer-iqama {
+  font-size: 16px;
+}
+
 /* Keep the Home overlays warm instead of stark white. */
 .home-page-shell .language-menu[open] > div {
   border-color: var(--home-divider);
@@ -209,6 +230,26 @@
 
   .home-page-shell .home-app-header-chrome h1[lang="ar"] {
     font-size: 48px;
+  }
+
+  .home-page-shell .home-next-prayer-label {
+    font-size: 17px;
+  }
+
+  .home-page-shell .home-next-prayer-name {
+    font-size: 36px;
+  }
+
+  .home-page-shell .home-next-prayer-adhan {
+    font-size: 48px;
+  }
+
+  .home-page-shell .home-next-prayer-countdown {
+    font-size: 32px;
+  }
+
+  .home-page-shell .home-next-prayer-iqama {
+    font-size: 18px;
   }
 
   .home-page-shell .bottom-nav-shell {

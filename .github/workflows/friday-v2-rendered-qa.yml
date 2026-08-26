@@ -102,6 +102,41 @@ jobs:
             updated_at = NOW();
           SQL
 
+      - name: Verify disposable public data boundary
+        run: |
+          set -euo pipefail
+          AUTH=(-H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" -H "Authorization: Bearer $NEXT_PUBLIC_SUPABASE_ANON_KEY")
+          curl --fail --silent --show-error "${AUTH[@]}" \
+            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/prayer_times?select=date,dhuhr,dhuhr_iqama,published&date=gte.2026-08-26&date=lte.2026-08-28&order=date.asc" \
+            | tee /tmp/friday-v2-prayers.json
+          echo
+          curl --fail --silent --show-error "${AUTH[@]}" \
+            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/jumuah_times?select=date,prayer_time,khutbah_time,published&date=eq.2026-08-28&order=prayer_time.asc" \
+            | tee /tmp/friday-v2-jumuah.json
+          echo
+          curl --fail --silent --show-error "${AUTH[@]}" \
+            "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/friday_khutbahs?select=date,published,content_ar,content_en,content_de,content_tr&date=eq.2026-08-28" \
+            | tee /tmp/friday-v2-khutbah.json
+          echo
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const prayers = JSON.parse(fs.readFileSync('/tmp/friday-v2-prayers.json', 'utf8'));
+          const jumuah = JSON.parse(fs.readFileSync('/tmp/friday-v2-jumuah.json', 'utf8'));
+          const khutbah = JSON.parse(fs.readFileSync('/tmp/friday-v2-khutbah.json', 'utf8'));
+          assert.deepEqual(prayers.map((row) => [row.date, row.dhuhr, row.dhuhr_iqama]), [
+            ['2026-08-26', '12:18', '13:00'],
+            ['2026-08-28', '12:18', '13:00'],
+          ]);
+          assert.deepEqual(jumuah.map((row) => [row.date, row.prayer_time, row.khutbah_time]), [
+            ['2026-08-28', '13:30', null],
+            ['2026-08-28', '14:30', null],
+          ]);
+          assert.equal(khutbah.length, 1);
+          assert.equal(khutbah[0].published, true);
+          console.log('Disposable public REST boundary exposes the seeded Friday V2 rows.');
+          NODE
+
       - name: Build app against disposable local data
         run: npm run build
 
@@ -170,12 +205,29 @@ jobs:
               await page.emulateMedia({ reducedMotion: 'reduce' });
 
               await open(page, '/');
-              const root = await page.evaluate(() => ({ lang: document.documentElement.lang, dir: document.documentElement.dir }));
+              const root = await page.evaluate(() => ({
+                lang: document.documentElement.lang,
+                dir: document.documentElement.dir,
+                browserNow: new Date().toISOString(),
+                berlinToday: new Intl.DateTimeFormat('en-CA', {
+                  year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Berlin',
+                }).format(new Date()),
+                homeJumuahCount: document.querySelectorAll('[data-testid="home-jumuah-card"]').length,
+                homeDashboardText: document.querySelector('[data-testid="home-dashboard"]')?.textContent?.slice(0, 2000) || '',
+              }));
+              console.log('HOME_DIAGNOSTIC', JSON.stringify({ locale, width, ...root }));
+              await page.screenshot({ path: `artifacts/friday-v2-rendered-qa/home-before-assert-${locale}-${width}.png`, fullPage: true });
+              fs.writeFileSync(
+                `artifacts/friday-v2-rendered-qa/home-${locale}-${width}.html`,
+                await page.content(),
+              );
+
               assert.equal(root.lang, locale, `home ${width}px locale mismatch`);
               assert.equal(root.dir, expectedDirection[locale], `home ${locale} ${width}px direction mismatch`);
               const homeDimensions = await assertNoHorizontalOverflow(page, width, 'home', locale);
 
               const homeJumuah = page.getByTestId('home-jumuah-card');
+              assert.equal(await homeJumuah.count(), 1, `home ${locale} ${width}px missing Jumu'ah card; diagnostic=${JSON.stringify(root)}`);
               await homeJumuah.waitFor({ state: 'visible' });
               const homeJumuahText = await homeJumuah.innerText();
               for (const time of ['12:18', '13:30', '14:30']) {

@@ -1,14 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { SettingsControls } from "./SettingsControls";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
-
-vi.mock("./PrayerSystemTestControls", () => ({
-  PrayerSystemTestControls: () => <div data-testid="prayer-system-test" />,
-}));
 
 function renderSettings() {
   return render(

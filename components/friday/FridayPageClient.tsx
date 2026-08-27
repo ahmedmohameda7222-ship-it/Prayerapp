@@ -269,7 +269,7 @@ export function FridayPageClient({
                 return (
                   <article
                     key={item.id}
-                    className="friday-service-row"
+                    className="friday-service-row rounded-[14px] overflow-hidden"
                     data-next={isNext ? "true" : "false"}
                     data-primary={isPrimary ? "true" : "false"}
                     role="listitem"

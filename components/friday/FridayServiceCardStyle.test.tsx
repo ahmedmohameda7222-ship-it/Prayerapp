@@ -7,11 +7,11 @@ function source(path: string) {
 }
 
 describe("Friday service card styling", () => {
-  it("rounds each Friday prayer service card without changing its content structure", () => {
-    const css = source("app/globals.css");
-    const rowRule = css.match(/\.friday-service-row\s*\{([\s\S]*?)\}/)?.[1] || "";
+  it("rounds each Friday prayer service card without changing its semantic row contract", () => {
+    const component = source("components/friday/FridayPageClient.tsx");
 
-    expect(rowRule).toContain("border-radius: 14px;");
-    expect(rowRule).toContain("overflow: hidden;");
+    expect(component).toContain('className="friday-service-row rounded-[14px] overflow-hidden"');
+    expect(component).toContain('data-primary={isPrimary ? "true" : "false"}');
+    expect(component).toContain('role="listitem"');
   });
 });

@@ -25,6 +25,7 @@ import { PlatformChromeBootstrap } from "@/components/providers/PlatformChromeBo
 import { AppLaunchScreen } from "@/components/providers/AppLaunchScreen";
 import { PullToRefresh } from "@/components/providers/PullToRefresh";
 import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
+import { ArabicMosqueWordmarkSprite } from "@/components/layout/ArabicMosqueWordmarkSprite";
 import { PublicNavigation } from "@/components/layout/PublicNavigation";
 
 const metadataDescriptions: Record<Locale, string> = {
@@ -84,6 +85,7 @@ export default async function RootLayout({
   return (
     <html lang={initialLocale} dir={getTextDirection(initialLocale)} translate="no" suppressHydrationWarning>
       <body>
+        <ArabicMosqueWordmarkSprite />
         <PlatformChromeBootstrap />
         <AppLaunchScreen />
         <I18nProvider initialLocale={initialLocale}>

@@ -62,8 +62,9 @@
 }
 
 .home-page-shell .home-jumuah-times {
-  border-top: 1px solid rgba(252, 250, 246, 0.26);
-  border-bottom: 1px solid rgba(252, 250, 246, 0.26);
+  overflow: hidden;
+  border: 1px solid rgba(252, 250, 246, 0.26);
+  border-radius: 14px;
 }
 
 .home-page-shell .home-jumuah-time-row {

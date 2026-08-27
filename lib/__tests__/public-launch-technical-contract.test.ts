@@ -11,7 +11,7 @@ function source(relativePath: string) {
 }
 
 describe("public launch technical contract", () => {
-  it("provides localized privacy and imprint shells without claiming legal approval", () => {
+  it("keeps localized privacy and imprint shells while omitting pending legal UI from Privacy", () => {
     expect(existsSync(path.join(process.cwd(), "app/privacy/page.tsx"))).toBe(true);
     expect(existsSync(path.join(process.cwd(), "app/imprint/page.tsx"))).toBe(true);
 
@@ -23,7 +23,8 @@ describe("public launch technical contract", () => {
       expect(messages.legal.notifications).toBeTruthy();
     }
 
-    expect(source("app/privacy/page.tsx")).toContain("legal.reviewRequired");
+    expect(source("app/privacy/page.tsx")).not.toContain("legal.reviewRequired");
+    expect(source("app/privacy/page.tsx")).not.toContain('href="/imprint"');
     expect(source("app/imprint/page.tsx")).toContain("legal.providerPending");
   });
 

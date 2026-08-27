@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -31,8 +30,6 @@ export default function PrivacyPage() {
             <h2>{t("legal.contactTitle")}</h2>
             <p>{t("legal.contactPending")}</p>
           </section>
-          <p className="legal-review-notice" role="note">{t("legal.reviewRequired")}</p>
-          <Link className="legal-related-link" href="/imprint">{t("legal.imprintTitle")}</Link>
         </div>
       </div>
     </AppShell>

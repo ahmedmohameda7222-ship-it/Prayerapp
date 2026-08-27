@@ -1,5 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { SettingsControls } from "./SettingsControls";
 import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
@@ -18,6 +20,10 @@ function renderSettings() {
   );
 }
 
+function source(path: string) {
+  return readFileSync(join(process.cwd(), path), "utf8");
+}
+
 describe("SettingsControls", () => {
   beforeEach(() => localStorage.clear());
 
@@ -33,13 +39,18 @@ describe("SettingsControls", () => {
     expect(localStorage.getItem("deggendorf-app-preferences-v1")).not.toContain('"theme"');
   });
 
-  it("keeps prayer reminder and Adhan management on Home while exposing test tools in Settings", () => {
+  it("removes simulation controls while keeping notifications, reminder management, and time format", () => {
     renderSettings();
+    const controls = source("components/settings/SettingsControls.tsx");
 
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
-    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-    expect(screen.queryByTestId("adhan-audio-settings")).not.toBeInTheDocument();
-    expect(screen.getByTestId("prayer-system-test")).toBeInTheDocument();
+    expect(screen.queryByTestId("prayer-system-test")).not.toBeInTheDocument();
+    expect(controls).not.toContain("PrayerSystemTestControls");
+    expect(controls).toContain('t("settings.notifications")');
+    expect(controls).toContain('href="/#prayer-times"');
+    expect(controls).toContain('t("phase1.manageReminders")');
+    expect(controls).toContain('t("settings.timeFormat")');
+    expect(controls).toContain("timeFormatOptions.map");
+
     const homeLink = screen.getAllByRole("link").find((link) => link.getAttribute("href") === "/#prayer-times");
     expect(homeLink).toBeDefined();
   });

@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { MapPin, UserRound } from "lucide-react";
+import { ArabicMosqueWordmark } from "@/components/layout/ArabicMosqueWordmark";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { NotificationButton } from "@/components/notifications/NotificationButton";
 import { LanguageMenu } from "@/components/home/LanguageMenu";
@@ -76,14 +76,7 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
         <div className="mt-1 text-center">
           {useArabicBrandLogo ? (
             <h1 lang="ar" className="flex justify-center">
-              <Image
-                src="/branding/masjid-al-danube-ar.svg"
-                alt="مَسْجِدُ الدُّونَاوْ"
-                width={280}
-                height={93}
-                priority
-                className="mosque-name-logo h-auto w-[clamp(220px,62vw,280px)]"
-              />
+              <ArabicMosqueWordmark />
             </h1>
           ) : (
             <h1 lang={locale} className="text-[28px] font-bold leading-tight text-[#F2EBDD]">

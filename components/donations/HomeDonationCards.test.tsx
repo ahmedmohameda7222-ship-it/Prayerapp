@@ -76,18 +76,21 @@ describe("Home donation cards", () => {
     expect(surface.closest(".card")).toBeNull();
   });
 
-  it("renders transparency report values in the Home donation surface language", () => {
+  it("renders the three Home transparency metrics side by side", () => {
     render(<TransparencyCard report={report} home />);
     const surface = screen.getByTestId("home-transparency-surface");
+    const metrics = within(surface).getAllByTestId("home-transparency-metric");
 
-    expect(surface).toHaveClass("home-donation-surface");
+    expect(surface).toHaveClass("home-donation-surface", "grid", "grid-cols-3", "divide-x");
+    expect(surface).not.toHaveClass("divide-y");
     expect(surface.className).not.toMatch(/\bcard\b/);
-    expect(within(surface).getByText("Monthly need")).toBeInTheDocument();
-    expect(within(surface).getByText("Donations received")).toBeInTheDocument();
-    expect(within(surface).getByText("Remaining")).toBeInTheDocument();
-    expect(surface).toHaveTextContent("3,000");
-    expect(surface).toHaveTextContent("1,250");
-    expect(surface).toHaveTextContent("1,750");
+    expect(metrics).toHaveLength(3);
+    expect(metrics[0]).toHaveTextContent("Monthly need");
+    expect(metrics[0]).toHaveTextContent("3,000");
+    expect(metrics[1]).toHaveTextContent("Donations received");
+    expect(metrics[1]).toHaveTextContent("1,250");
+    expect(metrics[2]).toHaveTextContent("Remaining");
+    expect(metrics[2]).toHaveTextContent("1,750");
   });
 
   it("shows neutral PayPal context and hides the raw URL on Home", () => {

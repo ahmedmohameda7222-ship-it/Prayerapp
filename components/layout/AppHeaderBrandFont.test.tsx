@@ -7,16 +7,17 @@ function source(path: string) {
 }
 
 describe("mosque name header brand mark", () => {
-  it("uses the approved standalone Arabic Thuluth SVG asset", () => {
+  it("uses the approved inline Arabic Thuluth wordmark without a runtime image request", () => {
     const header = source("components/layout/AppHeader.tsx");
+    const wordmark = source("components/layout/ArabicMosqueWordmark.tsx");
 
-    expect(header).toContain('import Image from "next/image"');
+    expect(header).not.toContain('import Image from "next/image"');
     expect(header).toContain('const useArabicBrandLogo = !title && locale === "ar";');
     expect(header).toContain("{useArabicBrandLogo ? (");
-    expect(header).toContain('src="/branding/masjid-al-danube-ar.svg"');
-    expect(header).toContain('alt="مَسْجِدُ الدُّونَاوْ"');
-    expect(header).toContain('className="mosque-name-logo h-auto w-[clamp(220px,62vw,280px)]"');
-    expect(header).not.toContain("function ArabicMosqueBrandMark()");
+    expect(header).toContain("<ArabicMosqueWordmark />");
+    expect(header).not.toContain('src="/branding/masjid-al-danube-ar.svg"');
+    expect(wordmark).toContain('aria-label="مَسْجِدُ الدُّونَاوْ"');
+    expect(wordmark).toContain('className="mosque-name-logo h-auto w-[clamp(220px,62vw,280px)]"');
     expect(existsSync(join(process.cwd(), "public/branding/masjid-al-danube-ar.svg"))).toBe(true);
   });
 

@@ -18,11 +18,14 @@ describe("approved Arabic header wordmark", () => {
     expect(asset).not.toMatch(/data:image\//i);
   });
 
-  it("renders the Arabic wordmark at the approved larger header scale", () => {
+  it("renders the Arabic wordmark inline at the approved larger header scale", () => {
     const header = source("components/layout/AppHeader.tsx");
+    const wordmark = source("components/layout/ArabicMosqueWordmark.tsx");
 
-    expect(header).toContain("width={280}");
-    expect(header).toContain("height={93}");
-    expect(header).toContain("w-[clamp(220px,62vw,280px)]");
+    expect(header).toContain("<ArabicMosqueWordmark />");
+    expect(wordmark).toContain('viewBox="0 0 2172 724"');
+    expect(wordmark).toContain("w-[clamp(220px,62vw,280px)]");
+    expect(wordmark).toContain('href="#word-danube"');
+    expect(wordmark).toContain('href="#word-masjid"');
   });
 });

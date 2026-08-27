@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Bell, CheckCircle2, ChevronRight, Clock, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { PrayerSystemTestControls } from "@/components/settings/PrayerSystemTestControls";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
@@ -147,8 +146,6 @@ export function SettingsControls() {
         <span className="min-w-0 flex-1 text-sm font-semibold text-[var(--app-text)]">{t("phase1.manageReminders")}</span>
         <ChevronRight className="h-4 w-4 shrink-0 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
       </Link>
-
-      <PrayerSystemTestControls />
 
       <section className="settings-section">
         <h2 className="flex items-center gap-2">

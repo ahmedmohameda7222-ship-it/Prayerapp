@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { APP_NAMES } from "@/lib/app-brand";
@@ -8,12 +8,24 @@ function source(path: string) {
 }
 
 describe("AppHeader Arabic wordmark contract", () => {
-  it("uses the approved external Thuluth vector and removes the legacy inline Arabic mark", () => {
+  it("renders the approved Arabic wordmark inline without an external image request", () => {
     const header = source("components/layout/AppHeader.tsx");
+    const inlineWordmarkPath = join(process.cwd(), "components/layout/ArabicMosqueWordmark.tsx");
 
-    expect(header).toContain('/branding/masjid-al-danube-ar.svg');
-    expect(header).not.toContain("function ArabicMosqueBrandMark()");
-    expect(header).toContain('alt="مَسْجِدُ الدُّونَاوْ"');
+    expect(header).not.toContain('from "next/image"');
+    expect(header).not.toContain('/branding/masjid-al-danube-ar.svg');
+    expect(header).toContain('import { ArabicMosqueWordmark } from "@/components/layout/ArabicMosqueWordmark"');
+    expect(header).toContain("<ArabicMosqueWordmark />");
+    expect(existsSync(inlineWordmarkPath)).toBe(true);
+
+    const wordmark = readFileSync(inlineWordmarkPath, "utf8");
+    expect(wordmark).toContain("<svg");
+    expect(wordmark).toContain('data-approved-wordmark="2026-08-27-spaced"');
+    expect(wordmark).toContain('id="word-masjid"');
+    expect(wordmark).toContain('id="word-danube"');
+    expect(wordmark).toContain("مَسْجِدُ الدُّونَاوْ");
+    expect(wordmark).toContain("w-[clamp(220px,62vw,280px)]");
+    expect(wordmark).not.toMatch(/<image\b/i);
   });
 
   it("keeps the exact normal localized mosque names", () => {
@@ -23,7 +35,7 @@ describe("AppHeader Arabic wordmark contract", () => {
     expect(APP_NAMES.tr).toBe("Tuna Camii");
   });
 
-  it("ships the approved standalone vector path without a raster or font dependency", () => {
+  it("keeps the approved standalone vector source as the design authority", () => {
     const asset = source("public/branding/masjid-al-danube-ar.svg");
 
     expect(asset).toContain("<path");

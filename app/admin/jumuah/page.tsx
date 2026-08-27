@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { AlertTriangle, LockKeyhole, Plus } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { FridayKhutbahEditor } from "@/components/admin/FridayKhutbahEditor";
 import { LocalizedContentFields } from "@/components/admin/LocalizedContentFields";
@@ -21,40 +21,30 @@ import { createJumuahAction, deleteJumuahAction, togglePublishJumuahAction, upda
 
 const COPY: Record<Locale, {
   friday: string;
-  primary: string;
-  primaryHelp: string;
   additional: string;
   additionalHelp: string;
   noFriday: string;
 }> = {
   ar: {
     friday: "اختر الجمعة",
-    primary: "الجمعة الرئيسية",
-    primaryHelp: "تُنشأ تلقائيًا من وقت الظهر ولا يمكن تعديلها أو حذفها أو إلغاء نشرها هنا.",
     additional: "صلاة جمعة إضافية",
     additionalHelp: "أدخل وقت صلاة واحد فقط، ويجب أن يكون بعد وقت الجمعة الرئيسية.",
     noFriday: "لا توجد مواعيد جمعة مستقبلية في جدول الصلاة.",
   },
   en: {
     friday: "Select Friday",
-    primary: "Primary Jumu'ah",
-    primaryHelp: "Generated automatically from Dhuhr and cannot be edited, deleted, or unpublished here.",
     additional: "Additional Jumu'ah",
     additionalHelp: "Enter one prayer time only. It must be later than Primary.",
     noFriday: "No future Friday prayer rows are available in the prayer schedule.",
   },
   de: {
     friday: "Freitag auswählen",
-    primary: "Haupt-Freitagsgebet",
-    primaryHelp: "Wird automatisch aus Dhuhr erzeugt und kann hier nicht bearbeitet, gelöscht oder unveröffentlicht werden.",
     additional: "Zusätzliches Freitagsgebet",
     additionalHelp: "Nur eine Gebetszeit eingeben. Sie muss nach dem Hauptgebet liegen.",
     noFriday: "Im Gebetsplan sind keine zukünftigen Freitage verfügbar.",
   },
   tr: {
     friday: "Cuma gününü seç",
-    primary: "Ana Cuma namazı",
-    primaryHelp: "Öğle vaktinden otomatik oluşturulur; burada değiştirilemez, silinemez veya yayından kaldırılamaz.",
     additional: "Ek Cuma namazı",
     additionalHelp: "Yalnızca bir namaz saati girin. Ana Cuma namazından sonra olmalıdır.",
     noFriday: "Namaz programında gelecekteki bir Cuma satırı bulunmuyor.",
@@ -235,25 +225,6 @@ export default function AdminJumuahPage() {
           </label>
           {!selectedPrayer ? <p className="mt-3 text-sm font-semibold text-[var(--color-muted)]">{copy.noFriday}</p> : null}
         </Card>
-
-        {selectedPrayer ? (
-          <Card className="border-[var(--color-gold)]/40 bg-[var(--color-emerald-soft)]" data-testid="admin-primary-jumuah" data-locked="true">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-[var(--color-emerald)]">
-                  <LockKeyhole className="h-4 w-4" aria-hidden="true" />
-                  <h2 className="text-lg font-extrabold">{copy.primary}</h2>
-                </div>
-                <p className="mt-1 text-sm text-[var(--color-muted)]">{copy.primaryHelp}</p>
-                <p className="mt-2 text-xs font-bold text-[var(--color-muted)]">{selectedPrayer.date}</p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">{t("prayer.dhuhr")}</p>
-                <p dir="ltr" className="mt-1 text-2xl font-extrabold text-[var(--color-emerald)]">{selectedPrayer.dhuhr}</p>
-              </div>
-            </div>
-          </Card>
-        ) : null}
 
         <Card>
           <h2 className="text-lg font-extrabold text-[var(--color-emerald)]">{editingId ? t("admin.editJumuah") : copy.additional}</h2>

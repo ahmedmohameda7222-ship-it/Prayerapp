@@ -18,12 +18,17 @@ describe("Friday Admin V2 contract", () => {
     expect(page).not.toContain('type: "date"');
   });
 
-  it("renders a locked Primary from the selected prayer row Dhuhr", () => {
+  it("keeps Primary Dhuhr authority without rendering the visible Primary card", () => {
     const page = source("app/admin/jumuah/page.tsx");
+    const actions = source("app/admin/jumuah/actions.ts");
 
+    expect(page).not.toContain('data-testid="admin-primary-jumuah"');
     expect(page).toContain("selectedPrayer.dhuhr");
-    expect(page).toContain('data-testid="admin-primary-jumuah"');
-    expect(page).toContain('data-locked="true"');
+    expect(page).toContain("primaryTime={selectedPrayer.dhuhr}");
+    expect(actions).toContain('client.from("prayer_times").select("date,dhuhr")');
+    expect(actions).toContain("validateAdditionalJumuah({");
+    expect(actions).toContain("primaryPrayer: primary");
+    expect(actions).toContain("dhuhr: String(primary.dhuhr)");
   });
 
   it("offers exactly one editable time for an additional Jumuah", () => {

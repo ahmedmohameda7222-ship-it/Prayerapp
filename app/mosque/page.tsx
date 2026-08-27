@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChevronRight, Mail, MapPin, Phone } from "lucide-react";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DataError, DataLoading } from "@/components/ui/DataState";
@@ -17,7 +18,6 @@ export default function MosquePage() {
   const mosqueName = settings ? getLocalizedField(settings, "mosqueName", locale) || settings.mosqueName : "";
   const mapsHref = safeExternalUrl(settings?.googleMapsLink, "maps");
   const whatsappHref = safeExternalUrl(settings?.whatsappLink, "whatsapp");
-  const telegramHref = safeExternalUrl(settings?.telegramLink, "telegram");
   const telephoneHref = safeTelephoneHref(settings?.phone);
   const emailHref = safeEmailHref(settings?.email);
 
@@ -67,15 +67,8 @@ export default function MosquePage() {
             ) : null}
             {whatsappHref ? (
               <a className="mosque-action-row" href={whatsappHref} target="_blank" rel="noreferrer">
-                <span className="grid h-5 w-5 place-items-center text-xs font-extrabold text-[var(--app-brand)]" aria-hidden="true">W</span>
+                <WhatsAppIcon className="h-5 w-5 text-[var(--app-brand)]" />
                 <span>{t("mosque.whatsapp")}</span>
-                <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
-              </a>
-            ) : null}
-            {telegramHref ? (
-              <a className="mosque-action-row" href={telegramHref} target="_blank" rel="noreferrer">
-                <span className="grid h-5 w-5 place-items-center text-xs font-extrabold text-[var(--app-brand)]" aria-hidden="true">T</span>
-                <span>{t("mosque.telegram")}</span>
                 <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)] rtl:rotate-180" aria-hidden="true" />
               </a>
             ) : null}

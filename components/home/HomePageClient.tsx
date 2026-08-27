@@ -11,6 +11,7 @@ import { AnnouncementCard } from "@/components/news/AnnouncementCard";
 import { HomeEventsList } from "@/components/events/HomeEventsList";
 import { BankTransferCard } from "@/components/donations/BankTransferCard";
 import { DonationCampaignCard } from "@/components/donations/DonationCampaignCard";
+import { TransparencyCard } from "@/components/donations/TransparencyCard";
 import { PayPalCard } from "@/components/donations/PayPalCard";
 import { SmartNextActionCard } from "@/components/home/SmartNextActionCard";
 import { addDaysIso, todayIso } from "@/lib/date-utils";
@@ -19,7 +20,7 @@ import { getSmartNextAction } from "@/lib/home-utils";
 import { getHomeJumuahSchedule } from "@/lib/home-jumuah";
 import { getNextPrayer, getNextPrayerFromSchedule, getPrayerForDate } from "@/lib/prayer-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import type { Announcement, DonationCampaign, DonationSettings, Event, JumuahTime, PrayerTime } from "@/lib/types";
+import type { Announcement, DonationCampaign, DonationReport, DonationSettings, Event, JumuahTime, PrayerTime } from "@/lib/types";
 
 const EMPTY_SCHEDULE: PrayerTime[] = [];
 
@@ -52,6 +53,7 @@ type HomePageClientProps = {
   events: Event[];
   donationSettings?: DonationSettings;
   donationCampaigns: DonationCampaign[];
+  donationReport?: DonationReport;
   initialNow: string;
 };
 
@@ -63,6 +65,7 @@ export function HomePageClient({
   events,
   donationSettings,
   donationCampaigns,
+  donationReport,
   initialNow,
 }: HomePageClientProps) {
   const { t, locale } = useTranslation();
@@ -118,7 +121,7 @@ export function HomePageClient({
       || donationSettings.defaultPurpose
     ),
   );
-  const hasDonationContent = donationCampaigns.length > 0 || hasBankDetails || Boolean(donationSettings?.paypalLink);
+  const hasDonationContent = donationCampaigns.length > 0 || hasBankDetails || Boolean(donationReport) || Boolean(donationSettings?.paypalLink);
   const donationEmptyMessage = hasDonationContent
     ? HOME_EMPTY_COPY.donationCampaigns[locale]
     : HOME_EMPTY_COPY.donationOptions[locale];
@@ -197,6 +200,7 @@ export function HomePageClient({
             <p className="home-section-empty-message home-donation-empty-message">{donationEmptyMessage}</p>
           )}
           {hasBankDetails && donationSettings ? <BankTransferCard settings={donationSettings} home /> : null}
+          {donationReport ? <TransparencyCard report={donationReport} home /> : null}
           {donationSettings?.paypalLink ? <PayPalCard paypalLink={donationSettings.paypalLink} showUrl={false} home /> : null}
         </div>
       </section>

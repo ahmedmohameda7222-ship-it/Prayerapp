@@ -14,7 +14,7 @@ function validateMosqueSettings(data: Record<string, string>): string[] {
   if (data.email?.trim() && !emailRegex.test(data.email.trim())) {
     errors.push("admin.errors.validEmailRequired");
   }
-  for (const value of [data.googleMapsLink, data.whatsappLink, data.telegramLink]) {
+  for (const value of [data.googleMapsLink, data.whatsappLink]) {
     if (value?.trim() && !urlRegex.test(value.trim())) errors.push("admin.errors.validHttpsUrlRequired");
   }
   if (data.phone?.length > 40 || data.address?.length > 300) errors.push("admin.errors.invalidInput");
@@ -43,7 +43,7 @@ export async function updateMosqueSettingsAction(
     email: data.email?.trim() || "",
     google_maps_link: data.googleMapsLink?.trim() || "",
     whatsapp_link: data.whatsappLink?.trim() || "",
-    telegram_link: data.telegramLink?.trim() || "",
+    telegram_link: "",
     account_holder: data.accountHolder?.trim() || "",
     iban: data.iban?.trim() || "",
     bic: data.bic?.trim() || "",

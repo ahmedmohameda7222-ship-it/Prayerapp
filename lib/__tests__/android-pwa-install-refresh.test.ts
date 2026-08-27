@@ -22,17 +22,23 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
     expect(manifest.icons?.some((icon) => icon.sizes === "512x512")).toBe(true);
   });
 
-  it("keeps Android PWA install distinct from native Android app install", () => {
+  it("keeps Android web direct APK install distinct from native Android and non-Android PWA install", () => {
     const homeInstall = source("components/home/HomeInstallAction.tsx");
     const settingsInstall = source("components/settings/InstallAppCard.tsx");
     const release = source("lib/android-release.ts");
+    const platform = source("lib/platform.ts");
 
     expect(release).toContain('\"/download/android/danube-mosque.apk\"');
 
+    expect(homeInstall).toContain('import { ANDROID_PUBLIC_DOWNLOAD_PATH } from "@/lib/android-release"');
+    expect(homeInstall).toContain('import { isAndroidUserAgent } from "@/lib/platform"');
+    expect(homeInstall).toContain("setAndroidBrowser(isAndroidUserAgent(navigator.userAgent))");
+    expect(homeInstall).toContain("if (!ready || installed || isNative) return null");
+    expect(homeInstall).toContain("if (androidBrowser)");
+    expect(homeInstall).toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");
     expect(homeInstall).toContain("currentPrompt.prompt()");
     expect(homeInstall).toContain('window.location.assign("/settings#install-app")');
-    expect(homeInstall).not.toContain("href={ANDROID_PUBLIC_DOWNLOAD_PATH}");
-    expect(homeInstall).not.toContain("if (isAndroid())");
+    expect(platform).toContain("/\\bAndroid\\b/iu.test(userAgent)");
 
     expect(settingsInstall).toContain('data-testid="install-pwa"');
     expect(settingsInstall).toContain('data-testid="install-android-app"');

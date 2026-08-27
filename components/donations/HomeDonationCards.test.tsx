@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { BankTransferCard } from "./BankTransferCard";
 import { DonationCampaignCard } from "./DonationCampaignCard";
 import { PayPalCard } from "./PayPalCard";
-import type { DonationCampaign, DonationSettings } from "@/lib/types";
+import { TransparencyCard } from "./TransparencyCard";
+import type { DonationCampaign, DonationReport, DonationSettings } from "@/lib/types";
 
 vi.mock("@/lib/i18n/use-translation", () => ({
   useTranslation: () => ({
@@ -17,6 +18,9 @@ vi.mock("@/lib/i18n/use-translation", () => ({
       "donations.copy": "Copy",
       "donations.copied": "Copied",
       "donations.donateWithPaypal": "Donate with PayPal",
+      "donations.monthlyNeed": "Monthly need",
+      "donations.donationsReceived": "Donations received",
+      "donations.remaining": "Remaining",
       "phase1.paypalSupport": "You can also support the mosque securely with PayPal.",
     }[key] || key),
   }),
@@ -42,6 +46,13 @@ const campaign: DonationCampaign = {
   isFeatured: true,
 };
 
+const report: DonationReport = {
+  month: "2026-08",
+  monthlyNeed: 3000,
+  donationsReceived: 1250,
+  remaining: 1750,
+};
+
 describe("Home donation cards", () => {
   it("renders each campaign as a restrained Home surface without the legacy card", () => {
     render(<DonationCampaignCard campaign={campaign} home />);
@@ -63,6 +74,20 @@ describe("Home donation cards", () => {
     expect(within(surface).getAllByRole("button")).toHaveLength(4);
     expect(surface).toHaveClass("home-donation-surface");
     expect(surface.closest(".card")).toBeNull();
+  });
+
+  it("renders transparency report values in the Home donation surface language", () => {
+    render(<TransparencyCard report={report} home />);
+    const surface = screen.getByTestId("home-transparency-surface");
+
+    expect(surface).toHaveClass("home-donation-surface");
+    expect(surface.className).not.toMatch(/\bcard\b/);
+    expect(within(surface).getByText("Monthly need")).toBeInTheDocument();
+    expect(within(surface).getByText("Donations received")).toBeInTheDocument();
+    expect(within(surface).getByText("Remaining")).toBeInTheDocument();
+    expect(surface).toHaveTextContent("3,000");
+    expect(surface).toHaveTextContent("1,250");
+    expect(surface).toHaveTextContent("1,750");
   });
 
   it("shows neutral PayPal context and hides the raw URL on Home", () => {

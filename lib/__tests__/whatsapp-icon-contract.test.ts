@@ -1,25 +1,30 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const appHeaderSource = readFileSync(
-  join(process.cwd(), "components/layout/AppHeader.tsx"),
-  "utf8",
-);
+const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
+const iconPath = join(process.cwd(), "components/icons/WhatsAppIcon.tsx");
+const simpleIconsWhatsappPath =
+  "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15";
 
-const supericonsBootstrapWhatsappPath =
-  "M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926";
-const legacyWhatsappPath =
-  "M20.2 11.7a8.2 8.2 0 0 1-12.1 7.2L4 20l1.1-4A8.2 8.2 0 1 1 20.2 11.7Z";
+describe("shared WhatsApp brand icon", () => {
+  it("uses the approved Simple Icons WhatsApp SVG from Supericons", () => {
+    expect(existsSync(iconPath)).toBe(true);
+    if (!existsSync(iconPath)) return;
 
-describe("AppHeader WhatsApp brand icon", () => {
-  it("uses the verified Bootstrap WhatsApp SVG from Supericons", () => {
-    expect(appHeaderSource).toContain('viewBox="0 0 16 16"');
-    expect(appHeaderSource).toContain('fill="currentColor"');
-    expect(appHeaderSource).toContain(supericonsBootstrapWhatsappPath);
+    const icon = readFileSync(iconPath, "utf8");
+    expect(icon).toContain('viewBox="0 0 24 24"');
+    expect(icon).toContain('fill="currentColor"');
+    expect(icon).toContain(simpleIconsWhatsappPath);
   });
 
-  it("does not keep the previous hand-drawn WhatsApp SVG", () => {
-    expect(appHeaderSource).not.toContain(legacyWhatsappPath);
+  it("is shared by the header and Mosque page instead of duplicate or placeholder marks", () => {
+    const header = source("components/layout/AppHeader.tsx");
+    const mosque = source("app/mosque/page.tsx");
+
+    expect(header).toContain('import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon"');
+    expect(mosque).toContain('import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon"');
+    expect(header).not.toContain("function WhatsAppIcon(");
+    expect(mosque).not.toContain(">W<");
   });
 });

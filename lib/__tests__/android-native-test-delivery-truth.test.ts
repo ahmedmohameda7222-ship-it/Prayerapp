@@ -20,12 +20,4 @@ describe("native prayer self-test delivery truth", () => {
     expect(provider).toContain("const NATIVE_TEST_RESULT_TIMEOUT_MS = 30_000");
     expect(provider).toContain("const NATIVE_TEST_STATUS_POLL_MS = 750");
   });
-
-  it("updates self-test UI immediately from the terminal promise and never invents success on a timer", () => {
-    const controls = source("components/settings/PrayerSystemTestControls.tsx");
-
-    expect(controls).toContain("setAdhanStatus(delivered ? copy.adhanTriggered : copy.adhanFailed)");
-    expect(controls).toContain("setReminderStatus(delivered ? copy.reminderSent : copy.reminderFailed)");
-    expect(controls).not.toContain("window.setTimeout(() => {");
-  });
 });

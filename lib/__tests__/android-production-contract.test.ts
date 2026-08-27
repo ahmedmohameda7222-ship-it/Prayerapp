@@ -20,7 +20,7 @@ describe("Android production completion contract", () => {
     const scheduler = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerScheduler.java");
     const receiver = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerAlarmReceiver.java");
     const service = source("android-twa/app/src/main/java/de/donaumoschee/app/adhan/AdhanPlaybackService.java");
-    const controls = source("components/settings/PrayerSystemTestControls.tsx");
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
     expect(scheduler).toContain("setExactAndAllowWhileIdle");
     expect(scheduler).toContain("scheduleTest");
     expect(receiver).toContain("AdhanPlaybackService.class");
@@ -29,8 +29,8 @@ describe("Android production completion contract", () => {
     expect(service).toContain("CommandButton.ICON_STOP");
     expect(service).toContain('CHANNEL = "adhan-playback-v1"');
     expect(service).toContain("setChannelId(CHANNEL)");
-    expect(controls).toContain('scheduleTest("adhan"');
-    expect(controls).toContain('scheduleTest("reminder"');
+    expect(provider).toContain("const scheduleTest = useCallback");
+    expect(provider).toContain('send("native.test.schedule", { mode, prayer, adhanSoundId, delaySeconds: 10 })');
   });
 
   it("handles exact-alarm settings return through Activity Result without consuming initial resume", () => {

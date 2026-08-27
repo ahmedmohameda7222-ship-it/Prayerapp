@@ -171,11 +171,11 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(table).toContain("copy.maghribProgram");
   });
 
-  it("exposes the public legal surfaces from More and Account", () => {
+  it("keeps public legal routes while hiding Imprint from More", () => {
     expect(existsSync(path.join(process.cwd(), "app/privacy/page.tsx"))).toBe(true);
     expect(existsSync(path.join(process.cwd(), "app/imprint/page.tsx"))).toBe(true);
     expect(source("app/more/page.tsx")).toContain('"/privacy"');
-    expect(source("app/more/page.tsx")).toContain('"/imprint"');
+    expect(source("app/more/page.tsx")).not.toContain('"/imprint"');
     expect(source("app/account/page.tsx")).toContain('"/privacy"');
     expect(source("app/account/page.tsx")).toContain('"/imprint"');
   });

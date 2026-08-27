@@ -59,7 +59,7 @@ describe("HomeInstallAction", () => {
     window.__pwaInstallPrompt = {
       prompt,
       userChoice: Promise.resolve({ outcome: "accepted", platform: "web" }),
-    } as BeforeInstallPromptEvent;
+    } as unknown as BeforeInstallPromptEvent;
 
     render(<HomeInstallAction />);
 

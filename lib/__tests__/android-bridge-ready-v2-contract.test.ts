@@ -42,13 +42,14 @@ describe("Android bridge readiness v2", () => {
     expect(statusIndex).toBeGreaterThan(readyIndex);
   });
 
-  it("does not fall back to browser notification/test paths while native readiness is still probing", () => {
+  it("does not expose browser fallback or native test paths while native readiness is still probing", () => {
     const settings = source("components/settings/SettingsControls.tsx");
-    const tests = source("components/settings/PrayerSystemTestControls.tsx");
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
 
     expect(settings).toContain("bridgeState");
     expect(settings).toContain('bridgeState === "probing"');
-    expect(tests).toContain("bridgeState");
-    expect(tests).toContain('bridgeState === "probing"');
+    expect(settings).not.toContain("PrayerSystemTestControls");
+    expect(provider).toContain("if (!portRef.current || pendingTests.current.has(mode)) return resolve(false)");
+    expect(provider).toContain('send("native.test.schedule", { mode, prayer, adhanSoundId, delaySeconds: 10 })');
   });
 });

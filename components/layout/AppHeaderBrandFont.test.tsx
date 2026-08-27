@@ -15,7 +15,7 @@ describe("mosque name header brand mark", () => {
     expect(header).toContain("{useArabicBrandLogo ? (");
     expect(header).toContain('src="/branding/masjid-al-danube-ar.svg"');
     expect(header).toContain('alt="مَسْجِدُ الدُّونَاوْ"');
-    expect(header).toContain('className="mosque-name-logo h-auto w-[clamp(190px,54vw,230px)]"');
+    expect(header).toContain('className="mosque-name-logo h-auto w-[clamp(220px,62vw,280px)]"');
     expect(header).not.toContain("function ArabicMosqueBrandMark()");
     expect(existsSync(join(process.cwd(), "public/branding/masjid-al-danube-ar.svg"))).toBe(true);
   });

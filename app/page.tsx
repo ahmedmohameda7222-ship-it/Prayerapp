@@ -2,7 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { getUrgentAnnouncements } from "@/lib/data/announcements";
-import { getDonationCampaigns, getDonationSettings } from "@/lib/data/donations";
+import { getDonationCampaigns, getDonationReport, getDonationSettings } from "@/lib/data/donations";
 import { getEvents } from "@/lib/data/events";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { getMosqueSettings } from "@/lib/data/mosque-settings";
@@ -18,13 +18,14 @@ export default async function HomePage() {
   const today = todayIso(now);
   const startDate = addDaysIso(today, -1);
   const endDate = addDaysIso(today, 30);
-  const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, mosqueSettingsResult] = await Promise.allSettled([
+  const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
     getPrayerTimes(false, startDate, endDate),
     getUrgentAnnouncements(),
     getJumuahTimes(),
     getEvents(),
     getDonationSettings(),
     getDonationCampaigns(),
+    getDonationReport(),
     getMosqueSettings(),
   ]);
 
@@ -38,6 +39,7 @@ export default async function HomePage() {
     : [];
   const donationSettings = donationSettingsResult.status === "fulfilled" ? donationSettingsResult.value : undefined;
   const donationCampaigns = donationCampaignsResult.status === "fulfilled" ? donationCampaignsResult.value : [];
+  const donationReport = donationReportResult.status === "fulfilled" ? donationReportResult.value : undefined;
   const mosqueSettings = mosqueSettingsResult.status === "fulfilled" ? mosqueSettingsResult.value : undefined;
   const allowAnyFutureJumuah = jumuahTimes.some((item) => item.notes === QA_MOCK_MARKER);
 
@@ -52,6 +54,7 @@ export default async function HomePage() {
         events={events}
         donationSettings={donationSettings}
         donationCampaigns={donationCampaigns}
+        donationReport={donationReport}
         initialNow={initialNow}
       />
     </AppShell>

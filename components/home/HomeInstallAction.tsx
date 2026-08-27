@@ -3,23 +3,29 @@
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { useNativeAndroid } from "@/components/providers/NativeAndroidProvider";
+import { ANDROID_PUBLIC_DOWNLOAD_PATH } from "@/lib/android-release";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import { isAndroidUserAgent } from "@/lib/platform";
 
 function isStandalone() {
   return window.matchMedia("(display-mode: standalone)").matches
     || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 }
 
+const installActionClassName = "grid h-11 w-11 place-items-center rounded-[10px] text-white transition-colors hover:bg-white/10 active:bg-white/10";
+
 export function HomeInstallAction() {
   const { t } = useTranslation();
   const { isNative } = useNativeAndroid();
   const [ready, setReady] = useState(false);
   const [installed, setInstalled] = useState(true);
+  const [androidBrowser, setAndroidBrowser] = useState(false);
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent>();
 
   useEffect(() => {
     const refresh = () => {
       setInstalled(isStandalone());
+      setAndroidBrowser(isAndroidUserAgent(navigator.userAgent));
       setPrompt(window.__pwaInstallPrompt);
       setReady(true);
     };
@@ -40,6 +46,20 @@ export function HomeInstallAction() {
   }, []);
 
   if (!ready || installed || isNative) return null;
+
+  if (androidBrowser) {
+    return (
+      <a
+        href={ANDROID_PUBLIC_DOWNLOAD_PATH}
+        aria-label={t("settings.installApp")}
+        title={t("settings.installApp")}
+        className={installActionClassName}
+        data-testid="home-install-app"
+      >
+        <Download className="h-5 w-5" aria-hidden="true" />
+      </a>
+    );
+  }
 
   async function installOrExplain() {
     const currentPrompt = prompt || window.__pwaInstallPrompt;
@@ -66,7 +86,7 @@ export function HomeInstallAction() {
       onClick={() => void installOrExplain()}
       aria-label={t("settings.installApp")}
       title={t("settings.installApp")}
-      className="grid h-11 w-11 place-items-center rounded-[10px] text-white transition-colors hover:bg-white/10 active:bg-white/10"
+      className={installActionClassName}
       data-testid="home-install-app"
     >
       <Download className="h-5 w-5" aria-hidden="true" />

@@ -8,24 +8,34 @@ function source(path: string) {
 }
 
 describe("AppHeader Arabic wordmark contract", () => {
-  it("renders the approved Arabic wordmark inline without an external image request", () => {
+  it("renders the approved Arabic wordmark from an in-DOM SVG sprite without an image request", () => {
     const header = source("components/layout/AppHeader.tsx");
-    const inlineWordmarkPath = join(process.cwd(), "components/layout/ArabicMosqueWordmark.tsx");
+    const layout = source("app/layout.tsx");
+    const wordmarkPath = join(process.cwd(), "components/layout/ArabicMosqueWordmark.tsx");
+    const spritePath = join(process.cwd(), "components/layout/ArabicMosqueWordmarkSprite.tsx");
 
     expect(header).not.toContain('from "next/image"');
     expect(header).not.toContain('/branding/masjid-al-danube-ar.svg');
     expect(header).toContain('import { ArabicMosqueWordmark } from "@/components/layout/ArabicMosqueWordmark"');
     expect(header).toContain("<ArabicMosqueWordmark />");
-    expect(existsSync(inlineWordmarkPath)).toBe(true);
+    expect(layout).toContain('import { ArabicMosqueWordmarkSprite } from "@/components/layout/ArabicMosqueWordmarkSprite"');
+    expect(layout).toContain("<ArabicMosqueWordmarkSprite />");
+    expect(existsSync(wordmarkPath)).toBe(true);
+    expect(existsSync(spritePath)).toBe(true);
 
-    const wordmark = readFileSync(inlineWordmarkPath, "utf8");
+    const wordmark = readFileSync(wordmarkPath, "utf8");
+    const sprite = readFileSync(spritePath, "utf8");
     expect(wordmark).toContain("<svg");
     expect(wordmark).toContain('data-approved-wordmark="2026-08-27-spaced"');
-    expect(wordmark).toContain('id="word-masjid"');
-    expect(wordmark).toContain('id="word-danube"');
+    expect(wordmark).toContain('href="#word-danube"');
+    expect(wordmark).toContain('href="#word-masjid"');
     expect(wordmark).toContain("مَسْجِدُ الدُّونَاوْ");
     expect(wordmark).toContain("w-[clamp(220px,62vw,280px)]");
     expect(wordmark).not.toMatch(/<image\b/i);
+
+    expect(sprite).toContain('public/branding/masjid-al-danube-ar.svg');
+    expect(sprite).toContain("readFileSync");
+    expect(sprite).toContain("dangerouslySetInnerHTML");
   });
 
   it("keeps the exact normal localized mosque names", () => {

@@ -42,6 +42,15 @@ describe("Home Jumuah integration contract", () => {
     expect(card).toContain("تُقام صلاة الجمعة في المسجد في عدة مواعيد.");
   });
 
+  it("rounds the inner Jumuah times card instead of leaving it rectangular", () => {
+    const css = source("app/home-jumuah.css");
+    const timesRule = css.match(/\.home-page-shell \.home-jumuah-times\s*\{([\s\S]*?)\}/)?.[1] || "";
+
+    expect(timesRule).toContain("overflow: hidden;");
+    expect(timesRule).toContain("border: 1px solid rgba(252, 250, 246, 0.26);");
+    expect(timesRule).toContain("border-radius: 14px;");
+  });
+
   it("labels farther upcoming Fridays without claiming they are two days away", () => {
     const card = source("components/home/HomeJumuahCard.tsx");
 

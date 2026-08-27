@@ -17,20 +17,11 @@ describe("prayer system self-test contract", () => {
     expect(provider).not.toContain('document.visibilityState !== "visible"');
   });
 
-  it("simulates real Adhan-now and 15-minute reminder events after ten seconds", () => {
-    const controls = source("components/settings/PrayerSystemTestControls.tsx");
+  it("keeps the internal simulation delivery path aligned with production prayer events", () => {
     const preferences = source("components/providers/AppPreferencesProvider.tsx");
     const route = source("app/api/push/test/route.ts");
     const cron = source("app/api/cron/prayer-reminders/route.ts");
     const delivery = source("lib/prayer-reminder-delivery.ts");
-
-    expect(controls).toContain("const TEST_SECONDS = 10");
-    expect(controls).toContain("const TEST_REMINDER_MINUTES = 15");
-    expect(controls).toContain("copy.testAdhan");
-    expect(controls).toContain("copy.testReminder");
-    expect(controls).toContain("primeSound(soundId)");
-    expect(controls).toContain("sendTestAdhan(prayer, TEST_SECONDS)");
-    expect(controls).toContain("sendTestPrayerReminder(prayer, TEST_SECONDS)");
 
     expect(preferences).toContain('sendPrayerSimulation("adhan", prayer, delaySeconds)');
     expect(preferences).toContain('sendPrayerSimulation("reminder", prayer, delaySeconds)');

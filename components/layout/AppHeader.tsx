@@ -79,10 +79,10 @@ export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProp
               <Image
                 src="/branding/masjid-al-danube-ar.svg"
                 alt="مَسْجِدُ الدُّونَاوْ"
-                width={230}
-                height={77}
+                width={280}
+                height={93}
                 priority
-                className="mosque-name-logo h-auto w-[clamp(190px,54vw,230px)]"
+                className="mosque-name-logo h-auto w-[clamp(220px,62vw,280px)]"
               />
             </h1>
           ) : (

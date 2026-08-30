@@ -4,6 +4,8 @@ export const KAABA_LON = 39.8262;
 export const ALIGN_ENTER_DEGREES = 4;
 export const ALIGN_EXIT_DEGREES = 7;
 
+export type CompassSector = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
+
 export function toRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
@@ -53,6 +55,27 @@ export function smoothCompassHeading(
 
   const shortestDelta = ((nextHeading - previousHeading + 540) % 360) - 180;
   return normalizeDegrees(previousHeading + shortestDelta * smoothingFactor);
+}
+
+/** Time-based exponential heading smoothing, independent of sensor event frequency. */
+export function smoothHeadingByTime(
+  previous: number | null,
+  next: number,
+  deltaMs: number,
+  timeConstantMs = 180,
+): number {
+  const normalizedNext = normalizeDegrees(next);
+  if (previous === null || !Number.isFinite(deltaMs) || deltaMs <= 0) return normalizedNext;
+  if (!Number.isFinite(timeConstantMs) || timeConstantMs <= 0) return normalizedNext;
+
+  const factor = 1 - Math.exp(-deltaMs / timeConstantMs);
+  const shortestDelta = ((normalizedNext - previous + 540) % 360) - 180;
+  return normalizeDegrees(previous + shortestDelta * factor);
+}
+
+export function getCompassSector(bearing: number): CompassSector {
+  const sectors: CompassSector[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return sectors[Math.round(normalizeDegrees(bearing) / 45) % sectors.length];
 }
 
 /**

@@ -5,10 +5,12 @@ import {
   calculateNeedleRotation,
   calculateQiblaBearing,
   calculateSignedTurnDelta,
+  getCompassSector,
   headingFromAlpha,
   isQiblaAligned,
   normalizeDegrees,
   smoothCompassHeading,
+  smoothHeadingByTime,
 } from "@/lib/qibla-utils";
 
 const GOLDEN_BEARINGS = [
@@ -59,5 +61,23 @@ describe("Qibla compass helpers", () => {
 
   it("smooths across north using the shortest path", () => {
     expect(smoothCompassHeading(359, 1, 0.5)).toBe(0);
+    const smoothed = smoothHeadingByTime(359, 1, 180, 180);
+    expect(smoothed).toBeGreaterThan(359);
+    expect(smoothed).toBeLessThan(360);
+  });
+
+  it("uses elapsed time rather than event count for smoothing", () => {
+    const short = smoothHeadingByTime(0, 90, 18, 180);
+    const long = smoothHeadingByTime(0, 90, 180, 180);
+    expect(short).toBeLessThan(long);
+    expect(long).toBeCloseTo(56.89, 1);
+  });
+
+  it("maps true bearings into stable 8-way direction sectors", () => {
+    expect(getCompassSector(0)).toBe("N");
+    expect(getCompassSector(44)).toBe("NE");
+    expect(getCompassSector(132)).toBe("SE");
+    expect(getCompassSector(277)).toBe("W");
+    expect(getCompassSector(359)).toBe("N");
   });
 });

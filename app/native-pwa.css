@@ -1,12 +1,24 @@
 /* Platform-adaptive public PWA chrome. The semantics remain shared; only presentation adapts. */
 
 .root-page-header {
+  --home-brand: var(--ui-brand);
+  --home-brand-strong: var(--ui-brand-strong);
+  --home-brand-soft: var(--ui-brand-soft);
+  --home-surface: var(--ui-surface);
+  --home-surface-subtle: var(--ui-surface-subtle);
+  --home-text: var(--ui-text);
+  --home-text-secondary: var(--ui-text-secondary-color);
+  --home-divider: var(--ui-divider);
   position: sticky;
   z-index: 45;
   top: 0;
   margin-inline: -16px;
   background: var(--home-brand, #005a52);
   color: #fffdf8;
+}
+
+.page-shell:not(.home-page-shell) .root-page-header {
+  margin-bottom: 18px;
 }
 
 .root-page-header-inner {
@@ -19,19 +31,44 @@
 }
 
 .root-page-header h1 {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
   margin: 0;
   color: #f7f1e5;
   font-size: 24px;
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .root-page-header-actions {
   display: flex;
   min-width: max-content;
+  flex-shrink: 0;
   align-items: center;
   gap: 2px;
+}
+
+.root-page-header-control {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 10px;
+  color: #fffdf8;
+  transition: background-color 160ms ease, transform 120ms ease;
+}
+
+.root-page-header-control:hover,
+.root-page-header-control:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.root-page-header-control:active {
+  transform: scale(0.96);
 }
 
 @media (max-width: 1023px) {

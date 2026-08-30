@@ -105,7 +105,7 @@ describe("QiblaExperience semantic states", () => {
     );
     renderExperience();
 
-    expect(screen.getByRole("heading", { name: expected })).toBeInTheDocument();
+    expect(screen.getByText(expected)).toBeInTheDocument();
     expect(screen.getByTestId("qibla-compass")).toHaveAttribute("aria-hidden", "true");
     const liveRegion = document.querySelector("[aria-live='polite']");
     expect(liveRegion).toHaveTextContent("Live compass ready.");

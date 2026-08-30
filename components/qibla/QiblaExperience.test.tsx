@@ -108,6 +108,8 @@ describe("QiblaExperience semantic states", () => {
     expect(screen.getByText(expected)).toBeInTheDocument();
     expect(screen.getByTestId("qibla-compass")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByTestId("qibla-compass")).toHaveAttribute("data-aligned", "false");
+    expect(screen.getByTestId("qibla-kaaba-target")).toHaveStyle({ transform: "rotate(132.45deg)" });
+    expect(screen.getByTestId("qibla-needle")).toHaveStyle({ transform: "rotate(118deg)" });
     const liveRegion = document.querySelector("[aria-live='polite']");
     expect(liveRegion).toHaveTextContent("Live compass ready.");
     expect(liveRegion).not.toHaveTextContent(/\d+°/u);

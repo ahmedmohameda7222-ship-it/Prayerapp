@@ -9,18 +9,20 @@ vi.mock("@/lib/data/announcements", () => ({ getAnnouncements: async () => [] })
 
 class MockDeviceOrientationEvent extends Event {
   alpha: number | null;
-  beta: number | null = null;
-  gamma: number | null = null;
+  beta: number | null;
+  gamma: number | null;
   absolute: boolean;
 
-  constructor(type: string, init: { alpha: number; absolute: boolean }) {
+  constructor(type: string, init: { alpha: number; absolute: boolean; beta?: number; gamma?: number }) {
     super(type);
     this.alpha = init.alpha;
+    this.beta = init.beta ?? 0;
+    this.gamma = init.gamma ?? 0;
     this.absolute = init.absolute;
   }
 }
 
-describe("QiblaPage live compass", () => {
+describe("QiblaPage progressive live compass flow", () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
@@ -42,7 +44,7 @@ describe("QiblaPage live compass", () => {
             },
             timestamp: Date.now(),
             toJSON: () => ({}),
-          });
+          } as GeolocationPosition);
         }),
       },
     });
@@ -50,6 +52,14 @@ describe("QiblaPage live compass", () => {
     Object.defineProperty(window, "DeviceOrientationEvent", {
       configurable: true,
       value: MockDeviceOrientationEvent,
+    });
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
     });
     Object.defineProperty(window, "requestAnimationFrame", {
       configurable: true,
@@ -62,7 +72,10 @@ describe("QiblaPage live compass", () => {
 
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ json: async () => ({ ok: true, city: "Deggendorf", country: "Germany" }) })
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ok: true, city: "Deggendorf", country: "Germany" }),
+      }),
     );
   });
 
@@ -71,34 +84,45 @@ describe("QiblaPage live compass", () => {
     vi.restoreAllMocks();
   });
 
-  it("uses the current coordinates and updates the live heading from orientation events", async () => {
+  it("requests location first, then enables live guidance only after the separate compass action", async () => {
     const user = userEvent.setup();
     render(
       <I18nProvider initialLocale="en">
         <QiblaPage />
-      </I18nProvider>
+      </I18nProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Start Qibla Compass" }));
+    expect(screen.getByRole("button", { name: "Find Qibla" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enable Live Compass" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Find Qibla" }));
 
     expect(navigator.geolocation.getCurrentPosition).toHaveBeenCalledWith(
       expect.any(Function),
       expect.any(Function),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
+
+    const enableCompass = await screen.findByRole("button", { name: "Enable Live Compass" });
+    await user.click(enableCompass);
 
     act(() => {
       window.dispatchEvent(
-        new MockDeviceOrientationEvent("deviceorientationabsolute", { alpha: 90, absolute: true })
+        new MockDeviceOrientationEvent("deviceorientationabsolute", {
+          alpha: 90,
+          absolute: true,
+          beta: 0,
+          gamma: 0,
+        }),
       );
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Phone heading").parentElement).toHaveTextContent("270.0°");
+      expect(screen.getByText("True phone heading").parentElement).toHaveTextContent("270.0°");
     });
 
-    expect(screen.getByText("Needle rotation").parentElement).not.toHaveTextContent("—");
+    expect(screen.getByText("Heading source").parentElement).toHaveTextContent("Absolute orientation");
     expect(screen.getByText("Location accuracy").parentElement).toHaveTextContent("±8 m");
-    expect(screen.getByText("Live compass active — rotate your phone until the arrow points straight ahead.")).toBeInTheDocument();
+    expect(screen.getByTestId("qibla-compass")).toHaveAttribute("aria-hidden", "true");
   });
 });

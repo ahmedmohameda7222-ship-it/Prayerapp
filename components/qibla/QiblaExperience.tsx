@@ -95,10 +95,11 @@ export function QiblaExperience() {
       {state.bearing !== null && !["idle", "locating", "location-error"].includes(state.mode) ? (
         <>
           <Card className="py-7 text-center">
-            {isLive && state.turnDelta !== null ? (
+            {isLive && state.turnDelta !== null && state.trueHeading !== null ? (
               <>
                 <QiblaCompass
-                  rotation={state.turnDelta}
+                  qiblaBearing={state.bearing}
+                  heading={state.trueHeading}
                   north={t("qibla.northShort")}
                   east={t("qibla.eastShort")}
                   south={t("qibla.southShort")}

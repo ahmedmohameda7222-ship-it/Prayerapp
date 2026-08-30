@@ -1,7 +1,8 @@
 import { KaabaIcon } from "@/components/qibla/KaabaIcon";
 
 interface QiblaCompassProps {
-  rotation: number;
+  qiblaBearing: number;
+  heading: number;
   north: string;
   east: string;
   south: string;
@@ -10,7 +11,8 @@ interface QiblaCompassProps {
 }
 
 export function QiblaCompass({
-  rotation,
+  qiblaBearing,
+  heading,
   north,
   east,
   south,
@@ -60,7 +62,7 @@ export function QiblaCompass({
         data-testid="qibla-needle"
         data-aligned={aligned ? "true" : "false"}
         className="absolute inset-0 z-10 transition-transform duration-150 ease-out motion-reduce:transition-none"
-        style={{ transform: `rotate(${rotation}deg)` }}
+        style={{ transform: `rotate(${heading}deg)` }}
       >
         <svg viewBox="0 0 100 100" className="h-full w-full" focusable="false">
           <path
@@ -83,14 +85,14 @@ export function QiblaCompass({
       <div
         data-testid="qibla-kaaba-target"
         className="pointer-events-none absolute inset-0 z-20 transition-transform duration-150 ease-out motion-reduce:transition-none"
-        style={{ transform: `rotate(${rotation}deg)` }}
+        style={{ transform: `rotate(${qiblaBearing}deg)` }}
       >
         <div className="absolute left-1/2 top-[15%] -translate-x-1/2 -translate-y-1/2">
           <KaabaIcon
             data-testid="qibla-kaaba-icon"
             className="h-10 w-10 transition-[filter] duration-200 motion-reduce:transition-none"
             style={{
-              transform: `rotate(${-rotation}deg)`,
+              transform: `rotate(${-qiblaBearing}deg)`,
               filter: aligned ? "drop-shadow(0 0 8px var(--ui-success))" : undefined,
             }}
           />

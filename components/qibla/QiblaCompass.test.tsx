@@ -8,7 +8,15 @@ describe("QiblaCompass physical coordinate system", () => {
   it("keeps east physically right and west physically left in RTL content", () => {
     render(
       <div dir="rtl">
-        <QiblaCompass rotation={90} north="ش" east="ق" south="ج" west="غ" aligned={false} />
+        <QiblaCompass
+          qiblaBearing={132}
+          heading={90}
+          north="ش"
+          east="ق"
+          south="ج"
+          west="غ"
+          aligned={false}
+        />
       </div>,
     );
 
@@ -20,35 +28,104 @@ describe("QiblaCompass physical coordinate system", () => {
     expect(screen.getByText("ج")).toHaveAttribute("data-physical-position", "bottom");
   });
 
-  it("uses one positive-clockwise rotation coordinate system and hides the graphic from assistive technology", () => {
-    render(<QiblaCompass rotation={37} north="N" east="E" south="S" west="W" aligned={false} />);
-    expect(screen.getByTestId("qibla-compass")).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getByTestId("qibla-needle")).toHaveStyle({ transform: "rotate(37deg)" });
+  it("keeps the Kaaba fixed at its absolute bearing while only the live heading needle moves", () => {
+    const { rerender } = render(
+      <QiblaCompass
+        qiblaBearing={132}
+        heading={90}
+        north="N"
+        east="E"
+        south="S"
+        west="W"
+        aligned={false}
+      />,
+    );
+
+    expect(screen.getByTestId("qibla-kaaba-target")).toHaveStyle({ transform: "rotate(132deg)" });
+    expect(screen.getByTestId("qibla-kaaba-icon")).toHaveStyle({ transform: "rotate(-132deg)" });
+    expect(screen.getByTestId("qibla-needle")).toHaveStyle({ transform: "rotate(90deg)" });
+
+    rerender(
+      <QiblaCompass
+        qiblaBearing={132}
+        heading={120}
+        north="N"
+        east="E"
+        south="S"
+        west="W"
+        aligned={false}
+      />,
+    );
+
+    expect(screen.getByTestId("qibla-kaaba-target")).toHaveStyle({ transform: "rotate(132deg)" });
+    expect(screen.getByTestId("qibla-kaaba-icon")).toHaveStyle({ transform: "rotate(-132deg)" });
+    expect(screen.getByTestId("qibla-needle")).toHaveStyle({ transform: "rotate(120deg)" });
   });
 
-  it("keeps a visible Kaaba target on the same Qibla rotation while the icon stays upright", () => {
-    render(<QiblaCompass rotation={37} north="N" east="E" south="S" west="W" aligned={false} />);
+  it("uses one positive-clockwise north-up coordinate system and hides the graphic from assistive technology", () => {
+    render(
+      <QiblaCompass
+        qiblaBearing={132}
+        heading={37}
+        north="N"
+        east="E"
+        south="S"
+        west="W"
+        aligned={false}
+      />,
+    );
 
-    expect(screen.getByTestId("qibla-kaaba-target")).toHaveStyle({ transform: "rotate(37deg)" });
-    expect(screen.getByTestId("qibla-kaaba-icon")).toHaveStyle({ transform: "rotate(-37deg)" });
+    expect(screen.getByTestId("qibla-compass")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByTestId("qibla-kaaba-target")).toHaveStyle({ transform: "rotate(132deg)" });
+    expect(screen.getByTestId("qibla-needle")).toHaveStyle({ transform: "rotate(37deg)" });
   });
 
   it("exposes the green success visual state only when aligned", () => {
     const { rerender } = render(
-      <QiblaCompass rotation={6} north="N" east="E" south="S" west="W" aligned={false} />,
+      <QiblaCompass
+        qiblaBearing={132}
+        heading={126}
+        north="N"
+        east="E"
+        south="S"
+        west="W"
+        aligned={false}
+      />,
     );
 
     expect(screen.getByTestId("qibla-compass")).toHaveAttribute("data-aligned", "false");
     expect(screen.getByTestId("qibla-needle")).toHaveAttribute("data-aligned", "false");
 
-    rerender(<QiblaCompass rotation={1.5} north="N" east="E" south="S" west="W" aligned />);
+    rerender(
+      <QiblaCompass
+        qiblaBearing={132}
+        heading={132}
+        north="N"
+        east="E"
+        south="S"
+        west="W"
+        aligned
+      />,
+    );
 
     expect(screen.getByTestId("qibla-compass")).toHaveAttribute("data-aligned", "true");
     expect(screen.getByTestId("qibla-needle")).toHaveAttribute("data-aligned", "true");
+    expect(screen.getByTestId("qibla-kaaba-target")).toHaveStyle({ transform: "rotate(132deg)" });
+    expect(screen.getByTestId("qibla-needle")).toHaveStyle({ transform: "rotate(132deg)" });
   });
 
   it("keeps a usable surface and shadow fallback when aligned enhancement CSS is unsupported", () => {
-    render(<QiblaCompass rotation={0} north="N" east="E" south="S" west="W" aligned />);
+    render(
+      <QiblaCompass
+        qiblaBearing={132}
+        heading={132}
+        north="N"
+        east="E"
+        south="S"
+        west="W"
+        aligned
+      />,
+    );
 
     expect(screen.getByTestId("qibla-compass")).toHaveClass(
       "bg-[var(--ui-surface-subtle)]",
@@ -56,10 +133,12 @@ describe("QiblaCompass physical coordinate system", () => {
     );
   });
 
-  it("requires callers to provide alignment state explicitly", () => {
+  it("requires callers to provide absolute bearing, live heading, and alignment explicitly", () => {
     const source = readFileSync(resolve(process.cwd(), "components/qibla/QiblaCompass.tsx"), "utf8");
 
+    expect(source).toContain("qiblaBearing: number;");
+    expect(source).toContain("heading: number;");
     expect(source).toContain("aligned: boolean;");
-    expect(source).not.toContain("aligned?: boolean;");
+    expect(source).not.toContain("rotation: number;");
   });
 });

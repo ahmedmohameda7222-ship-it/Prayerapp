@@ -132,6 +132,24 @@ describe("useQiblaController lifecycle reliability", () => {
     expect(["live", "aligned"]).toContain(result.current.state.mode);
   });
 
+  it("detaches orientation listeners on pagehide even while visibility is still visible", async () => {
+    installGeolocation();
+    installOrientationPermission();
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+
+    const { result } = renderHook(() => useQiblaController());
+    act(() => result.current.findQibla());
+    await waitFor(() => expect(result.current.state.mode).toBe("bearing-ready"));
+    await act(async () => result.current.enableLiveCompass());
+
+    expect(document.visibilityState).toBe("visible");
+    act(() => window.dispatchEvent(new PageTransitionEvent("pagehide")));
+
+    const removedTypes = removeSpy.mock.calls.map(([type]) => type);
+    expect(removedTypes).toContain("deviceorientation");
+    expect(removedTypes).toContain("deviceorientationabsolute");
+  });
+
   it("does not let a stale permission promise attach sensors after unmount", async () => {
     installGeolocation();
     let resolvePermission!: (value: "granted" | "denied") => void;

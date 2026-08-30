@@ -420,6 +420,9 @@ export function useQiblaController(): QiblaController {
     const pause = () => {
       if (document.visibilityState === "hidden") detachSensors();
     };
+    const handlePageHide = () => {
+      detachSensors();
+    };
     const resume = () => {
       if (
         document.visibilityState !== "hidden" &&
@@ -438,7 +441,7 @@ export function useQiblaController(): QiblaController {
     };
 
     document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("pagehide", pause);
+    window.addEventListener("pagehide", handlePageHide);
     window.addEventListener("pageshow", resume);
 
     return () => {
@@ -447,7 +450,7 @@ export function useQiblaController(): QiblaController {
       ++locationRequestRef.current;
       detachSensors();
       document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("pagehide", pause);
+      window.removeEventListener("pagehide", handlePageHide);
       window.removeEventListener("pageshow", resume);
     };
   }, [attachSensors, blockCompass, detachSensors]);

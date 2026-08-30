@@ -105,6 +105,7 @@ export function useQiblaController(): QiblaController {
   const lastHeadingAtRef = useRef<number | null>(null);
   const lastSemanticAtRef = useRef(0);
   const sensorTimeoutRef = useRef<number | null>(null);
+  const hasTrustedHeadingRef = useRef(false);
 
   const clearSensorTimeout = useCallback(() => {
     if (sensorTimeoutRef.current !== null) {
@@ -120,6 +121,7 @@ export function useQiblaController(): QiblaController {
     smoothedHeadingRef.current = null;
     lastHeadingAtRef.current = null;
     lastSemanticAtRef.current = 0;
+    hasTrustedHeadingRef.current = false;
   }, [clearSensorTimeout]);
 
   const loadDeclination = useCallback(async (nextCoordinates: QiblaCoordinates, requestId: number) => {
@@ -249,6 +251,7 @@ export function useQiblaController(): QiblaController {
     smoothedHeadingRef.current = smoothed;
     if (lastSemanticAtRef.current !== 0 && now - lastSemanticAtRef.current < SEMANTIC_UPDATE_INTERVAL_MS) return;
     lastSemanticAtRef.current = now || Number.EPSILON;
+    hasTrustedHeadingRef.current = true;
     clearSensorTimeout();
     setHeadingSource(source);
     setHeadingAccuracyDegrees(accuracy);
@@ -321,7 +324,10 @@ export function useQiblaController(): QiblaController {
         return;
       }
 
-      if (Number.isFinite(event.alpha)) blockCompass("relative-heading");
+      if (Number.isFinite(event.alpha)) {
+        if (hasTrustedHeadingRef.current) return;
+        blockCompass("relative-heading");
+      }
     };
 
     const handleCalibration = () => {

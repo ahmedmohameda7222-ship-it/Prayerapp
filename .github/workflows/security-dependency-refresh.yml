@@ -1,0 +1,58 @@
+name: Security dependency lock refresh
+
+on:
+  push:
+    branches:
+      - security/full-application-hardening
+    paths:
+      - ".github/workflows/security-dependency-refresh.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out security branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: security/full-application-hardening
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+
+      - name: Refresh only patched dependency metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --save-exact \
+            next@16.3.3 react@19.2.8 react-dom@19.2.8
+          npm install --package-lock-only --ignore-scripts --save-dev --save-exact \
+            eslint-config-next@16.3.3
+          node - <<'NODE'
+          const manifest = require('./package.json');
+          const lock = require('./package-lock.json');
+          if (manifest.dependencies.next !== '16.3.3') throw new Error('Next.js was not pinned to 16.3.3');
+          if (manifest.dependencies.react !== '19.2.8') throw new Error('React was not pinned to 19.2.8');
+          if (manifest.dependencies['react-dom'] !== '19.2.8') throw new Error('React DOM was not pinned to 19.2.8');
+          if (manifest.devDependencies['eslint-config-next'] !== '16.3.3') throw new Error('eslint-config-next was not pinned to 16.3.3');
+          if (lock.packages['node_modules/next'].version !== '16.3.3') throw new Error('Lockfile Next.js mismatch');
+          if (lock.packages['node_modules/react'].version !== '19.2.8') throw new Error('Lockfile React mismatch');
+          if (lock.packages['node_modules/react-dom'].version !== '19.2.8') throw new Error('Lockfile React DOM mismatch');
+          NODE
+
+      - name: Commit generated lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git diff --cached --check
+          git diff --cached --quiet && { echo "Expected dependency changes were not generated" >&2; exit 1; }
+          git commit -m "fix(security): patch vulnerable web dependencies"
+          git push origin HEAD:security/full-application-hardening

@@ -24,10 +24,7 @@ const GOLDEN_BEARINGS = [
 
 describe("Qibla compass helpers", () => {
   it.each(GOLDEN_BEARINGS)("matches the independent golden bearing for $name", (fixture) => {
-    expect(calculateQiblaBearing(fixture.latitude, fixture.longitude)).toBeCloseTo(
-      fixture.expected,
-      1,
-    );
+    expect(calculateQiblaBearing(fixture.latitude, fixture.longitude)).toBeCloseTo(fixture.expected, 1);
   });
 
   it("normalizes values into a full compass circle", () => {
@@ -62,8 +59,8 @@ describe("Qibla compass helpers", () => {
   it("smooths across north using the shortest path", () => {
     expect(smoothCompassHeading(359, 1, 0.5)).toBe(0);
     const smoothed = smoothHeadingByTime(359, 1, 180, 180);
-    expect(smoothed).toBeGreaterThan(359);
-    expect(smoothed).toBeLessThan(360);
+    expect(smoothed).toBeGreaterThan(0);
+    expect(smoothed).toBeLessThan(1);
   });
 
   it("uses elapsed time rather than event count for smoothing", () => {

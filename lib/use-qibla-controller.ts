@@ -13,6 +13,7 @@ import { getMagneticDeclination } from "@/lib/qibla-magnetic";
 import {
   initialQiblaState,
   qiblaReducer,
+  type LiveCompassBlockReason,
   type LocationSource,
   type QiblaState,
 } from "@/lib/qibla-state";
@@ -76,9 +77,7 @@ export function roundQiblaCoordinates(latitude: number, longitude: number) {
 
 export function isPortraitViewport(): boolean {
   if (typeof window === "undefined") return true;
-  if (typeof window.matchMedia === "function") {
-    return window.matchMedia("(orientation: portrait)").matches;
-  }
+  if (typeof window.matchMedia === "function") return window.matchMedia("(orientation: portrait)").matches;
   return window.innerHeight >= window.innerWidth;
 }
 
@@ -155,14 +154,11 @@ export function useQiblaController(): QiblaController {
         return;
       }
     } catch {
-      // Human-readable location labels are optional.
+      // Optional human-readable location labels never block Qibla.
     }
 
     try {
-      const params = new URLSearchParams({
-        lat: String(coarse.latitude),
-        lon: String(coarse.longitude),
-      });
+      const params = new URLSearchParams({ lat: String(coarse.latitude), lon: String(coarse.longitude) });
       const response = await fetch(`/api/reverse-geocode?${params.toString()}`);
       const data = (await response.json()) as { ok?: boolean; city?: string; country?: string; formatted?: string };
       try {
@@ -187,8 +183,11 @@ export function useQiblaController(): QiblaController {
     setLocationError(null);
     setHeadingSource(null);
     setHeadingAccuracyDegrees(null);
-    const bearing = calculateQiblaBearing(nextCoordinates.latitude, nextCoordinates.longitude);
-    dispatch({ type: "LOCATION_READY", bearing, source: nextCoordinates.source });
+    dispatch({
+      type: "LOCATION_READY",
+      bearing: calculateQiblaBearing(nextCoordinates.latitude, nextCoordinates.longitude),
+      source: nextCoordinates.source,
+    });
     void loadDeclination(nextCoordinates, requestId);
     void fetchLocationLabel(nextCoordinates, requestId);
   }, [detachSensors, fetchLocationLabel, loadDeclination]);
@@ -213,8 +212,7 @@ export function useQiblaController(): QiblaController {
       return;
     }
 
-    ++locationRequestRef.current;
-    const requestId = locationRequestRef.current;
+    const requestId = ++locationRequestRef.current;
     detachSensors();
     compassEnabledRef.current = false;
     permissionGrantedRef.current = false;
@@ -246,25 +244,18 @@ export function useQiblaController(): QiblaController {
   const publishTrustedHeading = useCallback((heading: number, source: HeadingSource, accuracy: number | null) => {
     const now = performance.now();
     const last = lastHeadingAtRef.current;
-    const smoothed = smoothHeadingByTime(
-      smoothedHeadingRef.current,
-      heading,
-      last === null ? 0 : now - last,
-    );
+    const smoothed = smoothHeadingByTime(smoothedHeadingRef.current, heading, last === null ? 0 : now - last);
     lastHeadingAtRef.current = now;
     smoothedHeadingRef.current = smoothed;
-
-    if (lastSemanticAtRef.current !== 0 && now - lastSemanticAtRef.current < SEMANTIC_UPDATE_INTERVAL_MS) {
-      return;
-    }
-    lastSemanticAtRef.current = now;
+    if (lastSemanticAtRef.current !== 0 && now - lastSemanticAtRef.current < SEMANTIC_UPDATE_INTERVAL_MS) return;
+    lastSemanticAtRef.current = now || Number.EPSILON;
     clearSensorTimeout();
     setHeadingSource(source);
     setHeadingAccuracyDegrees(accuracy);
     dispatch({ type: "TRUSTED_HEADING", heading: smoothed });
   }, [clearSensorTimeout]);
 
-  const blockCompass = useCallback((reason: Parameters<typeof qiblaReducer>[1] extends { type: "COMPASS_BLOCKED"; reason: infer R } ? R : never) => {
+  const blockCompass = useCallback((reason: LiveCompassBlockReason) => {
     if (!mountedRef.current) return;
     setHeadingSource(null);
     setHeadingAccuracyDegrees(null);
@@ -276,6 +267,7 @@ export function useQiblaController(): QiblaController {
 
     const handleOrientation = (rawEvent: Event) => {
       if (!mountedRef.current || document.visibilityState === "hidden") return;
+      clearSensorTimeout();
       if (!isPortraitViewport()) {
         blockCompass("landscape");
         return;
@@ -283,9 +275,7 @@ export function useQiblaController(): QiblaController {
 
       const event = rawEvent as WebkitOrientationEvent;
       const webkitValue = event.webkitCompassHeading;
-      const hasWebkitProperty = typeof webkitValue !== "undefined";
-
-      if (hasWebkitProperty) {
+      if (typeof webkitValue !== "undefined") {
         if (!isValidWebkitCompassHeading(webkitValue)) {
           blockCompass("invalid-heading");
           return;
@@ -334,7 +324,10 @@ export function useQiblaController(): QiblaController {
       if (Number.isFinite(event.alpha)) blockCompass("relative-heading");
     };
 
-    const handleCalibration = () => blockCompass("calibration-required");
+    const handleCalibration = () => {
+      clearSensorTimeout();
+      blockCompass("calibration-required");
+    };
     const handleOrientationChange = () => {
       if (!isPortraitViewport()) blockCompass("landscape");
     };
@@ -343,10 +336,7 @@ export function useQiblaController(): QiblaController {
     window.addEventListener("deviceorientation", handleOrientation as EventListener);
     window.addEventListener("compassneedscalibration", handleCalibration as EventListener);
     window.addEventListener("orientationchange", handleOrientationChange);
-
-    sensorTimeoutRef.current = window.setTimeout(() => {
-      blockCompass("sensor-timeout");
-    }, SENSOR_TIMEOUT_MS);
+    sensorTimeoutRef.current = window.setTimeout(() => blockCompass("sensor-timeout"), SENSOR_TIMEOUT_MS);
 
     listenerCleanupRef.current = () => {
       window.removeEventListener("deviceorientationabsolute", handleOrientation as EventListener);
@@ -354,12 +344,11 @@ export function useQiblaController(): QiblaController {
       window.removeEventListener("compassneedscalibration", handleCalibration as EventListener);
       window.removeEventListener("orientationchange", handleOrientationChange);
     };
-  }, [blockCompass, publishTrustedHeading]);
+  }, [blockCompass, clearSensorTimeout, publishTrustedHeading]);
 
   const enableLiveCompass = useCallback(async () => {
     if (!coordinatesRef.current) return;
     dispatch({ type: "REQUEST_COMPASS" });
-
     if (!("DeviceOrientationEvent" in window)) {
       blockCompass("unsupported");
       return;
@@ -369,7 +358,6 @@ export function useQiblaController(): QiblaController {
     const OrientationEvent = window.DeviceOrientationEvent as OrientationEventConstructor;
     if (typeof OrientationEvent.requestPermission === "function") {
       try {
-        // Keep the call itself in the user-activation stack. `true` requests absolute orientation.
         const permissionPromise = OrientationEvent.requestPermission(true);
         const permission = await permissionPromise;
         if (!mountedRef.current || attempt !== permissionAttemptRef.current) return;
@@ -378,9 +366,7 @@ export function useQiblaController(): QiblaController {
           return;
         }
       } catch {
-        if (mountedRef.current && attempt === permissionAttemptRef.current) {
-          blockCompass("permission-denied");
-        }
+        if (mountedRef.current && attempt === permissionAttemptRef.current) blockCompass("permission-denied");
         return;
       }
     }
@@ -404,20 +390,16 @@ export function useQiblaController(): QiblaController {
     try {
       const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
       const data = (await response.json()) as { ok?: boolean; results?: ManualLocationResult[] };
+      if (!mountedRef.current) return;
       if (!response.ok || !data.ok || !Array.isArray(data.results)) {
         setManualSearchError(true);
         return;
       }
-      setManualSearchResults(
-        data.results.filter(
-          (result) =>
-            typeof result.label === "string" &&
-            Number.isFinite(result.latitude) &&
-            Number.isFinite(result.longitude),
-        ).slice(0, 5),
-      );
+      setManualSearchResults(data.results.filter((result) =>
+        typeof result.label === "string" && Number.isFinite(result.latitude) && Number.isFinite(result.longitude),
+      ).slice(0, 5));
     } catch {
-      setManualSearchError(true);
+      if (mountedRef.current) setManualSearchError(true);
     } finally {
       if (mountedRef.current) setIsSearchingLocation(false);
     }
@@ -436,7 +418,6 @@ export function useQiblaController(): QiblaController {
 
   useEffect(() => {
     mountedRef.current = true;
-
     const pause = () => {
       if (document.visibilityState === "hidden") detachSensors();
     };
@@ -452,11 +433,12 @@ export function useQiblaController(): QiblaController {
         attachSensors();
       }
     };
-
-    document.addEventListener("visibilitychange", () => {
+    const handleVisibility = () => {
       if (document.visibilityState === "hidden") pause();
       else resume();
-    });
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("pagehide", pause);
     window.addEventListener("pageshow", resume);
 
@@ -465,6 +447,7 @@ export function useQiblaController(): QiblaController {
       ++permissionAttemptRef.current;
       ++locationRequestRef.current;
       detachSensors();
+      document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", pause);
       window.removeEventListener("pageshow", resume);
     };

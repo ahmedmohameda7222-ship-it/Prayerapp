@@ -1,3 +1,4 @@
+# Verification-only workflow; remove before final PR state.
 name: Qibla verification helper
 
 on:

@@ -5,6 +5,7 @@ import { prayerEventId } from "@/lib/android/prayer-event-id";
 import { todayIso } from "@/lib/date-utils";
 import { deliverPrayerReminderEvent } from "@/lib/prayer-reminder-delivery";
 import type { PushSubscriptionRecord } from "@/lib/push/types";
+import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -28,15 +29,6 @@ function bearerToken(request: Request) {
   return authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
 }
 
-function validEndpoint(value: unknown): value is string {
-  if (typeof value !== "string" || value.length > 4096) return false;
-  try {
-    return new URL(value).protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -55,7 +47,7 @@ export async function POST(request: Request) {
   const prayer: AdhanPrayer | null = isAdhanPrayer(body?.prayer) ? body.prayer : null;
 
   if (
-    !validEndpoint(endpoint)
+    !isTrustedWebPushEndpoint(endpoint)
     || typeof browserId !== "string"
     || !uuidPattern.test(browserId)
     || !mode
@@ -79,6 +71,14 @@ export async function POST(request: Request) {
   if (!data) return NextResponse.json({ error: "Push subscription not found" }, { status: 404 });
 
   const row = data as PushSubscriptionRecord & { browser_id: string; enabled: boolean };
+  if (!isTrustedWebPushEndpoint(row.endpoint)) {
+    await client
+      .from("push_subscriptions")
+      .update({ enabled: false, updated_at: new Date().toISOString() } as never)
+      .eq("id", row.id);
+    return NextResponse.json({ error: "Push subscription is no longer trusted" }, { status: 410 });
+  }
+
   if (row.user_id) {
     const token = bearerToken(request);
     if (!token) return NextResponse.json({ error: "Account session required" }, { status: 401 });

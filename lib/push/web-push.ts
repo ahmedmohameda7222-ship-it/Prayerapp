@@ -2,6 +2,7 @@ import "server-only";
 
 import webpush from "web-push";
 import type { Locale } from "@/lib/i18n/types";
+import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
 import type {
   LocalizedText,
@@ -157,6 +158,14 @@ export async function deliverPushNotifications({
 
   const results = await Promise.all(
     targets.map(async (subscription) => {
+      if (!isTrustedWebPushEndpoint(subscription.endpoint)) {
+        await client
+          .from("push_subscriptions")
+          .update({ enabled: false, updated_at: new Date().toISOString() })
+          .eq("id", subscription.id);
+        return "failed" as const;
+      }
+
       const delivery = await reserveDelivery(
         client,
         eventKey,

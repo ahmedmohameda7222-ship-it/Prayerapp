@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Locale } from "@/lib/i18n/types";
+import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -10,15 +11,6 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}
 function isSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   return !origin || origin === new URL(request.url).origin;
-}
-
-function validEndpoint(value: unknown): value is string {
-  if (typeof value !== "string" || value.length > 4096) return false;
-  try {
-    return new URL(value).protocol === "https:";
-  } catch {
-    return false;
-  }
 }
 
 function bearerToken(request: Request) {
@@ -37,7 +29,7 @@ export async function POST(request: Request) {
   const locale = body?.locale;
 
   if (
-    !validEndpoint(endpoint) ||
+    !isTrustedWebPushEndpoint(endpoint) ||
     typeof p256dh !== "string" || p256dh.length > 1024 ||
     typeof auth !== "string" || auth.length > 1024 ||
     typeof browserId !== "string" || !uuidPattern.test(browserId) ||
@@ -98,7 +90,7 @@ export async function DELETE(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
 
   const body = await request.json().catch(() => null);
-  if (!validEndpoint(body?.endpoint) || typeof body?.browserId !== "string" || !uuidPattern.test(body.browserId)) {
+  if (!isTrustedWebPushEndpoint(body?.endpoint) || typeof body?.browserId !== "string" || !uuidPattern.test(body.browserId)) {
     return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
   }
 

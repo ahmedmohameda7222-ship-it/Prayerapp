@@ -229,7 +229,7 @@ function ManualLocationSearch({
         <input
           value={query}
           maxLength={160}
-          onChange={(event) => setManualQuery(event.target.value)}
+          onChange={(event) => setQuery(event.target.value)}
           placeholder={t("qibla.searchPlaceholder")}
           aria-label={t("qibla.searchCityAddress")}
           className="min-h-11 flex-1 rounded-[var(--ui-radius-control)] border border-[var(--ui-divider)] bg-[var(--ui-surface)] px-3 text-sm text-[var(--ui-text)] outline-none focus:border-[var(--ui-brand)]"

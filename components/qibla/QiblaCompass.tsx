@@ -6,7 +6,7 @@ interface QiblaCompassProps {
   east: string;
   south: string;
   west: string;
-  aligned?: boolean;
+  aligned: boolean;
 }
 
 export function QiblaCompass({
@@ -15,7 +15,7 @@ export function QiblaCompass({
   east,
   south,
   west,
-  aligned = false,
+  aligned,
 }: QiblaCompassProps) {
   const needleFill = aligned ? "var(--ui-success)" : "var(--ui-brand)";
   const needleStroke = aligned ? "var(--ui-success)" : "var(--ui-brand-strong)";
@@ -26,10 +26,8 @@ export function QiblaCompass({
       data-testid="qibla-compass"
       data-aligned={aligned ? "true" : "false"}
       dir="ltr"
-      className={`relative mx-auto aspect-square w-full max-w-[320px] rounded-full border transition-[border-color,background-color,box-shadow] duration-200 motion-reduce:transition-none ${
-        aligned
-          ? "border-[var(--ui-success)]"
-          : "border-[var(--ui-divider)] bg-[var(--ui-surface-subtle)] shadow-inner"
+      className={`relative mx-auto aspect-square w-full max-w-[320px] rounded-full border bg-[var(--ui-surface-subtle)] shadow-inner transition-[border-color,background-color,box-shadow] duration-200 motion-reduce:transition-none ${
+        aligned ? "border-[var(--ui-success)]" : "border-[var(--ui-divider)]"
       }`}
       style={
         aligned

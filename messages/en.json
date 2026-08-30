@@ -222,7 +222,7 @@
     "title": "Qibla",
     "intro": "Use your location to calculate the Qibla direction.",
     "startCompass": "Start Qibla Compass",
-    "locationPermissionRequired": "Location and compass permissions are required. Sensor data stays on your device.",
+    "locationPermissionRequired": "Your precise location is used on this device to calculate Qibla. A coarse location may be used to display your city. Compass readings stay on your device.",
     "locating": "Finding your location...",
     "requestingCompassPermission": "Waiting for compass permission...",
     "waitingForCompass": "Waiting for live compass data. Keep your phone level and move it gently.",
@@ -299,7 +299,9 @@
     "directionS": "South",
     "directionSW": "Southwest",
     "directionW": "West",
-    "directionNW": "Northwest"
+    "directionNW": "Northwest",
+    "turnRightAccessible": "Turn right {degrees} degrees to face Qibla",
+    "turnLeftAccessible": "Turn left {degrees} degrees to face Qibla"
   },
   "settings": {
     "title": "Settings",

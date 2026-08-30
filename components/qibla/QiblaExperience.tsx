@@ -154,8 +154,15 @@ function PrimaryGuidance({ mode, delta, t }: { mode: string; delta: number; t: T
   }
 
   const degrees = Math.round(Math.abs(delta));
+  const accessibleGuidance = delta > 0
+    ? t("qibla.turnRightAccessible", { degrees })
+    : t("qibla.turnLeftAccessible", { degrees });
+
   return (
-    <h2 className="text-2xl font-black text-[var(--ui-brand-strong)]">
+    <h2
+      className="text-2xl font-black text-[var(--ui-brand-strong)]"
+      aria-label={accessibleGuidance}
+    >
       {delta > 0 ? t("qibla.turnRight", { degrees }) : t("qibla.turnLeft", { degrees })}
     </h2>
   );

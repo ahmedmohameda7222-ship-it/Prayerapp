@@ -222,7 +222,7 @@
     "title": "Kıble",
     "intro": "Kıble yönünü hesaplamak için konumunuzu kullanın.",
     "startCompass": "Kıble Pusulasını Başlat",
-    "locationPermissionRequired": "Konum ve pusula izinleri gereklidir. Sensör verileri cihazınızda kalır.",
+    "locationPermissionRequired": "Kesin konumunuz Kıble yönünü hesaplamak için bu cihazda kullanılır. Şehrinizi göstermek için yaklaşık bir konum kullanılabilir. Pusula okumaları cihazınızda kalır.",
     "locating": "Konumunuz bulunuyor...",
     "requestingCompassPermission": "Pusula izni bekleniyor...",
     "waitingForCompass": "Canlı pusula verisi bekleniyor. Telefonunuzu düz tutup yavaşça hareket ettirin.",
@@ -299,7 +299,9 @@
     "directionS": "Güney",
     "directionSW": "Güneybatı",
     "directionW": "Batı",
-    "directionNW": "Kuzeybatı"
+    "directionNW": "Kuzeybatı",
+    "turnRightAccessible": "Kıbleye yönelmek için {degrees} derece sağa dön",
+    "turnLeftAccessible": "Kıbleye yönelmek için {degrees} derece sola dön"
   },
   "settings": {
     "title": "Ayarlar",

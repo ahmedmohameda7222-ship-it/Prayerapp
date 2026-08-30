@@ -222,7 +222,7 @@
     "title": "القبلة",
     "intro": "استخدم موقعك لحساب اتجاه القبلة.",
     "startCompass": "ابدأ بوصلة القبلة",
-    "locationPermissionRequired": "يلزم السماح بالموقع والبوصلة. تبقى بيانات المستشعرات على جهازك.",
+    "locationPermissionRequired": "يُستخدم موقعك الدقيق على هذا الجهاز لحساب اتجاه القبلة. قد يُستخدم موقع تقريبي لعرض مدينتك. تبقى قراءات البوصلة على جهازك.",
     "locating": "جارٍ تحديد موقعك...",
     "requestingCompassPermission": "في انتظار إذن البوصلة...",
     "waitingForCompass": "في انتظار بيانات البوصلة المباشرة. أمسك هاتفك بشكل مستوٍ وحركه برفق.",
@@ -299,7 +299,9 @@
     "directionS": "جنوب",
     "directionSW": "جنوب غربي",
     "directionW": "غرب",
-    "directionNW": "شمال غربي"
+    "directionNW": "شمال غربي",
+    "turnRightAccessible": "انعطف يمينًا {degrees} درجة لتواجه القبلة",
+    "turnLeftAccessible": "انعطف يسارًا {degrees} درجة لتواجه القبلة"
   },
   "settings": {
     "title": "الإعدادات",

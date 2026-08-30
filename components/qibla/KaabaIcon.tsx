@@ -1,18 +1,21 @@
 import type { SVGProps } from "react";
 
-interface KaabaIconProps extends SVGProps<SVGSVGElement> {
-  title?: string;
-}
+export function KaabaIcon({
+  "aria-label": ariaLabel,
+  "aria-hidden": ariaHidden,
+  role,
+  ...props
+}: SVGProps<SVGSVGElement>) {
+  const labelled = typeof ariaLabel === "string" && ariaLabel.trim().length > 0;
 
-export function KaabaIcon({ title, ...props }: KaabaIconProps) {
   return (
     <svg
       viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      role={title ? "img" : undefined}
-      aria-label={title}
-      aria-hidden={title ? undefined : true}
+      role={labelled ? role ?? "img" : role}
+      aria-label={ariaLabel}
+      aria-hidden={labelled ? undefined : ariaHidden ?? true}
       focusable="false"
       {...props}
     >

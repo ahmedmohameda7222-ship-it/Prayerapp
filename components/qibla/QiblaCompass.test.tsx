@@ -44,4 +44,13 @@ describe("QiblaCompass physical coordinate system", () => {
     expect(screen.getByTestId("qibla-compass")).toHaveAttribute("data-aligned", "true");
     expect(screen.getByTestId("qibla-needle")).toHaveAttribute("data-aligned", "true");
   });
+
+  it("keeps a usable surface and shadow fallback when aligned enhancement CSS is unsupported", () => {
+    render(<QiblaCompass rotation={0} north="N" east="E" south="S" west="W" aligned />);
+
+    expect(screen.getByTestId("qibla-compass")).toHaveClass(
+      "bg-[var(--ui-surface-subtle)]",
+      "shadow-inner",
+    );
+  });
 });

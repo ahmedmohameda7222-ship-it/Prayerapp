@@ -19,13 +19,11 @@ describe("KaabaIcon vector asset", () => {
     expect(source).not.toMatch(/data:image\//iu);
   });
 
-  it("preserves native SVG title props instead of repurposing them as accessibility labels", () => {
-    render(<KaabaIcon data-testid="kaaba-icon" title="Kaaba tooltip" />);
+  it("does not expose a custom title prop as a second accessibility naming API", () => {
+    const source = readFileSync(resolve(process.cwd(), "components/qibla/KaabaIcon.tsx"), "utf8");
 
-    const icon = screen.getByTestId("kaaba-icon");
-    expect(icon).toHaveAttribute("title", "Kaaba tooltip");
-    expect(icon).toHaveAttribute("aria-hidden", "true");
-    expect(icon).not.toHaveAttribute("aria-label");
+    expect(source).not.toContain("title?: string");
+    expect(source).not.toContain("aria-label={title}");
   });
 
   it("uses the standard aria-label prop when the icon needs an accessible name", () => {

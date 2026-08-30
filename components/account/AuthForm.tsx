@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -89,11 +89,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <div className="auth-screen">
-      <Link href="/account" aria-label={t("phase1.account")} className="mb-4 grid h-11 w-11 place-items-center rounded-full text-[var(--app-brand)]">
-        <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-      </Link>
+      <PageHeader title={title} backHref="/account" />
       <section className="auth-surface px-0 py-2 sm:px-2">
-        <h1>{title}</h1>
         <p className="mt-2 text-sm leading-6">{t("phase1.accountSubtitle")}</p>
         <form onSubmit={submit} className="mt-6 grid gap-4">
           {mode !== "reset" ? (

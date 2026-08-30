@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Languages } from "lucide-react";
 import { useLocale } from "@/lib/i18n/context";
 import type { Locale } from "@/lib/i18n/types";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -49,7 +48,27 @@ export function LanguageMenu() {
         className="flex h-11 cursor-pointer list-none items-center gap-1.5 rounded-[10px] px-2 text-xs font-bold text-white transition-colors hover:bg-white/10 active:bg-white/10 marker:hidden"
         aria-label={t("settings.language")}
       >
-        <Languages className="h-4 w-4" aria-hidden="true" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          data-supericon="tabler:language"
+          aria-hidden="true"
+        >
+          <path d="M9 6.371c0 4.418 -2.239 6.629 -5 6.629" />
+          <path d="M4 6.371h7" />
+          <path d="M5 9c0 2.144 2.252 3.908 6 4" />
+          <path d="M12 20l4 -9l4 9" />
+          <path d="M19.1 18h-6.2" />
+          <path d="M6.694 3l.793 .582" />
+        </svg>
         <span>{current.shortLabel}</span>
       </summary>
       <div className="absolute end-0 top-[calc(100%+8px)] z-30 w-40 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[var(--home-divider)] bg-white p-1.5 text-[var(--home-text)] shadow-[0_10px_24px_rgba(17,24,22,0.14)]">

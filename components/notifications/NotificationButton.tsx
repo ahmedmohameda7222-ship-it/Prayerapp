@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Bell, X } from "lucide-react";
+import { X } from "lucide-react";
 import { getAnnouncements } from "@/lib/data/announcements";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
@@ -28,7 +28,23 @@ export function NotificationButton({ inverted = false, home = false }: { inverte
         aria-label={t("common.notifications")}
         className={`relative grid h-11 w-11 place-items-center ${triggerClass}`}
       >
-        <Bell className="h-5 w-5" aria-hidden="true" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-5 w-5"
+          data-supericon="tabler:bell"
+          aria-hidden="true"
+        >
+          <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" />
+          <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
+        </svg>
         {items.length ? (
           <span className={`absolute end-1 top-1 h-2.5 w-2.5 rounded-full bg-[var(--color-danger)] ring-2 ${home ? "ring-[var(--home-brand)]" : "ring-[var(--color-card)]"}`} />
         ) : null}

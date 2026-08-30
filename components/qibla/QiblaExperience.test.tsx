@@ -107,6 +107,7 @@ describe("QiblaExperience semantic states", () => {
 
     expect(screen.getByText(expected)).toBeInTheDocument();
     expect(screen.getByTestId("qibla-compass")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByTestId("qibla-compass")).toHaveAttribute("data-aligned", "false");
     const liveRegion = document.querySelector("[aria-live='polite']");
     expect(liveRegion).toHaveTextContent("Live compass ready.");
     expect(liveRegion).not.toHaveTextContent(/\d+°/u);
@@ -130,6 +131,7 @@ describe("QiblaExperience semantic states", () => {
     renderExperience();
 
     expect(screen.getByRole("heading", { name: "Facing Qibla" })).toBeInTheDocument();
+    expect(screen.getByTestId("qibla-compass")).toHaveAttribute("data-aligned", "true");
     expect(document.querySelector("[aria-live='polite']")).toHaveTextContent("Facing Qibla");
   });
 

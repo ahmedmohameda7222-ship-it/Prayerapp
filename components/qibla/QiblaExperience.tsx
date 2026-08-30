@@ -103,6 +103,7 @@ export function QiblaExperience() {
                   east={t("qibla.eastShort")}
                   south={t("qibla.southShort")}
                   west={t("qibla.westShort")}
+                  aligned={state.mode === "aligned"}
                 />
                 <div className="mt-6">
                   <PrimaryGuidance mode={state.mode} delta={state.turnDelta} t={t} />

@@ -1,0 +1,291 @@
+name: Qibla localization helper
+
+on:
+  push:
+    branches:
+      - feat/qibla-reliability-ux-hardening
+    paths:
+      - .github/workflows/qibla-localization-helper.yml
+
+permissions:
+  contents: write
+
+jobs:
+  localize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/qibla-reliability-ux-hardening
+      - name: Apply approved Qibla localization contract
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const translations = {
+            en: {
+              intro: 'Use your location to calculate the Qibla direction.',
+              findQibla: 'Find Qibla',
+              locating: 'Finding your location...',
+              locationProblem: 'Location needed',
+              locationDenied: 'Location permission was denied. Try location again or search for a city or address.',
+              locationUnavailable: 'Your location is currently unavailable. Try again or search for a city or address.',
+              locationTimeout: 'The location request timed out. Try again or search for a city or address.',
+              locationError: 'Could not determine your location. Try again or search for a city or address.',
+              locationUnsupported: 'This browser does not support location access. Search for a city or address instead.',
+              tryAgain: 'Try location again',
+              searchCityAddress: 'Search city or address',
+              searchPlaceholder: 'City or address',
+              search: 'Search',
+              searching: 'Searching...',
+              searchUnavailable: 'Location search is unavailable. Check your connection and try again.',
+              selectedLocation: 'Selected location',
+              currentLocation: 'Current location',
+              enableLiveCompass: 'Enable Live Compass',
+              requestingCompass: 'Waiting for compass permission...',
+              qiblaSummary: 'Qibla · {bearing}° {direction}',
+              turnRight: 'Turn right {degrees}°',
+              turnLeft: 'Turn left {degrees}°',
+              facingQibla: 'Facing Qibla',
+              liveCompassUnavailable: 'Live compass is unavailable.',
+              trustedCompassInstruction: 'Use {bearing}° from true north with a trusted compass.',
+              holdPhoneFlat: 'Hold your phone flat.',
+              rotatePortrait: 'Rotate your phone to portrait to use the live compass.',
+              calibrationRequired: 'Compass needs calibration. Move your phone in a figure-eight motion away from metal or magnets.',
+              compassPermissionDenied: 'Compass permission was denied. Bearing-only Qibla remains available.',
+              compassUnsupported: 'This device or browser does not provide a trusted live compass. Bearing-only Qibla remains available.',
+              sensorTimeout: 'No trustworthy compass reading arrived. Bearing-only Qibla remains available.',
+              relativeHeading: 'This sensor provides relative orientation only, so live Qibla guidance is paused.',
+              invalidHeading: 'The compass reading is not trustworthy, so live Qibla guidance is paused.',
+              magneticCorrectionUnavailable: 'True-north magnetic correction is unavailable, so live Qibla guidance is paused.',
+              details: 'Details',
+              qiblaBearing: 'Qibla bearing',
+              truePhoneHeading: 'True phone heading',
+              headingSource: 'Heading source',
+              headingAccuracy: 'Heading accuracy',
+              locationAccuracy: 'Location accuracy',
+              coordinates: 'Coordinates',
+              viewCurrentLocation: 'View current location',
+              preciseLocationPrivacy: 'Your precise location is used on this device to calculate Qibla. A coarse location may be used to display your city.',
+              compassLocalPrivacy: 'Compass readings stay on this device.',
+              sourceStandardAbsolute: 'Absolute orientation · true north',
+              sourceWebkitMagnetic: 'Magnetic compass · corrected to true north',
+              tryCompassAgain: 'Try compass again',
+              bearingReadyAnnouncement: 'Qibla bearing ready.',
+              liveReadyAnnouncement: 'Live compass ready.',
+              unavailableAnnouncement: 'Live compass unavailable. Bearing-only Qibla is ready.',
+              directionN: 'North',
+              directionNE: 'Northeast',
+              directionE: 'East',
+              directionSE: 'Southeast',
+              directionS: 'South',
+              directionSW: 'Southwest',
+              directionW: 'West',
+              directionNW: 'Northwest'
+            },
+            ar: {
+              intro: 'استخدم موقعك لحساب اتجاه القبلة.',
+              findQibla: 'حدّد اتجاه القبلة',
+              locating: 'جارٍ تحديد موقعك...',
+              locationProblem: 'الموقع مطلوب',
+              locationDenied: 'تم رفض إذن الموقع. حاول تحديد الموقع مرة أخرى أو ابحث عن مدينة أو عنوان.',
+              locationUnavailable: 'موقعك غير متاح حاليًا. حاول مرة أخرى أو ابحث عن مدينة أو عنوان.',
+              locationTimeout: 'انتهت مهلة طلب الموقع. حاول مرة أخرى أو ابحث عن مدينة أو عنوان.',
+              locationError: 'تعذر تحديد موقعك. حاول مرة أخرى أو ابحث عن مدينة أو عنوان.',
+              locationUnsupported: 'هذا المتصفح لا يدعم الوصول إلى الموقع. ابحث عن مدينة أو عنوان بدلًا من ذلك.',
+              tryAgain: 'حاول تحديد الموقع مرة أخرى',
+              searchCityAddress: 'ابحث عن مدينة أو عنوان',
+              searchPlaceholder: 'مدينة أو عنوان',
+              search: 'بحث',
+              searching: 'جارٍ البحث...',
+              searchUnavailable: 'البحث عن المواقع غير متاح حاليًا. تحقق من الاتصال وحاول مرة أخرى.',
+              selectedLocation: 'الموقع المحدد',
+              currentLocation: 'الموقع الحالي',
+              enableLiveCompass: 'فعّل البوصلة المباشرة',
+              requestingCompass: 'في انتظار إذن البوصلة...',
+              qiblaSummary: 'القبلة · {bearing}° {direction}',
+              turnRight: 'استدر يمينًا {degrees}°',
+              turnLeft: 'استدر يسارًا {degrees}°',
+              facingQibla: 'أنت باتجاه القبلة',
+              liveCompassUnavailable: 'البوصلة المباشرة غير متاحة.',
+              trustedCompassInstruction: 'استخدم اتجاه {bearing}° من الشمال الحقيقي باستخدام بوصلة موثوقة.',
+              holdPhoneFlat: 'أمسك هاتفك بشكل مستوٍ.',
+              rotatePortrait: 'أدر هاتفك إلى الوضع الرأسي لاستخدام البوصلة المباشرة.',
+              calibrationRequired: 'تحتاج البوصلة إلى المعايرة. حرّك هاتفك على شكل رقم ثمانية بعيدًا عن المعادن أو المغناطيس.',
+              compassPermissionDenied: 'تم رفض إذن البوصلة. يظل اتجاه القبلة بالزاوية متاحًا.',
+              compassUnsupported: 'هذا الجهاز أو المتصفح لا يوفر بوصلة مباشرة موثوقة. يظل اتجاه القبلة بالزاوية متاحًا.',
+              sensorTimeout: 'لم تصل قراءة بوصلة موثوقة. يظل اتجاه القبلة بالزاوية متاحًا.',
+              relativeHeading: 'هذا المستشعر يوفر اتجاهًا نسبيًا فقط، لذلك تم إيقاف الإرشاد المباشر للقبلة.',
+              invalidHeading: 'قراءة البوصلة غير موثوقة، لذلك تم إيقاف الإرشاد المباشر للقبلة.',
+              magneticCorrectionUnavailable: 'تصحيح الشمال الحقيقي غير متاح، لذلك تم إيقاف الإرشاد المباشر للقبلة.',
+              details: 'التفاصيل',
+              qiblaBearing: 'زاوية القبلة',
+              truePhoneHeading: 'اتجاه الهاتف بالنسبة للشمال الحقيقي',
+              headingSource: 'مصدر الاتجاه',
+              headingAccuracy: 'دقة الاتجاه',
+              locationAccuracy: 'دقة الموقع',
+              coordinates: 'الإحداثيات',
+              viewCurrentLocation: 'عرض الموقع الحالي',
+              preciseLocationPrivacy: 'يُستخدم موقعك الدقيق على هذا الجهاز لحساب القبلة. قد يُستخدم موقع تقريبي لعرض مدينتك.',
+              compassLocalPrivacy: 'تبقى قراءات البوصلة على هذا الجهاز.',
+              sourceStandardAbsolute: 'اتجاه مطلق · الشمال الحقيقي',
+              sourceWebkitMagnetic: 'بوصلة مغناطيسية · مصححة إلى الشمال الحقيقي',
+              tryCompassAgain: 'أعد محاولة البوصلة',
+              bearingReadyAnnouncement: 'تم حساب اتجاه القبلة.',
+              liveReadyAnnouncement: 'البوصلة المباشرة جاهزة.',
+              unavailableAnnouncement: 'البوصلة المباشرة غير متاحة. اتجاه القبلة بالزاوية جاهز.',
+              directionN: 'شمال',
+              directionNE: 'شمال شرقي',
+              directionE: 'شرق',
+              directionSE: 'جنوب شرقي',
+              directionS: 'جنوب',
+              directionSW: 'جنوب غربي',
+              directionW: 'غرب',
+              directionNW: 'شمال غربي'
+            },
+            de: {
+              intro: 'Nutze deinen Standort, um die Qibla-Richtung zu berechnen.',
+              findQibla: 'Qibla finden',
+              locating: 'Standort wird ermittelt...',
+              locationProblem: 'Standort erforderlich',
+              locationDenied: 'Der Standortzugriff wurde abgelehnt. Versuche es erneut oder suche nach einer Stadt oder Adresse.',
+              locationUnavailable: 'Dein Standort ist derzeit nicht verfügbar. Versuche es erneut oder suche nach einer Stadt oder Adresse.',
+              locationTimeout: 'Die Standortabfrage hat zu lange gedauert. Versuche es erneut oder suche nach einer Stadt oder Adresse.',
+              locationError: 'Dein Standort konnte nicht ermittelt werden. Versuche es erneut oder suche nach einer Stadt oder Adresse.',
+              locationUnsupported: 'Dieser Browser unterstützt keinen Standortzugriff. Suche stattdessen nach einer Stadt oder Adresse.',
+              tryAgain: 'Standort erneut versuchen',
+              searchCityAddress: 'Stadt oder Adresse suchen',
+              searchPlaceholder: 'Stadt oder Adresse',
+              search: 'Suchen',
+              searching: 'Suche läuft...',
+              searchUnavailable: 'Die Standortsuche ist derzeit nicht verfügbar. Prüfe deine Verbindung und versuche es erneut.',
+              selectedLocation: 'Ausgewählter Standort',
+              currentLocation: 'Aktueller Standort',
+              enableLiveCompass: 'Live-Kompass aktivieren',
+              requestingCompass: 'Warten auf Kompassberechtigung...',
+              qiblaSummary: 'Qibla · {bearing}° {direction}',
+              turnRight: 'Drehe dich {degrees}° nach rechts',
+              turnLeft: 'Drehe dich {degrees}° nach links',
+              facingQibla: 'Du blickst zur Qibla',
+              liveCompassUnavailable: 'Der Live-Kompass ist nicht verfügbar.',
+              trustedCompassInstruction: 'Nutze mit einem zuverlässigen Kompass {bearing}° von geografisch Nord.',
+              holdPhoneFlat: 'Halte dein Handy flach.',
+              rotatePortrait: 'Drehe dein Handy ins Hochformat, um den Live-Kompass zu verwenden.',
+              calibrationRequired: 'Der Kompass muss kalibriert werden. Bewege dein Handy in einer Acht und halte es von Metall oder Magneten fern.',
+              compassPermissionDenied: 'Die Kompassberechtigung wurde abgelehnt. Die Qibla-Peilung bleibt verfügbar.',
+              compassUnsupported: 'Dieses Gerät oder dieser Browser bietet keinen zuverlässigen Live-Kompass. Die Qibla-Peilung bleibt verfügbar.',
+              sensorTimeout: 'Es ist keine zuverlässige Kompassmessung eingetroffen. Die Qibla-Peilung bleibt verfügbar.',
+              relativeHeading: 'Dieser Sensor liefert nur eine relative Ausrichtung. Die Live-Qibla-Führung ist deshalb pausiert.',
+              invalidHeading: 'Die Kompassmessung ist nicht zuverlässig. Die Live-Qibla-Führung ist deshalb pausiert.',
+              magneticCorrectionUnavailable: 'Die Korrektur auf geografisch Nord ist nicht verfügbar. Die Live-Qibla-Führung ist deshalb pausiert.',
+              details: 'Details',
+              qiblaBearing: 'Qibla-Peilung',
+              truePhoneHeading: 'Handyausrichtung zu geografisch Nord',
+              headingSource: 'Ausrichtungsquelle',
+              headingAccuracy: 'Ausrichtungsgenauigkeit',
+              locationAccuracy: 'Standortgenauigkeit',
+              coordinates: 'Koordinaten',
+              viewCurrentLocation: 'Aktuellen Standort anzeigen',
+              preciseLocationPrivacy: 'Dein genauer Standort wird auf diesem Gerät zur Qibla-Berechnung verwendet. Ein ungefährer Standort kann zur Anzeige deiner Stadt verwendet werden.',
+              compassLocalPrivacy: 'Kompassmessungen bleiben auf diesem Gerät.',
+              sourceStandardAbsolute: 'Absolute Ausrichtung · geografisch Nord',
+              sourceWebkitMagnetic: 'Magnetkompass · auf geografisch Nord korrigiert',
+              tryCompassAgain: 'Kompass erneut versuchen',
+              bearingReadyAnnouncement: 'Qibla-Peilung ist bereit.',
+              liveReadyAnnouncement: 'Live-Kompass ist bereit.',
+              unavailableAnnouncement: 'Live-Kompass nicht verfügbar. Die Qibla-Peilung ist bereit.',
+              directionN: 'Nord',
+              directionNE: 'Nordost',
+              directionE: 'Ost',
+              directionSE: 'Südost',
+              directionS: 'Süd',
+              directionSW: 'Südwest',
+              directionW: 'West',
+              directionNW: 'Nordwest'
+            },
+            tr: {
+              intro: 'Kıble yönünü hesaplamak için konumunuzu kullanın.',
+              findQibla: 'Kıbleyi bul',
+              locating: 'Konumunuz bulunuyor...',
+              locationProblem: 'Konum gerekli',
+              locationDenied: 'Konum izni reddedildi. Konumu tekrar deneyin veya bir şehir ya da adres arayın.',
+              locationUnavailable: 'Konumunuz şu anda kullanılamıyor. Tekrar deneyin veya bir şehir ya da adres arayın.',
+              locationTimeout: 'Konum isteği zaman aşımına uğradı. Tekrar deneyin veya bir şehir ya da adres arayın.',
+              locationError: 'Konumunuz belirlenemedi. Tekrar deneyin veya bir şehir ya da adres arayın.',
+              locationUnsupported: 'Bu tarayıcı konum erişimini desteklemiyor. Bunun yerine bir şehir ya da adres arayın.',
+              tryAgain: 'Konumu tekrar dene',
+              searchCityAddress: 'Şehir veya adres ara',
+              searchPlaceholder: 'Şehir veya adres',
+              search: 'Ara',
+              searching: 'Aranıyor...',
+              searchUnavailable: 'Konum araması şu anda kullanılamıyor. Bağlantınızı kontrol edip tekrar deneyin.',
+              selectedLocation: 'Seçilen konum',
+              currentLocation: 'Geçerli konum',
+              enableLiveCompass: 'Canlı pusulayı etkinleştir',
+              requestingCompass: 'Pusula izni bekleniyor...',
+              qiblaSummary: 'Kıble · {bearing}° {direction}',
+              turnRight: '{degrees}° sağa dönün',
+              turnLeft: '{degrees}° sola dönün',
+              facingQibla: 'Kıbleye dönüksünüz',
+              liveCompassUnavailable: 'Canlı pusula kullanılamıyor.',
+              trustedCompassInstruction: 'Güvenilir bir pusulayla gerçek kuzeyden {bearing}° yönünü kullanın.',
+              holdPhoneFlat: 'Telefonunuzu düz tutun.',
+              rotatePortrait: 'Canlı pusulayı kullanmak için telefonunuzu dikey konuma döndürün.',
+              calibrationRequired: 'Pusulanın kalibre edilmesi gerekiyor. Telefonunuzu metal veya mıknatıslardan uzakta sekiz çizerek hareket ettirin.',
+              compassPermissionDenied: 'Pusula izni reddedildi. Kıble açısı kullanılmaya devam edebilir.',
+              compassUnsupported: 'Bu cihaz veya tarayıcı güvenilir bir canlı pusula sağlamıyor. Kıble açısı kullanılmaya devam edebilir.',
+              sensorTimeout: 'Güvenilir bir pusula okuması gelmedi. Kıble açısı kullanılmaya devam edebilir.',
+              relativeHeading: 'Bu sensör yalnızca göreli yön sağlıyor; bu nedenle canlı Kıble yönlendirmesi duraklatıldı.',
+              invalidHeading: 'Pusula okuması güvenilir değil; bu nedenle canlı Kıble yönlendirmesi duraklatıldı.',
+              magneticCorrectionUnavailable: 'Gerçek kuzey manyetik düzeltmesi kullanılamıyor; bu nedenle canlı Kıble yönlendirmesi duraklatıldı.',
+              details: 'Ayrıntılar',
+              qiblaBearing: 'Kıble açısı',
+              truePhoneHeading: 'Telefonun gerçek kuzeye göre yönü',
+              headingSource: 'Yön kaynağı',
+              headingAccuracy: 'Yön doğruluğu',
+              locationAccuracy: 'Konum doğruluğu',
+              coordinates: 'Koordinatlar',
+              viewCurrentLocation: 'Geçerli konumu görüntüle',
+              preciseLocationPrivacy: 'Kesin konumunuz bu cihazda Kıbleyi hesaplamak için kullanılır. Şehrinizi göstermek için yaklaşık bir konum kullanılabilir.',
+              compassLocalPrivacy: 'Pusula okumaları bu cihazda kalır.',
+              sourceStandardAbsolute: 'Mutlak yön · gerçek kuzey',
+              sourceWebkitMagnetic: 'Manyetik pusula · gerçek kuzeye düzeltilmiş',
+              tryCompassAgain: 'Pusulayı tekrar dene',
+              bearingReadyAnnouncement: 'Kıble açısı hazır.',
+              liveReadyAnnouncement: 'Canlı pusula hazır.',
+              unavailableAnnouncement: 'Canlı pusula kullanılamıyor. Kıble açısı hazır.',
+              directionN: 'Kuzey',
+              directionNE: 'Kuzeydoğu',
+              directionE: 'Doğu',
+              directionSE: 'Güneydoğu',
+              directionS: 'Güney',
+              directionSW: 'Güneybatı',
+              directionW: 'Batı',
+              directionNW: 'Kuzeybatı'
+            }
+          };
+
+          const legalAppend = {
+            en: ' For Qibla, your precise location is used on this device to calculate the bearing and magnetic correction; only a coarse location may be sent to display your city. Compass readings remain on the device.',
+            ar: ' بالنسبة للقبلة، يُستخدم موقعك الدقيق على هذا الجهاز لحساب الاتجاه وتصحيح الشمال المغناطيسي؛ وقد يُرسل موقع تقريبي فقط لعرض مدينتك. تبقى قراءات البوصلة على الجهاز.',
+            de: ' Für Qibla wird dein genauer Standort auf diesem Gerät zur Berechnung der Peilung und Magnetkorrektur verwendet; zur Anzeige deiner Stadt kann nur ein ungefährer Standort übertragen werden. Kompassmessungen bleiben auf dem Gerät.',
+            tr: ' Kıble için kesin konumunuz bu cihazda yön ve manyetik düzeltme hesabında kullanılır; şehrinizi göstermek için yalnızca yaklaşık bir konum gönderilebilir. Pusula okumaları cihazda kalır.'
+          };
+
+          for (const locale of Object.keys(translations)) {
+            const file = `messages/${locale}.json`;
+            const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+            data.qibla = { ...data.qibla, ...translations[locale] };
+            if (data.legal?.dataSummary && !data.legal.dataSummary.includes(legalAppend[locale].trim())) {
+              data.legal.dataSummary += legalAppend[locale];
+            }
+            fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
+          }
+          NODE
+      - name: Commit locale updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add messages/en.json messages/ar.json messages/de.json messages/tr.json
+          git commit -m "feat: localize hardened qibla experience"
+          git push origin HEAD:feat/qibla-reliability-ux-hardening

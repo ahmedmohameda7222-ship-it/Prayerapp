@@ -257,17 +257,17 @@ export function useQiblaController(): QiblaController {
 
   const blockCompass = useCallback((reason: LiveCompassBlockReason) => {
     if (!mountedRef.current) return;
+    clearSensorTimeout();
     setHeadingSource(null);
     setHeadingAccuracyDegrees(null);
     dispatch({ type: "COMPASS_BLOCKED", reason });
-  }, []);
+  }, [clearSensorTimeout]);
 
   const attachSensors = useCallback(() => {
     if (!mountedRef.current || listenerCleanupRef.current || !coordinatesRef.current) return;
 
     const handleOrientation = (rawEvent: Event) => {
       if (!mountedRef.current || document.visibilityState === "hidden") return;
-      clearSensorTimeout();
       if (!isPortraitViewport()) {
         blockCompass("landscape");
         return;
@@ -325,7 +325,6 @@ export function useQiblaController(): QiblaController {
     };
 
     const handleCalibration = () => {
-      clearSensorTimeout();
       blockCompass("calibration-required");
     };
     const handleOrientationChange = () => {

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { QiblaCompass } from "@/components/qibla/QiblaCompass";
@@ -52,5 +54,12 @@ describe("QiblaCompass physical coordinate system", () => {
       "bg-[var(--ui-surface-subtle)]",
       "shadow-inner",
     );
+  });
+
+  it("requires callers to provide alignment state explicitly", () => {
+    const source = readFileSync(resolve(process.cwd(), "components/qibla/QiblaCompass.tsx"), "utf8");
+
+    expect(source).toContain("aligned: boolean;");
+    expect(source).not.toContain("aligned?: boolean;");
   });
 });

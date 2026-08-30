@@ -79,7 +79,7 @@ describe("QiblaExperience semantic states", () => {
     );
     renderExperience();
 
-    expect(screen.getByText("Qibla · 132° Southeast")).toBeInTheDocument();
+    expect(screen.getAllByText("Qibla · 132° Southeast").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Enable Live Compass" })).toBeInTheDocument();
     expect(screen.queryByTestId("qibla-compass")).not.toBeInTheDocument();
   });

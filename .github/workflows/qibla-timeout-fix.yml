@@ -1,0 +1,36 @@
+name: Qibla timeout fix helper
+
+on:
+  push:
+    branches:
+      - feat/qibla-reliability-ux-hardening
+    paths:
+      - .github/workflows/qibla-timeout-fix.yml
+      - scripts/qibla-timeout-fix.mjs
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/qibla-reliability-ux-hardening
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/qibla-timeout-fix.mjs
+      - name: Commit bounded controller fix
+        run: |
+          if git diff --quiet; then
+            echo "No changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/use-qibla-controller.ts
+          git commit -m "fix: keep qibla sensor timeout armed"
+          git push origin HEAD:feat/qibla-reliability-ux-hardening

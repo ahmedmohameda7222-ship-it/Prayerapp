@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Locale } from "@/lib/i18n/types";
+import { MAX_ACCOUNT_PUSH_SUBSCRIPTIONS } from "@/lib/security/push-account-limit";
 import { consumeSecurityRateLimit } from "@/lib/security/rate-limit";
 import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
@@ -79,13 +80,33 @@ export async function POST(request: Request) {
 
   const { data: existingData, error: existingError } = await client
     .from("push_subscriptions")
-    .select("browser_id")
+    .select("browser_id, user_id, enabled")
     .eq("endpoint", endpoint)
     .maybeSingle();
-  const existing = existingData as { browser_id: string } | null;
+  const existing = existingData as { browser_id: string; user_id: string | null; enabled: boolean } | null;
   if (existingError) return NextResponse.json({ error: "Could not validate subscription" }, { status: 500 });
   if (existing && existing.browser_id !== browserId) {
     return NextResponse.json({ error: "Subscription ownership mismatch" }, { status: 403 });
+  }
+
+  const alreadyEnabledForAccount = Boolean(
+    verifiedUserId
+    && existing?.enabled === true
+    && existing.user_id === verifiedUserId,
+  );
+  if (verifiedUserId && !alreadyEnabledForAccount) {
+    const { count, error: accountLimitError } = await client
+      .from("push_subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("enabled", true)
+      .eq("user_id", verifiedUserId);
+    if (accountLimitError) {
+      console.error("[push subscription] account limit check failed", accountLimitError.message);
+      return NextResponse.json({ error: "Push account limit unavailable" }, { status: 503 });
+    }
+    if ((count ?? 0) >= MAX_ACCOUNT_PUSH_SUBSCRIPTIONS) {
+      return NextResponse.json({ error: "Account push subscription limit reached" }, { status: 409 });
+    }
   }
 
   const now = new Date().toISOString();

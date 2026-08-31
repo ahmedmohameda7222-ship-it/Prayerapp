@@ -5,6 +5,7 @@ import { prayerEventId } from "@/lib/android/prayer-event-id";
 import { todayIso } from "@/lib/date-utils";
 import { deliverPrayerReminderEvent } from "@/lib/prayer-reminder-delivery";
 import type { PushSubscriptionRecord } from "@/lib/push/types";
+import { consumeSecurityRateLimit } from "@/lib/security/rate-limit";
 import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -15,6 +16,8 @@ export const maxDuration = 20;
 const TEST_DELAY_MS = 10_000;
 const TEST_REMINDER_LEAD_MINUTES = 15 as const;
 const TEST_PUSH_TTL_MS = 5 * 60_000;
+const TEST_PUSH_LIMIT = 6;
+const TEST_PUSH_WINDOW_SECONDS = 10 * 60;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type TestMode = "reminder" | "adhan";
@@ -54,6 +57,28 @@ export async function POST(request: Request) {
     || !prayer
   ) {
     return NextResponse.json({ error: "Invalid prayer simulation target" }, { status: 400 });
+  }
+
+  try {
+    const quota = await consumeSecurityRateLimit(request, {
+      scope: "push-test",
+      limit: TEST_PUSH_LIMIT,
+      windowSeconds: TEST_PUSH_WINDOW_SECONDS,
+    });
+    if (!quota.allowed) {
+      return NextResponse.json(
+        { error: "Too many prayer simulation requests" },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.max(1, quota.retryAfterSeconds)) },
+        },
+      );
+    }
+  } catch {
+    return NextResponse.json(
+      { error: "Prayer simulation rate limit unavailable" },
+      { status: 503, headers: { "Retry-After": "60" } },
+    );
   }
 
   const client = createServerClient();

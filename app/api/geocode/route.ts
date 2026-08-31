@@ -1,32 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { consumeSecurityRateLimit } from "@/lib/security/rate-limit";
 
-const WINDOW_MS = 10 * 60_000;
+const RATE_LIMIT_WINDOW_SECONDS = 10 * 60;
 const MAX_REQUESTS_PER_WINDOW = 30;
 const MAX_QUERY_LENGTH = 160;
 const MAX_RESULTS = 5;
-const rateLimit = new Map<string, { count: number; resetAt: number }>();
-
-function clientKey(request: NextRequest) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || request.headers.get("x-real-ip") || "unknown";
-}
-
-function isRateLimited(key: string) {
-  const now = Date.now();
-  const existing = rateLimit.get(key);
-  if (!existing || existing.resetAt <= now) {
-    rateLimit.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return false;
-  }
-
-  existing.count += 1;
-  if (rateLimit.size > 1000) {
-    for (const [candidate, value] of rateLimit) {
-      if (value.resetAt <= now) rateLimit.delete(candidate);
-    }
-  }
-  return existing.count > MAX_REQUESTS_PER_WINDOW;
-}
 
 interface GeoapifyResult {
   formatted?: unknown;
@@ -66,13 +44,6 @@ export function normalizeGeoapifyResults(value: unknown) {
 }
 
 export async function GET(request: NextRequest) {
-  if (isRateLimited(clientKey(request))) {
-    return NextResponse.json(
-      { ok: false, message: "Too many geocoding requests" },
-      { status: 429, headers: { "Retry-After": "600" } },
-    );
-  }
-
   const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
   if (!query || query.length > MAX_QUERY_LENGTH) {
     return NextResponse.json(
@@ -86,6 +57,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { ok: false, message: "Geocoding is not configured" },
       { status: 503 },
+    );
+  }
+
+  try {
+    const quota = await consumeSecurityRateLimit(request, {
+      scope: "geocode-forward",
+      limit: MAX_REQUESTS_PER_WINDOW,
+      windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
+    });
+    if (!quota.allowed) {
+      return NextResponse.json(
+        { ok: false, message: "Too many geocoding requests" },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.max(1, quota.retryAfterSeconds)) },
+        },
+      );
+    }
+  } catch {
+    return NextResponse.json(
+      { ok: false, message: "Geocoding rate limit unavailable" },
+      { status: 503, headers: { "Retry-After": "60" } },
     );
   }
 

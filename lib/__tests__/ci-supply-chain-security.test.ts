@@ -75,6 +75,14 @@ describe("CI supply-chain security contract", () => {
     expect(ci).not.toMatch(/(?:^|\n)\s+(?:actions|checks|contents|deployments|discussions|id-token|issues|packages|pages|pull-requests|repository-projects|security-events|statuses):\s*write\b/u);
   });
 
+  it("audits production dependencies after the clean install", () => {
+    const ci = read(".github/workflows/ci.yml");
+    const install = ci.indexOf("- run: npm ci");
+    const audit = ci.indexOf("- run: npm audit --omit=dev");
+    expect(install).toBeGreaterThanOrEqual(0);
+    expect(audit).toBeGreaterThan(install);
+  });
+
   it("never interpolates workflow-dispatch inputs into shell source", () => {
     for (const { name, source } of workflows) {
       for (const script of extractRunScripts(source)) {

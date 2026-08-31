@@ -19,6 +19,11 @@ function isAppleWebPushHost(hostname: string) {
   return hostname.endsWith(suffix) && hostname.length > suffix.length;
 }
 
+function isWindowsWebPushHost(hostname: string) {
+  const root = "notify.windows.com";
+  return hostname === root || hostname.endsWith(`.${root}`);
+}
+
 export function isTrustedWebPushEndpoint(value: unknown): value is string {
   if (typeof value !== "string" || value.length === 0 || value.length > 4096) return false;
 
@@ -34,7 +39,11 @@ export function isTrustedWebPushEndpoint(value: unknown): value is string {
   if (endpoint.port && endpoint.port !== "443") return false;
 
   const hostname = endpoint.hostname.toLowerCase();
-  if (DEFAULT_WEB_PUSH_HOSTS.has(hostname) || isAppleWebPushHost(hostname)) return true;
+  if (
+    DEFAULT_WEB_PUSH_HOSTS.has(hostname)
+    || isAppleWebPushHost(hostname)
+    || isWindowsWebPushHost(hostname)
+  ) return true;
 
   return configuredWebPushHosts().has(hostname);
 }

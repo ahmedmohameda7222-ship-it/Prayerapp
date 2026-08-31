@@ -2,6 +2,7 @@ import "server-only";
 
 import webpush from "web-push";
 import type { Locale } from "@/lib/i18n/types";
+import { limitAccountAssociatedSubscriptions } from "@/lib/security/push-account-limit";
 import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
 import type {
@@ -157,6 +158,7 @@ export async function deliverPushNotifications({
     if (error) throw error;
     targets = (data || []) as PushSubscriptionRecord[];
   }
+  targets = limitAccountAssociatedSubscriptions(targets);
 
   const results: Array<"sent" | "skipped" | "failed"> = [];
   for (let offset = 0; offset < targets.length; offset += PUSH_DELIVERY_CONCURRENCY) {

@@ -17,6 +17,7 @@ import {
   type ReminderPrayer,
 } from "@/lib/prayer-reminder-delivery";
 import type { PushSubscriptionRecord } from "@/lib/push/types";
+import { limitAccountAssociatedSubscriptions } from "@/lib/security/push-account-limit";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -247,7 +248,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Could not load reminder subscriptions" }, { status: 500 });
   }
 
-  const pushTargets = (subscriptions || []) as PushSubscriptionRecord[];
+  const pushTargets = limitAccountAssociatedSubscriptions(
+    (subscriptions || []) as PushSubscriptionRecord[],
+  );
   let nativeLeases: NativeAuthorityLease[] | null = null;
   let nativeLeaseLookupFailed = false;
   if (pushTargets.length > 0) {

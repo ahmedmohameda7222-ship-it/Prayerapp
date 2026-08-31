@@ -213,19 +213,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: android-production
-    env:
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - name: Validate explicit source authorization
         shell: bash
+        env:
+          DISPATCH_RUN_ID: ${{ inputs.run_id }}
+          DISPATCH_SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
           set -euo pipefail
-          [[ '${{ inputs.run_id }}' =~ ^[0-9]+$ ]]
-          [[ '${{ inputs.source_sha }}' =~ ^[0-9a-f]{40}$ ]]
-          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ inputs.run_id }}")"
+          [[ "$DISPATCH_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$DISPATCH_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$DISPATCH_RUN_ID")"
           test "$(printf '%s' "$run_json" | jq -r '.conclusion')" = "success"
           test "$(printf '%s' "$run_json" | jq -r '.event')" = "pull_request"
           test "$(printf '%s' "$run_json" | jq -r '.name')" = "Android TWA"
@@ -241,17 +239,19 @@ jobs:
       - name: Verify unsigned candidate provenance and identity
         id: metadata
         shell: bash
+        env:
+          DISPATCH_SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
           set -euo pipefail
           cd unsigned
           sha256sum --check SHA256SUMS.txt
           test "$(jq -r '.repository' source-metadata.json)" = "$GITHUB_REPOSITORY"
-          test "$(jq -r '.sourceSha' source-metadata.json)" = '${{ inputs.source_sha }}'
+          test "$(jq -r '.sourceSha' source-metadata.json)" = "$DISPATCH_SOURCE_SHA"
           pr_number="$(jq -r '.pullRequest' source-metadata.json)"
           [[ "$pr_number" =~ ^[0-9]+$ ]]
           pr_json="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$pr_number")"
           test "$(printf '%s' "$pr_json" | jq -r '.head.repo.full_name')" = "$GITHUB_REPOSITORY"
-          test "$(printf '%s' "$pr_json" | jq -r '.head.sha')" = '${{ inputs.source_sha }}'
+          test "$(printf '%s' "$pr_json" | jq -r '.head.sha')" = "$DISPATCH_SOURCE_SHA"
           package_id="$(jq -r '.android.packageId' source-metadata.json)"
           version_code="$(jq -r '.android.versionCode' source-metadata.json)"
           version_name="$(jq -r '.android.versionName' source-metadata.json)"
@@ -285,12 +285,15 @@ jobs:
 
       - name: Reconstruct and verify permanent signing certificate
         shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -euo pipefail
           test -n "$ANDROID_KEYSTORE_BASE64"
           test -n "$ANDROID_KEYSTORE_PASSWORD"
           test "$ANDROID_KEY_ALIAS" = "danube-mosque-release"
-          test -n "$ANDROID_KEY_PASSWORD"
           keystore="$RUNNER_TEMP/danube-mosque-release.jks"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
           chmod 600 "$keystore"
@@ -300,8 +303,15 @@ jobs:
 
       - name: Sign isolated APK and AAB
         shell: bash
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test "$ANDROID_KEY_ALIAS" = "danube-mosque-release"
+          test -n "$ANDROID_KEY_PASSWORD"
           keystore="$RUNNER_TEMP/danube-mosque-release.jks"
           mkdir signed
           "$ANDROID_HOME/build-tools/36.0.0/zipalign" -p -f 4 unsigned/danube-mosque-unsigned.apk signed/danube-mosque-aligned.apk

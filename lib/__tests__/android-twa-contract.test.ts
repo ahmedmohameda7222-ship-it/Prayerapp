@@ -115,7 +115,9 @@ describe("long-term Android TWA contract", () => {
     expect(productionWorkflow).toContain('version_code="$(jq -r ".versionCode" android-twa/twa-manifest.json)"');
     expect(productionWorkflow).toContain('version_name="$(jq -r ".versionName" android-twa/twa-manifest.json)"');
     expect(productionWorkflow).toContain('target_sdk="$(jq -r ".targetSdkVersion" android-twa/twa-manifest.json)"');
-    expect(productionWorkflow).toContain('test "${{ inputs.tag }}" = "android-v$version_name"');
+    expect(productionWorkflow).toContain("DISPATCH_TAG: ${{ inputs.tag }}");
+    expect(productionWorkflow).toContain('test "$DISPATCH_TAG" = "android-v$version_name"');
+    expect(productionWorkflow).not.toContain('test "${{ inputs.tag }}" = "android-v$version_name"');
     expect(productionWorkflow).toContain("previous_version_code");
     expect(productionWorkflow).not.toContain("versionCode='2'");
     expect(productionWorkflow).not.toContain("versionName='1.0.0'");

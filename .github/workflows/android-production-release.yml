@@ -31,11 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: android-production
-    env:
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -55,6 +50,9 @@ jobs:
       - name: Derive and validate Android release metadata
         id: manifest
         shell: bash
+        env:
+          DISPATCH_CONFIRMATION: ${{ inputs.confirmation }}
+          DISPATCH_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
           package_id="$(jq -r ".packageId" android-twa/twa-manifest.json)"
@@ -72,8 +70,8 @@ jobs:
           test "$compile_sdk" = "37"
           test "$target_sdk" = "37"
           test "$min_sdk" = "23"
-          test '${{ inputs.confirmation }}' = 'PUBLISH_ANDROID_PRODUCTION'
-          test "${{ inputs.tag }}" = "android-v$version_name"
+          test "$DISPATCH_CONFIRMATION" = "PUBLISH_ANDROID_PRODUCTION"
+          test "$DISPATCH_TAG" = "android-v$version_name"
           {
             printf 'package_id=%s\n' "$package_id"
             printf 'version_code=%s\n' "$version_code"
@@ -87,9 +85,12 @@ jobs:
       - name: Verify source workflow is green on current main
         id: source
         shell: bash
+        env:
+          DISPATCH_RUN_ID: ${{ inputs.run_id }}
         run: |
           set -euo pipefail
-          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ inputs.run_id }}")"
+          [[ "$DISPATCH_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$DISPATCH_RUN_ID")"
           conclusion="$(printf '%s' "$run_json" | jq -r '.conclusion')"
           head_branch="$(printf '%s' "$run_json" | jq -r '.head_branch')"
           head_sha="$(printf '%s' "$run_json" | jq -r '.head_sha')"
@@ -134,6 +135,11 @@ jobs:
       - name: Reconstruct and verify permanent signing certificate
         working-directory: android-twa
         shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           test -n "$ANDROID_KEYSTORE_BASE64"
@@ -239,14 +245,19 @@ jobs:
 
       - name: Create public production tag and release
         shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_HEAD_SHA: ${{ steps.source.outputs.head_sha }}
+          RELEASE_VERSION_NAME: ${{ steps.manifest.outputs.version_name }}
+          RELEASE_PACKAGE_ID: ${{ steps.manifest.outputs.package_id }}
         run: |
           set -euo pipefail
-          ! gh release view '${{ inputs.tag }}' >/dev/null 2>&1
-          gh release create '${{ inputs.tag }}' \
+          ! gh release view "$RELEASE_TAG" >/dev/null 2>&1
+          gh release create "$RELEASE_TAG" \
             candidate/danube-mosque.apk \
             candidate/danube-mosque.aab \
             candidate/SHA256SUMS.txt \
             candidate/android-release.json \
-            --target '${{ steps.source.outputs.head_sha }}' \
-            --title 'Danube Mosque Android ${{ steps.manifest.outputs.version_name }}' \
-            --notes 'Production Android package ${{ steps.manifest.outputs.package_id }}. APK and Play Store AAB are signed by the permanent production certificate.'
+            --target "$RELEASE_HEAD_SHA" \
+            --title "Danube Mosque Android $RELEASE_VERSION_NAME" \
+            --notes "Production Android package $RELEASE_PACKAGE_ID. APK and Play Store AAB are signed by the permanent production certificate."

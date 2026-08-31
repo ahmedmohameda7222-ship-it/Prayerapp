@@ -30,6 +30,7 @@ jobs:
           github-token: ${{ github.token }}
       - run: git diff --check origin/main...HEAD
       - run: npm ci
+      - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm test
       - name: Verify clean Supabase migration bootstrap

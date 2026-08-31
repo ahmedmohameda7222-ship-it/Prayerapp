@@ -96,7 +96,7 @@ describe("long-term Android TWA contract", () => {
     expect(signer).toContain("github.event_name == 'workflow_dispatch'");
     expect(signer).toContain("environment: android-production");
     expect(signer).toContain("SIGN_ANDROID_RC");
-    expect(signer).toContain("actions/download-artifact@v4");
+    expect(signer).toContain("actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4");
     expect(signer).not.toContain("actions/checkout");
     expect(workflow).toContain("apksigner verify --verbose --print-certs");
     expect(workflow).toContain("E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92");

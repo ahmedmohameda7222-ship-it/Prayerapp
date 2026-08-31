@@ -2,6 +2,14 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, normalizeGeoapifyResults } from "@/app/api/geocode/route";
 
+vi.mock("@/lib/security/rate-limit", () => ({
+  consumeSecurityRateLimit: async () => ({
+    allowed: true,
+    remaining: 29,
+    retryAfterSeconds: 0,
+  }),
+}));
+
 describe("Qibla forward geocoding route", () => {
   const previousKey = process.env.GEOAPIFY_API_KEY;
 

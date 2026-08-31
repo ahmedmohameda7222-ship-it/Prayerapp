@@ -29,10 +29,11 @@ public final class NativeCredentialStorageSourceContractTest {
     @Test
     public void nativeAuthorityCredentialUsesAndroidKeystoreBackedEncryption() throws IOException {
         String nativeStore = source("android-twa/app/src/main/java/de/donaumoschee/app/storage/NativeStore.java");
-        String secureStore = source("android-twa/app/src/main/java/de/donaumoschee/app/storage/NativeCredentialStore.java");
 
         assertTrue(nativeStore.contains("NativeCredentialStore"));
         assertFalse(nativeStore.contains("putString(CREDENTIAL, value)"));
+
+        String secureStore = source("android-twa/app/src/main/java/de/donaumoschee/app/storage/NativeCredentialStore.java");
         assertTrue(secureStore.contains("AndroidKeyStore"));
         assertTrue(secureStore.contains("KeyProperties.KEY_ALGORITHM_AES"));
         assertTrue(secureStore.contains("KeyProperties.BLOCK_MODE_GCM"));

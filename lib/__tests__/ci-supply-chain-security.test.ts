@@ -14,6 +14,39 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const actionRefPattern = /^\s*-?\s*uses:\s*([^\s@]+)@([^\s#]+)(?:\s+#.*)?$/u;
 const fullShaPattern = /^[0-9a-f]{40}$/u;
 
+function extractRunScripts(source: string) {
+  const lines = source.split("\n");
+  const scripts: string[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = lines[index].match(/^(\s*)run:\s*\|\s*$/u);
+    if (!match) continue;
+
+    const runIndent = match[1].length;
+    const scriptLines: string[] = [];
+
+    for (index += 1; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (line.trim() === "") {
+        scriptLines.push(line);
+        continue;
+      }
+
+      const lineIndent = line.match(/^\s*/u)?.[0].length ?? 0;
+      if (lineIndent <= runIndent) {
+        index -= 1;
+        break;
+      }
+
+      scriptLines.push(line);
+    }
+
+    scripts.push(scriptLines.join("\n"));
+  }
+
+  return scripts;
+}
+
 describe("CI supply-chain security contract", () => {
   it("pins every external GitHub Action to an immutable full commit SHA", () => {
     for (const { name, source } of workflows) {
@@ -40,6 +73,19 @@ describe("CI supply-chain security contract", () => {
     const ci = read(".github/workflows/ci.yml");
     expect(ci).toMatch(/(?:^|\n)permissions:\s*\n\s+contents:\s*read(?:\n|$)/u);
     expect(ci).not.toMatch(/(?:^|\n)\s+(?:actions|checks|contents|deployments|discussions|id-token|issues|packages|pages|pull-requests|repository-projects|security-events|statuses):\s*write\b/u);
+  });
+
+  it("never interpolates workflow-dispatch inputs into shell source", () => {
+    for (const { name, source } of workflows) {
+      for (const script of extractRunScripts(source)) {
+        expect(script, name).not.toMatch(/\$\{\{\s*inputs\./u);
+      }
+    }
+  });
+
+  it("does not expose Android production signing secrets at job scope", () => {
+    const release = read(".github/workflows/android-production-release.yml");
+    expect(release).not.toMatch(/^ {6}ANDROID_(?:KEYSTORE|KEY)_/mu);
   });
 
   it("pins the Gradle 9.3.1 distribution checksum", () => {

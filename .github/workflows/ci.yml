@@ -46,6 +46,9 @@ jobs:
             if to_regclass('public.native_prayer_installations') is null then
               raise exception 'native_prayer_installations missing after clean migration reset';
             end if;
+            if to_regclass('public.security_rate_limits') is null then
+              raise exception 'security_rate_limits missing after clean migration reset';
+            end if;
             if not has_table_privilege('service_role', 'public.native_prayer_installations', 'SELECT')
               or has_table_privilege('anon', 'public.native_prayer_installations', 'SELECT')
               or has_table_privilege('authenticated', 'public.native_prayer_installations', 'SELECT') then
@@ -76,6 +79,38 @@ jobs:
               or not has_table_privilege('authenticated', 'public.user_prayer_reminders', 'UPDATE')
               or not has_table_privilege('authenticated', 'public.user_prayer_reminders', 'DELETE') then
               raise exception 'authenticated lacks prayer reminder privileges';
+            end if;
+            if has_table_privilege('anon', 'public.security_rate_limits', 'SELECT')
+              or has_table_privilege('anon', 'public.security_rate_limits', 'INSERT')
+              or has_table_privilege('anon', 'public.security_rate_limits', 'UPDATE')
+              or has_table_privilege('anon', 'public.security_rate_limits', 'DELETE')
+              or has_table_privilege('authenticated', 'public.security_rate_limits', 'SELECT')
+              or has_table_privilege('authenticated', 'public.security_rate_limits', 'INSERT')
+              or has_table_privilege('authenticated', 'public.security_rate_limits', 'UPDATE')
+              or has_table_privilege('authenticated', 'public.security_rate_limits', 'DELETE')
+              or has_table_privilege('service_role', 'public.security_rate_limits', 'SELECT')
+              or has_table_privilege('service_role', 'public.security_rate_limits', 'INSERT')
+              or has_table_privilege('service_role', 'public.security_rate_limits', 'UPDATE')
+              or has_table_privilege('service_role', 'public.security_rate_limits', 'DELETE') then
+              raise exception 'security rate-limit state is directly accessible';
+            end if;
+            if not has_function_privilege(
+              'service_role',
+              'public.consume_security_rate_limit(text,text,integer,integer)',
+              'EXECUTE'
+            ) then
+              raise exception 'service_role cannot execute security rate limiter';
+            end if;
+            if has_function_privilege(
+              'anon',
+              'public.consume_security_rate_limit(text,text,integer,integer)',
+              'EXECUTE'
+            ) or has_function_privilege(
+              'authenticated',
+              'public.consume_security_rate_limit(text,text,integer,integer)',
+              'EXECUTE'
+            ) then
+              raise exception 'public roles can execute security rate limiter';
             end if;
           end
           $$;

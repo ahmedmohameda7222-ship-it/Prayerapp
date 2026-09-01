@@ -117,8 +117,86 @@ jobs:
             ) then
               raise exception 'public roles can execute security rate limiter';
             end if;
+            if to_regprocedure(
+              'public.register_push_subscription(text,text,text,uuid,uuid,text,text,text,integer)'
+            ) is null then
+              raise exception 'atomic push registration RPC missing';
+            end if;
+            if not has_function_privilege(
+              'service_role',
+              'public.register_push_subscription(text,text,text,uuid,uuid,text,text,text,integer)',
+              'EXECUTE'
+            ) then
+              raise exception 'service_role cannot execute atomic push registration RPC';
+            end if;
+            if has_function_privilege(
+              'anon',
+              'public.register_push_subscription(text,text,text,uuid,uuid,text,text,text,integer)',
+              'EXECUTE'
+            ) or has_function_privilege(
+              'authenticated',
+              'public.register_push_subscription(text,text,text,uuid,uuid,text,text,text,integer)',
+              'EXECUTE'
+            ) then
+              raise exception 'public roles can execute atomic push registration RPC';
+            end if;
           end
           $$;
+
+          begin;
+          alter table public.push_subscriptions disable trigger all;
+          insert into public.push_subscriptions (
+            endpoint, p256dh, auth, browser_id, user_id, enabled, locale
+          )
+          select
+            'https://fcm.googleapis.com/fcm/send/atomic-cap-' || value,
+            'test-p256dh',
+            'test-auth',
+            case when value = 1
+              then '00000000-0000-4000-8000-000000000101'::uuid
+              else gen_random_uuid()
+            end,
+            '00000000-0000-4000-8000-000000000001'::uuid,
+            true,
+            'en'
+          from generate_series(1, 10) as value;
+
+          do $$
+          declare
+            v_result text;
+          begin
+            select public.register_push_subscription(
+              'https://fcm.googleapis.com/fcm/send/atomic-cap-new',
+              'test-p256dh',
+              'test-auth',
+              '00000000-0000-4000-8000-000000000111'::uuid,
+              '00000000-0000-4000-8000-000000000001'::uuid,
+              'en',
+              null,
+              null,
+              10
+            ) into v_result;
+            if v_result <> 'account_limit_reached' then
+              raise exception 'atomic push registration allowed an 11th account subscription: %', v_result;
+            end if;
+
+            select public.register_push_subscription(
+              'https://fcm.googleapis.com/fcm/send/atomic-cap-1',
+              'refreshed-p256dh',
+              'refreshed-auth',
+              '00000000-0000-4000-8000-000000000101'::uuid,
+              '00000000-0000-4000-8000-000000000001'::uuid,
+              'de',
+              null,
+              null,
+              10
+            ) into v_result;
+            if v_result <> 'saved' then
+              raise exception 'atomic push registration blocked same-device refresh at cap: %', v_result;
+            end if;
+          end
+          $$;
+          rollback;
           SQL
       - run: npm run build
       - name: Stop local Supabase

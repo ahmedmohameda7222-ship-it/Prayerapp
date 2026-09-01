@@ -78,57 +78,34 @@ export async function POST(request: Request) {
     verifiedUserId = data.user.id;
   }
 
-  const { data: existingData, error: existingError } = await client
-    .from("push_subscriptions")
-    .select("browser_id, user_id, enabled")
-    .eq("endpoint", endpoint)
-    .maybeSingle();
-  const existing = existingData as { browser_id: string; user_id: string | null; enabled: boolean } | null;
-  if (existingError) return NextResponse.json({ error: "Could not validate subscription" }, { status: 500 });
-  if (existing && existing.browser_id !== browserId) {
+  const { data: registrationData, error: registrationError } = await client.rpc(
+    "register_push_subscription",
+    {
+      p_endpoint: endpoint,
+      p_p256dh: p256dh,
+      p_auth: auth,
+      p_browser_id: browserId,
+      p_user_id: verifiedUserId,
+      p_locale: locale,
+      p_user_agent: request.headers.get("user-agent")?.slice(0, 1000) || null,
+      p_platform: typeof body?.platform === "string" ? body.platform.slice(0, 120) : null,
+      p_max_account_subscriptions: MAX_ACCOUNT_PUSH_SUBSCRIPTIONS,
+    },
+  );
+
+  if (registrationError) {
+    console.error("[push subscription] atomic save failed", registrationError.message);
+    return NextResponse.json({ error: "Could not save subscription" }, { status: 500 });
+  }
+
+  if (registrationData === "ownership_mismatch") {
     return NextResponse.json({ error: "Subscription ownership mismatch" }, { status: 403 });
   }
-
-  const alreadyEnabledForAccount = Boolean(
-    verifiedUserId
-    && existing?.enabled === true
-    && existing.user_id === verifiedUserId,
-  );
-  if (verifiedUserId && !alreadyEnabledForAccount) {
-    const { count, error: accountLimitError } = await client
-      .from("push_subscriptions")
-      .select("id", { count: "exact", head: true })
-      .eq("enabled", true)
-      .eq("user_id", verifiedUserId);
-    if (accountLimitError) {
-      console.error("[push subscription] account limit check failed", accountLimitError.message);
-      return NextResponse.json({ error: "Push account limit unavailable" }, { status: 503 });
-    }
-    if ((count ?? 0) >= MAX_ACCOUNT_PUSH_SUBSCRIPTIONS) {
-      return NextResponse.json({ error: "Account push subscription limit reached" }, { status: 409 });
-    }
+  if (registrationData === "account_limit_reached") {
+    return NextResponse.json({ error: "Account push subscription limit reached" }, { status: 409 });
   }
-
-  const now = new Date().toISOString();
-  const { error } = await client.from("push_subscriptions").upsert(
-    {
-      endpoint,
-      p256dh,
-      auth,
-      browser_id: browserId,
-      user_id: verifiedUserId,
-      enabled: true,
-      locale,
-      user_agent: request.headers.get("user-agent")?.slice(0, 1000) || null,
-      platform: typeof body?.platform === "string" ? body.platform.slice(0, 120) : null,
-      updated_at: now,
-      last_seen_at: now,
-    } as never,
-    { onConflict: "endpoint" }
-  );
-
-  if (error) {
-    console.error("[push subscription] save failed", error.message);
+  if (registrationData !== "saved") {
+    console.error("[push subscription] atomic save returned an invalid result");
     return NextResponse.json({ error: "Could not save subscription" }, { status: 500 });
   }
 

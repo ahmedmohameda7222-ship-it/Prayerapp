@@ -6,6 +6,7 @@ import {
   isInstallationId,
   isNativeCredential,
 } from "@/lib/android/native-credentials";
+import { readBoundedJson } from "@/lib/security/http-boundaries";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -14,6 +15,7 @@ const eventIdPattern = /^p2:[0-9a-f]{64}$/u;
 const MAX_ACCOUNT_GENERATION = 2_147_483_647;
 const MAX_FUTURE_DELIVERY_MS = 5 * 60 * 1000;
 const MAX_RECEIPT_AGE_MS = 2 * 24 * 60 * 60 * 1000;
+const MAX_NATIVE_RECEIPT_BODY_BYTES = 2 * 1024;
 
 function parseBody(value: unknown, now: Date) {
   if (!value || typeof value !== "object") return null;
@@ -47,7 +49,12 @@ export async function POST(request: Request) {
   }
 
   const now = new Date();
-  const receipt = parseBody(await request.json().catch(() => null), now);
+  const parsed = await readBoundedJson(request, {
+    maxBytes: MAX_NATIVE_RECEIPT_BODY_BYTES,
+    allowMissingContentType: true,
+  });
+  if (!parsed.ok) return NextResponse.json({ error: parsed.message }, { status: parsed.status });
+  const receipt = parseBody(parsed.value, now);
   if (!receipt) return NextResponse.json({ error: "Invalid delivery receipt" }, { status: 400 });
 
   const client = createServerClient();

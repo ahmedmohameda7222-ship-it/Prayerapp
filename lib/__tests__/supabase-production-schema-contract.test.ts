@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8").replace(/\r\n/g, "\n");
 
-const reconciliationPath = "supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql";
+const reconciliationPath = "supabase/migrations/20260902211847_prelaunch_schema_reconciliation.sql";
 
 describe("Production Supabase reconciliation contract", () => {
   it("keeps a read-only verifier for the native-delivery-v2 Production contract", () => {
@@ -115,5 +115,6 @@ describe("Production Supabase reconciliation contract", () => {
     expect(ci).toContain("incompatible receipt_v2 constraint was not rejected");
     expect(ci).toContain("incompatible account_generation constraint was not rejected");
     expect(ci).toContain("verify-production-schema.sql");
+    expect(ci).toContain(reconciliationPath);
   });
 });

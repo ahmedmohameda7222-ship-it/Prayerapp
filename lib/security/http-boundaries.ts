@@ -10,6 +10,7 @@ export type BoundedJsonResult<T = unknown> =
 
 type ReadBoundedJsonOptions = {
   maxBytes: number;
+  allowMissingContentType?: boolean;
 };
 
 type FetchBoundedJsonOptions = RequestInit & {
@@ -59,10 +60,11 @@ async function readBoundedText(body: ReadableStream<Uint8Array> | null, maxBytes
 
 export async function readBoundedJson<T = unknown>(
   request: Request,
-  { maxBytes }: ReadBoundedJsonOptions,
+  { maxBytes, allowMissingContentType = false }: ReadBoundedJsonOptions,
 ): Promise<BoundedJsonResult<T>> {
   if (!validPositiveBound(maxBytes)) throw new Error("Invalid JSON body byte bound");
-  if (!isJsonContentType(request.headers.get("content-type"))) {
+  const contentType = request.headers.get("content-type");
+  if ((!contentType && !allowMissingContentType) || (contentType && !isJsonContentType(contentType))) {
     return { ok: false, status: 415, message: "Content-Type must be application/json" };
   }
   if (declaredLengthTooLarge(request.headers, maxBytes)) {

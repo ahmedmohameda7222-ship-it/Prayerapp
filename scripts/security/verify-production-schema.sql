@@ -748,7 +748,7 @@ begin
     or position('invalid_metadata' in v_audit_src) = 0
     or position('metadata_too_large' in v_audit_src) = 0
     or position('invalid_request_id' in v_audit_src) = 0
-    or position('insert into public.audit_logs' in v_audit_src) = 0
+    or position('insert ' || 'into public.audit_logs' in v_audit_src) = 0
     or position('returning id into v_id' in v_audit_src) = 0
     or position('return v_id' in v_audit_src) = 0 then
     raise exception 'append_admin_audit_event implementation semantics are incompatible';

@@ -2,111 +2,72 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
-import { requireAllowedAdmin } from "@/lib/auth/admin-server";
+import { adminActionError, beginAdminAudit, finishAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
+import { parseAdminDate, parseAdminNumber, parseAdminOptionalTime, parseAdminText, parseAdminTime, parseAdminUuid } from "@/lib/security/admin-input";
 
-function timeRegex() {
-  return /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+type ActionResult = { success: boolean; error?: string };
+type ParsedRamadanDay = {
+  date: string; ramadanDay: number; imsak: string; fajr: string; maghrib: string; iftar: string; taraweeh: string | null;
+  noteAr: string; noteEn: string; noteDe: string; noteTr: string;
+};
+
+async function runAuditedAction(token: string, event: AdminAuditEvent, operation: () => Promise<ActionResult>): Promise<ActionResult> {
+  let audit;
+  try { audit = await beginAdminAudit(token, event); }
+  catch (error) { return { success: false, error: adminActionError(error, "admin.errors.auditUnavailable") }; }
+  let result: ActionResult;
+  try { result = await operation(); } catch (error) { result = { success: false, error: adminActionError(error) }; }
+  try { await finishAdminAudit(audit, result.success ? "success" : "failure", result.error ? { error: result.error } : undefined); }
+  catch { if (result.success) return { success: false, error: "admin.errors.auditUnavailable" }; }
+  return result;
 }
 
-function validateRamadanDay(data: Record<string, string>): string[] {
-  const errors: string[] = [];
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date || "")) errors.push("admin.errors.dateRequired");
-  const ramadanDay = Number(data.ramadanDay);
-  if (!Number.isInteger(ramadanDay) || ramadanDay < 1 || ramadanDay > 30) errors.push("admin.errors.ramadanDayPositive");
-  if (!data.imsak?.trim()) errors.push("admin.errors.imsakRequired");
-  if (!data.fajr?.trim()) errors.push("admin.errors.fajrRequired");
-  if (!data.maghrib?.trim()) errors.push("admin.errors.maghribRequired");
-  if (!data.iftar?.trim()) errors.push("admin.errors.iftarRequired");
-  const times = [data.imsak, data.fajr, data.maghrib, data.iftar, data.taraweeh];
-  for (const t of times) {
-    if (t && !timeRegex().test(t)) errors.push("admin.errors.invalidTimeFormat");
-  }
-  return errors;
-}
-
-export async function createRamadanDayAction(
-  token: string,
-  data: Record<string, string>
-): Promise<{ success: boolean; error?: string }> {
-  await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-
-  const errors = validateRamadanDay(data);
-  if (errors.length > 0) return { success: false, error: errors[0] };
-
-  const db = {
-    date: data.date,
-    ramadan_day: Number(data.ramadanDay),
-    imsak: data.imsak,
-    fajr: data.fajr,
-    maghrib: data.maghrib,
-    iftar: data.iftar,
-    taraweeh: data.taraweeh?.trim() || null,
-    note: data.noteAr?.trim() || null,
-    note_ar: data.noteAr?.trim() || null,
-    note_en: data.noteEn?.trim() || null,
-    note_de: data.noteDe?.trim() || null,
-    note_tr: data.noteTr?.trim() || null,
-    published: true,
+function parseRamadanDay(data: Record<string, string>): ParsedRamadanDay {
+  return {
+    date: parseAdminDate(data.date, "date"),
+    ramadanDay: parseAdminNumber(data.ramadanDay, { field: "ramadanDay", min: 1, max: 30, integer: true }),
+    imsak: parseAdminTime(data.imsak, "imsak"), fajr: parseAdminTime(data.fajr, "fajr"), maghrib: parseAdminTime(data.maghrib, "maghrib"), iftar: parseAdminTime(data.iftar, "iftar"),
+    taraweeh: parseAdminOptionalTime(data.taraweeh, "taraweeh"),
+    noteAr: parseAdminText(data.noteAr ?? "", { field: "noteAr", max: 2_000 }),
+    noteEn: parseAdminText(data.noteEn ?? "", { field: "noteEn", max: 2_000 }),
+    noteDe: parseAdminText(data.noteDe ?? "", { field: "noteDe", max: 2_000 }),
+    noteTr: parseAdminText(data.noteTr ?? "", { field: "noteTr", max: 2_000 }),
   };
-
-  const { error } = await client.from("ramadan_days").insert(db).select().single();
-  if (error) return { success: false, error: "admin.errors.saveFailed" };
-
-  revalidatePath("/admin/ramadan");
-  revalidatePath("/ramadan");
-  revalidatePath("/");
-  return { success: true };
 }
 
-export async function updateRamadanDayAction(
-  token: string,
-  id: string,
-  data: Record<string, string>
-): Promise<{ success: boolean; error?: string }> {
-  await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-
-  const errors = validateRamadanDay(data);
-  if (errors.length > 0) return { success: false, error: errors[0] };
-
-  const db = {
-    date: data.date,
-    ramadan_day: Number(data.ramadanDay),
-    imsak: data.imsak,
-    fajr: data.fajr,
-    maghrib: data.maghrib,
-    iftar: data.iftar,
-    taraweeh: data.taraweeh?.trim() || null,
-    note: data.noteAr?.trim() || null,
-    note_ar: data.noteAr?.trim() || null,
-    note_en: data.noteEn?.trim() || null,
-    note_de: data.noteDe?.trim() || null,
-    note_tr: data.noteTr?.trim() || null,
-    published: true,
+function ramadanDb(data: ParsedRamadanDay) {
+  return {
+    date: data.date, ramadan_day: data.ramadanDay, imsak: data.imsak, fajr: data.fajr, maghrib: data.maghrib, iftar: data.iftar, taraweeh: data.taraweeh,
+    note: data.noteAr || null, note_ar: data.noteAr || null, note_en: data.noteEn || null, note_de: data.noteDe || null, note_tr: data.noteTr || null, published: true,
   };
-
-  const { error } = await client.from("ramadan_days").update(db).eq("id", id);
-  if (error) return { success: false, error: "admin.errors.saveFailed" };
-
-  revalidatePath("/admin/ramadan");
-  revalidatePath("/ramadan");
-  revalidatePath("/");
-  return { success: true };
 }
 
-export async function deleteRamadanDayAction(token: string, id: string): Promise<{ success: boolean; error?: string }> {
-  await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+function revalidateRamadan() { revalidatePath("/admin/ramadan"); revalidatePath("/ramadan"); revalidatePath("/"); }
 
-  const { error } = await client.from("ramadan_days").delete().eq("id", id);
-  if (error) return { success: false, error: "admin.errors.deleteFailed" };
+export async function createRamadanDayAction(token: string, data: Record<string, string>): Promise<ActionResult> {
+  return runAuditedAction(token, { action: "ramadan_day.create", entityType: "ramadan_day" }, async () => {
+    let parsed: ParsedRamadanDay; try { parsed = parseRamadanDay(data); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
+    const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { error } = await client.from("ramadan_days").insert(ramadanDb(parsed)).select().single();
+    if (error) return { success: false, error: "admin.errors.saveFailed" }; revalidateRamadan(); return { success: true };
+  });
+}
 
-  revalidatePath("/admin/ramadan");
-  revalidatePath("/ramadan");
-  revalidatePath("/");
-  return { success: true };
+export async function updateRamadanDayAction(token: string, id: string, data: Record<string, string>): Promise<ActionResult> {
+  let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "ramadan_day.update", entityType: "ramadan_day", entityId }, async () => {
+    let parsed: ParsedRamadanDay; try { parsed = parseRamadanDay(data); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
+    const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { error } = await client.from("ramadan_days").update(ramadanDb(parsed)).eq("id", entityId);
+    if (error) return { success: false, error: "admin.errors.saveFailed" }; revalidateRamadan(); return { success: true };
+  });
+}
+
+export async function deleteRamadanDayAction(token: string, id: string): Promise<ActionResult> {
+  let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "ramadan_day.delete", entityType: "ramadan_day", entityId }, async () => {
+    const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { error } = await client.from("ramadan_days").delete().eq("id", entityId);
+    if (error) return { success: false, error: "admin.errors.deleteFailed" }; revalidateRamadan(); return { success: true };
+  });
 }

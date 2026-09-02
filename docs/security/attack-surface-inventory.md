@@ -84,4 +84,3 @@ Existing workflows pin third-party actions by SHA and avoid persisted checkout c
 ## Public Assets With Configuration
 
 Public/config-bearing assets include `public/manifest.webmanifest`, `public/.well-known/assetlinks.json`, app icons/images/fonts, `public/sw.js`, and Android `asset_statements` resource derived from `android-twa/app/src/main/res/values/strings.xml:5`. The public Supabase URL/key and VAPID public key are expected public configuration; privileged keys must remain server/environment-only.
-

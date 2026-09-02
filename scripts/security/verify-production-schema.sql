@@ -503,7 +503,7 @@ begin
     raise exception 'security-rate-limits-cleanup-hourly cron contract is incompatible';
   end if;
 
-  select regexp_replace(lower(trim(command)), '[[:space:]]+', ' ', 'g')
+  select regexp_replace(lower(btrim(command, E' \n\r\t')), '[[:space:]]+', ' ', 'g')
     into v_cron_command
   from cron.job
   where jobname = 'security-rate-limits-cleanup-hourly'

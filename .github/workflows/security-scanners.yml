@@ -1,0 +1,119 @@
+name: Security Scanners
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-scanners-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: CodeQL JavaScript/TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4, pinned 2026-08-26
+        with:
+          languages: javascript-typescript
+          queries: security-extended,security-and-quality
+      - name: Analyze with CodeQL
+        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4, pinned 2026-08-26
+        with:
+          category: "/language:javascript-typescript"
+
+  secret-history-scan:
+    name: Gitleaks full-history secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan repository and reachable history
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            ghcr.io/gitleaks/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb \
+            git --no-banner --redact --exit-code 1 --log-opts="--all" .
+
+  dependency-scan:
+    name: OSV dependency scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan source dependency manifests and lockfiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "$PWD:/src:ro" \
+            ghcr.io/google/osv-scanner@sha256:bcb04b6bab5ab578898b3ff8b81b381e7961b1eac6aa87639b53aaea0d266003 \
+            scan source --recursive /src
+
+  sbom:
+    name: Generate software-bill-of-materials evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Generate production npm CycloneDX SBOM
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          mkdir -p security-artifacts
+          npm sbom --sbom-format=cyclonedx --omit=dev > security-artifacts/npm-production.cdx.json
+          test -s security-artifacts/npm-production.cdx.json
+          sha256sum security-artifacts/npm-production.cdx.json
+      - name: Capture Android resolved dependency graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p security-artifacts
+          (
+            cd android-twa
+            ./gradlew --no-daemon --console=plain :app:dependencies
+          ) > security-artifacts/android-gradle-dependencies.txt
+          test -s security-artifacts/android-gradle-dependencies.txt
+          sha256sum security-artifacts/android-gradle-dependencies.txt
+      - name: Upload SBOM and Android dependency evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: prayerapp-security-sbom
+          path: security-artifacts/
+          if-no-files-found: error
+          retention-days: 30

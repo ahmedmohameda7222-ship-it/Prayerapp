@@ -97,4 +97,3 @@ Supabase changelog was checked on 2026-09-02. Relevant current items for later w
 ## Production Mutations
 
 NONE.
-

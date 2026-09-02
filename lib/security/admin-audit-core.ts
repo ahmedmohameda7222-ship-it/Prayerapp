@@ -6,7 +6,9 @@ const MAX_DEPTH = 3;
 const SECRET_KEY_PATTERN = /(?:authorization|password|passcode|secret|token|credential|cookie|session|service.?role|private.?key|api.?key)/iu;
 
 type JsonPrimitive = string | number | boolean | null;
-export type AdminAuditMetadata = Record<string, JsonPrimitive | JsonPrimitive[] | AdminAuditMetadata>;
+export interface AdminAuditMetadata {
+  [key: string]: JsonPrimitive | JsonPrimitive[] | AdminAuditMetadata;
+}
 
 function safeKey(key: string) {
   return key.length > 0 && key.length <= 64 && !SECRET_KEY_PATTERN.test(key);

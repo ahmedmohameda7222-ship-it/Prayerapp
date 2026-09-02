@@ -36,12 +36,21 @@ jobs:
         if: steps.regenerate.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          OLD_SHA: ${{ steps.regenerate.outputs.old_sha }}
+          BRANCH_NAME: ${{ github.ref_name }}
         shell: bash
         run: |
           ledger='docs/security/prelaunch/2026-09-02/open-control-closure-ledger.json'
-          content="$(base64 -w 0 "${ledger}")"
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const ledger = 'docs/security/prelaunch/2026-09-02/open-control-closure-ledger.json';
+          const body = {
+            message: 'fix(security): regenerate closure ledger owners',
+            content: readFileSync(ledger).toString('base64'),
+            sha: process.env.OLD_SHA,
+            branch: process.env.BRANCH_NAME,
+          };
+          writeFileSync('/tmp/security-ledger-update.json', JSON.stringify(body));
+          NODE
           gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/${ledger}" \
-            -f message='fix(security): regenerate closure ledger owners' \
-            -f content="${content}" \
-            -f sha='${{ steps.regenerate.outputs.old_sha }}' \
-            -f branch="${GITHUB_REF_NAME}"
+            --input /tmp/security-ledger-update.json

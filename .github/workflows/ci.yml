@@ -63,6 +63,142 @@ jobs:
             if to_regclass('public.native_prayer_installations') is null then
               raise exception 'native_prayer_installations missing after clean migration reset';
             end if;
+            if to_regclass('public.native_prayer_delivery_receipts') is null then
+              raise exception 'native_prayer_delivery_receipts missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1 from information_schema.columns
+              where table_schema = 'public'
+                and table_name = 'native_prayer_installations'
+                and column_name = 'receipt_v2'
+                and data_type = 'boolean'
+                and is_nullable = 'NO'
+                and column_default = 'false'
+            ) then
+              raise exception 'native_prayer_installations.receipt_v2 contract missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1 from information_schema.columns
+              where table_schema = 'public'
+                and table_name = 'native_prayer_installations'
+                and column_name = 'account_generation'
+                and data_type = 'integer'
+                and is_nullable = 'NO'
+                and column_default = '0'
+            ) then
+              raise exception 'native_prayer_installations.account_generation contract missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1 from pg_constraint c
+              where c.conrelid = 'public.native_prayer_installations'::regclass
+                and c.contype = 'c'
+                and regexp_replace(lower(pg_get_expr(c.conbin, c.conrelid)), '[[:space:]]+', '', 'g')
+                  in ('(account_generation>=0)', 'account_generation>=0')
+            ) then
+              raise exception 'native_prayer_installations.account_generation CHECK missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1 from pg_constraint c
+              where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
+                and c.contype = 'p'
+                and pg_get_constraintdef(c.oid, true) =
+                  'PRIMARY KEY (installation_id, account_generation, event_id)'
+            ) then
+              raise exception 'native delivery receipt primary key missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1 from pg_constraint c
+              where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
+                and c.contype = 'f'
+                and pg_get_constraintdef(c.oid, true) ilike
+                  'FOREIGN KEY (installation_id) REFERENCES native_prayer_installations(installation_id) ON DELETE CASCADE'
+            ) then
+              raise exception 'native delivery receipt installation FK missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1 from pg_constraint c
+              where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
+                and c.contype = 'f'
+                and pg_get_constraintdef(c.oid, true) ilike
+                  'FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE'
+            ) then
+              raise exception 'native delivery receipt user FK missing after clean migration reset';
+            end if;
+            if (
+              select count(*) from pg_constraint c
+              where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
+                and c.contype = 'c'
+            ) <> 4 or not exists (
+              select 1 from pg_constraint c
+              where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
+                and c.contype = 'c'
+                and pg_get_constraintdef(c.oid, true) ~ 'event_id.*p2:.*0-9a-f.*64'
+            ) or not exists (
+              select 1 from pg_constraint c
+              where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
+                and c.contype = 'c'
+                and pg_get_constraintdef(c.oid, true) ~ 'kind.*reminder.*adhan'
+            ) or not exists (
+              select 1 from pg_constraint c
+              where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
+                and c.contype = 'c'
+                and pg_get_constraintdef(c.oid, true) ~ 'account_generation.*>= 0'
+            ) or not exists (
+              select 1 from pg_constraint c
+              where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
+                and c.contype = 'c'
+                and pg_get_constraintdef(c.oid, true) ~ 'expires_at > delivered_at'
+            ) or not exists (
+              select 1 from information_schema.columns
+              where table_schema = 'public'
+                and table_name = 'native_prayer_delivery_receipts'
+                and column_name = 'expires_at'
+                and column_default = '(now() + ''2 days''::interval)'
+            ) or not exists (
+              select 1 from information_schema.columns
+              where table_schema = 'public'
+                and table_name = 'native_prayer_delivery_receipts'
+                and column_name = 'created_at'
+                and column_default = 'now()'
+            ) then
+              raise exception 'native delivery receipt CHECK contract missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1 from pg_indexes
+              where schemaname = 'public'
+                and tablename = 'native_prayer_delivery_receipts'
+                and indexname = 'native_prayer_delivery_receipts_event_idx'
+                and indexdef like '%(event_id, expires_at, installation_id)%'
+            ) or not exists (
+              select 1 from pg_indexes
+              where schemaname = 'public'
+                and tablename = 'native_prayer_delivery_receipts'
+                and indexname = 'native_prayer_delivery_receipts_expiry_idx'
+                and indexdef like '%(expires_at)%'
+            ) then
+              raise exception 'native delivery receipt indexes missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1 from pg_class r
+              where r.oid = 'public.native_prayer_delivery_receipts'::regclass
+                and r.relrowsecurity
+            ) then
+              raise exception 'native delivery receipt RLS missing after clean migration reset';
+            end if;
+            if has_table_privilege('anon', 'public.native_prayer_delivery_receipts', 'SELECT')
+              or has_table_privilege('anon', 'public.native_prayer_delivery_receipts', 'INSERT')
+              or has_table_privilege('anon', 'public.native_prayer_delivery_receipts', 'UPDATE')
+              or has_table_privilege('anon', 'public.native_prayer_delivery_receipts', 'DELETE')
+              or has_table_privilege('authenticated', 'public.native_prayer_delivery_receipts', 'SELECT')
+              or has_table_privilege('authenticated', 'public.native_prayer_delivery_receipts', 'INSERT')
+              or has_table_privilege('authenticated', 'public.native_prayer_delivery_receipts', 'UPDATE')
+              or has_table_privilege('authenticated', 'public.native_prayer_delivery_receipts', 'DELETE')
+              or not has_table_privilege('service_role', 'public.native_prayer_delivery_receipts', 'SELECT')
+              or not has_table_privilege('service_role', 'public.native_prayer_delivery_receipts', 'INSERT')
+              or not has_table_privilege('service_role', 'public.native_prayer_delivery_receipts', 'UPDATE')
+              or not has_table_privilege('service_role', 'public.native_prayer_delivery_receipts', 'DELETE') then
+              raise exception 'native delivery receipt privileges are not service-role-only';
+            end if;
             if to_regclass('public.security_rate_limits') is null then
               raise exception 'security_rate_limits missing after clean migration reset';
             end if;
@@ -210,6 +346,96 @@ jobs:
           $$;
           rollback;
           SQL
+
+          docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            < scripts/security/verify-production-schema.sql
+      - name: Verify reconciliation idempotence and data preservation
+        run: |
+          DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
+          test -n "$DB_CONTAINER"
+          {
+            cat <<'SQL'
+          begin;
+          alter table public.native_prayer_installations disable trigger all;
+          insert into public.native_prayer_installations (
+            installation_id, user_id, credential_hash
+          ) values (
+            '00000000-0000-4000-8000-000000000211'::uuid,
+            '00000000-0000-4000-8000-000000000212'::uuid,
+            repeat('a', 64)
+          );
+          alter table public.native_prayer_installations enable trigger all;
+          SQL
+            cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql
+            cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql
+            cat <<'SQL'
+          do $$
+          begin
+            if not exists (
+              select 1
+              from public.native_prayer_installations
+              where installation_id = '00000000-0000-4000-8000-000000000211'::uuid
+                and user_id = '00000000-0000-4000-8000-000000000212'::uuid
+                and credential_hash = repeat('a', 64)
+                and credential_version = 1
+                and receipt_v2 = false
+                and account_generation = 0
+            ) then
+              raise exception 'synthetic native installation row was not preserved';
+            end if;
+          end
+          $$;
+          rollback;
+          SQL
+          } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Verify reconciliation rejects incompatible partial schemas
+        run: |
+          DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
+          test -n "$DB_CONTAINER"
+
+          set +e
+          receipt_output="$({
+            cat <<'SQL'
+          begin;
+          drop table public.native_prayer_delivery_receipts;
+          alter table public.native_prayer_installations drop column receipt_v2;
+          alter table public.native_prayer_installations drop column account_generation;
+          alter table public.native_prayer_installations
+            add column receipt_v2 boolean not null default false;
+          alter table public.native_prayer_installations
+            add constraint synthetic_incompatible_receipt_v2_check check (receipt_v2 = true);
+          SQL
+            cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql
+          } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1)"
+          receipt_status=$?
+          set -e
+          if [ "$receipt_status" -eq 0 ] || ! grep -Fq 'incompatible pre-existing receipt_v2 constraint' <<<"$receipt_output"; then
+            echo 'incompatible receipt_v2 constraint was not rejected'
+            printf '%s\n' "$receipt_output"
+            exit 1
+          fi
+
+          set +e
+          generation_output="$({
+            cat <<'SQL'
+          begin;
+          drop table public.native_prayer_delivery_receipts;
+          alter table public.native_prayer_installations drop column receipt_v2;
+          alter table public.native_prayer_installations drop column account_generation;
+          alter table public.native_prayer_installations
+            add column account_generation integer not null default 0;
+          alter table public.native_prayer_installations
+            add constraint synthetic_incompatible_account_generation_check check (account_generation > 0);
+          SQL
+            cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql
+          } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1)"
+          generation_status=$?
+          set -e
+          if [ "$generation_status" -eq 0 ] || ! grep -Fq 'incompatible pre-existing account_generation constraint' <<<"$generation_output"; then
+            echo 'incompatible account_generation constraint was not rejected'
+            printf '%s\n' "$generation_output"
+            exit 1
+          fi
       - run: npm run build
       - name: Stop local Supabase
         if: always()

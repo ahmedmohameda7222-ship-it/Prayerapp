@@ -1,0 +1,47 @@
+name: Temporary security ledger regeneration
+
+on:
+  push:
+    branches:
+      - security/prelaunch-remediation-2026-09-02
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+      - name: Regenerate ledger from approved matrix
+        id: regenerate
+        shell: bash
+        run: |
+          ledger='docs/security/prelaunch/2026-09-02/open-control-closure-ledger.json'
+          old_sha="$(git rev-parse "HEAD:${ledger}")"
+          node scripts/security/generate-open-control-closure-ledger.mjs
+          if git diff --quiet -- "${ledger}"; then
+            echo 'changed=false' >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          echo 'changed=true' >> "${GITHUB_OUTPUT}"
+          echo "old_sha=${old_sha}" >> "${GITHUB_OUTPUT}"
+      - name: Commit regenerated ledger to remediation branch
+        if: steps.regenerate.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          ledger='docs/security/prelaunch/2026-09-02/open-control-closure-ledger.json'
+          content="$(base64 -w 0 "${ledger}")"
+          gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/${ledger}" \
+            -f message='fix(security): regenerate closure ledger owners' \
+            -f content="${content}" \
+            -f sha='${{ steps.regenerate.outputs.old_sha }}' \
+            -f branch="${GITHUB_REF_NAME}"

@@ -49,7 +49,7 @@ describe("durable admin audit security contract", () => {
   });
 
   it("requires an append-only service-role RPC and no direct application-role writes", () => {
-    const migrations = source("supabase/migrations/20260902215000_admin_audit_hardening.sql");
+    const migrations = source("supabase/migrations/20260902223939_admin_audit_hardening.sql");
 
     expect(migrations).toContain("append_admin_audit_event");
     expect(migrations).toContain("security definer");

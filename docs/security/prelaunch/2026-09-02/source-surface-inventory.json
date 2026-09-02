@@ -1,0 +1,2133 @@
+[
+  {
+    "path": ".github\\workflows\\android-download-smoke.yml",
+    "size": 7624,
+    "categories": [
+      "github_workflow",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": ".github\\workflows\\android-production-release.yml",
+    "size": 12944,
+    "categories": [
+      "github_workflow"
+    ]
+  },
+  {
+    "path": ".github\\workflows\\android-twa.yml",
+    "size": 16570,
+    "categories": [
+      "github_workflow",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": ".github\\workflows\\ci.yml",
+    "size": 9733,
+    "categories": [
+      "github_workflow",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\build.gradle",
+    "size": 3549,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\proguard-rules.pro",
+    "size": 92,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\androidTest\\java\\de\\donaumoschee\\app\\Android17PlatformInstrumentationTest.java",
+    "size": 2783,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\androidTest\\java\\de\\donaumoschee\\app\\bridge\\BridgeHandlerInstrumentationTest.java",
+    "size": 2812,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\androidTest\\java\\de\\donaumoschee\\app\\prayer\\PrayerNotificationsInstrumentationTest.java",
+    "size": 2721,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\androidTest\\java\\de\\donaumoschee\\app\\storage\\NativeStoreInstrumentationTest.java",
+    "size": 5152,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\androidTest\\java\\de\\donaumoschee\\app\\system\\ManifestRepairIntegrationInstrumentationTest.java",
+    "size": 2724,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\AndroidManifest.xml",
+    "size": 7478,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\adhan\\AdhanCatalog.java",
+    "size": 4619,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\adhan\\AdhanPlaybackService.java",
+    "size": 8376,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\adhan\\AudioCache.java",
+    "size": 4318,
+    "categories": [
+      "android_twa",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\Application.java",
+    "size": 470,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\bridge\\BridgeHandler.java",
+    "size": 11069,
+    "categories": [
+      "android_twa",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\bridge\\BridgeProtocol.java",
+    "size": 2424,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\bridge\\NativeTestDeliveryStatus.java",
+    "size": 1345,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\DelegationService.java",
+    "size": 234,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\diagnostics\\DeliveryDiagnostics.java",
+    "size": 1238,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\LauncherActivity.java",
+    "size": 10029,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\localization\\AppLocale.java",
+    "size": 804,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\NativePermissionActivity.java",
+    "size": 2602,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\AlarmEvent.java",
+    "size": 767,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\AlarmPlanner.java",
+    "size": 2502,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\BatteryOptimizationDiagnostics.java",
+    "size": 436,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\DeliveryLedger.java",
+    "size": 5284,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\DeliveryReceiptQueue.java",
+    "size": 4555,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\DeliveryRecord.java",
+    "size": 3970,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\DeliveryState.java",
+    "size": 128,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\NativeConfig.java",
+    "size": 6587,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\NativeReadiness.java",
+    "size": 896,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\NativeStatus.java",
+    "size": 6848,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\NotificationCapabilities.java",
+    "size": 1611,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\Prayer.java",
+    "size": 1331,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\PrayerAlarmReceiver.java",
+    "size": 4387,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\PrayerEventId.java",
+    "size": 1324,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\PrayerNotifications.java",
+    "size": 3403,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\prayer\\PrayerScheduler.java",
+    "size": 11876,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\settings\\NativeSettingsLauncher.java",
+    "size": 2735,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\settings\\NativeSettingsRoutes.java",
+    "size": 3761,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\storage\\NativeCredentialStore.java",
+    "size": 5311,
+    "categories": [
+      "android_twa",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\storage\\NativeStore.java",
+    "size": 22646,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\system\\ScheduleRepairReceiver.java",
+    "size": 1504,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\workers\\AudioCacheWorker.java",
+    "size": 1893,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\workers\\DeliveryReceiptWorker.java",
+    "size": 4770,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\workers\\NativeAuthorityClient.java",
+    "size": 3079,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\workers\\NativeAuthorityWorker.java",
+    "size": 2109,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\workers\\NativeHttp.java",
+    "size": 3196,
+    "categories": [
+      "android_twa",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\workers\\NativeRefreshWorker.java",
+    "size": 5792,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\java\\de\\donaumoschee\\app\\workers\\NativeWork.java",
+    "size": 3604,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\drawable-nodpi\\app_icon.png",
+    "size": 297027,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\drawable\\app_icon_foreground.xml",
+    "size": 350,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\drawable\\ic_notification_icon.xml",
+    "size": 482,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\drawable\\splash.xml",
+    "size": 252,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\mipmap-anydpi-v26\\ic_launcher_round.xml",
+    "size": 270,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\mipmap-anydpi-v26\\ic_launcher.xml",
+    "size": 270,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\mipmap-anydpi\\ic_launcher_round.xml",
+    "size": 177,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\mipmap-anydpi\\ic_launcher.xml",
+    "size": 177,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\values-ar\\strings.xml",
+    "size": 1060,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\values-de\\strings.xml",
+    "size": 937,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\values-tr\\strings.xml",
+    "size": 959,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\values\\integers.xml",
+    "size": 134,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\values\\strings.xml",
+    "size": 1136,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\main\\res\\xml\\filepaths.xml",
+    "size": 167,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\adhan\\AdhanAudioReliabilitySourceContractTest.java",
+    "size": 4151,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\adhan\\AdhanCatalogTest.java",
+    "size": 1037,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\Android17BehaviorSourceContractTest.java",
+    "size": 3775,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\AndroidInstrumentationSuiteSourceContractTest.java",
+    "size": 3018,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\bridge\\BridgeProtocolTest.java",
+    "size": 3059,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\bridge\\NativeTestDeliveryBridgeSourceContractTest.java",
+    "size": 2426,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\bridge\\NativeTestDeliveryStatusTest.java",
+    "size": 2655,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\diagnostics\\DeliveryDiagnosticsTest.java",
+    "size": 1668,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\LauncherBrandingSourceContractTest.java",
+    "size": 3559,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\NativeCredentialStorageSourceContractTest.java",
+    "size": 2069,
+    "categories": [
+      "android_twa",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\AlarmPlannerTest.java",
+    "size": 6006,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\DeliveryLedgerTest.java",
+    "size": 4003,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\DeliveryReceiptQueueTest.java",
+    "size": 3209,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\DeliveryRecordTest.java",
+    "size": 2355,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\DeliverySourceContractTest.java",
+    "size": 9969,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\NativeConfigTest.java",
+    "size": 2751,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\NativeReadinessTest.java",
+    "size": 1288,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\NativeSecretBoundarySourceContractTest.java",
+    "size": 2551,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\NotificationCapabilitiesTest.java",
+    "size": 4875,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\prayer\\SchedulerV2AuthoritySourceContractTest.java",
+    "size": 2107,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\settings\\NativeSettingsRoutesTest.java",
+    "size": 4778,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\TwaLifecycleSourceContractTest.java",
+    "size": 5102,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\app\\src\\test\\java\\de\\donaumoschee\\app\\workers\\DeliveryReceiptUrgencySourceContractTest.java",
+    "size": 2153,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\assetlinks.template.json",
+    "size": 404,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\build.gradle",
+    "size": 76,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\gradle.properties",
+    "size": 167,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\gradle\\wrapper\\gradle-wrapper.jar",
+    "size": 43705,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\gradle\\wrapper\\gradle-wrapper.properties",
+    "size": 347,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\gradlew",
+    "size": 9003,
+    "categories": [
+      "android_twa",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "android-twa\\gradlew.bat",
+    "size": 2966,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\README.md",
+    "size": 10259,
+    "categories": [
+      "android_twa",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "android-twa\\settings.gradle",
+    "size": 353,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\signing.properties.example",
+    "size": 208,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "android-twa\\twa-manifest.json",
+    "size": 576,
+    "categories": [
+      "android_twa"
+    ]
+  },
+  {
+    "path": "app\\account\\forgot-password\\page.tsx",
+    "size": 257,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\account\\page.tsx",
+    "size": 6064,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\account\\register\\page.tsx",
+    "size": 253,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\account\\reset-password\\page.tsx",
+    "size": 255,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\account\\sign-in\\page.tsx",
+    "size": 250,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\admin\\announcements\\actions.ts",
+    "size": 6971,
+    "categories": [
+      "admin_server_action",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\announcements\\page.tsx",
+    "size": 9212,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\donations\\actions.ts",
+    "size": 10797,
+    "categories": [
+      "admin_server_action",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\donations\\page.tsx",
+    "size": 14524,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\events\\actions.ts",
+    "size": 5482,
+    "categories": [
+      "admin_server_action",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\events\\page.tsx",
+    "size": 9612,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\jumuah\\actions.ts",
+    "size": 7375,
+    "categories": [
+      "admin_server_action",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\jumuah\\khutbah-actions.ts",
+    "size": 4938,
+    "categories": [
+      "admin_server_action",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\jumuah\\page.tsx",
+    "size": 12456,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\login\\page.tsx",
+    "size": 4762,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\page.tsx",
+    "size": 2917,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\admin\\prayer-times\\actions.ts",
+    "size": 8838,
+    "categories": [
+      "admin_server_action",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\prayer-times\\page.tsx",
+    "size": 14876,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\ramadan\\actions.ts",
+    "size": 4092,
+    "categories": [
+      "admin_server_action",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\ramadan\\page.tsx",
+    "size": 8258,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\settings\\actions.ts",
+    "size": 2455,
+    "categories": [
+      "admin_server_action",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\admin\\settings\\page.tsx",
+    "size": 4896,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\account\\delete\\route.ts",
+    "size": 1733,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\admin\\launch-readiness\\route.ts",
+    "size": 2756,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\android\\adhan-catalog\\route.ts",
+    "size": 433,
+    "categories": [
+      "nextjs_api_route"
+    ]
+  },
+  {
+    "path": "app\\api\\android\\native-authority\\enroll\\route.ts",
+    "size": 6911,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\android\\native-authority\\heartbeat\\route.ts",
+    "size": 7344,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\android\\native-authority\\receipt\\route.ts",
+    "size": 4156,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\android\\prayer-schedule\\route.ts",
+    "size": 1313,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\android\\release\\route.ts",
+    "size": 1257,
+    "categories": [
+      "nextjs_api_route"
+    ]
+  },
+  {
+    "path": "app\\api\\cron\\prayer-reminders\\route.ts",
+    "size": 13375,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\geocode\\route.test.ts",
+    "size": 3137,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\geocode\\route.ts",
+    "size": 3256,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\health\\route.ts",
+    "size": 577,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\push\\subscriptions\\route.ts",
+    "size": 5656,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\push\\test\\route.ts",
+    "size": 5393,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\api\\reverse-geocode\\route.ts",
+    "size": 3282,
+    "categories": [
+      "nextjs_api_route",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\azkar\\page.tsx",
+    "size": 466,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\donations\\page.tsx",
+    "size": 2719,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\download\\android\\route.ts",
+    "size": 421,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\events\\page.tsx",
+    "size": 1039,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\friday\\khutbah\\[date]\\page.tsx",
+    "size": 848,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\friday\\page.tsx",
+    "size": 2097,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\imprint\\page.tsx",
+    "size": 1148,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\layout.tsx",
+    "size": 4556,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\more\\page.tsx",
+    "size": 1745,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\mosque\\page.tsx",
+    "size": 4453,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\news\\page.tsx",
+    "size": 1002,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\offline\\page.tsx",
+    "size": 464,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\page.tsx",
+    "size": 3124,
+    "categories": [
+      "nextjs_page",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "app\\privacy\\page.tsx",
+    "size": 1244,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\qibla\\page.tsx",
+    "size": 358,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\ramadan\\page.tsx",
+    "size": 5726,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\settings\\page.tsx",
+    "size": 715,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "app\\times\\page.tsx",
+    "size": 389,
+    "categories": [
+      "nextjs_page"
+    ]
+  },
+  {
+    "path": "components\\account\\AuthForm.tsx",
+    "size": 5926,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\admin\\AdminInputStability.test.tsx",
+    "size": 4328,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\admin\\FridayKhutbahEditor.test.tsx",
+    "size": 2831,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\azkar\\AzkarRoutine.tsx",
+    "size": 11509,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\friday\\JumuahCard.tsx",
+    "size": 2031,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\home\\HomeJumuahContract.test.tsx",
+    "size": 3038,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\layout\\AdminShell.tsx",
+    "size": 1783,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\layout\\AppHeaderBrandContract.test.tsx",
+    "size": 2792,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\layout\\ArabicMosqueWordmarkSprite.tsx",
+    "size": 772,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\layout\\BottomNav.tsx",
+    "size": 11756,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\layout\\NavigationContract.test.tsx",
+    "size": 2388,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\notifications\\NotificationOptInPrompt.test.tsx",
+    "size": 4160,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\notifications\\NotificationOptInPrompt.tsx",
+    "size": 5593,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\prayer\\HomePrayerTimesCard.test.tsx",
+    "size": 3851,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\prayer\\HomePrayerTimesCard.tsx",
+    "size": 27559,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\providers\\AdhanAudioProvider.tsx",
+    "size": 12447,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\providers\\AndroidUpdateProvider.tsx",
+    "size": 6625,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\providers\\AppPreferencesProvider.tsx",
+    "size": 10548,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\providers\\AuthProvider.tsx",
+    "size": 1750,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\providers\\NativeAndroidProvider.tsx",
+    "size": 19441,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\providers\\PlatformChromeBootstrap.tsx",
+    "size": 1902,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\providers\\ServiceWorkerRegistrar.test.tsx",
+    "size": 1120,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\providers\\ServiceWorkerRegistrar.tsx",
+    "size": 3045,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "components\\settings\\SettingsControls.tsx",
+    "size": 9381,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-ci-coverage-contract.test.ts",
+    "size": 3141,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-native-authority-generation.test.ts",
+    "size": 4677,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-native-authority-route.test.ts",
+    "size": 9252,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-native-contract.test.ts",
+    "size": 5648,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-native-owner-sync.test.ts",
+    "size": 1975,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-native-receipt-v2-route.test.ts",
+    "size": 5028,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-native-reset-race.test.ts",
+    "size": 1078,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-production-contract.test.ts",
+    "size": 10124,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-server-delivery-v2-behavior.test.ts",
+    "size": 4744,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-server-delivery-v2-contract.test.ts",
+    "size": 4106,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\android-twa-contract.test.ts",
+    "size": 8165,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\app-brand-name.test.ts",
+    "size": 3068,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\ci-supply-chain-security.test.ts",
+    "size": 4164,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\database-advisor-hardening.test.ts",
+    "size": 1356,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\durable-rate-limit-security.test.ts",
+    "size": 2389,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\launch-data-readiness.test.ts",
+    "size": 5779,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\logic-hardening.test.ts",
+    "size": 6594,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\native-prayer-authority.test.ts",
+    "size": 2534,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\phase1-contract.test.ts",
+    "size": 12055,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\prayer-notification-delivery-audit.test.ts",
+    "size": 3008,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\prayer-reminder-timing-contract.test.ts",
+    "size": 1564,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\prayer-system-self-test-contract.test.ts",
+    "size": 2426,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\prayer-times-preview-range.test.ts",
+    "size": 705,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\production-scheduler-migration.test.ts",
+    "size": 1490,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\production-security-regression.test.ts",
+    "size": 1594,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\public-launch-technical-contract.test.ts",
+    "size": 4230,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\push-account-fanout-security.test.ts",
+    "size": 2318,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\push-account-registration-race-security.test.ts",
+    "size": 1863,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\web-push-concurrency-security.test.ts",
+    "size": 744,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\__tests__\\web-push-windows-endpoint-security.test.ts",
+    "size": 847,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\android-release-server.ts",
+    "size": 1835,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\android-release.ts",
+    "size": 6247,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\android\\native-authority.ts",
+    "size": 3884,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\android\\native-credentials.ts",
+    "size": 1478,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\android\\native-status.ts",
+    "size": 1788,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\android\\native-web.ts",
+    "size": 3607,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\auth\\admin-actions.ts",
+    "size": 767,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\auth\\admin-server.ts",
+    "size": 1017,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\auth\\return-url.ts",
+    "size": 451,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\auth\\use-admin-auth.ts",
+    "size": 4112,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\csv\\prayer-import.ts",
+    "size": 1448,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\data\\announcements.ts",
+    "size": 5422,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\data\\donations.ts",
+    "size": 10875,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\data\\events.ts",
+    "size": 5025,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\data\\friday-khutbahs.contract.test.ts",
+    "size": 4437,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\data\\friday-khutbahs.ts",
+    "size": 2634,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\data\\jumuah.ts",
+    "size": 4812,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\data\\mosque-settings.ts",
+    "size": 3722,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\data\\prayer-times.ts",
+    "size": 8141,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\data\\ramadan.ts",
+    "size": 3848,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\hooks\\use-saved-azkar.ts",
+    "size": 3444,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\i18n\\localized-content.ts",
+    "size": 2173,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\launch-data-readiness.ts",
+    "size": 6212,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\prayer-reminder-delivery.ts",
+    "size": 2604,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\public-links.ts",
+    "size": 1559,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\push\\types.ts",
+    "size": 522,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\push\\web-push.ts",
+    "size": 8300,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\security\\push-account-limit.ts",
+    "size": 562,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\security\\rate-limit.ts",
+    "size": 2238,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\security\\web-push-endpoint.ts",
+    "size": 1407,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\supabase\\client.ts",
+    "size": 733,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\supabase\\server.ts",
+    "size": 511,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "lib\\use-qibla-controller.ts",
+    "size": 18396,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "public\\.well-known\\assetlinks.json",
+    "size": 404,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\app-header-arch-background-desktop-v2.png",
+    "size": 2655236,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\app-header-arch-background-mobile-v2.png",
+    "size": 2772719,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\app-header-arch-background.png",
+    "size": 2703582,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\app-header-mosque-logo.png",
+    "size": 2240251,
+    "categories": [
+      "public_asset_or_worker",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "public\\assets\\app-icon-192.png",
+    "size": 55194,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\app-icon-512.png",
+    "size": 297027,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\app-icon-main.png",
+    "size": 6082,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\app-main-background-desktop.png",
+    "size": 1724429,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\app-main-background.png",
+    "size": 1401575,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\hero-donations-charity-desktop.png",
+    "size": 2367942,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\hero-donations-charity.png",
+    "size": 2241486,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\hero-friday-mosque-night-desktop.png",
+    "size": 2388936,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\hero-friday-mosque-night.png",
+    "size": 2102417,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\hero-home-mosque-night-desktop.png",
+    "size": 2276201,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\hero-home-mosque-night.png",
+    "size": 2034399,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\assets\\home-jumuah-background.webp",
+    "size": 13366,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\branding\\masjid-al-danube-ar.svg",
+    "size": 15701,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\file.svg",
+    "size": 391,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\fonts\\donau-thuluth.woff2",
+    "size": 14824,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\fonts\\OFL-Layla-Thuluth.txt",
+    "size": 4828,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\globe.svg",
+    "size": 1035,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\manifest.webmanifest",
+    "size": 735,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\next.svg",
+    "size": 1375,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\sw.js",
+    "size": 10103,
+    "categories": [
+      "public_asset_or_worker",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "public\\templates\\prayer-times-template.csv",
+    "size": 206,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\vercel.svg",
+    "size": 128,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "public\\window.svg",
+    "size": 385,
+    "categories": [
+      "public_asset_or_worker"
+    ]
+  },
+  {
+    "path": "supabase\\.gitignore",
+    "size": 80,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\config.toml",
+    "size": 15973,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260625000000_existing_history_guard.sql",
+    "size": 881,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260626000000_initial_schema.sql",
+    "size": 15058,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260626225111_production_readiness.sql",
+    "size": 4512,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260627142500_remove_receipt_feature.sql",
+    "size": 473,
+    "categories": [
+      "supabase_migration"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260627143000_insert_preview_data.sql",
+    "size": 12075,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260627230210_create_prayer_display_settings.sql",
+    "size": 1253,
+    "categories": [
+      "supabase_migration"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260627232134_phase_3_push_notifications.sql",
+    "size": 2008,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260812000000_phase_1_account_personalization.sql",
+    "size": 3084,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260812010000_phase_1_post_merge_correction.sql",
+    "size": 548,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260815225756_logic_hardening.sql",
+    "size": 4433,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260816013933_prayer_reminder_lead_minutes.sql",
+    "size": 477,
+    "categories": [
+      "supabase_migration"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260816023654_per_prayer_adhan_sound.sql",
+    "size": 630,
+    "categories": [
+      "supabase_migration"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260816024402_default_fajr_adhan_sound.sql",
+    "size": 125,
+    "categories": [
+      "supabase_migration"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260816030343_expand_per_prayer_adhan_catalog.sql",
+    "size": 980,
+    "categories": [
+      "supabase_migration"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260821220800_android_native_authority.sql",
+    "size": 1844,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260822200527_android_native_authority_generation.sql",
+    "size": 349,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260822200541_public_launch_data_and_scheduler.sql",
+    "size": 2039,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260822201651_android_native_authority_revocation.sql",
+    "size": 340,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260822201832_database_advisor_hardening.sql",
+    "size": 2364,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260823104600_native_delivery_receipts.sql",
+    "size": 1790,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260826160500_friday_v2_khutbahs.sql",
+    "size": 1483,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260831080500_security_rate_limits.sql",
+    "size": 3698,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\migrations\\20260901223000_atomic_push_account_registration.sql",
+    "size": 3412,
+    "categories": [
+      "supabase_migration",
+      "security_sensitive_reference"
+    ]
+  },
+  {
+    "path": "supabase\\seed.sql",
+    "size": 246,
+    "categories": [
+      "security_sensitive_reference"
+    ]
+  }
+]

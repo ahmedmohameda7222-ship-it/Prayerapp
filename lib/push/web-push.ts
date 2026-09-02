@@ -2,12 +2,16 @@ import "server-only";
 
 import webpush from "web-push";
 import type { Locale } from "@/lib/i18n/types";
+import { limitAccountAssociatedSubscriptions } from "@/lib/security/push-account-limit";
+import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
 import type {
   LocalizedText,
   PushNotificationType,
   PushSubscriptionRecord,
 } from "@/lib/push/types";
+
+const PUSH_DELIVERY_CONCURRENCY = 8;
 
 const notificationTitles: Record<
   Exclude<PushNotificationType, "prayer_reminder">,
@@ -154,58 +158,72 @@ export async function deliverPushNotifications({
     if (error) throw error;
     targets = (data || []) as PushSubscriptionRecord[];
   }
+  targets = limitAccountAssociatedSubscriptions(targets);
 
-  const results = await Promise.all(
-    targets.map(async (subscription) => {
-      const delivery = await reserveDelivery(
-        client,
-        eventKey,
-        subscription,
-        notificationType,
-        sourceId,
-      );
-      if (!delivery) return "skipped" as const;
-
-      try {
-        const isPrayerReminder = notificationType === "prayer_reminder";
-        await webpush.sendNotification(
-          {
-            endpoint: subscription.endpoint,
-            keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-          },
-          JSON.stringify(payloadForLocale(subscription.locale)),
-          {
-            TTL: isPrayerReminder ? 10 * 60 : 60 * 60 * 24,
-            urgency: notificationType === "urgent_announcement" || isPrayerReminder ? "high" : "normal",
-          }
-        );
-
-        await client
-          .from("push_notification_deliveries")
-          .update({ status: "sent", sent_at: new Date().toISOString(), error_code: null })
-          .eq("id", delivery.id);
-        return "sent" as const;
-      } catch (error) {
-        const statusCode =
-          typeof error === "object" && error && "statusCode" in error
-            ? String(error.statusCode)
-            : "unknown";
-
-        await client
-          .from("push_notification_deliveries")
-          .update({ status: "failed", error_code: statusCode })
-          .eq("id", delivery.id);
-
-        if (statusCode === "404" || statusCode === "410") {
+  const results: Array<"sent" | "skipped" | "failed"> = [];
+  for (let offset = 0; offset < targets.length; offset += PUSH_DELIVERY_CONCURRENCY) {
+    const batch = targets.slice(offset, offset + PUSH_DELIVERY_CONCURRENCY);
+    const batchResults = await Promise.all(
+      batch.map(async (subscription) => {
+        if (!isTrustedWebPushEndpoint(subscription.endpoint)) {
           await client
             .from("push_subscriptions")
             .update({ enabled: false, updated_at: new Date().toISOString() })
             .eq("id", subscription.id);
+          return "failed" as const;
         }
-        return "failed" as const;
-      }
-    })
-  );
+
+        const delivery = await reserveDelivery(
+          client,
+          eventKey,
+          subscription,
+          notificationType,
+          sourceId,
+        );
+        if (!delivery) return "skipped" as const;
+
+        try {
+          const isPrayerReminder = notificationType === "prayer_reminder";
+          await webpush.sendNotification(
+            {
+              endpoint: subscription.endpoint,
+              keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+            },
+            JSON.stringify(payloadForLocale(subscription.locale)),
+            {
+              TTL: isPrayerReminder ? 10 * 60 : 60 * 60 * 24,
+              urgency: notificationType === "urgent_announcement" || isPrayerReminder ? "high" : "normal",
+            }
+          );
+
+          await client
+            .from("push_notification_deliveries")
+            .update({ status: "sent", sent_at: new Date().toISOString(), error_code: null })
+            .eq("id", delivery.id);
+          return "sent" as const;
+        } catch (error) {
+          const statusCode =
+            typeof error === "object" && error && "statusCode" in error
+              ? String(error.statusCode)
+              : "unknown";
+
+          await client
+            .from("push_notification_deliveries")
+            .update({ status: "failed", error_code: statusCode })
+            .eq("id", delivery.id);
+
+          if (statusCode === "404" || statusCode === "410") {
+            await client
+              .from("push_subscriptions")
+              .update({ enabled: false, updated_at: new Date().toISOString() })
+              .eq("id", subscription.id);
+          }
+          return "failed" as const;
+        }
+      })
+    );
+    results.push(...batchResults);
+  }
 
   return {
     configured: true,

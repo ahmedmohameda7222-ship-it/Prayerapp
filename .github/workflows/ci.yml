@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -13,19 +16,21 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
           cache: npm
-      - uses: supabase/setup-cli@v2
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2
         with:
-          version: latest
+          version: 2.116.0
           github-token: ${{ github.token }}
       - run: git diff --check origin/main...HEAD
       - run: npm ci
+      - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm test
       - name: Verify clean Supabase migration bootstrap
@@ -45,6 +50,9 @@ jobs:
             end if;
             if to_regclass('public.native_prayer_installations') is null then
               raise exception 'native_prayer_installations missing after clean migration reset';
+            end if;
+            if to_regclass('public.security_rate_limits') is null then
+              raise exception 'security_rate_limits missing after clean migration reset';
             end if;
             if not has_table_privilege('service_role', 'public.native_prayer_installations', 'SELECT')
               or has_table_privilege('anon', 'public.native_prayer_installations', 'SELECT')
@@ -77,8 +85,118 @@ jobs:
               or not has_table_privilege('authenticated', 'public.user_prayer_reminders', 'DELETE') then
               raise exception 'authenticated lacks prayer reminder privileges';
             end if;
+            if has_table_privilege('anon', 'public.security_rate_limits', 'SELECT')
+              or has_table_privilege('anon', 'public.security_rate_limits', 'INSERT')
+              or has_table_privilege('anon', 'public.security_rate_limits', 'UPDATE')
+              or has_table_privilege('anon', 'public.security_rate_limits', 'DELETE')
+              or has_table_privilege('authenticated', 'public.security_rate_limits', 'SELECT')
+              or has_table_privilege('authenticated', 'public.security_rate_limits', 'INSERT')
+              or has_table_privilege('authenticated', 'public.security_rate_limits', 'UPDATE')
+              or has_table_privilege('authenticated', 'public.security_rate_limits', 'DELETE')
+              or has_table_privilege('service_role', 'public.security_rate_limits', 'SELECT')
+              or has_table_privilege('service_role', 'public.security_rate_limits', 'INSERT')
+              or has_table_privilege('service_role', 'public.security_rate_limits', 'UPDATE')
+              or has_table_privilege('service_role', 'public.security_rate_limits', 'DELETE') then
+              raise exception 'security rate-limit state is directly accessible';
+            end if;
+            if not has_function_privilege(
+              'service_role',
+              'public.consume_security_rate_limit(text,text,integer,integer)',
+              'EXECUTE'
+            ) then
+              raise exception 'service_role cannot execute security rate limiter';
+            end if;
+            if has_function_privilege(
+              'anon',
+              'public.consume_security_rate_limit(text,text,integer,integer)',
+              'EXECUTE'
+            ) or has_function_privilege(
+              'authenticated',
+              'public.consume_security_rate_limit(text,text,integer,integer)',
+              'EXECUTE'
+            ) then
+              raise exception 'public roles can execute security rate limiter';
+            end if;
+            if to_regprocedure(
+              'public.register_push_subscription(text,text,text,uuid,uuid,text,text,text,integer)'
+            ) is null then
+              raise exception 'atomic push registration RPC missing';
+            end if;
+            if not has_function_privilege(
+              'service_role',
+              'public.register_push_subscription(text,text,text,uuid,uuid,text,text,text,integer)',
+              'EXECUTE'
+            ) then
+              raise exception 'service_role cannot execute atomic push registration RPC';
+            end if;
+            if has_function_privilege(
+              'anon',
+              'public.register_push_subscription(text,text,text,uuid,uuid,text,text,text,integer)',
+              'EXECUTE'
+            ) or has_function_privilege(
+              'authenticated',
+              'public.register_push_subscription(text,text,text,uuid,uuid,text,text,text,integer)',
+              'EXECUTE'
+            ) then
+              raise exception 'public roles can execute atomic push registration RPC';
+            end if;
           end
           $$;
+
+          begin;
+          alter table public.push_subscriptions disable trigger all;
+          insert into public.push_subscriptions (
+            endpoint, p256dh, auth, browser_id, user_id, enabled, locale
+          )
+          select
+            'https://fcm.googleapis.com/fcm/send/atomic-cap-' || value,
+            'test-p256dh',
+            'test-auth',
+            case when value = 1
+              then '00000000-0000-4000-8000-000000000101'::uuid
+              else gen_random_uuid()
+            end,
+            '00000000-0000-4000-8000-000000000001'::uuid,
+            true,
+            'en'
+          from generate_series(1, 10) as value;
+
+          do $$
+          declare
+            v_result text;
+          begin
+            select public.register_push_subscription(
+              'https://fcm.googleapis.com/fcm/send/atomic-cap-new',
+              'test-p256dh',
+              'test-auth',
+              '00000000-0000-4000-8000-000000000111'::uuid,
+              '00000000-0000-4000-8000-000000000001'::uuid,
+              'en',
+              null,
+              null,
+              10
+            ) into v_result;
+            if v_result <> 'account_limit_reached' then
+              raise exception 'atomic push registration allowed an 11th account subscription: %', v_result;
+            end if;
+
+            select public.register_push_subscription(
+              'https://fcm.googleapis.com/fcm/send/atomic-cap-1',
+              'refreshed-p256dh',
+              'refreshed-auth',
+              '00000000-0000-4000-8000-000000000101'::uuid,
+              '00000000-0000-4000-8000-000000000001'::uuid,
+              'de',
+              null,
+              null,
+              10
+            ) into v_result;
+            if v_result <> 'saved' then
+              raise exception 'atomic push registration blocked same-device refresh at cap: %', v_result;
+            end if;
+          end
+          $$;
+          rollback;
           SQL
       - run: npm run build
       - name: Stop local Supabase

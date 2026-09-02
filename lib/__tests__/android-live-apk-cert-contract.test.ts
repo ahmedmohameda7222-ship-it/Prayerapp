@@ -12,8 +12,8 @@ describe("Android live APK certificate contract", () => {
     const source = workflow();
 
     expect(source).toContain("EXPECTED_CERT_SHA256: E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92");
-    expect(source).toContain("actions/setup-java@v4");
-    expect(source).toContain("android-actions/setup-android@v3");
+    expect(source).toContain("actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4");
+    expect(source).toContain("android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3");
     expect(source).toContain('sdkmanager "platforms;android-37.0" "build-tools;36.0.0"');
     expect(source).toContain('test "$target_sdk" = "37"');
     expect(source).toContain('test "$min_sdk" = "23"');

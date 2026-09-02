@@ -40,6 +40,7 @@ self.addEventListener("activate", (event) => {
             .map((key) => caches.delete(key))
         )
       ),
+      purgePrivatePageEntries(PAGE_CACHE),
       self.clients.claim(),
     ])
   );
@@ -50,6 +51,7 @@ function isPrivateOrDataRequest(request) {
   return (
     request.method !== "GET" ||
     url.pathname.startsWith("/admin") ||
+    url.pathname.startsWith("/account") ||
     url.pathname.startsWith("/api") ||
     url.hostname.includes("supabase") ||
     request.headers.has("authorization")
@@ -77,7 +79,9 @@ function isNextPageRequest(request) {
 }
 
 function isCacheable(response) {
-  return response && response.ok && (response.type === "basic" || response.type === "cors");
+  if (!response || !response.ok || (response.type !== "basic" && response.type !== "cors")) return false;
+  const cacheControl = (response.headers.get("cache-control") || "").toLowerCase();
+  return !cacheControl.includes("no-store") && !cacheControl.includes("private");
 }
 
 async function trimCache(cacheName, maxEntries) {
@@ -85,6 +89,22 @@ async function trimCache(cacheName, maxEntries) {
   const keys = await cache.keys();
   if (keys.length <= maxEntries) return;
   await Promise.all(keys.slice(0, keys.length - maxEntries).map((key) => cache.delete(key)));
+}
+
+async function purgePrivatePageEntries(cacheName) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  await Promise.all(
+    keys
+      .filter((request) => {
+        const url = new URL(request.url);
+        return url.origin === self.location.origin && (
+          url.pathname.startsWith("/account") ||
+          url.pathname.startsWith("/admin")
+        );
+      })
+      .map((request) => cache.delete(request))
+  );
 }
 
 async function storeResponse(cacheName, request, response, maxEntries) {

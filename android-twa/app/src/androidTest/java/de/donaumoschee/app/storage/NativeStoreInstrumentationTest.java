@@ -1,6 +1,7 @@
 package de.donaumoschee.app.storage;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -93,6 +95,20 @@ public final class NativeStoreInstrumentationTest {
         assertNotNull(pending);
         assertEquals(authorityId, pending.authorityId);
         assertEquals(nextGeneration, pending.targetGeneration);
+    }
+
+    @Test
+    public void plaintextCredentialMigratesWithoutRotationAndLegacyValueIsRemoved() {
+        String legacyCredential = "legacy-native-authority-credential";
+        SharedPreferences preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        assertTrue(preferences.edit().putString("credential", legacyCredential).commit());
+
+        NativeStore store = new NativeStore(context);
+        assertEquals(legacyCredential, store.credential());
+        assertFalse(preferences.contains("credential"));
+        assertTrue(preferences.contains("credential-encrypted-v1"));
+        assertTrue(preferences.contains("credential-encrypted-v1-iv"));
+        assertEquals(legacyCredential, new NativeStore(context).credential());
     }
 
     private void clearNativeState() {

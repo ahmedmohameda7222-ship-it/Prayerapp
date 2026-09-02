@@ -35,14 +35,14 @@ describe("Android CI coverage contract", () => {
       source.indexOf("  signed_release_candidate:"),
     );
 
-    expect(source).toContain("uses: android-actions/setup-android@v4");
+    expect(source).toContain("uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4");
     expect(source).toContain("api_level: 23");
     expect(source).toContain("api_level: 37");
     expect(source).toContain('sdk_api_level: "23"');
     expect(source).toContain('sdk_api_level: "37.0"');
     expect(source).toContain("target: google_apis_ps16k");
-    expect(source).toContain("reactivecircus/android-emulator-runner@v2");
-    expect(source).not.toContain("reactivecircus/android-emulator-runner@660ac26f5bd4cb6c1d98b2143e66ded57bee724f");
+    expect(source).toContain("reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2");
+    expect(source).not.toContain("reactivecircus/android-emulator-runner@v2");
     expect(instrumentation).toContain("- name: Update SDK command-line tools for Android 17");
     expect(instrumentation).toContain("if: matrix.api_level == 37");
     expect(instrumentation).toContain('"$SDK/cmdline-tools/latest/bin/sdkmanager" --install "cmdline-tools;latest" > /dev/null');

@@ -1,24 +1,20 @@
 import { NextResponse } from "next/server";
 import type { Locale } from "@/lib/i18n/types";
+import { MAX_ACCOUNT_PUSH_SUBSCRIPTIONS } from "@/lib/security/push-account-limit";
+import { consumeSecurityRateLimit } from "@/lib/security/rate-limit";
+import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 const locales = new Set<Locale>(["ar", "en", "de", "tr"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const PUSH_SUBSCRIPTION_LIMIT = 30;
+const PUSH_SUBSCRIPTION_WINDOW_SECONDS = 10 * 60;
 
 function isSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   return !origin || origin === new URL(request.url).origin;
-}
-
-function validEndpoint(value: unknown): value is string {
-  if (typeof value !== "string" || value.length > 4096) return false;
-  try {
-    return new URL(value).protocol === "https:";
-  } catch {
-    return false;
-  }
 }
 
 function bearerToken(request: Request) {
@@ -26,8 +22,33 @@ function bearerToken(request: Request) {
   return authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
 }
 
+async function subscriptionRateLimitResponse(request: Request) {
+  try {
+    const quota = await consumeSecurityRateLimit(request, {
+      scope: "push-subscription",
+      limit: PUSH_SUBSCRIPTION_LIMIT,
+      windowSeconds: PUSH_SUBSCRIPTION_WINDOW_SECONDS,
+    });
+    if (quota.allowed) return null;
+    return NextResponse.json(
+      { error: "Too many push subscription requests" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(Math.max(1, quota.retryAfterSeconds)) },
+      },
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Push subscription rate limit unavailable" },
+      { status: 503, headers: { "Retry-After": "60" } },
+    );
+  }
+}
+
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+  const rateLimited = await subscriptionRateLimitResponse(request);
+  if (rateLimited) return rateLimited;
 
   const body = await request.json().catch(() => null);
   const endpoint = body?.subscription?.endpoint;
@@ -37,7 +58,7 @@ export async function POST(request: Request) {
   const locale = body?.locale;
 
   if (
-    !validEndpoint(endpoint) ||
+    !isTrustedWebPushEndpoint(endpoint) ||
     typeof p256dh !== "string" || p256dh.length > 1024 ||
     typeof auth !== "string" || auth.length > 1024 ||
     typeof browserId !== "string" || !uuidPattern.test(browserId) ||
@@ -57,37 +78,34 @@ export async function POST(request: Request) {
     verifiedUserId = data.user.id;
   }
 
-  const { data: existingData, error: existingError } = await client
-    .from("push_subscriptions")
-    .select("browser_id")
-    .eq("endpoint", endpoint)
-    .maybeSingle();
-  const existing = existingData as { browser_id: string } | null;
-  if (existingError) return NextResponse.json({ error: "Could not validate subscription" }, { status: 500 });
-  if (existing && existing.browser_id !== browserId) {
-    return NextResponse.json({ error: "Subscription ownership mismatch" }, { status: 403 });
-  }
-
-  const now = new Date().toISOString();
-  const { error } = await client.from("push_subscriptions").upsert(
+  const { data: registrationData, error: registrationError } = await client.rpc(
+    "register_push_subscription",
     {
-      endpoint,
-      p256dh,
-      auth,
-      browser_id: browserId,
-      user_id: verifiedUserId,
-      enabled: true,
-      locale,
-      user_agent: request.headers.get("user-agent")?.slice(0, 1000) || null,
-      platform: typeof body?.platform === "string" ? body.platform.slice(0, 120) : null,
-      updated_at: now,
-      last_seen_at: now,
-    } as never,
-    { onConflict: "endpoint" }
+      p_endpoint: endpoint,
+      p_p256dh: p256dh,
+      p_auth: auth,
+      p_browser_id: browserId,
+      p_user_id: verifiedUserId,
+      p_locale: locale,
+      p_user_agent: request.headers.get("user-agent")?.slice(0, 1000) || null,
+      p_platform: typeof body?.platform === "string" ? body.platform.slice(0, 120) : null,
+      p_max_account_subscriptions: MAX_ACCOUNT_PUSH_SUBSCRIPTIONS,
+    },
   );
 
-  if (error) {
-    console.error("[push subscription] save failed", error.message);
+  if (registrationError) {
+    console.error("[push subscription] atomic save failed", registrationError.message);
+    return NextResponse.json({ error: "Could not save subscription" }, { status: 500 });
+  }
+
+  if (registrationData === "ownership_mismatch") {
+    return NextResponse.json({ error: "Subscription ownership mismatch" }, { status: 403 });
+  }
+  if (registrationData === "account_limit_reached") {
+    return NextResponse.json({ error: "Account push subscription limit reached" }, { status: 409 });
+  }
+  if (registrationData !== "saved") {
+    console.error("[push subscription] atomic save returned an invalid result");
     return NextResponse.json({ error: "Could not save subscription" }, { status: 500 });
   }
 
@@ -96,9 +114,11 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+  const rateLimited = await subscriptionRateLimitResponse(request);
+  if (rateLimited) return rateLimited;
 
   const body = await request.json().catch(() => null);
-  if (!validEndpoint(body?.endpoint) || typeof body?.browserId !== "string" || !uuidPattern.test(body.browserId)) {
+  if (!isTrustedWebPushEndpoint(body?.endpoint) || typeof body?.browserId !== "string" || !uuidPattern.test(body.browserId)) {
     return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
   }
 

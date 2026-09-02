@@ -1,5 +1,17 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchBoundedJson, readBoundedJson } from "@/lib/security/http-boundaries";
+
+const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8").replace(/\r\n/g, "\n");
+
+const BOUNDED_JSON_ROUTES = [
+  "app/api/push/subscriptions/route.ts",
+  "app/api/push/test/route.ts",
+  "app/api/android/native-authority/enroll/route.ts",
+  "app/api/android/native-authority/heartbeat/route.ts",
+  "app/api/android/native-authority/receipt/route.ts",
+] as const;
 
 describe("HTTP security boundaries", () => {
   afterEach(() => {
@@ -70,5 +82,14 @@ describe("HTTP security boundaries", () => {
 
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ cache: "no-store" });
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("requires bounded JSON parsing on credential-bearing mutation routes", () => {
+    for (const path of BOUNDED_JSON_ROUTES) {
+      const file = source(path);
+      expect(file, `${path} must import the shared bounded JSON parser`).toContain("@/lib/security/http-boundaries");
+      expect(file, `${path} must use readBoundedJson`).toContain("readBoundedJson");
+      expect(file, `${path} must not call request.json() directly`).not.toMatch(/request\.json\s*\(/u);
+    }
   });
 });

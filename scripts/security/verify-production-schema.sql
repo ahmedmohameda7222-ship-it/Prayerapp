@@ -570,4 +570,190 @@ begin
 end
 $$;
 
+-- Durable admin-audit semantic equivalence.
+do $$
+declare
+  v_audit_rel regclass := to_regclass('public.audit_logs');
+  v_audit_fn regprocedure := to_regprocedure(
+    'public.append_admin_audit_event(uuid,text,text,text,text,text,jsonb,text)'
+  );
+  v_audit_src text;
+begin
+  if v_audit_rel is null then
+    raise exception 'audit_logs is missing';
+  end if;
+
+  if (
+    select count(*) from information_schema.columns
+    where table_schema = 'public' and table_name = 'audit_logs'
+  ) <> 10 or exists (
+    select required.column_name
+    from (
+      values
+        ('id','uuid','NO','gen_random_uuid()'),
+        ('actor','text','NO',null),
+        ('action','text','NO',null),
+        ('entity_type','text','YES',null),
+        ('entity_id','text','YES',null),
+        ('created_at','timestamp with time zone','NO','now()'),
+        ('actor_user_id','uuid','NO',null),
+        ('outcome','text','NO',null),
+        ('metadata','jsonb','NO','''{}''::jsonb'),
+        ('request_id','text','YES',null)
+    ) as required(column_name, data_type, is_nullable, column_default)
+    left join information_schema.columns c
+      on c.table_schema = 'public'
+     and c.table_name = 'audit_logs'
+     and c.column_name = required.column_name
+     and c.data_type = required.data_type
+     and c.is_nullable = required.is_nullable
+     and c.column_default is not distinct from required.column_default
+    where c.column_name is null
+  ) then
+    raise exception 'audit_logs column contract is incomplete';
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint c
+    where c.conrelid = v_audit_rel
+      and c.contype = 'p'
+      and pg_get_constraintdef(c.oid, true) = 'PRIMARY KEY (id)'
+  ) then
+    raise exception 'audit_logs primary key is incompatible';
+  end if;
+
+  if (
+    select count(*) from pg_constraint c
+    where c.conrelid = v_audit_rel and c.contype = 'c'
+  ) <> 7
+    or not exists (
+      select 1 from pg_constraint c
+      where c.conrelid = v_audit_rel and c.contype = 'c'
+        and c.conname = 'audit_logs_actor_bounds_check'
+        and pg_get_constraintdef(c.oid, true) ~ 'length\(actor\).*3.*320'
+    )
+    or not exists (
+      select 1 from pg_constraint c
+      where c.conrelid = v_audit_rel and c.contype = 'c'
+        and c.conname = 'audit_logs_action_bounds_check'
+        and pg_get_constraintdef(c.oid, true) ~ 'length\(action\).*1.*96'
+        and pg_get_constraintdef(c.oid, true) ~ 'a-z0-9'
+    )
+    or not exists (
+      select 1 from pg_constraint c
+      where c.conrelid = v_audit_rel and c.contype = 'c'
+        and c.conname = 'audit_logs_entity_type_bounds_check'
+        and pg_get_constraintdef(c.oid, true) ~ 'entity_type IS NULL'
+        and pg_get_constraintdef(c.oid, true) ~ '64'
+    )
+    or not exists (
+      select 1 from pg_constraint c
+      where c.conrelid = v_audit_rel and c.contype = 'c'
+        and c.conname = 'audit_logs_entity_id_bounds_check'
+        and pg_get_constraintdef(c.oid, true) ~ 'entity_id IS NULL'
+        and pg_get_constraintdef(c.oid, true) ~ '160'
+    )
+    or not exists (
+      select 1 from pg_constraint c
+      where c.conrelid = v_audit_rel and c.contype = 'c'
+        and c.conname = 'audit_logs_outcome_check'
+        and pg_get_constraintdef(c.oid, true) ~ 'attempt'
+        and pg_get_constraintdef(c.oid, true) ~ 'success'
+        and pg_get_constraintdef(c.oid, true) ~ 'failure'
+    )
+    or not exists (
+      select 1 from pg_constraint c
+      where c.conrelid = v_audit_rel and c.contype = 'c'
+        and c.conname = 'audit_logs_metadata_bounds_check'
+        and pg_get_constraintdef(c.oid, true) ~ 'jsonb_typeof\(metadata\)'
+        and pg_get_constraintdef(c.oid, true) ~ '4096'
+    )
+    or not exists (
+      select 1 from pg_constraint c
+      where c.conrelid = v_audit_rel and c.contype = 'c'
+        and c.conname = 'audit_logs_request_id_bounds_check'
+        and pg_get_constraintdef(c.oid, true) ~ 'request_id IS NULL'
+        and pg_get_constraintdef(c.oid, true) ~ '128'
+    ) then
+    raise exception 'audit_logs CHECK contract is incompatible';
+  end if;
+
+  if not exists (
+    select 1 from pg_class r where r.oid = v_audit_rel and r.relrowsecurity
+  ) then
+    raise exception 'audit_logs RLS is not enabled';
+  end if;
+
+  if has_table_privilege('anon', v_audit_rel, 'SELECT')
+    or has_table_privilege('anon', v_audit_rel, 'INSERT')
+    or has_table_privilege('anon', v_audit_rel, 'UPDATE')
+    or has_table_privilege('anon', v_audit_rel, 'DELETE')
+    or has_table_privilege('authenticated', v_audit_rel, 'SELECT')
+    or has_table_privilege('authenticated', v_audit_rel, 'INSERT')
+    or has_table_privilege('authenticated', v_audit_rel, 'UPDATE')
+    or has_table_privilege('authenticated', v_audit_rel, 'DELETE')
+    or not has_table_privilege('service_role', v_audit_rel, 'SELECT')
+    or has_table_privilege('service_role', v_audit_rel, 'INSERT')
+    or has_table_privilege('service_role', v_audit_rel, 'UPDATE')
+    or has_table_privilege('service_role', v_audit_rel, 'DELETE')
+    or has_table_privilege('service_role', v_audit_rel, 'TRUNCATE')
+    or has_table_privilege('service_role', v_audit_rel, 'REFERENCES')
+    or has_table_privilege('service_role', v_audit_rel, 'TRIGGER') then
+    raise exception 'audit_logs privilege contract is incompatible';
+  end if;
+
+  if v_audit_fn is null then
+    raise exception 'append_admin_audit_event is missing';
+  end if;
+
+  if not exists (
+    select 1 from pg_proc p join pg_language l on l.oid = p.prolang
+    where p.oid = v_audit_fn
+      and pg_get_function_identity_arguments(p.oid) =
+        'p_actor_user_id uuid, p_actor text, p_action text, p_entity_type text, p_entity_id text, p_outcome text, p_metadata jsonb, p_request_id text'
+      and pg_get_function_result(p.oid) = 'uuid'
+      and l.lanname = 'plpgsql'
+  ) then
+    raise exception 'append_admin_audit_event signature/return contract is incompatible';
+  end if;
+
+  if not exists (
+    select 1 from pg_proc p
+    where p.oid = v_audit_fn
+      and p.prosecdef
+      and p.proconfig = array['search_path=pg_catalog, public']::text[]
+      and pg_get_userbyid(p.proowner) = 'postgres'
+  ) then
+    raise exception 'append_admin_audit_event security-definer/search_path/owner contract is incompatible';
+  end if;
+
+  if has_function_privilege('anon', v_audit_fn, 'EXECUTE')
+    or has_function_privilege('authenticated', v_audit_fn, 'EXECUTE')
+    or not has_function_privilege('service_role', v_audit_fn, 'EXECUTE') then
+    raise exception 'append_admin_audit_event EXECUTE grants are incompatible';
+  end if;
+
+  select regexp_replace(lower(p.prosrc), '[[:space:]]+', ' ', 'g')
+    into v_audit_src
+  from pg_proc p where p.oid = v_audit_fn;
+
+  if position('lower(btrim(coalesce(p_actor' in v_audit_src) = 0
+    or position('lower(btrim(coalesce(p_action' in v_audit_src) = 0
+    or position('invalid_actor_user_id' in v_audit_src) = 0
+    or position('invalid_actor' in v_audit_src) = 0
+    or position('invalid_action' in v_audit_src) = 0
+    or position('invalid_entity_type' in v_audit_src) = 0
+    or position('invalid_entity_id' in v_audit_src) = 0
+    or position('invalid_outcome' in v_audit_src) = 0
+    or position('invalid_metadata' in v_audit_src) = 0
+    or position('metadata_too_large' in v_audit_src) = 0
+    or position('invalid_request_id' in v_audit_src) = 0
+    or position('insert into public.audit_logs' in v_audit_src) = 0
+    or position('returning id into v_id' in v_audit_src) = 0
+    or position('return v_id' in v_audit_src) = 0 then
+    raise exception 'append_admin_audit_event implementation semantics are incompatible';
+  end if;
+end
+$$;
+
 select 'PASS: Production Supabase security schema contract is satisfied' as result;

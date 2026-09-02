@@ -19,11 +19,11 @@ const INDEPENDENT_REVIEWER = "independent security reviewer";
 const evidenceOwners = new Map([
   [
     "Exact-head release evidence",
-    "implementation: release evidence assembler; approval: user; verification: independent reviewer",
+    "implementation: release evidence assembler; approval: user for merge/deploy/sign/release; verification: independent reviewer",
   ],
   [
     "Production Supabase schema/config/log evidence",
-    "implementation: Supabase evidence preparer; approval: user; verification: independent reviewer",
+    "implementation: Supabase evidence preparer; approval: user for production mutations; verification: independent reviewer",
   ],
   [
     "Documented runbook/model plus exercised evidence",
@@ -43,15 +43,15 @@ const evidenceOwners = new Map([
   ],
   [
     "GitHub ruleset/config evidence",
-    "implementation: repository governance preparer; approval: user; verification: independent reviewer",
+    "implementation: repository governance preparer; approval: user for remote ruleset change; verification: independent reviewer",
   ],
   [
     "Signed artifact/static analysis/device evidence",
-    "implementation: Android remediation engineer; approval: user; verification: independent reviewer",
+    "implementation: Android remediation engineer; approval: user for production signing/publishing gates; verification: independent reviewer",
   ],
   [
     "Authorized DAST evidence + retest",
-    "implementation: DAST evidence preparer; approval: user; verification: independent reviewer",
+    "implementation: DAST evidence preparer; approval: user for invasive production testing; verification: independent reviewer",
   ],
 ]);
 

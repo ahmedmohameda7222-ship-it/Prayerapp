@@ -28,7 +28,17 @@ jobs:
         with:
           version: 2.116.0
           github-token: ${{ github.token }}
-      - run: git diff --check origin/main...HEAD
+      - name: Verify binding security authority hashes
+        run: |
+          printf '%s  %s\n' \
+            '1c99f9c635dee2bf3d8fc9004a3dbf2ced02fd6bb04631af8f4edefd66de1f52' \
+            'docs/superpowers/plans/2026-09-02-prelaunch-security-remediation.md' \
+            '0d20af901d559b51b4f26b5b24f6e3920f828580801f1a6d518d31d9a23ae2b4' \
+            'docs/security/prelaunch/2026-09-02/approved-execution-checklist.md' \
+            'ab8a2a167a07085c036111f6246fa79e07c5d6fa0313b236f3d7ab04ebbbef81' \
+            'docs/security/prelaunch/2026-09-02/approved-open-control-matrix.json' \
+            | sha256sum -c -
+      - run: git diff --check origin/main...HEAD -- . ':(exclude)docs/superpowers/plans/2026-09-02-prelaunch-security-remediation.md' ':(exclude)docs/security/prelaunch/2026-09-02/approved-execution-checklist.md'
       - run: npm ci
       - run: npm audit --omit=dev
       - run: npm run lint

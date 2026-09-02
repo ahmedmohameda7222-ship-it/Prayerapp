@@ -21,6 +21,7 @@ This file does not mark controls PASS. PASS/N/A decisions remain bound to the or
 | Evidence class | Implementation owner |
 | --- | --- |
 | Production Supabase schema/config/log evidence | Supabase evidence preparer; user approves production mutation; independent reviewer verifies |
+| Code/config review plus reproducible verification evidence | Wave-specific owner: Wave 0 security inventory/evidence; Wave 1 auth/authorization evidence; Wave 3 repository/secrets governance evidence; Wave 4 Android security verification; Wave 5 production hosting security evidence; independent reviewer verifies |
 | Automated test + durable audit-log evidence | Admin audit remediation engineer; independent reviewer verifies |
 | RED->GREEN automated regression + live/black-box evidence | Web/API remediation engineer; independent reviewer verifies |
 | CI scan/SBOM artifact | CI/security supply-chain engineer; independent reviewer verifies |
@@ -29,6 +30,17 @@ This file does not mark controls PASS. PASS/N/A decisions remain bound to the or
 | Authorized DAST evidence + retest | DAST evidence preparer; user approves invasive production testing; independent reviewer verifies |
 | Documented runbook/model plus exercised evidence | Operations/security documentation owner; independent reviewer verifies |
 | Exact-head release evidence | Release evidence assembler; user approves merge/deploy/sign/release; independent reviewer verifies |
+
+## Automated Consistency Enforcement
+
+The ledger is generated from the binding open-control matrix by `scripts/security/generate-open-control-closure-ledger.mjs`. The generator fails closed on any unmapped required-evidence class or unmapped code/config remediation wave.
+
+`lib/__tests__/security-open-control-ledger-consistency.test.ts` independently rejects:
+
+- any control population other than exactly 324 controls / 54 FAIL / 270 NOT VERIFIED;
+- duplicate or missing `OPEN-001` through `OPEN-324` identifiers;
+- null or empty implementation owner, independent reviewer, closure-evidence type, remediation wave, or disposition;
+- PASS/N/A dispositions without independent-review ownership and non-empty closure evidence references.
 
 ## Counts
 

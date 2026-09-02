@@ -41,6 +41,28 @@ describe("HTTP security boundaries", () => {
     expect(tooLarge).toMatchObject({ ok: false, status: 413 });
   });
 
+  it("allows only explicitly opted-in missing MIME for native compatibility", async () => {
+    const noMime = new Request("https://example.test", {
+      method: "POST",
+      body: JSON.stringify({ native: true }),
+    });
+    await expect(readBoundedJson(noMime.clone(), { maxBytes: 128 })).resolves.toMatchObject({ ok: false, status: 415 });
+    await expect(readBoundedJson(noMime.clone(), {
+      maxBytes: 128,
+      allowMissingContentType: true,
+    })).resolves.toEqual({ ok: true, value: { native: true } });
+
+    const explicitWrongMime = new Request("https://example.test", {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body: JSON.stringify({ native: true }),
+    });
+    await expect(readBoundedJson(explicitWrongMime, {
+      maxBytes: 128,
+      allowMissingContentType: true,
+    })).resolves.toMatchObject({ ok: false, status: 415 });
+  });
+
   it("rejects malformed JSON without leaking parser details", async () => {
     const result = await readBoundedJson(new Request("https://example.test", {
       method: "POST",

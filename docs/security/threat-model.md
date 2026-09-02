@@ -88,4 +88,3 @@ Prayerapp is a Next.js 16 application backed by Supabase and deployed to Vercel 
 - Vercel CLI is not installed locally; the production deployment SHA/target was derived from GitHub deployment records, while Vercel project/team access evidence remains a later provider-control item.
 - Production schema has partial post-`20260822201832` state; no production mutation or migration repair has been performed.
 - Physical-device Android QA, signed artifact verification, DAST, restore drills, monitoring exercises, and final 990-control rerun remain later gated evidence.
-

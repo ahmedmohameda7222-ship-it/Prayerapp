@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchBoundedJson } from "@/lib/security/http-boundaries";
 import { consumeSecurityRateLimit } from "@/lib/security/rate-limit";
 
 const RATE_LIMIT_WINDOW_SECONDS = 10 * 60;
 const MAX_REQUESTS_PER_WINDOW = 30;
 const MAX_QUERY_LENGTH = 160;
 const MAX_RESULTS = 5;
+const UPSTREAM_TIMEOUT_MS = 5_000;
+const MAX_UPSTREAM_BYTES = 64 * 1024;
 
 interface GeoapifyResult {
   formatted?: unknown;
@@ -23,6 +26,7 @@ export function normalizeGeoapifyResults(value: unknown) {
       if (
         typeof result.formatted !== "string" ||
         !result.formatted.trim() ||
+        result.formatted.length > 512 ||
         typeof result.lat !== "number" ||
         !Number.isFinite(result.lat) ||
         result.lat < -90 ||
@@ -89,22 +93,18 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("limit", String(MAX_RESULTS));
     url.searchParams.set("apiKey", apiKey);
 
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) {
-      return NextResponse.json(
-        { ok: false, message: "Geocoding service unavailable" },
-        { status: 502 },
-      );
-    }
-
-    const data = (await response.json()) as { results?: unknown };
+    const data = await fetchBoundedJson<{ results?: unknown }>(url, {
+      cache: "no-store",
+      timeoutMs: UPSTREAM_TIMEOUT_MS,
+      maxBytes: MAX_UPSTREAM_BYTES,
+    });
     return NextResponse.json({
       ok: true,
       results: normalizeGeoapifyResults(data.results),
     });
   } catch {
     return NextResponse.json(
-      { ok: false, message: "Geocoding request failed" },
+      { ok: false, message: "Geocoding service unavailable" },
       { status: 502 },
     );
   }

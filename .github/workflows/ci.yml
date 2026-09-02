@@ -40,6 +40,8 @@ jobs:
             | sha256sum -c -
       - run: git diff --check origin/main...HEAD -- . ':(exclude)docs/superpowers/plans/2026-09-02-prelaunch-security-remediation.md' ':(exclude)docs/security/prelaunch/2026-09-02/approved-execution-checklist.md'
       - run: npm ci
+      - name: Verify open-control closure ledger is deterministically generated
+        run: node scripts/security/generate-open-control-closure-ledger.mjs --check
       - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm test

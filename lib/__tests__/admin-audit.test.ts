@@ -61,4 +61,31 @@ describe("durable admin audit security contract", () => {
     expect(migrations).toContain("metadata_too_large");
     expect(migrations).not.toMatch(/grant\s+(?:insert|update|delete|truncate).*audit_logs.*service_role/iu);
   });
+
+  it("requires permanent Production verification and local migration exercises", () => {
+    const verifier = source("scripts/security/verify-production-schema.sql");
+    const ci = source(".github/workflows/ci.yml");
+
+    for (const marker of [
+      "v_audit_rel",
+      "public.append_admin_audit_event(uuid,text,text,text,text,text,jsonb,text)",
+      "audit_logs column contract is incomplete",
+      "audit_logs CHECK contract is incompatible",
+      "audit_logs RLS is not enabled",
+      "audit_logs privilege contract is incompatible",
+      "append_admin_audit_event security-definer/search_path/owner contract is incompatible",
+      "append_admin_audit_event EXECUTE grants are incompatible",
+    ]) {
+      expect(verifier, `Production verifier missing admin-audit marker: ${marker}`).toContain(marker);
+    }
+
+    for (const marker of [
+      "Verify admin audit idempotence and data preservation",
+      "Verify admin audit rejects non-empty legacy state",
+      "synthetic admin audit row was not preserved",
+      "cannot add actor_user_id to non-empty audit_logs without truthful historical actor evidence",
+    ]) {
+      expect(ci, `CI missing admin-audit migration exercise: ${marker}`).toContain(marker);
+    }
+  });
 });

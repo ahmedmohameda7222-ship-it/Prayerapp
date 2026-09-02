@@ -383,7 +383,6 @@ jobs:
               where installation_id = '00000000-0000-4000-8000-000000000211'::uuid
                 and user_id = '00000000-0000-4000-8000-000000000212'::uuid
                 and credential_hash = repeat('a', 64)
-                and credential_version = 1
                 and receipt_v2 = false
                 and account_generation = 0
             ) then

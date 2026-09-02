@@ -459,8 +459,8 @@ jobs:
             'ci-admin-audit-idempotence'
           );
           SQL
-            cat supabase/migrations/20260902215000_admin_audit_hardening.sql
-            cat supabase/migrations/20260902215000_admin_audit_hardening.sql
+            cat supabase/migrations/20260902223939_admin_audit_hardening.sql
+            cat supabase/migrations/20260902223939_admin_audit_hardening.sql
             cat <<'SQL'
           do $$
           begin
@@ -512,7 +512,7 @@ jobs:
           alter table public.audit_logs drop column metadata;
           alter table public.audit_logs drop column request_id;
           SQL
-            cat supabase/migrations/20260902215000_admin_audit_hardening.sql
+            cat supabase/migrations/20260902223939_admin_audit_hardening.sql
           } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1)"
           legacy_status=$?
           set -e

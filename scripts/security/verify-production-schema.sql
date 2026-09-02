@@ -276,7 +276,11 @@ begin
     select 1 from pg_constraint c
     where c.conrelid = v_friday_rel and c.contype = 'c'
       and regexp_replace(lower(pg_get_expr(c.conbin, c.conrelid)), '[[:space:]]+', '', 'g')
-        in ('(extract(isodowfromdate)=5::numeric)', '(extract(isodowfromdate)=5)')
+        in (
+          '(extract(isodowfromdate)=5::numeric)',
+          '(extract(isodowfromdate)=(5)::numeric)',
+          '(extract(isodowfromdate)=5)'
+        )
   ) then
     raise exception 'friday_khutbahs Friday-date CHECK is missing or incompatible';
   end if;

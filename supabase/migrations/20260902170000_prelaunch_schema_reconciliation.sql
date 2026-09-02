@@ -1,77 +1,104 @@
 -- Pre-launch security reconciliation for Production schema drift after 20260822201832.
 -- Scope is intentionally limited to the native-delivery-v2 schema that is absent in Production.
 -- Later repository migrations whose semantic state already exists are not replayed here.
+-- This migration is additive and fail-closed: unknown partial constraints are never dropped.
 
-DO $$
-DECLARE
+do $$
+declare
   v_type text;
   v_nullable text;
   v_default text;
   v_receipts regclass := to_regclass('public.native_prayer_delivery_receipts');
-BEGIN
-  IF to_regclass('public.native_prayer_installations') IS NULL THEN
-    RAISE EXCEPTION 'native_prayer_installations must exist before prelaunch reconciliation';
-  END IF;
+begin
+  if to_regclass('public.native_prayer_installations') is null then
+    raise exception 'native_prayer_installations must exist before prelaunch reconciliation';
+  end if;
 
-  IF EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'native_prayer_installations'
-      AND column_name = 'receipt_v2'
-  ) THEN
-    SELECT data_type, is_nullable, column_default
-      INTO v_type, v_nullable, v_default
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'native_prayer_installations'
-      AND column_name = 'receipt_v2';
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'native_prayer_installations'
+      and column_name = 'receipt_v2'
+  ) then
+    select data_type, is_nullable, column_default
+      into v_type, v_nullable, v_default
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'native_prayer_installations'
+      and column_name = 'receipt_v2';
 
-    IF v_type <> 'boolean' OR v_nullable <> 'NO' OR v_default <> 'false' THEN
-      RAISE EXCEPTION
+    if v_type <> 'boolean' or v_nullable <> 'NO' or v_default <> 'false' then
+      raise exception
         'incompatible native_prayer_installations.receipt_v2: type=%, nullable=%, default=%',
         v_type, v_nullable, v_default;
-    END IF;
-  END IF;
+    end if;
+  end if;
 
-  IF EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'native_prayer_installations'
-      AND column_name = 'account_generation'
-  ) THEN
-    SELECT data_type, is_nullable, column_default
-      INTO v_type, v_nullable, v_default
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'native_prayer_installations'
-      AND column_name = 'account_generation';
+  -- The repository authority defines receipt_v2 without any CHECK constraint.
+  -- Do not silently preserve an unknown stricter or contradictory partial schema.
+  if exists (
+    select 1
+    from pg_constraint c
+    where c.conrelid = 'public.native_prayer_installations'::regclass
+      and c.contype = 'c'
+      and lower(pg_get_expr(c.conbin, c.conrelid)) like '%receipt_v2%'
+  ) then
+    raise exception 'incompatible pre-existing receipt_v2 constraint';
+  end if;
 
-    IF v_type <> 'integer' OR v_nullable <> 'NO' OR v_default <> '0' THEN
-      RAISE EXCEPTION
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'native_prayer_installations'
+      and column_name = 'account_generation'
+  ) then
+    select data_type, is_nullable, column_default
+      into v_type, v_nullable, v_default
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'native_prayer_installations'
+      and column_name = 'account_generation';
+
+    if v_type <> 'integer' or v_nullable <> 'NO' or v_default <> '0' then
+      raise exception
         'incompatible native_prayer_installations.account_generation: type=%, nullable=%, default=%',
         v_type, v_nullable, v_default;
-    END IF;
-  END IF;
+    end if;
+  end if;
+
+  -- account_generation is allowed to have only the authority-equivalent >= 0 CHECK.
+  -- Any other CHECK mentioning the field must fail before any reconciliation DDL runs.
+  if exists (
+    select 1
+    from pg_constraint c
+    where c.conrelid = 'public.native_prayer_installations'::regclass
+      and c.contype = 'c'
+      and lower(pg_get_expr(c.conbin, c.conrelid)) like '%account_generation%'
+      and regexp_replace(lower(pg_get_expr(c.conbin, c.conrelid)), '[[:space:]]+', '', 'g')
+        not in ('(account_generation>=0)', 'account_generation>=0')
+  ) then
+    raise exception 'incompatible pre-existing account_generation constraint';
+  end if;
 
   -- If the receipt table already exists, require the complete expected contract before
   -- making any privilege/RLS/index adjustment. This prevents silently normalizing an
   -- unknown partial object into something that merely looks compatible afterward.
-  IF v_receipts IS NOT NULL THEN
-    IF (
-      SELECT count(*)
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'native_prayer_delivery_receipts'
-    ) <> 8 THEN
-      RAISE EXCEPTION 'pre-existing native_prayer_delivery_receipts has unexpected columns';
-    END IF;
+  if v_receipts is not null then
+    if (
+      select count(*)
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'native_prayer_delivery_receipts'
+    ) <> 8 then
+      raise exception 'pre-existing native_prayer_delivery_receipts has unexpected columns';
+    end if;
 
-    IF EXISTS (
-      SELECT required.column_name
-      FROM (
-        VALUES
+    if exists (
+      select required.column_name
+      from (
+        values
           ('installation_id', 'uuid', 'NO'),
           ('user_id', 'uuid', 'NO'),
           ('event_id', 'text', 'NO'),
@@ -80,243 +107,239 @@ BEGIN
           ('delivered_at', 'timestamp with time zone', 'NO'),
           ('expires_at', 'timestamp with time zone', 'NO'),
           ('created_at', 'timestamp with time zone', 'NO')
-      ) AS required(column_name, data_type, is_nullable)
-      LEFT JOIN information_schema.columns c
-        ON c.table_schema = 'public'
-       AND c.table_name = 'native_prayer_delivery_receipts'
-       AND c.column_name = required.column_name
-       AND c.data_type = required.data_type
-       AND c.is_nullable = required.is_nullable
-      WHERE c.column_name IS NULL
-    ) THEN
-      RAISE EXCEPTION 'pre-existing native_prayer_delivery_receipts column contract is incompatible';
-    END IF;
+      ) as required(column_name, data_type, is_nullable)
+      left join information_schema.columns c
+        on c.table_schema = 'public'
+       and c.table_name = 'native_prayer_delivery_receipts'
+       and c.column_name = required.column_name
+       and c.data_type = required.data_type
+       and c.is_nullable = required.is_nullable
+      where c.column_name is null
+    ) then
+      raise exception 'pre-existing native_prayer_delivery_receipts column contract is incompatible';
+    end if;
 
-    IF NOT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'native_prayer_delivery_receipts'
-        AND column_name = 'expires_at'
-        AND column_default = '(now() + ''2 days''::interval)'
-    ) OR NOT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'native_prayer_delivery_receipts'
-        AND column_name = 'created_at'
-        AND column_default = 'now()'
-    ) THEN
-      RAISE EXCEPTION 'pre-existing native_prayer_delivery_receipts defaults are incompatible';
-    END IF;
+    if not exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'native_prayer_delivery_receipts'
+        and column_name = 'expires_at'
+        and column_default = '(now() + ''2 days''::interval)'
+    ) or not exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'native_prayer_delivery_receipts'
+        and column_name = 'created_at'
+        and column_default = 'now()'
+    ) then
+      raise exception 'pre-existing native_prayer_delivery_receipts defaults are incompatible';
+    end if;
 
-    IF NOT EXISTS (
-      SELECT 1
-      FROM pg_constraint c
-      WHERE c.conrelid = v_receipts
-        AND c.contype = 'p'
-        AND pg_get_constraintdef(c.oid, true) =
+    if not exists (
+      select 1
+      from pg_constraint c
+      where c.conrelid = v_receipts
+        and c.contype = 'p'
+        and pg_get_constraintdef(c.oid, true) =
           'PRIMARY KEY (installation_id, account_generation, event_id)'
-    ) THEN
-      RAISE EXCEPTION 'pre-existing native_prayer_delivery_receipts primary key is incompatible';
-    END IF;
+    ) then
+      raise exception 'pre-existing native_prayer_delivery_receipts primary key is incompatible';
+    end if;
 
-    IF NOT EXISTS (
-      SELECT 1
-      FROM pg_constraint c
-      WHERE c.conrelid = v_receipts
-        AND c.contype = 'f'
-        AND pg_get_constraintdef(c.oid, true) ILIKE
+    if not exists (
+      select 1
+      from pg_constraint c
+      where c.conrelid = v_receipts
+        and c.contype = 'f'
+        and pg_get_constraintdef(c.oid, true) ilike
           'FOREIGN KEY (installation_id) REFERENCES native_prayer_installations(installation_id) ON DELETE CASCADE'
-    ) OR NOT EXISTS (
-      SELECT 1
-      FROM pg_constraint c
-      WHERE c.conrelid = v_receipts
-        AND c.contype = 'f'
-        AND pg_get_constraintdef(c.oid, true) ILIKE
+    ) or not exists (
+      select 1
+      from pg_constraint c
+      where c.conrelid = v_receipts
+        and c.contype = 'f'
+        and pg_get_constraintdef(c.oid, true) ilike
           'FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE'
-    ) THEN
-      RAISE EXCEPTION 'pre-existing native_prayer_delivery_receipts foreign keys are incompatible';
-    END IF;
+    ) then
+      raise exception 'pre-existing native_prayer_delivery_receipts foreign keys are incompatible';
+    end if;
 
-    IF (
-      SELECT count(*)
-      FROM pg_constraint c
-      WHERE c.conrelid = v_receipts
-        AND c.contype = 'c'
+    if (
+      select count(*)
+      from pg_constraint c
+      where c.conrelid = v_receipts
+        and c.contype = 'c'
     ) <> 4
-      OR NOT EXISTS (
-        SELECT 1 FROM pg_constraint c
-        WHERE c.conrelid = v_receipts
-          AND c.contype = 'c'
-          AND pg_get_constraintdef(c.oid, true) ~ 'event_id.*p2:.*0-9a-f.*64'
+      or not exists (
+        select 1 from pg_constraint c
+        where c.conrelid = v_receipts
+          and c.contype = 'c'
+          and pg_get_constraintdef(c.oid, true) ~ 'event_id.*p2:.*0-9a-f.*64'
       )
-      OR NOT EXISTS (
-        SELECT 1 FROM pg_constraint c
-        WHERE c.conrelid = v_receipts
-          AND c.contype = 'c'
-          AND pg_get_constraintdef(c.oid, true) ~ 'kind.*reminder.*adhan'
+      or not exists (
+        select 1 from pg_constraint c
+        where c.conrelid = v_receipts
+          and c.contype = 'c'
+          and pg_get_constraintdef(c.oid, true) ~ 'kind.*reminder.*adhan'
       )
-      OR NOT EXISTS (
-        SELECT 1 FROM pg_constraint c
-        WHERE c.conrelid = v_receipts
-          AND c.contype = 'c'
-          AND pg_get_constraintdef(c.oid, true) ~ 'account_generation.*>= 0'
+      or not exists (
+        select 1 from pg_constraint c
+        where c.conrelid = v_receipts
+          and c.contype = 'c'
+          and pg_get_constraintdef(c.oid, true) ~ 'account_generation.*>= 0'
       )
-      OR NOT EXISTS (
-        SELECT 1 FROM pg_constraint c
-        WHERE c.conrelid = v_receipts
-          AND c.contype = 'c'
-          AND pg_get_constraintdef(c.oid, true) ~ 'expires_at > delivered_at'
-      ) THEN
-      RAISE EXCEPTION 'pre-existing native_prayer_delivery_receipts CHECK constraints are incompatible';
-    END IF;
+      or not exists (
+        select 1 from pg_constraint c
+        where c.conrelid = v_receipts
+          and c.contype = 'c'
+          and pg_get_constraintdef(c.oid, true) ~ 'expires_at > delivered_at'
+      ) then
+      raise exception 'pre-existing native_prayer_delivery_receipts CHECK constraints are incompatible';
+    end if;
 
-    IF NOT EXISTS (
-      SELECT 1 FROM pg_indexes
-      WHERE schemaname = 'public'
-        AND tablename = 'native_prayer_delivery_receipts'
-        AND indexname = 'native_prayer_delivery_receipts_event_idx'
-        AND indexdef LIKE '%(event_id, expires_at, installation_id)%'
-    ) OR NOT EXISTS (
-      SELECT 1 FROM pg_indexes
-      WHERE schemaname = 'public'
-        AND tablename = 'native_prayer_delivery_receipts'
-        AND indexname = 'native_prayer_delivery_receipts_expiry_idx'
-        AND indexdef LIKE '%(expires_at)%'
-    ) THEN
-      RAISE EXCEPTION 'pre-existing native_prayer_delivery_receipts indexes are incompatible';
-    END IF;
+    if not exists (
+      select 1 from pg_indexes
+      where schemaname = 'public'
+        and tablename = 'native_prayer_delivery_receipts'
+        and indexname = 'native_prayer_delivery_receipts_event_idx'
+        and indexdef like '%(event_id, expires_at, installation_id)%'
+    ) or not exists (
+      select 1 from pg_indexes
+      where schemaname = 'public'
+        and tablename = 'native_prayer_delivery_receipts'
+        and indexname = 'native_prayer_delivery_receipts_expiry_idx'
+        and indexdef like '%(expires_at)%'
+    ) then
+      raise exception 'pre-existing native_prayer_delivery_receipts indexes are incompatible';
+    end if;
 
-    IF NOT EXISTS (
-      SELECT 1
-      FROM pg_class r
-      JOIN pg_namespace n ON n.oid = r.relnamespace
-      WHERE n.nspname = 'public'
-        AND r.relname = 'native_prayer_delivery_receipts'
-        AND r.relrowsecurity
-    ) THEN
-      RAISE EXCEPTION 'pre-existing native_prayer_delivery_receipts must already have RLS enabled';
-    END IF;
+    if not exists (
+      select 1
+      from pg_class r
+      join pg_namespace n on n.oid = r.relnamespace
+      where n.nspname = 'public'
+        and r.relname = 'native_prayer_delivery_receipts'
+        and r.relrowsecurity
+    ) then
+      raise exception 'pre-existing native_prayer_delivery_receipts must already have RLS enabled';
+    end if;
 
-    IF has_table_privilege('anon', v_receipts, 'SELECT')
-      OR has_table_privilege('anon', v_receipts, 'INSERT')
-      OR has_table_privilege('anon', v_receipts, 'UPDATE')
-      OR has_table_privilege('anon', v_receipts, 'DELETE')
-      OR has_table_privilege('authenticated', v_receipts, 'SELECT')
-      OR has_table_privilege('authenticated', v_receipts, 'INSERT')
-      OR has_table_privilege('authenticated', v_receipts, 'UPDATE')
-      OR has_table_privilege('authenticated', v_receipts, 'DELETE')
-      OR NOT has_table_privilege('service_role', v_receipts, 'SELECT')
-      OR NOT has_table_privilege('service_role', v_receipts, 'INSERT')
-      OR NOT has_table_privilege('service_role', v_receipts, 'UPDATE')
-      OR NOT has_table_privilege('service_role', v_receipts, 'DELETE') THEN
-      RAISE EXCEPTION 'pre-existing native_prayer_delivery_receipts privileges are incompatible';
-    END IF;
-  END IF;
-END
+    if has_table_privilege('anon', v_receipts, 'SELECT')
+      or has_table_privilege('anon', v_receipts, 'INSERT')
+      or has_table_privilege('anon', v_receipts, 'UPDATE')
+      or has_table_privilege('anon', v_receipts, 'DELETE')
+      or has_table_privilege('authenticated', v_receipts, 'SELECT')
+      or has_table_privilege('authenticated', v_receipts, 'INSERT')
+      or has_table_privilege('authenticated', v_receipts, 'UPDATE')
+      or has_table_privilege('authenticated', v_receipts, 'DELETE')
+      or not has_table_privilege('service_role', v_receipts, 'SELECT')
+      or not has_table_privilege('service_role', v_receipts, 'INSERT')
+      or not has_table_privilege('service_role', v_receipts, 'UPDATE')
+      or not has_table_privilege('service_role', v_receipts, 'DELETE') then
+      raise exception 'pre-existing native_prayer_delivery_receipts privileges are incompatible';
+    end if;
+  end if;
+end
 $$;
 
-ALTER TABLE public.native_prayer_installations
-  ADD COLUMN IF NOT EXISTS receipt_v2 boolean NOT NULL DEFAULT false;
+alter table public.native_prayer_installations
+  add column if not exists receipt_v2 boolean not null default false;
 
-ALTER TABLE public.native_prayer_installations
-  ADD COLUMN IF NOT EXISTS account_generation integer NOT NULL DEFAULT 0;
+alter table public.native_prayer_installations
+  add column if not exists account_generation integer not null default 0;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint c
-    JOIN pg_class r ON r.oid = c.conrelid
-    JOIN pg_namespace n ON n.oid = r.relnamespace
-    WHERE n.nspname = 'public'
-      AND r.relname = 'native_prayer_installations'
-      AND c.contype = 'c'
-      AND pg_get_constraintdef(c.oid, true) ~ 'account_generation.*>= 0'
-  ) THEN
-    ALTER TABLE public.native_prayer_installations
-      ADD CONSTRAINT native_prayer_installations_account_generation_nonnegative_check
-      CHECK (account_generation >= 0);
-  END IF;
-END
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint c
+    where c.conrelid = 'public.native_prayer_installations'::regclass
+      and c.contype = 'c'
+      and regexp_replace(lower(pg_get_expr(c.conbin, c.conrelid)), '[[:space:]]+', '', 'g')
+        in ('(account_generation>=0)', 'account_generation>=0')
+  ) then
+    alter table public.native_prayer_installations
+      add constraint native_prayer_installations_account_generation_nonnegative_check
+      check (account_generation >= 0);
+  end if;
+end
 $$;
 
-CREATE TABLE IF NOT EXISTS public.native_prayer_delivery_receipts (
-  installation_id uuid NOT NULL
-    REFERENCES public.native_prayer_installations(installation_id) ON DELETE CASCADE,
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  event_id text NOT NULL CHECK (event_id ~ '^p2:[0-9a-f]{64}$'),
-  kind text NOT NULL CHECK (kind IN ('reminder', 'adhan')),
-  account_generation integer NOT NULL CHECK (account_generation >= 0),
-  delivered_at timestamptz NOT NULL,
-  expires_at timestamptz NOT NULL DEFAULT (now() + interval '2 days'),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (installation_id, account_generation, event_id),
-  CHECK (expires_at > delivered_at)
+create table if not exists public.native_prayer_delivery_receipts (
+  installation_id uuid not null
+    references public.native_prayer_installations(installation_id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  event_id text not null check (event_id ~ '^p2:[0-9a-f]{64}$'),
+  kind text not null check (kind in ('reminder', 'adhan')),
+  account_generation integer not null check (account_generation >= 0),
+  delivered_at timestamptz not null,
+  expires_at timestamptz not null default (now() + interval '2 days'),
+  created_at timestamptz not null default now(),
+  primary key (installation_id, account_generation, event_id),
+  check (expires_at > delivered_at)
 );
 
-CREATE INDEX IF NOT EXISTS native_prayer_delivery_receipts_event_idx
-  ON public.native_prayer_delivery_receipts(event_id, expires_at, installation_id);
+create index if not exists native_prayer_delivery_receipts_event_idx
+  on public.native_prayer_delivery_receipts(event_id, expires_at, installation_id);
 
-CREATE INDEX IF NOT EXISTS native_prayer_delivery_receipts_expiry_idx
-  ON public.native_prayer_delivery_receipts(expires_at);
+create index if not exists native_prayer_delivery_receipts_expiry_idx
+  on public.native_prayer_delivery_receipts(expires_at);
 
-ALTER TABLE public.native_prayer_delivery_receipts ENABLE ROW LEVEL SECURITY;
+alter table public.native_prayer_delivery_receipts enable row level security;
 
-REVOKE ALL ON public.native_prayer_delivery_receipts FROM public, anon, authenticated;
-GRANT ALL ON public.native_prayer_delivery_receipts TO service_role;
+revoke all on public.native_prayer_delivery_receipts from public, anon, authenticated;
+grant all on public.native_prayer_delivery_receipts to service_role;
 
-COMMENT ON TABLE public.native_prayer_delivery_receipts IS
+comment on table public.native_prayer_delivery_receipts is
   'Short-retention server-only proof of successful native prayer delivery. No client role has direct access.';
 
-DO $$
-DECLARE
+do $$
+declare
   v_receipts regclass := to_regclass('public.native_prayer_delivery_receipts');
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'native_prayer_installations'
-      AND column_name = 'receipt_v2'
-      AND data_type = 'boolean'
-      AND is_nullable = 'NO'
-      AND column_default = 'false'
-  ) THEN
-    RAISE EXCEPTION 'post-reconciliation receipt_v2 contract is not satisfied';
-  END IF;
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'native_prayer_installations'
+      and column_name = 'receipt_v2'
+      and data_type = 'boolean'
+      and is_nullable = 'NO'
+      and column_default = 'false'
+  ) then
+    raise exception 'post-reconciliation receipt_v2 contract is not satisfied';
+  end if;
 
-  IF NOT EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'native_prayer_installations'
-      AND column_name = 'account_generation'
-      AND data_type = 'integer'
-      AND is_nullable = 'NO'
-      AND column_default = '0'
-  ) OR NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint c
-    JOIN pg_class r ON r.oid = c.conrelid
-    JOIN pg_namespace n ON n.oid = r.relnamespace
-    WHERE n.nspname = 'public'
-      AND r.relname = 'native_prayer_installations'
-      AND c.contype = 'c'
-      AND pg_get_constraintdef(c.oid, true) ~ 'account_generation.*>= 0'
-  ) THEN
-    RAISE EXCEPTION 'post-reconciliation account_generation contract is not satisfied';
-  END IF;
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'native_prayer_installations'
+      and column_name = 'account_generation'
+      and data_type = 'integer'
+      and is_nullable = 'NO'
+      and column_default = '0'
+  ) or not exists (
+    select 1
+    from pg_constraint c
+    where c.conrelid = 'public.native_prayer_installations'::regclass
+      and c.contype = 'c'
+      and regexp_replace(lower(pg_get_expr(c.conbin, c.conrelid)), '[[:space:]]+', '', 'g')
+        in ('(account_generation>=0)', 'account_generation>=0')
+  ) then
+    raise exception 'post-reconciliation account_generation contract is not satisfied';
+  end if;
 
-  IF v_receipts IS NULL THEN
-    RAISE EXCEPTION 'post-reconciliation native_prayer_delivery_receipts is missing';
-  END IF;
+  if v_receipts is null then
+    raise exception 'post-reconciliation native_prayer_delivery_receipts is missing';
+  end if;
 
-  IF EXISTS (
-    SELECT required.column_name
-    FROM (
-      VALUES
+  if exists (
+    select required.column_name
+    from (
+      values
         ('installation_id', 'uuid', 'NO'),
         ('user_id', 'uuid', 'NO'),
         ('event_id', 'text', 'NO'),
@@ -325,64 +348,73 @@ BEGIN
         ('delivered_at', 'timestamp with time zone', 'NO'),
         ('expires_at', 'timestamp with time zone', 'NO'),
         ('created_at', 'timestamp with time zone', 'NO')
-    ) AS required(column_name, data_type, is_nullable)
-    LEFT JOIN information_schema.columns c
-      ON c.table_schema = 'public'
-     AND c.table_name = 'native_prayer_delivery_receipts'
-     AND c.column_name = required.column_name
-     AND c.data_type = required.data_type
-     AND c.is_nullable = required.is_nullable
-    WHERE c.column_name IS NULL
-  ) THEN
-    RAISE EXCEPTION 'post-reconciliation native_prayer_delivery_receipts columns are incomplete';
-  END IF;
+    ) as required(column_name, data_type, is_nullable)
+    left join information_schema.columns c
+      on c.table_schema = 'public'
+     and c.table_name = 'native_prayer_delivery_receipts'
+     and c.column_name = required.column_name
+     and c.data_type = required.data_type
+     and c.is_nullable = required.is_nullable
+    where c.column_name is null
+  ) then
+    raise exception 'post-reconciliation native_prayer_delivery_receipts columns are incomplete';
+  end if;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint c
-    WHERE c.conrelid = v_receipts
-      AND c.contype = 'p'
-      AND pg_get_constraintdef(c.oid, true) =
+  if not exists (
+    select 1 from pg_constraint c
+    where c.conrelid = v_receipts
+      and c.contype = 'p'
+      and pg_get_constraintdef(c.oid, true) =
         'PRIMARY KEY (installation_id, account_generation, event_id)'
-  ) OR NOT EXISTS (
-    SELECT 1 FROM pg_constraint c
-    WHERE c.conrelid = v_receipts
-      AND c.contype = 'f'
-      AND pg_get_constraintdef(c.oid, true) ILIKE
+  ) or not exists (
+    select 1 from pg_constraint c
+    where c.conrelid = v_receipts
+      and c.contype = 'f'
+      and pg_get_constraintdef(c.oid, true) ilike
         'FOREIGN KEY (installation_id) REFERENCES native_prayer_installations(installation_id) ON DELETE CASCADE'
-  ) OR NOT EXISTS (
-    SELECT 1 FROM pg_constraint c
-    WHERE c.conrelid = v_receipts
-      AND c.contype = 'f'
-      AND pg_get_constraintdef(c.oid, true) ILIKE
+  ) or not exists (
+    select 1 from pg_constraint c
+    where c.conrelid = v_receipts
+      and c.contype = 'f'
+      and pg_get_constraintdef(c.oid, true) ilike
         'FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE'
-  ) THEN
-    RAISE EXCEPTION 'post-reconciliation native_prayer_delivery_receipts key contract is incompatible';
-  END IF;
+  ) then
+    raise exception 'post-reconciliation native_prayer_delivery_receipts key contract is incompatible';
+  end if;
 
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_class r
-    JOIN pg_namespace n ON n.oid = r.relnamespace
-    WHERE n.nspname = 'public'
-      AND r.relname = 'native_prayer_delivery_receipts'
-      AND r.relrowsecurity
-  ) THEN
-    RAISE EXCEPTION 'post-reconciliation native_prayer_delivery_receipts RLS is not enabled';
-  END IF;
+  if (
+    select count(*)
+    from pg_constraint c
+    where c.conrelid = v_receipts
+      and c.contype = 'c'
+  ) <> 4 then
+    raise exception 'post-reconciliation native_prayer_delivery_receipts CHECK count is incompatible';
+  end if;
 
-  IF has_table_privilege('anon', v_receipts, 'SELECT')
-    OR has_table_privilege('anon', v_receipts, 'INSERT')
-    OR has_table_privilege('anon', v_receipts, 'UPDATE')
-    OR has_table_privilege('anon', v_receipts, 'DELETE')
-    OR has_table_privilege('authenticated', v_receipts, 'SELECT')
-    OR has_table_privilege('authenticated', v_receipts, 'INSERT')
-    OR has_table_privilege('authenticated', v_receipts, 'UPDATE')
-    OR has_table_privilege('authenticated', v_receipts, 'DELETE')
-    OR NOT has_table_privilege('service_role', v_receipts, 'SELECT')
-    OR NOT has_table_privilege('service_role', v_receipts, 'INSERT')
-    OR NOT has_table_privilege('service_role', v_receipts, 'UPDATE')
-    OR NOT has_table_privilege('service_role', v_receipts, 'DELETE') THEN
-    RAISE EXCEPTION 'post-reconciliation native_prayer_delivery_receipts privileges are incompatible';
-  END IF;
-END
+  if not exists (
+    select 1
+    from pg_class r
+    join pg_namespace n on n.oid = r.relnamespace
+    where n.nspname = 'public'
+      and r.relname = 'native_prayer_delivery_receipts'
+      and r.relrowsecurity
+  ) then
+    raise exception 'post-reconciliation native_prayer_delivery_receipts RLS is not enabled';
+  end if;
+
+  if has_table_privilege('anon', v_receipts, 'SELECT')
+    or has_table_privilege('anon', v_receipts, 'INSERT')
+    or has_table_privilege('anon', v_receipts, 'UPDATE')
+    or has_table_privilege('anon', v_receipts, 'DELETE')
+    or has_table_privilege('authenticated', v_receipts, 'SELECT')
+    or has_table_privilege('authenticated', v_receipts, 'INSERT')
+    or has_table_privilege('authenticated', v_receipts, 'UPDATE')
+    or has_table_privilege('authenticated', v_receipts, 'DELETE')
+    or not has_table_privilege('service_role', v_receipts, 'SELECT')
+    or not has_table_privilege('service_role', v_receipts, 'INSERT')
+    or not has_table_privilege('service_role', v_receipts, 'UPDATE')
+    or not has_table_privilege('service_role', v_receipts, 'DELETE') then
+    raise exception 'post-reconciliation native_prayer_delivery_receipts privileges are incompatible';
+  end if;
+end
 $$;

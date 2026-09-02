@@ -372,8 +372,8 @@ jobs:
             repeat('a', 64)
           );
           SQL
-            cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql
-            cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql
+            cat supabase/migrations/20260902211847_prelaunch_schema_reconciliation.sql
+            cat supabase/migrations/20260902211847_prelaunch_schema_reconciliation.sql
             cat <<'SQL'
           do $$
           begin
@@ -410,7 +410,7 @@ jobs:
           alter table public.native_prayer_installations
             add constraint synthetic_incompatible_receipt_v2_check check (receipt_v2 = true);
           SQL
-            cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql
+            cat supabase/migrations/20260902211847_prelaunch_schema_reconciliation.sql
           } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1)"
           receipt_status=$?
           set -e
@@ -432,7 +432,7 @@ jobs:
           alter table public.native_prayer_installations
             add constraint synthetic_incompatible_account_generation_check check (account_generation > 0);
           SQL
-            cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql
+            cat supabase/migrations/20260902211847_prelaunch_schema_reconciliation.sql
           } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1)"
           generation_status=$?
           set -e

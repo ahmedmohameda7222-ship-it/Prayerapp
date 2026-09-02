@@ -1,10 +1,10 @@
 # Supabase Post-Baseline Migration Equivalence Ledger
 
-**Evidence date:** 2026-09-02  
-**Repository:** `ahmedmohameda7222-ship-it/Prayerapp`  
-**Remediation branch:** `security/prelaunch-remediation-2026-09-02`  
-**Approved Wave 0 head:** `fc34cb98edb6385851f4b7b06d340b6dbb2c6e7f`  
-**Production Supabase project:** `dbqbzvkleqzbgufllgca`  
+**Evidence date:** 2026-09-02
+**Repository:** `ahmedmohameda7222-ship-it/Prayerapp`
+**Remediation branch:** `security/prelaunch-remediation-2026-09-02`
+**Approved Wave 0 head:** `fc34cb98edb6385851f4b7b06d340b6dbb2c6e7f`
+**Production Supabase project:** `dbqbzvkleqzbgufllgca`
 **Production migration-history boundary:** `20260822201832_database_advisor_hardening`
 
 ## Purpose

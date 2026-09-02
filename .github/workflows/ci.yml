@@ -356,7 +356,14 @@ jobs:
           {
             cat <<'SQL'
           begin;
-          alter table public.native_prayer_installations disable trigger all;
+          insert into auth.users (id, aud, role, created_at, updated_at)
+          values (
+            '00000000-0000-4000-8000-000000000212'::uuid,
+            'authenticated',
+            'authenticated',
+            now(),
+            now()
+          );
           insert into public.native_prayer_installations (
             installation_id, user_id, credential_hash
           ) values (
@@ -364,7 +371,6 @@ jobs:
             '00000000-0000-4000-8000-000000000212'::uuid,
             repeat('a', 64)
           );
-          alter table public.native_prayer_installations enable trigger all;
           SQL
             cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql
             cat supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql

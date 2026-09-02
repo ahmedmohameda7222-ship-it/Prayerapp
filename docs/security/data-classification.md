@@ -47,4 +47,3 @@ Date: 2026-09-02
 - Backup protection/retention evidence and isolated restore drill evidence.
 - Privacy/Data Safety reconciliation after final exact-head app behavior is fixed.
 - Logcat/Vercel/Supabase log review showing secrets/tokens/native credentials are not emitted.
-

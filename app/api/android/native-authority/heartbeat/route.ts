@@ -8,11 +8,13 @@ import {
   isInstallationId,
   isNativeCredential,
 } from "@/lib/android/native-credentials";
+import { readBoundedJson } from "@/lib/security/http-boundaries";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 const LEASE_DURATION_MS = 12 * 60 * 60 * 1000;
+const MAX_NATIVE_HEARTBEAT_BODY_BYTES = 16 * 1024;
 
 export async function POST(request: Request) {
   const installationId = request.headers.get("x-native-installation-id");
@@ -22,7 +24,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid native credentials" }, { status: 401 });
   }
   const now = new Date();
-  const heartbeat = parseNativeHeartbeat(await request.json().catch(() => null), now);
+  const parsed = await readBoundedJson(request, {
+    maxBytes: MAX_NATIVE_HEARTBEAT_BODY_BYTES,
+    allowMissingContentType: true,
+  });
+  if (!parsed.ok) return NextResponse.json({ error: parsed.message }, { status: parsed.status });
+  const heartbeat = parseNativeHeartbeat(parsed.value, now);
   if (!heartbeat) return NextResponse.json({ error: "Invalid native readiness report" }, { status: 400 });
 
   const client = createServerClient();

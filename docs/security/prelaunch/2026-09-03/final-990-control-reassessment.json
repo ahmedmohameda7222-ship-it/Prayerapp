@@ -6,27 +6,9 @@
   "implementation_head": "48d3fdbac34b255dde7bf574dd0127d7513cc9d4",
   "branch": "security/prelaunch-remediation-2026-09-02",
   "pull_request": 105,
-  "baseline_counts": {
-    "PASS": 653,
-    "FAIL": 54,
-    "NOT VERIFIED": 270,
-    "N/A": 13,
-    "TOTAL": 990
-  },
-  "final_counts": {
-    "PASS": 822,
-    "FAIL": 18,
-    "NOT VERIFIED": 135,
-    "N/A": 15,
-    "TOTAL": 990
-  },
-  "open_control_counts": {
-    "PASS": 169,
-    "FAIL": 18,
-    "NOT VERIFIED": 135,
-    "N/A": 2,
-    "TOTAL": 324
-  },
+  "baseline_counts": {"PASS": 653, "FAIL": 54, "NOT VERIFIED": 270, "N/A": 13, "TOTAL": 990},
+  "final_counts": {"PASS": 822, "FAIL": 18, "NOT VERIFIED": 135, "N/A": 15, "TOTAL": 990},
+  "open_control_counts": {"PASS": 169, "FAIL": 18, "NOT VERIFIED": 135, "N/A": 2, "TOTAL": 324},
   "wave_counts": {
     "0": {"PASS": 38, "NOT VERIFIED": 6, "TOTAL": 44},
     "1": {"PASS": 12, "FAIL": 2, "NOT VERIFIED": 16, "TOTAL": 30},

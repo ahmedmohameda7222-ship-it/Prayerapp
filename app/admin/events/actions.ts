@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
-import { adminActionError, beginAdminAudit, finishAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
+import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import { parseAdminDate, parseAdminOptionalTime, parseAdminText, parseAdminTime, parseAdminUuid } from "@/lib/security/admin-input";
 
 type ActionResult = { success: boolean; error?: string };
@@ -14,9 +14,7 @@ async function runAuditedAction(token: string, event: AdminAuditEvent, operation
   catch (error) { return { success: false, error: adminActionError(error, "admin.errors.auditUnavailable") }; }
   let result: ActionResult;
   try { result = await operation(); } catch (error) { result = { success: false, error: adminActionError(error) }; }
-  try { await finishAdminAudit(audit, result.success ? "success" : "failure", result.error ? { error: result.error } : undefined); }
-  catch { if (result.success) return { success: false, error: "admin.errors.auditUnavailable" }; }
-  return result;
+  return completeAdminAudit(audit, result);
 }
 
 function parseEvent(data: Record<string, string>) {

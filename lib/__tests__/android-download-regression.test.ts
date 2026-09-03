@@ -46,7 +46,8 @@ describe("Android direct APK distribution regression", () => {
       expect(legacy).toContain("ANDROID_PUBLIC_DOWNLOAD_PATH");
       expect(legacy).not.toContain("selected.downloadUrl");
       expect(legacy).not.toContain("getLatestAndroidRelease");
-      expect(legacy).not.toMatch(/github(?:usercontent)?\.com/);
+      expect(legacy).not.toContain("github.com");
+      expect(legacy).not.toContain("githubusercontent.com");
     }
   });
 
@@ -55,8 +56,8 @@ describe("Android direct APK distribution regression", () => {
     const updateProvider = source("components/providers/AndroidUpdateProvider.tsx");
     expect(installCard).toContain("ANDROID_PUBLIC_DOWNLOAD_PATH");
     expect(updateProvider).toContain("ANDROID_PUBLIC_DOWNLOAD_PATH");
-    expect(installCard).not.toMatch(/release-assets\.githubusercontent\.com/);
-    expect(updateProvider).not.toMatch(/release-assets\.githubusercontent\.com/);
+    expect(installCard).not.toContain("release-assets.githubusercontent.com");
+    expect(updateProvider).not.toContain("release-assets.githubusercontent.com");
   });
 
   it("smoke-tests canonical GitHub evidence against the same-domain live APK body", () => {

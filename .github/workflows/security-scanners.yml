@@ -117,3 +117,56 @@ jobs:
           path: security-artifacts/
           if-no-files-found: error
           retention-days: 30
+
+  exact-head-dast:
+    name: Safe exact-head runtime DAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Build exact head
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+      - name: Start isolated exact-head runtime and run safe DAST
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm start -- --hostname 127.0.0.1 --port 3000 > /tmp/prayerapp-next.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true; cat /tmp/prayerapp-next.log' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/privacy >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "Exact-head runtime did not become ready" >&2
+              exit 1
+            fi
+            sleep 1
+          done
+          BASE_URL=http://127.0.0.1:3000 EXPECT_STRICT_CSP=1 node scripts/security/safe-dast.mjs
+
+  production-dast:
+    name: Safe deployed-production DAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+      - name: Probe only non-destructive public/unauthorized boundaries
+        env:
+          BASE_URL: https://donaumoschee.vercel.app
+          EXPECT_STRICT_CSP: "0"
+        run: node scripts/security/safe-dast.mjs

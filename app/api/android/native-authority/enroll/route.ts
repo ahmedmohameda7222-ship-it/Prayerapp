@@ -9,7 +9,7 @@ import {
   isNativeCredential,
   isSameOrigin,
 } from "@/lib/android/native-credentials";
-import { readBoundedJson } from "@/lib/security/http-boundaries";
+import { readBoundedJsonObject } from "@/lib/security/http-boundaries";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -38,11 +38,11 @@ function validEndpoint(value: unknown): value is string {
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
-  const parsed = await readBoundedJson<NativeEnrollmentBody>(request, {
+  const parsed = await readBoundedJsonObject(request, {
     maxBytes: MAX_NATIVE_ENROLLMENT_BODY_BYTES,
   });
   if (!parsed.ok) return NextResponse.json({ error: parsed.message }, { status: parsed.status });
-  const body = parsed.value;
+  const body = parsed.value as NativeEnrollmentBody;
   const headerCredential = request.headers.get("x-native-credential");
   const credential = headerCredential || body.credential;
   const privateNativeSecret = isNativeCredential(headerCredential);

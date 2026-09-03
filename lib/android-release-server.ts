@@ -13,10 +13,21 @@ const githubHeaders = {
   "X-GitHub-Api-Version": "2022-11-28",
 };
 
-export async function getLatestAndroidRelease() {
+type AndroidReleaseLookupOptions = {
+  fresh?: boolean;
+};
+
+function cacheOptions(fresh: boolean) {
+  return fresh
+    ? { cache: "no-store" as const }
+    : { next: { revalidate: 300 } };
+}
+
+export async function getLatestAndroidRelease(options: AndroidReleaseLookupOptions = {}) {
+  const fresh = options.fresh === true;
   const response = await fetch(RELEASES_API, {
     headers: githubHeaders,
-    next: { revalidate: 300 },
+    ...cacheOptions(fresh),
   });
   if (!response.ok) throw new Error(`GitHub releases returned ${response.status}`);
   const releases = await response.json() as GitHubRelease[];
@@ -27,7 +38,7 @@ export async function getLatestAndroidRelease() {
     try {
       const metadataResponse = await fetch(asset.browser_download_url, {
         headers: { Accept: "application/json" },
-        next: { revalidate: 300 },
+        ...cacheOptions(fresh),
       });
       if (!metadataResponse.ok) return null;
       const text = await metadataResponse.text();

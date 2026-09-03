@@ -32,7 +32,6 @@ Authenticated DAST used real local Supabase Auth identities/JWTs and no Producti
 Project: `dbqbzvkleqzbgufllgca`.
 
 Authorized security migrations already applied:
-
 - `20260902211847_prelaunch_schema_reconciliation`
 - `20260902223939_admin_audit_hardening`
 

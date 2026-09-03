@@ -36,9 +36,15 @@ Do not destructively drop the audit table or erase audit records merely to retur
 5. verify locally and apply the reviewed forward fix;
 6. re-run the Production verifier and runtime/log checks.
 
-## Application-code recovery
+## Application-code consistency model
 
-The server audit helper records an append-only `attempt` before the privileged mutation. If audit persistence is unavailable before a mutation, the privileged action fails closed and the mutation is not executed. If outcome recording fails after a completed mutation, the durable attempt remains as evidence and the action surfaces audit unavailability for investigation rather than fabricating a success record.
+The server audit helper records an append-only `attempt` before every privileged mutation. If authorization or the durable attempt append is unavailable before the mutation, the action fails closed and the mutation is not executed. No unaudited authorization path is introduced.
+
+The privileged mutation and the terminal audit outcome are separate commits in the current architecture. Once the privileged mutation has committed, that mutation result is authoritative. If the terminal `success` or `failure` audit append then fails, the helper must not rewrite a committed success into `success: false`, because doing so invites an operator or caller to retry an operation that already succeeded and can duplicate content, updates, or notification side effects.
+
+Instead, the durable `attempt` remains as evidence and the action returns the truthful mutation result together with `auditIncomplete: true` and the bounded warning `admin.errors.auditIncomplete`. The helper also emits a server-side error containing only bounded correlation identifiers (`action`, `entityType`, `entityId`, `requestId`) plus whether the mutation succeeded. Monitoring can therefore detect an attempt that lacks its terminal outcome and reconcile it without asking the user to repeat the mutation.
+
+This is an explicit best-effort consistency model, not mutation+audit transactional atomicity. A future architecture may move both writes into one database transaction, but the current remediation deliberately avoids an unrelated large refactor while preserving authorization, durable attempt evidence, truthful mutation semantics, and operational detectability.
 
 No authorization decision is delegated to an audit record. Admin authorization is independently verified against the authenticated Supabase user and the server-side admin allowlist.
 

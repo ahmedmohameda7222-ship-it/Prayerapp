@@ -4,80 +4,89 @@ Date: 2026-09-03
 Review date: 2026-10-03, or earlier before any Production launch/release decision.
 Owner unless otherwise stated: Prayerapp Production/repository maintainer.
 
-This register distinguishes accepted risk from unresolved release gates and evidence gaps. An entry here is not evidence that the underlying control is technically fixed.
+This register distinguishes accepted risk from unresolved release gates and external evidence limitations. Documentation alone does not convert an unresolved control to PASS.
 
 ## RR-001 — Supabase leaked-password protection disabled
 
 - Related finding: PA-SEC-002.
-- State: **ACCEPTED RISK / NOT TECHNICALLY FIXED**.
+- State: **ACCEPTED RISK / NOT TECHNICALLY FIXED / NON-BLOCKING BY EXPLICIT USER DECISION**.
 - Evidence: Production Supabase Security Advisor continues to report `auth_leaked_password_protection` WARN.
-- Acceptance: the user explicitly directed that leaked-password protection remain disabled and that this accepted condition not be treated as a launch blocker.
+- Acceptance: leaked-password protection must remain disabled and this accepted condition must not be treated as a launch blocker.
 - Risk: a password known from public compromise corpora is not rejected by Supabase's leaked-password check.
-- Compensating controls: application authentication remains Supabase-managed; privileged admin authorization is separately enforced; durable abuse controls/security logging are part of the remediation; no password value is stored in repository evidence.
-- Revisit trigger: authentication incident, change in account-risk posture, or before materially expanding privileged user population.
+- Compensating controls: Supabase-managed authentication, separate admin authorization, durable abuse controls, security logging and no password values in repository evidence.
+- Revisit trigger: authentication incident, material account-risk change or substantial expansion of privileged users.
 
 ## RR-002 — Historical Supabase migration metadata does not mirror repository identities
 
 - Related finding: PA-SEC-001.
-- State: **SEMANTIC PRODUCTION SCHEMA RECONCILED; HISTORICAL METADATA DRIFT REMAINS**.
-- Evidence: Production contains the applied remediation migrations `20260902211847_prelaunch_schema_reconciliation` and `20260902223939_admin_audit_hardening`; historical repository migration versions that were previously applied manually/equivalently are not retroactively present in Production history.
-- Risk: operators could misinterpret historical migration identity even though the verified Production semantic schema matches the required security contract.
-- Compensating controls: read-only semantic verifier, clean local migration bootstrap, fail-closed reconciliation migrations, documented equivalence record and forward-fix recovery rule.
-- Gate: migration-history metadata repair remains separately approval-gated and has not been performed.
+- State: **SEMANTIC PRODUCTION SCHEMA RECONCILED; EXTERNAL METADATA-REPAIR LIMITATION**.
+- Evidence: Production contains `20260902211847_prelaunch_schema_reconciliation` and `20260902223939_admin_audit_hardening`. Fresh read-only verification re-proved the complete semantic state represented by historical repository versions `20260823104600`, `20260826160500`, `20260831080500` and `20260901223000`.
+- Risk: operators can misread migration provenance even though the security-critical semantic schema is correct.
+- Compensating controls: read-only semantic verifier, clean migration bootstrap, fail-closed migrations, equivalence record and forward-fix recovery rule.
+- Gate state: metadata-only repair is explicitly authorized, but the connected Supabase management surface exposes no supported `repair` / `mark-applied` primitive. Historical SQL was not replayed and migration metadata was not manually edited.
 
 ## RR-003 — Hardened Android 1.0.4 is not the public signed release
 
 - Related finding: PA-SEC-003.
-- State: **OPEN RELEASE GATE; NOT ACCEPTED AS FIXED**.
-- Evidence: source RC is versionCode 7 / versionName 1.0.4; latest public release remains `android-v1.0.3` targeting older source.
-- Risk: users downloading the current public APK do not receive every hardening change present in the remediation branch, including the current hardened credential-storage implementation.
-- Compensating controls: public 1.0.3 retains the previously verified permanent signing certificate and update path; signing/publication workflows verify package, certificate, digest and monotonic version; the 1.0.4 candidate is built unsigned by ordinary PR CI.
-- Gate: Production signing, signed-artifact verification, public tag/release and physical-device final QA require explicit approval and have not been performed.
+- State: **OPEN EXTERNAL RELEASE GATE; NOT ACCEPTED AS FIXED**.
+- Evidence: exact-head unsigned candidate is package `de.donaumoschee.app`, versionName `1.0.4`, versionCode `7`; Android workflow `33761020400` passed unsigned build plus API 23/37 instrumentation; public release remains `android-v1.0.3`.
+- Exact unsigned hashes: APK `bf4e0de0b8bb0bff17bbf39538dfe8a8c8ba423c86d1658e59ac18742273eb47`; AAB `b16bd14780960d74bc83f36e7150a4242147851cb9c2ff1d61cb17cc31ac8dea`.
+- Risk: current public users do not receive every hardening change present in the 1.0.4 candidate.
+- Compensating controls: the protected signing workflow validates exact source provenance, package/version, permanent signer certificate and signed artifact hashes; signing secrets remain isolated from PR CI.
+- Gate state: Production signing/publication/device QA are authorized, but the protected signer requires `workflow_dispatch`, which the connected GitHub surface cannot invoke. The workflow was not weakened or bypassed.
 
 ## RR-004 — Nonce CSP is not yet the Production web policy
 
 - Related finding: PA-SEC-004.
-- State: **OPEN DEPLOYMENT GATE; SOURCE FIX IMPLEMENTED**.
-- Evidence: remediation source builds a per-request nonce CSP with `strict-dynamic` and no `unsafe-inline`/`unsafe-eval` in `script-src`; current Production deployment remains main `b18430b360313148fc76baaeda9d96844ed508a5`.
-- Risk: Production retains the pre-remediation CSP until the approved branch is merged/deployed.
-- Compensating controls: existing Production headers and same-origin/authz/input-validation controls remain active; non-destructive Production DAST continues to run; exact-head isolated DAST validates the pending strict CSP.
-- Gate: merge/deployment and post-deployment CSP smoke verification require explicit approval.
+- State: **OPEN EXTERNAL DEPLOYMENT GATE; SOURCE FIX IMPLEMENTED**.
+- Evidence: exact remediation source passes isolated CSP/DAST verification; Production deployment `dpl_39vKk5vWuBkmQrDza3FQuSU2tr8j` still serves `b18430b360313148fc76baaeda9d96844ed508a5`.
+- Risk: Production retains the pre-remediation web policy until the exact reviewed remediation source is deployed.
+- Compensating controls: existing Production security headers/authz/input validation remain active; non-destructive Production DAST continues to run; exact-head isolated DAST validates the pending strict CSP.
+- Gate state: exact-head Production deployment is authorized, but the available Vercel action cannot bind a deployment to the reviewed Git SHA/ref and no exact-head preview exists to promote. An unbound deployment was not attempted. Merge remains explicitly prohibited.
 
 ## RR-005 — Repository human approval count is zero
 
-- Related control: OPEN-135 / repository review governance.
-- State: **OPEN GOVERNANCE GAP; NOT SILENTLY WAIVED**.
-- Evidence: active `Protect main` ruleset requires PR flow, strict CI/Android checks, resolved review threads, extra approval for unattributed changes, squash-only merge, Copilot review on push/draft, and has no bypass actors; `required_approving_review_count` is `0`.
-- Risk: repository policy does not universally require one human approval before merge.
-- Compensating controls: required exact status checks, no bypass actors, unresolved-thread gate, unattributed-change approval and explicit user merge gate for this remediation.
-- Gate: changing the GitHub ruleset is separately approval-gated and has not been performed.
+- Related control: OPEN-135.
+- State: **OPEN EXTERNAL GOVERNANCE GAP; NOT SILENTLY WAIVED**.
+- Evidence: active `Protect main` ruleset preserves strict required CI/Android checks, review-thread resolution, squash-only merge and no bypass actors; `required_approving_review_count` remains `0`.
+- Risk: repository policy does not universally require one independent human approval before merge.
+- Compensating controls: strict required status checks, no bypass actors, independent security review outside this implementation session and explicit no-merge instruction.
+- Gate state: changing the ruleset to one genuine independent approval is authorized, but the connected GitHub ruleset surface is read-only. No self-approval or fabricated review was created.
 
-## RR-006 — Provider backup configuration and real isolated restore drill are not verified
+## RR-006 — Provider backup/PITR configuration and isolated restore drill are not verified
 
 - Related controls: OPEN-277 through OPEN-282 and restore-drill requirements.
-- State: **OPEN EVIDENCE GAP**.
-- Evidence: recovery/migration procedures are documented and clean local schema reconstruction is exercised, but available management tooling does not expose verified Production backup/PITR configuration or an isolated provider restore operation.
-- Risk: recovery time/data-loss assumptions cannot be validated against a real provider backup until a restore drill is executed.
-- Compensating controls: migrations are source-controlled; clean bootstrap and semantic schema verification are exercised; destructive Production restore is prohibited; forward-fix/recovery process is documented.
-- Gate: obtain provider backup configuration evidence and perform a safe isolated restore before marking restore controls PASS.
+- State: **OPEN PROVIDER EVIDENCE GAP**.
+- Evidence: clean local migration reconstruction and migration preservation/fail-closed proofs are exercised. The connected Supabase surface does not expose Production backup inventory, PITR status, retention, restore points or a safe isolated backup restore operation.
+- Risk: recovery-time/data-loss assumptions cannot be validated against real provider backup state.
+- Compensating controls: source-controlled migrations, clean bootstrap, semantic verification and documented forward-fix/recovery procedure.
+- Gate state: a safe isolated/non-Production provider restore is authorized if supported; no such primitive is exposed. A destructive restore against healthy Production is prohibited and was not attempted.
 
-## RR-007 — Android signing-key backup/access and physical-device final security QA are not verified for this RC
+## RR-007 — Android signing-key access/recovery and exact signed-device QA remain unverified
 
 - Related controls: signing-key protection and Wave 4/6 signed-device gates.
-- State: **OPEN EVIDENCE GAP / RELEASE GATE**.
-- Risk: final source-to-signed-artifact provenance and device behavior cannot be claimed for version 1.0.4 without exercising the protected signing environment and device QA.
-- Compensating controls: repository contains no signing keystore; production signing secrets are isolated from automatic PR CI; signing workflow verifies certificate and artifact integrity.
-- Gate: requires separately approved Production signing plus controlled physical-device verification. No signing operation has been performed during this remediation.
+- State: **OPEN EXTERNAL EVIDENCE / RELEASE GATE**.
+- Evidence: the repository contains no Production keystore; protected workflow expects permanent certificate SHA-256 `E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92` and keeps signing secrets out of ordinary PR execution.
+- Risk: final source-to-signed-artifact provenance, upgrade behavior and physical-device security behavior cannot be claimed for 1.0.4 without executing the protected signer and signed-RC QA.
+- Gate state: signing and signed QA are authorized but cannot proceed until the workflow-dispatch external capability is available. Physical-device-specific controls remain NOT VERIFIED if no real device is available.
 
 ## RR-008 — Provider alert notification delivery is not fully verified
 
 - Related controls: monitoring/alerting readiness.
-- State: **OPEN EVIDENCE GAP**.
-- Evidence: Vercel/Supabase/GitHub detection signals and security CI gates are observable and have been exercised; provider-side paging/email configuration for every threshold in `docs/security/monitoring-alerting.md` is not available through current tooling.
-- Risk: an event may be present in logs without generating a timely external notification.
-- Compensating controls: pre-release manual review cadence, fail-closed GitHub security gates, incident-response runbook and directly queryable Production logs/advisors.
-- Gate: verify provider alert destinations/test delivery before marking automated-alert controls PASS.
+- State: **OPEN PROVIDER EVIDENCE GAP**.
+- Evidence: GitHub security gates, safe DAST, authenticated local DAST, Supabase logs/advisors and Vercel runtime signals are observable and have been exercised. Provider paging/email configuration and test delivery are not exposed by current connectors.
+- Risk: an event can be present in logs without producing a timely external notification.
+- Compensating controls: fail-closed GitHub security gates, manual pre-release review, incident-response runbook and directly queryable provider logs/advisors.
+- Gate state: safe monitoring/alert test events are authorized where supported; automated provider alert delivery/on-call delivery remains NOT VERIFIED.
+
+## RR-009 — Current Production still needs PA-SEC-007 post-deploy retest
+
+- Related finding: PA-SEC-007.
+- State: **OPEN ON CURRENT OLD PRODUCTION DEPLOYMENT**.
+- Evidence: `DEP0169 url.parse()` warnings were observed on `/api/cron/prayer-reminders` while Production still serves the old baseline. A separate `DEP0169` warning is also reproducible in GitHub Actions setup-node tooling, so attribution must be determined by post-deploy retest rather than inference.
+- Risk: the current Production runtime may retain a deprecated URL parsing path until the exact remediation source is deployed and exercised.
+- Gate: deploy only the exact reviewed remediation source, then inspect the cron/native runtime and Vercel/Supabase logs before closing PA-SEC-007.
 
 ## Residual-risk decision rule
 
-Only RR-001 is explicitly accepted by user direction as a non-launch-blocking technical risk. The other entries are documentation of residual state, approval gates, or evidence gaps; they must not be converted to PASS merely because they are documented here.
+Only RR-001 is explicitly accepted as a non-launch-blocking technical risk. RR-002 through RR-009 are unresolved release/provider/evidence states and must not be converted to PASS merely because authorization exists or the limitation is documented.

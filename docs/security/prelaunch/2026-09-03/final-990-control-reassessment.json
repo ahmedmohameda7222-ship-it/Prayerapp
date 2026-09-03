@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "generated_date": "2026-09-03",
+  "repository": "ahmedmohameda7222-ship-it/Prayerapp",
+  "baseline_audit_sha": "b18430b360313148fc76baaeda9d96844ed508a5",
+  "implementation_head": "e533308b51056e7c47a3de38c1ce558267dce10e",
+  "branch": "security/prelaunch-remediation-2026-09-02",
+  "pull_request": 105,
+  "baseline_counts": {"PASS": 653, "FAIL": 54, "NOT VERIFIED": 270, "N/A": 13, "TOTAL": 990},
+  "final_counts": {"PASS": 816, "FAIL": 19, "NOT VERIFIED": 141, "N/A": 14, "TOTAL": 990},
+  "open_control_counts": {"PASS": 163, "FAIL": 19, "NOT VERIFIED": 141, "N/A": 1, "TOTAL": 324},
+  "wave_counts": {
+    "0": {"PASS": 38, "NOT VERIFIED": 6, "TOTAL": 44},
+    "1": {"PASS": 12, "FAIL": 2, "NOT VERIFIED": 16, "TOTAL": 30},
+    "2": {"PASS": 15, "NOT VERIFIED": 22, "TOTAL": 37},
+    "3": {"PASS": 19, "FAIL": 1, "NOT VERIFIED": 9, "N/A": 1, "TOTAL": 30},
+    "4": {"PASS": 33, "FAIL": 7, "NOT VERIFIED": 48, "TOTAL": 88},
+    "5": {"PASS": 33, "NOT VERIFIED": 40, "TOTAL": 73},
+    "6": {"PASS": 13, "FAIL": 9, "TOTAL": 22}
+  },
+  "reassessment_method": {
+    "baseline_closed_controls": "The original 653 PASS and 13 N/A controls were revalidated as a class against the exact-head regression/build/scanner set and current read-only Production/provider evidence; no contradiction was observed. The original audited checklist remains the item-level authority for these 666 controls.",
+    "open_controls": "All 324 original FAIL/NOT VERIFIED controls were individually reassessed under their original wording and closure rule.",
+    "status_rule": "NOT VERIFIED is retained wherever required provider, authenticated-user, signed-artifact, physical-device, restore, invasive DAST, or alert-delivery evidence is unavailable. Accepted risk is not classified as a technical fix."
+  },
+  "evidence": {
+    "implementation_head": "e533308b51056e7c47a3de38c1ce558267dce10e",
+    "ci": {"run_id": 33741347182, "result": "SUCCESS", "tests": "125 files / 561 tests PASS", "lint": "0 errors / 11 warnings", "npm_production_audit": "0 vulnerabilities", "supabase_clean_bootstrap": "PASS", "build": "PASS; 45/45 static pages"},
+    "security_scanners": {"run_id": 33741346982, "result": "SUCCESS", "jobs": ["CodeQL JavaScript/TypeScript", "Gitleaks full-history", "OSV", "SBOM/Android dependency evidence", "safe exact-head runtime DAST", "safe deployed-production DAST"]},
+    "android": {"run_id": 33741347050, "result": "SUCCESS", "unsigned_build_job": 100604095619, "api37_job": 100605266668, "api23_job": 100605266736, "api37_instrumentation": "10 tests PASS", "signing_job": {"id": 100604096745, "result": "SKIPPED"}},
+    "unsigned_android_artifact": {"artifact_id": 9888015957, "zip_sha256": "ff48108cdbb72de59d3aea115bc386bb34da9eb4ebb9a370be304ceef8971adc", "apk_sha256": "bf4e0de0b8bb0bff17bbf39538dfe8a8c8ba423c86d1658e59ac18742273eb47", "aab_sha256": "b16bd14780960d74bc83f36e7150a4242147851cb9c2ff1d61cb17cc31ac8dea", "source_metadata_sha256": "8b8ac1db16c80f91ed6ed54cd16ec93bb8f9fb732b6a6de82a26f6b117093dfc", "source_sha": "e533308b51056e7c47a3de38c1ce558267dce10e", "version_code": 7, "version_name": "1.0.4", "package_id": "de.donaumoschee.app", "signing_state": "UNSIGNED; jarsigner reported no manifest/jar is unsigned"},
+    "production_supabase": {"project": "dbqbzvkleqzbgufllgca", "security_migrations": ["20260902211847_prelaunch_schema_reconciliation", "20260902223939_admin_audit_hardening"], "semantic_schema_verifier": "PASS", "advisor": "intentional server-only RLS/no-policy INFO notices plus auth_leaked_password_protection WARN"},
+    "production_web": {"deployment_id": "dpl_39vKk5vWuBkmQrDza3FQuSU2tr8j", "sha": "b18430b360313148fc76baaeda9d96844ed508a5", "remediation_head_deployed": false},
+    "github_governance": {"ruleset": "Protect main", "required_checks": ["verify", "Verify Android project and build unsigned candidate", "Android instrumentation API 23", "Android instrumentation API 37"], "bypass_actors": 0, "required_approving_review_count": 0}
+  },
+  "PASS_IDS": ["OPEN-002","OPEN-003","OPEN-004","OPEN-007","OPEN-008","OPEN-010","OPEN-011","OPEN-012","OPEN-013","OPEN-015","OPEN-016","OPEN-017","OPEN-018","OPEN-019","OPEN-020","OPEN-021","OPEN-022","OPEN-023","OPEN-024","OPEN-025","OPEN-026","OPEN-027","OPEN-028","OPEN-029","OPEN-030","OPEN-031","OPEN-032","OPEN-033","OPEN-034","OPEN-035","OPEN-036","OPEN-037","OPEN-038","OPEN-039","OPEN-040","OPEN-041","OPEN-042","OPEN-048","OPEN-053","OPEN-063","OPEN-064","OPEN-065","OPEN-081","OPEN-082","OPEN-083","OPEN-085","OPEN-086","OPEN-087","OPEN-088","OPEN-091","OPEN-094","OPEN-097","OPEN-098","OPEN-099","OPEN-100","OPEN-101","OPEN-102","OPEN-103","OPEN-104","OPEN-105","OPEN-106","OPEN-107","OPEN-108","OPEN-109","OPEN-110","OPEN-116","OPEN-117","OPEN-118","OPEN-119","OPEN-120","OPEN-121","OPEN-126","OPEN-127","OPEN-128","OPEN-129","OPEN-130","OPEN-131","OPEN-132","OPEN-133","OPEN-134","OPEN-142","OPEN-144","OPEN-145","OPEN-157","OPEN-158","OPEN-159","OPEN-160","OPEN-161","OPEN-162","OPEN-164","OPEN-165","OPEN-166","OPEN-167","OPEN-170","OPEN-172","OPEN-176","OPEN-177","OPEN-178","OPEN-179","OPEN-180","OPEN-181","OPEN-182","OPEN-183","OPEN-187","OPEN-189","OPEN-190","OPEN-191","OPEN-192","OPEN-195","OPEN-203","OPEN-204","OPEN-207","OPEN-208","OPEN-210","OPEN-213","OPEN-214","OPEN-215","OPEN-217","OPEN-218","OPEN-219","OPEN-220","OPEN-221","OPEN-222","OPEN-223","OPEN-224","OPEN-225","OPEN-226","OPEN-242","OPEN-243","OPEN-244","OPEN-245","OPEN-246","OPEN-247","OPEN-256","OPEN-257","OPEN-259","OPEN-260","OPEN-262","OPEN-263","OPEN-264","OPEN-265","OPEN-266","OPEN-267","OPEN-268","OPEN-269","OPEN-270","OPEN-271","OPEN-272","OPEN-273","OPEN-281","OPEN-284","OPEN-285","OPEN-286","OPEN-287","OPEN-288","OPEN-289","OPEN-290","OPEN-291","OPEN-292","OPEN-295","OPEN-296","OPEN-317","OPEN-319"],
+  "FAIL_IDS": ["OPEN-001","OPEN-005","OPEN-006","OPEN-009","OPEN-062","OPEN-135","OPEN-173","OPEN-174","OPEN-175","OPEN-184","OPEN-185","OPEN-186","OPEN-188","OPEN-318","OPEN-320","OPEN-321","OPEN-322","OPEN-323","OPEN-324"],
+  "NOT_VERIFIED_IDS": ["OPEN-014","OPEN-044","OPEN-045","OPEN-046","OPEN-047","OPEN-049","OPEN-050","OPEN-051","OPEN-052","OPEN-054","OPEN-055","OPEN-056","OPEN-057","OPEN-058","OPEN-059","OPEN-060","OPEN-061","OPEN-066","OPEN-067","OPEN-068","OPEN-069","OPEN-070","OPEN-071","OPEN-072","OPEN-073","OPEN-074","OPEN-075","OPEN-076","OPEN-077","OPEN-078","OPEN-079","OPEN-080","OPEN-084","OPEN-089","OPEN-090","OPEN-092","OPEN-093","OPEN-095","OPEN-096","OPEN-111","OPEN-112","OPEN-113","OPEN-114","OPEN-115","OPEN-122","OPEN-123","OPEN-124","OPEN-125","OPEN-136","OPEN-137","OPEN-138","OPEN-139","OPEN-140","OPEN-141","OPEN-143","OPEN-146","OPEN-147","OPEN-148","OPEN-149","OPEN-150","OPEN-151","OPEN-152","OPEN-153","OPEN-154","OPEN-155","OPEN-156","OPEN-163","OPEN-168","OPEN-169","OPEN-171","OPEN-193","OPEN-194","OPEN-196","OPEN-197","OPEN-198","OPEN-199","OPEN-200","OPEN-201","OPEN-202","OPEN-205","OPEN-206","OPEN-209","OPEN-211","OPEN-212","OPEN-216","OPEN-227","OPEN-228","OPEN-229","OPEN-230","OPEN-231","OPEN-232","OPEN-233","OPEN-234","OPEN-235","OPEN-236","OPEN-237","OPEN-238","OPEN-239","OPEN-240","OPEN-241","OPEN-248","OPEN-249","OPEN-250","OPEN-251","OPEN-252","OPEN-253","OPEN-254","OPEN-255","OPEN-258","OPEN-261","OPEN-274","OPEN-275","OPEN-276","OPEN-277","OPEN-278","OPEN-279","OPEN-280","OPEN-282","OPEN-283","OPEN-293","OPEN-294","OPEN-297","OPEN-298","OPEN-299","OPEN-300","OPEN-301","OPEN-302","OPEN-303","OPEN-304","OPEN-305","OPEN-306","OPEN-307","OPEN-308","OPEN-309","OPEN-310","OPEN-311","OPEN-312","OPEN-313","OPEN-314","OPEN-315","OPEN-316"],
+  "N_A_IDS": ["OPEN-043"],
+  "failure_reasons": {
+    "OPEN-001": "Release-integrity/signing and deployment verification weaknesses remain.",
+    "OPEN-005": "Exact-head APK/AAB are unsigned; post-sign verification was not performed.",
+    "OPEN-006": "Remediation web head is not deployed; final post-deploy smoke cannot run.",
+    "OPEN-009": "Production semantic schema is reconciled, but historical migration-version identity still does not correspond one-for-one to repository history; no gated history repair was performed.",
+    "OPEN-062": "Supabase leaked-password protection remains disabled. It is explicitly accepted as non-launch-blocking, but accepted risk is not a technical fix.",
+    "OPEN-135": "Main ruleset has strict checks/no bypass actors but required_approving_review_count remains 0; ruleset mutation is separately gated.",
+    "OPEN-173": "No Production signing operation was authorized/performed for 1.0.4.",
+    "OPEN-174": "Exact-head APK is intentionally unsigned.",
+    "OPEN-175": "Exact-head AAB is intentionally unsigned.",
+    "OPEN-184": "Expected permanent certificate is known, but unsigned RC cannot prove it.",
+    "OPEN-185": "Unsigned artifact hashes are recorded; signed artifact hashes do not exist for this RC.",
+    "OPEN-186": "No exact signed RC physical-device installation.",
+    "OPEN-188": "Upgrade from public 1.0.3 to exact signed 1.0.4 RC not device-tested.",
+    "OPEN-318": "Release-integrity/deployment gates remain unresolved despite green source/backend/scanners.",
+    "OPEN-320": "Production web still runs b18430b...; remediation nonce CSP is not deployed.",
+    "OPEN-321": "Exact-head 1.0.4 RC remains unsigned.",
+    "OPEN-322": "Physical-device security QA of exact signed RC not performed.",
+    "OPEN-323": "IR is documented, but provider alert delivery/restore and monitoring evidence remain incomplete.",
+    "OPEN-324": "Residual risks are documented, but only leaked-password protection is explicitly accepted; other launch gates are not accepted as safe."
+  },
+  "not_verified_rule": "A NOT VERIFIED item is an evidence gap, not a claim of vulnerability. These items still require the dynamic/provider/authenticated-user/signed-device/restore/alert evidence required by their original wording.",
+  "N_A_reason": {"OPEN-043": "Full-history Gitleaks found no credential exposure requiring rotation; the six historical candidates were the reviewed non-secret azkar_favorites_v1 local-storage key."},
+  "PA_SEC": {
+    "PA-SEC-001": {"status": "PARTIALLY REMEDIATED / RESIDUAL METADATA DRIFT", "detail": "Production semantic schema is reconciled and verified; historical migration identity drift remains without gated metadata repair."},
+    "PA-SEC-002": {"status": "ACCEPTED RISK / NOT TECHNICALLY FIXED", "detail": "Leaked-password protection remains disabled by explicit user direction."},
+    "PA-SEC-003": {"status": "OPEN / RELEASE GATE", "detail": "Hardened 1.0.4/code 7 unsigned candidate is green; public release remains 1.0.3 and signing/publication/device QA are unperformed."},
+    "PA-SEC-004": {"status": "SOURCE FIXED / PRODUCTION NOT DEPLOYED", "detail": "Exact-head nonce CSP passes isolated DAST; Production remains old main."},
+    "PA-SEC-005": {"status": "FIXED", "detail": "Server-side admin/API input length and numeric bounds are enforced with regressions."},
+    "PA-SEC-006": {"status": "FIXED / PRODUCTION-READY AUDIT PATH", "detail": "Append-oriented admin audit path is deployed and access-hardened; Production audit_logs has 0 rows because no synthetic Production admin mutation was created."},
+    "PA-SEC-007": {"status": "CLOSED / NOT CURRENTLY REPRODUCED", "detail": "No direct Prayerapp url.parse source call or retained Production DEP0169 warning is present; similar warning is reproducibly emitted by GitHub Actions setup-node tooling, so historical attribution remains inconclusive."}
+  },
+  "launch_verdict": "NO-GO",
+  "launch_blockers": [
+    "Exact-head Android 1.0.4 APK/AAB are unsigned; Production signing/post-sign verification/publication were not authorized.",
+    "Physical-device security QA of the exact signed RC was not performed.",
+    "Production Vercel still runs b18430b...; nonce-CSP remediation is not deployed or post-deploy smoke-tested.",
+    "Main ruleset required_approving_review_count remains 0; remote ruleset mutation was not authorized.",
+    "Provider backup/PITR settings and a real isolated restore drill are not verified.",
+    "Provider-side alert delivery and several authenticated/invasive dynamic controls remain NOT VERIFIED.",
+    "Production schema is semantically correct, but historical migration-version correspondence remains drifted without approved metadata repair."
+  ],
+  "accepted_risk": {"RR-001": "Supabase leaked-password protection remains disabled by explicit user direction; documented as accepted risk and not counted as technically fixed."}
+}

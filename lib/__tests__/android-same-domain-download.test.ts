@@ -43,9 +43,13 @@ function upstream(bytes = APK_BYTES, contentLength = bytes.byteLength) {
   });
 }
 
+function fetchSpy(response = upstream()) {
+  return vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => response);
+}
+
 describe("same-domain Android APK delivery", () => {
   it("returns the verified APK body with the required non-redirect download headers", async () => {
-    const fetchImpl = vi.fn(async () => upstream());
+    const fetchImpl = fetchSpy();
     const response = await serveVerifiedAndroidApk({
       releaseLoader: async () => release(),
       fetchImpl,
@@ -75,7 +79,7 @@ describe("same-domain Android APK delivery", () => {
   });
 
   it("fails closed before fetching when the release tag is not the manifest tag", async () => {
-    const fetchImpl = vi.fn(async () => upstream());
+    const fetchImpl = fetchSpy();
     const response = await serveVerifiedAndroidApk({
       releaseLoader: async () => release({ tagName: "android-v1.0.5" }),
       fetchImpl,
@@ -86,7 +90,7 @@ describe("same-domain Android APK delivery", () => {
   });
 
   it("fails closed before fetching an unexpected APK asset", async () => {
-    const fetchImpl = vi.fn(async () => upstream());
+    const fetchImpl = fetchSpy();
     const response = await serveVerifiedAndroidApk({
       releaseLoader: async () => release({ apkAsset: "candidate.apk" }),
       fetchImpl,
@@ -139,7 +143,7 @@ describe("same-domain Android APK delivery", () => {
   });
 
   it("has no request-controlled upstream URL input and always fetches the fixed release URL", async () => {
-    const fetchImpl = vi.fn(async () => upstream());
+    const fetchImpl = fetchSpy();
     await serveVerifiedAndroidApk({
       releaseLoader: async () => release(),
       fetchImpl,

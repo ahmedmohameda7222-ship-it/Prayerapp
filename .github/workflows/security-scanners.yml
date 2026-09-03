@@ -211,7 +211,7 @@ jobs:
             fi
             sleep 1
           done
-          BASE_URL=http://127.0.0.1:3000 node scripts/security/authenticated-dast.mjs
+          BASE_URL=http://localhost:3000 node scripts/security/authenticated-dast.mjs
 
   production-dast:
     name: Safe deployed-production DAST

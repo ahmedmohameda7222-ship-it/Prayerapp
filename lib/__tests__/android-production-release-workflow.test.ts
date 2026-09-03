@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const repoRoot = process.cwd();
 const workflowPath = join(repoRoot, ".github/workflows/android-production-release.yml");
+const twaWorkflowPath = join(repoRoot, ".github/workflows/android-twa.yml");
 const rightsManifestPath = join(repoRoot, "android-twa/adhan-rights.json");
 
 describe("Android production release workflow policy", () => {
@@ -29,5 +30,18 @@ describe("Android production release workflow policy", () => {
     expect(workflow).toContain('test "$compile_sdk" = "37"');
     expect(workflow).toContain('test "$min_sdk" = "23"');
     expect(workflow).toContain("sdkVersion:'23'");
+  });
+
+  it("keeps exact-head RC signing isolated behind explicit workflow dispatch", () => {
+    const workflow = readFileSync(twaWorkflowPath, "utf8");
+
+    expect(workflow).toContain("workflow_dispatch:");
+    expect(workflow).toContain("SIGN_ANDROID_RC");
+    expect(workflow).toContain("github.event_name == 'workflow_dispatch'");
+    expect(workflow).toContain("environment: android-production");
+    expect(workflow).toContain("Download exact unsigned candidate without checking out PR code");
+    expect(workflow).toContain("Verify unsigned candidate provenance and identity");
+    expect(workflow).toContain("Reconstruct and verify permanent signing certificate");
+    expect(workflow).toContain('test "$actual" = "$EXPECTED_CERT_SHA256"');
   });
 });

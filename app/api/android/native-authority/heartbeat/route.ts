@@ -26,7 +26,6 @@ export async function POST(request: Request) {
   const now = new Date();
   const parsed = await readBoundedJson(request, {
     maxBytes: MAX_NATIVE_HEARTBEAT_BODY_BYTES,
-    allowMissingContentType: true,
   });
   if (!parsed.ok) return NextResponse.json({ error: parsed.message }, { status: parsed.status });
   const heartbeat = parseNativeHeartbeat(parsed.value, now);

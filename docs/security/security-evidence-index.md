@@ -1,122 +1,134 @@
 # Prayerapp Security Evidence Index
 
-Date: 2026-09-02
+Date: 2026-09-03
 
-## Control Ledger
+## Current security candidate
 
-The authoritative open-control ledger is `docs/security/prelaunch/2026-09-02/open-control-closure-ledger.json`.
+- Approved baseline `main`: `b18430b360313148fc76baaeda9d96844ed508a5`
+- Technical implementation head with authenticated DAST fix: `753b539675639ef46522964840382329404f30b9`
+- Security branch: `security/prelaunch-remediation-2026-09-02`
+- Pull request: #105, Draft, open, unmerged
+- Machine-readable reassessment: `docs/security/prelaunch/2026-09-03/final-990-control-reassessment.json`
+- Current reassessment: **822 PASS / 19 FAIL / 135 NOT VERIFIED / 14 N/A = 990**
+- Open-control subset: **169 PASS / 19 FAIL / 135 NOT VERIFIED / 1 N/A = 324**
 
-It contains all 324 controls from the approved matrix:
+The approved source authority remains the original 324-control matrix and remediation plan. Controls requiring provider, authenticated-runtime, signed-artifact, physical-device, restore, alert-delivery or other dynamic evidence are not closed from source inspection alone.
 
-| Wave | Controls | FAIL | NOT VERIFIED |
-| --- | ---: | ---: | ---: |
-| 0 | 44 | 0 | 44 |
-| 1 | 30 | 7 | 23 |
-| 2 | 37 | 4 | 33 |
-| 3 | 30 | 5 | 25 |
-| 4 | 88 | 21 | 67 |
-| 5 | 73 | 0 | 73 |
-| 6 | 22 | 17 | 5 |
+## Exact-head verification on `753b539…`
 
-Every ledger row has:
+### CI
 
-- implementation owner;
-- independent reviewer owner;
-- closure evidence type;
-- applicable remediation wave;
-- current disposition;
-- evidence reference list.
+- Run `33761020357`
+- Job `100667063403`
+- Result: **SUCCESS**
+- Binding authority hashes: PASS
+- `git diff --check`: PASS
+- production dependency audit: 0 vulnerabilities
+- lint: 0 errors / 11 warnings
+- Vitest: **125 files / 561 tests PASS**
+- clean Supabase bootstrap: PASS
+- Production-schema semantic verifier against clean bootstrap: PASS
+- schema reconciliation idempotence/data preservation: PASS
+- incompatible partial-state rejection: PASS
+- admin-audit idempotence/data preservation: PASS
+- non-empty legacy audit fail-closed proof: PASS
+- production build: PASS, 45/45 pages generated
 
-No control disposition is changed solely because implementation evidence exists; PASS/N/A still requires the approved closure evidence and independent review.
+### Security scanners and DAST
 
-## Wave 0 Evidence Files
+- Run `33761020425`
+- Result: **SUCCESS**
+- CodeQL JavaScript/TypeScript: PASS
+- Gitleaks full-history scan: PASS
+- OSV dependency scan: PASS
+- SBOM/Android dependency evidence: PASS
+- safe isolated exact-head runtime DAST: PASS
+- safe deployed-Production DAST: PASS against the currently deployed old baseline
+- authenticated local DAST job `100667064180`: PASS
 
-| File | Purpose |
-| --- | --- |
-| `docs/superpowers/plans/2026-09-02-prelaunch-security-remediation.md` | Verbatim approved master plan |
-| `docs/security/prelaunch/2026-09-02/approved-execution-checklist.md` | Verbatim approved checklist copy |
-| `docs/security/prelaunch/2026-09-02/approved-open-control-matrix.json` | Verbatim approved matrix copy |
-| `docs/security/prelaunch/2026-09-02/open-control-closure-ledger.json` | Generated closure ledger with owner/evidence/wave for all 324 controls |
-| `docs/security/prelaunch/2026-09-02/source-surface-inventory.json` | Machine-readable source attack-surface inventory |
-| `docs/security/prelaunch/2026-09-02/baseline.md` | Exact repo/provider/test baseline |
-| `docs/security/threat-model.md` | Threat model, trust boundaries, attacker capabilities, assets, objectives |
-| `docs/security/data-classification.md` | Sensitive-data inventory and handling requirements |
-| `docs/security/attack-surface-inventory.md` | Human-readable attack-surface inventory |
-| `docs/security/security-evidence-index.md` | Evidence map and checkpoint index |
+Authenticated DAST used real local Supabase Auth identities/JWTs and no Production test users or Production data. It verified normal-user admin denial, account-A/account-B push ownership isolation, BOLA denial, cross-origin account deletion denial, invalid/deleted/logged-out session rejection, durable push rate limiting with `Retry-After`, and own-account deletion. This evidence directly closes `OPEN-200`, `OPEN-201`, `OPEN-206`, `OPEN-211`, `OPEN-212` and `OPEN-216`.
 
-## Wave 1 Supabase Evidence Files
+### Android exact-head unsigned RC
 
-| File | Purpose |
-| --- | --- |
-| `docs/security/prelaunch/2026-09-02/supabase-migration-equivalence.md` | Pre-reconciliation migration-equivalence ledger plus exact local verification, Production application, post-apply schema, live API/Vercel evidence, and resulting migration state |
-| `docs/security/prelaunch/2026-09-02/supabase-reconciliation-recovery.md` | Fail-closed recovery and forward-fix procedure; destructive rollback/history repair remain separately gated |
-| `supabase/migrations/20260902170000_prelaunch_schema_reconciliation.sql` | Reviewed additive/fail-closed reconciliation migration for missing native-delivery-v2 state |
-| `scripts/security/verify-production-schema.sql` | Read-only semantic verifier for native-delivery-v2, Friday V2, durable rate limiting, and atomic push registration |
-| `lib/__tests__/supabase-production-schema-contract.test.ts` | Frozen source-contract tests requiring exact verifier, migration, and permanent CI evidence |
-| `.github/workflows/ci.yml` | Permanent clean-bootstrap, local verifier, idempotence, preservation, and incompatible-partial-schema rejection gates |
+- Android workflow run `33761020400`: **SUCCESS**
+- unsigned build/provenance job `100667377658`: PASS
+- API 23 instrumentation job `100668595108`: PASS
+- API 37 instrumentation job `100668595122`: PASS
+- protected Production signing job `100667378655`: SKIPPED by workflow condition
+- artifact `9895627733`, GitHub archive digest `sha256:4fec75b98cfae93b816b0c8f6e03ce1ff217012f5f4522f2ca6dba01c838fa91`
+- APK SHA-256 `bf4e0de0b8bb0bff17bbf39538dfe8a8c8ba423c86d1658e59ac18742273eb47`
+- AAB SHA-256 `b16bd14780960d74bc83f36e7150a4242147851cb9c2ff1d61cb17cc31ac8dea`
+- source metadata SHA-256 `2d71c0d0e3921827e8b47dde1ed0a064da3ed55de47b567cd5de922251239a9e`
+- package `de.donaumoschee.app`
+- versionName `1.0.4`
+- versionCode `7`
+- compile/target/min SDK `37/37/23`
+- source SHA `753b539675639ef46522964840382329404f30b9`
 
-## Baseline Commands And Results
+The candidate remains unsigned. The reviewed signing workflow requires `workflow_dispatch` plus the exact successful unsigned run ID, exact source SHA and confirmation token. The connected GitHub surface does not expose workflow dispatch; the signing workflow was not weakened or bypassed. Public Android remains `android-v1.0.3`.
 
-| Command/evidence source | Result |
-| --- | --- |
-| `git fetch origin --prune` | Completed before branch creation |
-| `git rev-parse origin/main` | `b18430b360313148fc76baaeda9d96844ed508a5` |
-| `git diff --name-status b18430b360313148fc76baaeda9d96844ed508a5..origin/main` | Empty |
-| `gh pr list --state open` | #34, #14, #13 only at baseline capture |
-| `gh api repos/.../rulesets/22020137` | Main ruleset active; required reviews = 0 |
-| `gh api repos/.../environments` | `Production`, `Preview`, `android-production` observed |
-| Supabase `_get_project` | Project `dbqbzvkleqzbgufllgca`, active healthy, Postgres 17 |
-| Supabase pre-remediation `_list_migrations` | History ended at `20260822201832` |
-| Supabase pre-remediation read-only schema probes | Native receipt v2 missing; later objects partially/semantically present |
-| `curl -I https://donaumoschee.vercel.app` | 200 OK; baseline live CSP still used `unsafe-inline` |
-| `npm ci` | Completed; dev-inclusive install audit reported one high advisory |
-| `npm audit --omit=dev --json` | 0 production vulnerabilities |
-| focused failed-test rerun after harness fix | 31 passed |
-| `npm test` after harness fix | 119 files / 537 tests passed |
+## Production Supabase
 
-## Wave 1 Reconciliation Verification
+Project: `dbqbzvkleqzbgufllgca`.
 
-Pre-Production exact-head verification:
+Authorized security migrations already applied:
 
-- candidate head: `f355ae3f57e920b888f1253d6da59f60885b82a0`
-- CI run: `33683799074`
-- CI job: `100426311707`
-- result: **SUCCESS**
-- tests: **121 files / 547 tests passed**
-- clean Supabase bootstrap: **PASS**
-- local production-schema verifier: **PASS**
-- repeated reconciliation/idempotence: **PASS**
-- synthetic installation-row preservation: **PASS**
-- incompatible partial-schema rejection: **PASS**
-- production build: **PASS**
+- `20260902211847_prelaunch_schema_reconciliation`
+- `20260902223939_admin_audit_hardening`
 
-Production application and post-apply read-only verification:
+The read-only Production semantic verifier has passed after these migrations. Live reconciliation evidence included native receipt cleanup `404 → 204` and native-authority new-column lookup `400 → 200`.
 
-- Production Supabase project: `dbqbzvkleqzbgufllgca`
-- applied new migration name: `prelaunch_schema_reconciliation`
-- Production-recorded migration version: `20260902211847`
-- result: **SUCCESS**
-- repository verifier against Production: **PASS**
-- native installation row count: `0` before and `0` after application
-- receipt table/columns/constraints/indexes/RLS/grants: verified exact semantic contract
-- live Supabase API transition: receipt cleanup **404 → 204** and new-column native-authority lookup **400 → 200** immediately after reconciliation
-- live Vercel `/api/cron/prayer-reminders`: pre-migration schema warnings through 21:18 UTC; clean HTTP 200 executions at 21:19, 21:20, and 21:21 UTC
-- no application redeploy was required for the schema correction
-- no historical migration was blindly replayed
-- no migration-history repair or metadata manipulation was performed
+Fresh semantic equivalence was also proven for all four historical repository migrations whose version identities remain absent from Production metadata:
 
-## Evidence Gaps Not Yet Closed
+- `20260823104600_native_delivery_receipts`
+- `20260826160500_friday_v2_khutbahs`
+- `20260831080500_security_rate_limits`
+- `20260901223000_atomic_push_account_registration`
 
-- Supabase Auth redirect/provider/leaked-password setting evidence requires the separately gated Auth/configuration operation before any setting change.
-- GitHub ruleset changes remain separately gated.
-- Production secret rotation remains separately gated.
-- CodeQL, full-history secret scan, SBOM generation, DAST, Android static analysis, signed RC, physical-device QA, restore drill, monitoring exercise, IR tabletop, final production smoke, and 990-control exact-head rerun are later-wave evidence as applicable under the approved plan.
-- Historical Supabase migration-history repair remains separately gated and is not required for the successful Wave 1 schema reconciliation.
+No historical SQL was replayed. Metadata-only history repair was authorized, but the connected Supabase management surface exposes no supported `repair` / `mark-applied` operation. Direct manual editing of Supabase migration metadata was deliberately not performed.
 
-## Production Mutations
+Supabase Security Advisor continues to show intentional server-only RLS/no-policy INFO notices plus `auth_leaked_password_protection` WARN. Leaked-password protection remains disabled by explicit accepted-risk direction and is not counted as technically fixed.
 
-One authorized ordinary security-remediation migration has been applied in Wave 1:
+## Production web / Vercel
 
-- `20260902211847_prelaunch_schema_reconciliation` on Production Supabase project `dbqbzvkleqzbgufllgca`.
+- Project `prj_I24w8AtVfUYdOp0rvbqKiJOZ2CcZ`
+- Team `team_crjtVtp1aygpixnb7GHtnIdi`
+- Current Production deployment `dpl_39vKk5vWuBkmQrDza3FQuSU2tr8j`
+- Current Production Git SHA `b18430b360313148fc76baaeda9d96844ed508a5`
 
-No Supabase Auth/provider configuration, leaked-password protection setting, migration-history repair, GitHub ruleset, production secret rotation, Android Production signing/publication, merge, or destructive Production test was performed.
+The nonce-CSP remediation is source-fixed and passes isolated exact-head DAST, but is **not deployed to Production**. The available Vercel deployment interface cannot bind a deployment to the reviewed Git SHA/ref, and no exact-head preview deployment exists to promote. An unbound/raw-file deployment was not attempted.
+
+Current old Production has had `DEP0169 url.parse()` warnings observed on `/api/cron/prayer-reminders`; PA-SEC-007 therefore remains open pending exact remediation deployment and post-deploy retest.
+
+## Repository governance
+
+Active `Protect main` ruleset:
+
+- strict required CI/Android status checks preserved;
+- required review-thread resolution preserved;
+- squash-only merge preserved;
+- no bypass actors;
+- `required_approving_review_count: 0` remains unchanged.
+
+The requested change to one genuine independent approval is authorized but cannot be executed through the connected GitHub ruleset interface, which is read-only. No self-approval or fabricated review has been created.
+
+## Recovery and monitoring evidence
+
+- Clean local database reconstruction from migrations: verified.
+- Migration idempotence/data-preservation/fail-closed recovery proofs: verified.
+- Provider backup inventory, PITR status, retention and isolated provider restore drill: **NOT VERIFIED** because the current Supabase surface does not expose those capabilities.
+- Destructive Production restore: not performed.
+- GitHub/Vercel/Supabase detection/log visibility: verified for exercised signals.
+- Provider automated alert-delivery and on-call paging delivery: **NOT VERIFIED**.
+
+See `docs/security/backup-recovery.md`, `docs/security/monitoring-alerting.md`, `docs/security/incident-response.md` and `docs/security/residual-risks.md`.
+
+## Production mutations performed
+
+Only the two reviewed Supabase security migrations listed above were applied during this remediation.
+
+No leaked-password-protection enablement, no historical migration SQL replay, no migration-metadata manipulation, no GitHub ruleset mutation, no Production Android signing/publication, no merge, no destructive Production restore, and no destructive/invasive Production DAST has been performed.
+
+## Launch disposition
+
+Current launch verdict: **NO-GO** until the remaining genuine external release/provider gates are satisfied or independently accepted under the approved release decision process. PR #105 remains Draft and unmerged.

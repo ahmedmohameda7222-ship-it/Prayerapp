@@ -41,26 +41,20 @@ describe("HTTP security boundaries", () => {
     expect(tooLarge).toMatchObject({ ok: false, status: 413 });
   });
 
-  it("allows only explicitly opted-in missing MIME for native compatibility", async () => {
+  it("rejects missing or explicitly non-JSON MIME", async () => {
     const noMime = new Request("https://example.test", {
       method: "POST",
       body: JSON.stringify({ native: true }),
     });
-    await expect(readBoundedJson(noMime.clone(), { maxBytes: 128 })).resolves.toMatchObject({ ok: false, status: 415 });
-    await expect(readBoundedJson(noMime.clone(), {
-      maxBytes: 128,
-      allowMissingContentType: true,
-    })).resolves.toEqual({ ok: true, value: { native: true } });
+    noMime.headers.delete("content-type");
+    await expect(readBoundedJson(noMime, { maxBytes: 128 })).resolves.toMatchObject({ ok: false, status: 415 });
 
     const explicitWrongMime = new Request("https://example.test", {
       method: "POST",
       headers: { "content-type": "text/plain" },
       body: JSON.stringify({ native: true }),
     });
-    await expect(readBoundedJson(explicitWrongMime, {
-      maxBytes: 128,
-      allowMissingContentType: true,
-    })).resolves.toMatchObject({ ok: false, status: 415 });
+    await expect(readBoundedJson(explicitWrongMime, { maxBytes: 128 })).resolves.toMatchObject({ ok: false, status: 415 });
   });
 
   it("rejects malformed JSON without leaking parser details", async () => {
@@ -106,12 +100,13 @@ describe("HTTP security boundaries", () => {
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
   });
 
-  it("requires bounded JSON parsing on credential-bearing mutation routes", () => {
+  it("requires bounded strict-JSON parsing on credential-bearing mutation routes", () => {
     for (const path of BOUNDED_JSON_ROUTES) {
       const file = source(path);
       expect(file, `${path} must import the shared bounded JSON parser`).toContain("@/lib/security/http-boundaries");
       expect(file, `${path} must use readBoundedJson`).toContain("readBoundedJson");
       expect(file, `${path} must not call request.json() directly`).not.toMatch(/request\.json\s*\(/u);
+      expect(file, `${path} must not bypass JSON MIME enforcement`).not.toContain("allowMissingContentType");
     }
   });
 });

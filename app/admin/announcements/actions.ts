@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import type { AnnouncementType } from "@/lib/types";
 import { sendAdminContentPush } from "@/lib/push/web-push";
-import { adminActionError, beginAdminAudit, finishAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
+import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import { parseAdminBoolean, parseAdminEnum, parseAdminText, parseAdminUuid } from "@/lib/security/admin-input";
 
 const validTypes: AnnouncementType[] = ["General", "Urgent", "Location update", "Community", "Ramadan", "Eid", "Donation"];
@@ -39,12 +39,7 @@ async function runAuditedAction(
   } catch (error) {
     result = { success: false, error: adminActionError(error) };
   }
-  try {
-    await finishAdminAudit(audit, result.success ? "success" : "failure", result.error ? { error: result.error } : undefined);
-  } catch {
-    if (result.success) return { success: false, error: "admin.errors.auditUnavailable" };
-  }
-  return result;
+  return completeAdminAudit(audit, result);
 }
 
 async function notifyUrgentAnnouncement(row: AnnouncementPushRow) {
@@ -157,29 +152,41 @@ export async function deleteAnnouncementAction(token: string, id: string) {
   });
 }
 
-export async function togglePublishAnnouncementAction(token: string, id: string, published: boolean) {
+export async function togglePublishAnnouncementAction(token: string, id: string, published: unknown) {
   let entityId: string;
-  try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
-  return runAuditedAction(token, { action: "announcement.publish", entityType: "announcement", entityId, metadata: { published } }, async () => {
+  let nextPublished: boolean;
+  try {
+    entityId = parseAdminUuid(id, "id");
+    nextPublished = parseAdminBoolean(published, "published");
+  } catch {
+    return { success: false, error: "admin.errors.invalidInput" };
+  }
+  return runAuditedAction(token, { action: "announcement.publish", entityType: "announcement", entityId, metadata: { published: nextPublished } }, async () => {
     const client = createServerClient();
     if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-    const { data: result, error } = await client.from("announcements").update({ published: Boolean(published) }).eq("id", entityId).select().single();
+    const { data: result, error } = await client.from("announcements").update({ published: nextPublished }).eq("id", entityId).select().single();
     if (error) return { success: false, error: "admin.errors.toggleFailed" };
-    if (published) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
+    if (nextPublished) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
     revalidatePath("/admin/announcements"); revalidatePath("/news"); revalidatePath("/friday"); revalidatePath("/");
     return { success: true };
   });
 }
 
-export async function toggleUrgentAnnouncementAction(token: string, id: string, isUrgent: boolean) {
+export async function toggleUrgentAnnouncementAction(token: string, id: string, isUrgent: unknown) {
   let entityId: string;
-  try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
-  return runAuditedAction(token, { action: "announcement.urgent", entityType: "announcement", entityId, metadata: { isUrgent } }, async () => {
+  let nextUrgent: boolean;
+  try {
+    entityId = parseAdminUuid(id, "id");
+    nextUrgent = parseAdminBoolean(isUrgent, "isUrgent");
+  } catch {
+    return { success: false, error: "admin.errors.invalidInput" };
+  }
+  return runAuditedAction(token, { action: "announcement.urgent", entityType: "announcement", entityId, metadata: { isUrgent: nextUrgent } }, async () => {
     const client = createServerClient();
     if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-    const { data: result, error } = await client.from("announcements").update({ is_urgent: Boolean(isUrgent) }).eq("id", entityId).select().single();
+    const { data: result, error } = await client.from("announcements").update({ is_urgent: nextUrgent }).eq("id", entityId).select().single();
     if (error) return { success: false, error: "admin.errors.toggleFailed" };
-    if (isUrgent) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
+    if (nextUrgent) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
     revalidatePath("/admin/announcements"); revalidatePath("/news"); revalidatePath("/");
     return { success: true };
   });

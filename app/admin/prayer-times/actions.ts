@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { invalidateCachePrefix } from "@/lib/data/cache";
-import { adminActionError, beginAdminAudit, finishAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
+import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import {
   parseAdminBoolean,
   parseAdminDate,
@@ -28,9 +28,7 @@ async function runAuditedAction(token: string, event: AdminAuditEvent, operation
   catch (error) { return { success: false, error: adminActionError(error, "admin.errors.auditUnavailable") }; }
   let result: ActionResult;
   try { result = await operation(); } catch (error) { result = { success: false, error: adminActionError(error) }; }
-  try { await finishAdminAudit(audit, result.success ? "success" : "failure", result.error ? { error: result.error } : undefined); }
-  catch { if (result.success) return { success: false, error: "admin.errors.auditUnavailable" }; }
-  return result;
+  return completeAdminAudit(audit, result);
 }
 
 function parsePrayerTime(data: Record<string, string>): ParsedPrayerTime {
@@ -130,11 +128,13 @@ export async function deletePrayerTimeAction(token: string, id: string): Promise
   });
 }
 
-export async function togglePublishPrayerTimeAction(token: string, id: string, published: boolean): Promise<ActionResult> {
-  let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
-  return runAuditedAction(token, { action: "prayer_time.publish", entityType: "prayer_time", entityId, metadata: { published: Boolean(published) } }, async () => {
+export async function togglePublishPrayerTimeAction(token: string, id: string, published: unknown): Promise<ActionResult> {
+  let entityId: string; let nextPublished: boolean;
+  try { entityId = parseAdminUuid(id, "id"); nextPublished = parseAdminBoolean(published, "published"); }
+  catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "prayer_time.publish", entityType: "prayer_time", entityId, metadata: { published: nextPublished } }, async () => {
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-    const { error } = await client.from("prayer_times").update({ published: Boolean(published) }).eq("id", entityId);
+    const { error } = await client.from("prayer_times").update({ published: nextPublished }).eq("id", entityId);
     if (error) return { success: false, error: "admin.errors.toggleFailed" };
     revalidatePrayerSurfaces(); return { success: true };
   });

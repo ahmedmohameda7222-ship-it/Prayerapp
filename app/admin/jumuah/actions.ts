@@ -5,7 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
 import { DEFAULT_APP_NAME } from "@/lib/app-brand";
 import { validateAdditionalJumuah, type AdditionalJumuahValidationError } from "@/lib/admin-jumuah-validation";
-import { adminActionError, beginAdminAudit, finishAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
+import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import { parseAdminBoolean, parseAdminDate, parseAdminText, parseAdminTime, parseAdminUuid } from "@/lib/security/admin-input";
 
 type ActionResult = { success: boolean; error?: string };
@@ -24,9 +24,7 @@ async function runAuditedAction(token: string, event: AdminAuditEvent, operation
   catch (error) { return { success: false, error: adminActionError(error, "admin.errors.auditUnavailable") }; }
   let result: ActionResult;
   try { result = await operation(); } catch (error) { result = { success: false, error: adminActionError(error) }; }
-  try { await finishAdminAudit(audit, result.success ? "success" : "failure", result.error ? { error: result.error } : undefined); }
-  catch { if (result.success) return { success: false, error: "admin.errors.auditUnavailable" }; }
-  return result;
+  return completeAdminAudit(audit, result);
 }
 
 async function notifyPublishedJumuah(row: JumuahPushRow) {
@@ -137,13 +135,15 @@ export async function deleteJumuahAction(token: string, id: string): Promise<Act
   });
 }
 
-export async function togglePublishJumuahAction(token: string, id: string, published: boolean): Promise<ActionResult> {
+export async function togglePublishJumuahAction(token: string, id: string, published: unknown): Promise<ActionResult> {
   if (isPrimaryServiceId(id)) return { success: false, error: "admin.errors.invalidInput" };
-  let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
-  return runAuditedAction(token, { action: "jumuah.publish", entityType: "jumuah_service", entityId, metadata: { published: Boolean(published) } }, async () => {
+  let entityId: string; let nextPublished: boolean;
+  try { entityId = parseAdminUuid(id, "id"); nextPublished = parseAdminBoolean(published, "published"); }
+  catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "jumuah.publish", entityType: "jumuah_service", entityId, metadata: { published: nextPublished } }, async () => {
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-    const { data: result, error } = await client.from("jumuah_times").update({ published: Boolean(published) }).eq("id", entityId).select().single();
+    const { data: result, error } = await client.from("jumuah_times").update({ published: nextPublished }).eq("id", entityId).select().single();
     if (error || !result) return { success: false, error: "admin.errors.toggleFailed" };
-    if (published) await notifyPublishedJumuah(result as JumuahPushRow); revalidateFridaySurfaces(); return { success: true };
+    if (nextPublished) await notifyPublishedJumuah(result as JumuahPushRow); revalidateFridaySurfaces(); return { success: true };
   });
 }

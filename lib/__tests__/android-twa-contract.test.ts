@@ -27,8 +27,8 @@ describe("long-term Android TWA contract", () => {
     expect(config.compileSdkVersion).toBe(37);
     expect(config.targetSdkVersion).toBe(37);
     expect(config.minSdkVersion).toBe(23);
-    expect(config.versionCode).toBe(6);
-    expect(config.versionName).toBe("1.0.3");
+    expect(config.versionCode).toBe(7);
+    expect(config.versionName).toBe("1.0.4");
     expect(config.minimumSupportedVersionCode).toBe(3);
     expect(rootGradle).toContain("com.android.application' version '9.1.1'");
     expect(wrapper).toContain("gradle-9.3.1-bin.zip");
@@ -125,8 +125,8 @@ describe("long-term Android TWA contract", () => {
     expect(productionWorkflow).toContain("gh release create");
 
     const config = JSON.parse(read("android-twa/twa-manifest.json")) as Record<string, unknown>;
-    expect(config.versionCode).toBe(6);
-    expect(config.versionName).toBe("1.0.3");
+    expect(config.versionCode).toBe(7);
+    expect(config.versionName).toBe("1.0.4");
   });
 
   it("preserves main-only Vercel deployment", () => {

@@ -63,6 +63,17 @@ function requireHeader(response, name, predicate, description) {
   if (!predicate(value)) fail(`${description}: ${name}=${JSON.stringify(value)}`);
 }
 
+async function readJsonError(response) {
+  try {
+    const value = await response.json();
+    return value && typeof value === "object" && !Array.isArray(value) && typeof value.error === "string"
+      ? value.error
+      : "";
+  } catch {
+    return "";
+  }
+}
+
 const page = await probe("/privacy");
 record("privacy status", page.status);
 if (page.status !== 200) fail(`/privacy expected 200, received ${page.status}`);
@@ -108,6 +119,46 @@ const crossOriginDelete = await probe("/api/account/delete", {
 });
 record("cross-origin account delete status", crossOriginDelete.status);
 if (crossOriginDelete.status !== 403) fail(`cross-origin account deletion expected 403, received ${crossOriginDelete.status}`);
+
+if (isolatedLocalRuntime) {
+  const objectBoundaryCases = [
+    ["null", "null", "Invalid JSON object"],
+    ["array", "[]", "Invalid JSON object"],
+    ["string", "\"text\"", "Invalid JSON object"],
+    ["number", "123", "Invalid JSON object"],
+    ["boolean", "true", "Invalid JSON object"],
+    ["malformed", "{not-json", "Invalid JSON body"],
+  ];
+  for (const [label, body, expectedError] of objectBoundaryCases) {
+    const response = await probe("/api/android/native-authority/enroll", {
+      method: "POST",
+      headers: {
+        Origin: new URL(baseUrl).origin,
+        "content-type": "application/json",
+      },
+      body,
+    });
+    const error = await readJsonError(response);
+    record(`JSON object boundary ${label}`, `${response.status} ${error || "<no-json-error>"}`);
+    if (response.status !== 400 || error !== expectedError) {
+      fail(`expected-object JSON ${label} probe expected controlled 400 ${expectedError}, received ${response.status} ${JSON.stringify(error)}`);
+    }
+  }
+
+  const validObject = await probe("/api/android/native-authority/enroll", {
+    method: "POST",
+    headers: {
+      Origin: new URL(baseUrl).origin,
+      "content-type": "application/json",
+    },
+    body: "{}",
+  });
+  const validObjectError = await readJsonError(validObject);
+  record("JSON object boundary valid object", `${validObject.status} ${validObjectError || "<no-json-error>"}`);
+  if (validObject.status !== 400 || ["Invalid JSON object", "Invalid JSON body"].includes(validObjectError)) {
+    fail(`valid JSON object must cross the object-shape boundary into field validation, received ${validObject.status} ${JSON.stringify(validObjectError)}`);
+  }
+}
 
 const nativeInvalid = await probe("/api/android/native-authority/heartbeat", {
   method: "POST",

@@ -80,6 +80,18 @@ export async function readBoundedJson<T = unknown>(
   }
 }
 
+export async function readBoundedJsonObject(
+  request: Request,
+  options: ReadBoundedJsonOptions,
+): Promise<BoundedJsonResult<Record<string, unknown>>> {
+  const parsed = await readBoundedJson<unknown>(request, options);
+  if (!parsed.ok) return parsed;
+  if (parsed.value === null || typeof parsed.value !== "object" || Array.isArray(parsed.value)) {
+    return { ok: false, status: 400, message: "Invalid JSON object" };
+  }
+  return { ok: true, value: parsed.value as Record<string, unknown> };
+}
+
 export async function fetchBoundedJson<T = unknown>(
   input: RequestInfo | URL,
   options: FetchBoundedJsonOptions,

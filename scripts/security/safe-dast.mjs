@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import http from "node:http";
+import https from "node:https";
+
 const baseUrl = process.env.BASE_URL || "http://127.0.0.1:3000";
 const strictCsp = process.env.EXPECT_STRICT_CSP === "1";
 
@@ -21,6 +24,31 @@ async function probe(path, init = {}) {
     ...init,
   });
   return response;
+}
+
+async function rawMethodProbe(path, method) {
+  const url = new URL(path, baseUrl);
+  const transport = url.protocol === "https:" ? https : http;
+
+  return await new Promise((resolve, reject) => {
+    const request = transport.request(url, {
+      method,
+      headers: {
+        "user-agent": "Prayerapp-Safe-DAST/1.0",
+      },
+    }, (response) => {
+      response.resume();
+      response.once("end", () => {
+        resolve({ status: response.statusCode || 0 });
+      });
+    });
+
+    request.setTimeout(10_000, () => {
+      request.destroy(new Error(`${method} probe timed out`));
+    });
+    request.once("error", reject);
+    request.end();
+  });
 }
 
 function header(response, name) {
@@ -88,7 +116,7 @@ record("unauthorized native heartbeat status", nativeInvalid.status);
 if (nativeInvalid.status !== 401) fail(`unauthorized native heartbeat expected 401, received ${nativeInvalid.status}`);
 requireHeader(nativeInvalid, "cache-control", (value) => value.includes("no-store"), "native authority response must be no-store");
 
-const methodProbe = await probe("/api/health", { method: "TRACE" });
+const methodProbe = await rawMethodProbe("/api/health", "TRACE");
 record("TRACE health status", methodProbe.status);
 if (![405, 501].includes(methodProbe.status)) fail(`TRACE should be rejected, received ${methodProbe.status}`);
 

@@ -66,6 +66,13 @@ function nativeHeaders(includeAuthority = true) {
   };
 }
 
+function nativeJsonHeaders(includeAuthority = true) {
+  return {
+    ...nativeHeaders(includeAuthority),
+    "Content-Type": "application/json",
+  };
+}
+
 describe("native authority route generation isolation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -81,7 +88,7 @@ describe("native authority route generation isolation", () => {
 
     const response = await POST(new Request("https://donaumoschee.vercel.app/api/android/native-authority/heartbeat", {
       method: "POST",
-      headers: nativeHeaders(),
+      headers: nativeJsonHeaders(),
       body: JSON.stringify(heartbeatBody()),
     }));
 
@@ -107,7 +114,7 @@ describe("native authority route generation isolation", () => {
 
     const response = await POST(new Request("https://donaumoschee.vercel.app/api/android/native-authority/heartbeat", {
       method: "POST",
-      headers: nativeHeaders(),
+      headers: nativeJsonHeaders(),
       body: JSON.stringify({
         ...heartbeatBody(),
         adhanChannelEnabled: false,

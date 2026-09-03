@@ -61,7 +61,9 @@ describe("same-domain Android APK delivery", () => {
       'attachment; filename="danube-mosque-1.0.4.apk"',
     );
     expect(response.headers.get("location")).toBeNull();
-    expect([...response.headers.values()].join(" ")).not.toMatch(/github(?:usercontent)?\.com/i);
+    const responseHeaders = [...response.headers.values()].join(" ").toLowerCase();
+    expect(responseHeaders).not.toContain("github.com");
+    expect(responseHeaders).not.toContain("githubusercontent.com");
     expect(Array.from(new Uint8Array(await response.arrayBuffer()))).toEqual(Array.from(APK_BYTES));
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(fetchImpl.mock.calls[0]?.[0]).toBe(CANONICAL_UPSTREAM);
@@ -110,7 +112,10 @@ describe("same-domain Android APK delivery", () => {
 
     expect(response.status).toBeGreaterThanOrEqual(500);
     expect(response.headers.get("location")).toBeNull();
-    expect(await response.text()).not.toMatch(/github|release-assets|objects\.githubusercontent/i);
+    const errorBody = (await response.text()).toLowerCase();
+    expect(errorBody).not.toContain("github");
+    expect(errorBody).not.toContain("release-assets");
+    expect(errorBody).not.toContain("objects.githubusercontent");
   });
 
   it("turns an upstream 404 into a controlled server error", async () => {

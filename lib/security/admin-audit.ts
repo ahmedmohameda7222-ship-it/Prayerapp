@@ -28,6 +28,11 @@ export type AdminAuditContext = {
   metadata: AdminAuditMetadata;
 };
 
+export type AdminAuditCompletionState = {
+  auditIncomplete?: true;
+  warning?: "admin.errors.auditIncomplete";
+};
+
 function invalidAuditInput(): never {
   throw new Error("admin.errors.auditUnavailable");
 }
@@ -96,6 +101,37 @@ export async function finishAdminAudit(
   metadata?: unknown,
 ) {
   await appendAudit(context, outcome, metadata);
+}
+
+export async function completeAdminAudit<T extends { success: boolean; error?: string }>(
+  context: AdminAuditContext,
+  result: T,
+): Promise<T & AdminAuditCompletionState> {
+  try {
+    await finishAdminAudit(
+      context,
+      result.success ? "success" : "failure",
+      result.error ? { error: result.error } : undefined,
+    );
+    return result;
+  } catch {
+    // The durable attempt already exists. The mutation result is authoritative:
+    // never tell an operator that a committed mutation failed merely because its
+    // terminal audit outcome could not be appended. Emit only bounded identifiers
+    // so monitoring can detect and reconcile the incomplete audit outcome.
+    console.error("[admin audit] terminal outcome unavailable", {
+      action: context.action,
+      entityType: context.entityType,
+      entityId: context.entityId,
+      requestId: context.requestId,
+      mutationSucceeded: result.success,
+    });
+    return {
+      ...result,
+      auditIncomplete: true,
+      warning: "admin.errors.auditIncomplete",
+    };
+  }
 }
 
 export function adminActionError(error: unknown, fallback = "admin.errors.saveFailed") {

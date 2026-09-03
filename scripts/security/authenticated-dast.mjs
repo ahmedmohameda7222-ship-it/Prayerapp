@@ -95,7 +95,7 @@ try {
     method: "POST", token: users[0].token, body: subscription(browserA),
   });
   expect(ownerSave.response.status === 200 && ownerSave.body?.accountAssociated === true,
-    `authenticated subscription ownership save failed: ${ownerSave.response.status}`);
+    `authenticated subscription ownership save failed: ${ownerSave.response.status} ${JSON.stringify(ownerSave.body)}`);
 
   const bolaDenied = await appRequest("/api/push/subscriptions", {
     method: "POST", token: users[1].token, body: subscription(browserB),

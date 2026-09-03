@@ -48,7 +48,7 @@ describe("Android native secret boundary v2", () => {
   it("accepts the private native credential in a header without requiring it in the enrollment body", () => {
     const enroll = source("app/api/android/native-authority/enroll/route.ts");
     expect(enroll).toContain('request.headers.get("x-native-credential")');
-    expect(enroll).toContain("const credential = headerCredential || body?.credential");
+    expect(enroll).toContain("const credential = headerCredential || body.credential");
     expect(enroll).toContain("hashNativeCredential(credential)");
     expect(enroll).toContain("credentialMatches(credential");
   });

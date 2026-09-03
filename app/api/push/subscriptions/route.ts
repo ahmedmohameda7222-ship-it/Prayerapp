@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Locale } from "@/lib/i18n/types";
-import { readBoundedJson } from "@/lib/security/http-boundaries";
+import { readBoundedJsonObject } from "@/lib/security/http-boundaries";
 import { MAX_ACCOUNT_PUSH_SUBSCRIPTIONS } from "@/lib/security/push-account-limit";
 import { consumeSecurityRateLimit } from "@/lib/security/rate-limit";
 import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
@@ -48,7 +48,7 @@ async function subscriptionRateLimitResponse(request: Request) {
 }
 
 async function parseRequestBody(request: Request) {
-  const parsed = await readBoundedJson<Record<string, unknown>>(request, {
+  const parsed = await readBoundedJsonObject(request, {
     maxBytes: MAX_PUSH_SUBSCRIPTION_BODY_BYTES,
   });
   if (!parsed.ok) {

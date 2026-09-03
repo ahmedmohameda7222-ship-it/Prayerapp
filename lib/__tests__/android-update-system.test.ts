@@ -17,14 +17,18 @@ describe("Android direct-APK update system", () => {
     expect(workflow).toContain('test "$VERSION_CODE" -gt "$previous_version_code"');
   });
 
-  it("shares one server-side release resolver between metadata and the canonical APK route", () => {
+  it("shares one server-side release resolver between metadata and the verified same-domain APK endpoint", () => {
     const api = source("app/api/android/release/route.ts");
-    const canonicalDownload = source("app/download/android/danube-mosque.apk/route.ts");
+    const canonicalDownload = source("app/android/download/route.ts");
+    const verifiedDelivery = source("lib/android-apk-download-server.ts");
     const legacyDownload = source("app/download/android/route.ts");
     expect(api).toContain("getLatestAndroidRelease");
-    expect(canonicalDownload).toContain("getLatestAndroidRelease");
-    expect(canonicalDownload).toContain("application/vnd.android.package-archive");
-    expect(canonicalDownload).toContain('attachment; filename="danube-mosque.apk"');
+    expect(canonicalDownload).toContain("serveVerifiedAndroidApk");
+    expect(canonicalDownload).not.toContain("Response.redirect");
+    expect(verifiedDelivery).toContain("getLatestAndroidRelease({ fresh: true })");
+    expect(verifiedDelivery).toContain("application/vnd.android.package-archive");
+    expect(verifiedDelivery).toContain('attachment; filename=\"danube-mosque-${release.versionName}.apk\"');
+    expect(verifiedDelivery).toContain('"Cache-Control": "no-store, max-age=0, must-revalidate"');
     expect(legacyDownload).toContain("ANDROID_PUBLIC_DOWNLOAD_PATH");
     expect(api).toContain("downloadUrl: ANDROID_PUBLIC_DOWNLOAD_PATH");
     expect(api).toContain("s-maxage=300");

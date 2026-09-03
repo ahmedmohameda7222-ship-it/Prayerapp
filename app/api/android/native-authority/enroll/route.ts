@@ -40,7 +40,6 @@ export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const parsed = await readBoundedJson<NativeEnrollmentBody>(request, {
     maxBytes: MAX_NATIVE_ENROLLMENT_BODY_BYTES,
-    allowMissingContentType: true,
   });
   if (!parsed.ok) return NextResponse.json({ error: parsed.message }, { status: parsed.status });
   const body = parsed.value;

@@ -7,16 +7,17 @@ import {
   ANDROID_PACKAGE_ID,
   type AndroidRelease,
 } from "@/lib/android-release";
-import { getLatestAndroidRelease } from "@/lib/android-release-server";
+import { getExpectedAndroidRelease } from "@/lib/android-release-server";
 
 const GITHUB_OWNER = "ahmedmohameda7222-ship-it";
 const GITHUB_REPOSITORY = "Prayerapp";
 const UPSTREAM_TIMEOUT_MS = 20_000;
+const MAX_REDIRECT_HOPS = 4;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
-const ALLOWED_FINAL_HOSTS = new Set([
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+const ALLOWED_UPSTREAM_HOSTS = new Set([
   "github.com",
   "release-assets.githubusercontent.com",
-  "objects.githubusercontent.com",
 ]);
 
 export const ANDROID_APK_MAX_BYTES = 32 * 1024 * 1024;
@@ -24,7 +25,7 @@ export const ANDROID_APK_MAX_BYTES = 32 * 1024 * 1024;
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 type AndroidApkDownloadDependencies = {
-  releaseLoader?: () => Promise<AndroidRelease | null>;
+  releaseLoader?: (signal: AbortSignal) => Promise<AndroidRelease | null>;
   fetchImpl?: FetchLike;
   method?: "GET" | "HEAD";
 };
@@ -53,13 +54,37 @@ function releaseMatchesApprovedApp(release: AndroidRelease) {
     && release.downloadUrl === expectedUrl;
 }
 
-function finalUpstreamUrlAllowed(value: string) {
-  if (!value) return true;
+function approvedUpstreamUrl(value: string | URL) {
   try {
-    const url = new URL(value);
-    return url.protocol === "https:" && ALLOWED_FINAL_HOSTS.has(url.hostname);
+    const url = value instanceof URL ? value : new URL(value);
+    return url.protocol === "https:"
+      && url.username === ""
+      && url.password === ""
+      && url.port === ""
+      && ALLOWED_UPSTREAM_HOSTS.has(url.hostname);
   } catch {
     return false;
+  }
+}
+
+function responseUrlMatchesRequest(value: string, requested: URL) {
+  if (!value) return false;
+  try {
+    const responseUrl = new URL(value);
+    return approvedUpstreamUrl(responseUrl) && responseUrl.href === requested.href;
+  } catch {
+    return false;
+  }
+}
+
+function redirectTarget(response: Response, requested: URL) {
+  const location = response.headers.get("location");
+  if (!location) return null;
+  try {
+    const next = new URL(location, requested);
+    return approvedUpstreamUrl(next) ? next : null;
+  } catch {
+    return null;
   }
 }
 
@@ -74,6 +99,44 @@ function errorResponse(status: 502 | 503) {
       "X-Content-Type-Options": "nosniff",
     },
   });
+}
+
+async function fetchApprovedApk(
+  initialUrl: string,
+  fetchImpl: FetchLike,
+  signal: AbortSignal,
+) {
+  let requested: URL;
+  try {
+    requested = new URL(initialUrl);
+  } catch {
+    return null;
+  }
+  if (!approvedUpstreamUrl(requested)) return null;
+
+  for (let redirects = 0; redirects <= MAX_REDIRECT_HOPS; redirects += 1) {
+    const response = await fetchImpl(requested.href, {
+      method: "GET",
+      headers: { Accept: "application/vnd.android.package-archive, application/octet-stream;q=0.9" },
+      cache: "no-store",
+      redirect: "manual",
+      signal,
+    });
+
+    if (!responseUrlMatchesRequest(response.url, requested)) return null;
+
+    if (REDIRECT_STATUSES.has(response.status)) {
+      if (redirects === MAX_REDIRECT_HOPS) return null;
+      const next = redirectTarget(response, requested);
+      if (!next) return null;
+      requested = next;
+      continue;
+    }
+
+    return response.status === 200 ? response : null;
+  }
+
+  return null;
 }
 
 async function readBoundedBody(response: Response, expectedSize: number, expectedSha256: string) {
@@ -119,30 +182,23 @@ export async function serveVerifiedAndroidApk(
   dependencies: AndroidApkDownloadDependencies = {},
 ) {
   const releaseLoader = dependencies.releaseLoader
-    ?? (() => getLatestAndroidRelease({ fresh: true }));
+    ?? ((signal: AbortSignal) => getExpectedAndroidRelease({ signal }));
   const fetchImpl = dependencies.fetchImpl ?? fetch;
   const method = dependencies.method ?? "GET";
-
-  let release: AndroidRelease | null;
-  try {
-    release = await releaseLoader();
-  } catch {
-    return errorResponse(503);
-  }
-  if (!release || !releaseMatchesApprovedApp(release)) return errorResponse(503);
-
-  const upstreamUrl = canonicalApkUrl(release.tagName);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+
   try {
-    const upstream = await fetchImpl(upstreamUrl, {
-      method: "GET",
-      headers: { Accept: "application/vnd.android.package-archive, application/octet-stream;q=0.9" },
-      cache: "no-store",
-      redirect: "follow",
-      signal: controller.signal,
-    });
-    if (upstream.status !== 200 || !finalUpstreamUrlAllowed(upstream.url)) return errorResponse(502);
+    const release = await releaseLoader(controller.signal);
+    if (controller.signal.aborted) return errorResponse(503);
+    if (!release || !releaseMatchesApprovedApp(release)) return errorResponse(503);
+
+    const upstream = await fetchApprovedApk(
+      canonicalApkUrl(release.tagName),
+      fetchImpl,
+      controller.signal,
+    );
+    if (!upstream) return errorResponse(502);
 
     const bytes = await readBoundedBody(upstream, release.apkSize, release.apkSha256);
     if (!bytes) return errorResponse(502);

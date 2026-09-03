@@ -30,13 +30,17 @@ describe("public launch technical contract", () => {
 
   it("applies app-wide security headers and disables caching on sensitive surfaces", () => {
     const config = source("next.config.ts");
-    expect(config).toContain("Content-Security-Policy");
+    const proxy = source("proxy.ts");
+    expect(proxy).toContain("Content-Security-Policy");
     expect(config).toContain("Strict-Transport-Security");
-    expect(config).toContain("frame-ancestors 'none'");
-    expect(config).toContain("object-src 'none'");
-    expect(config).toContain("https://*.supabase.co");
-    expect(config).toContain("wss://*.supabase.co");
-    expect(config).toContain("https://www.ashefaa.com");
+    expect(proxy).toContain("frame-ancestors 'none'");
+    expect(proxy).toContain("object-src 'none'");
+    expect(proxy).toContain("https://*.supabase.co");
+    expect(proxy).toContain("wss://*.supabase.co");
+    expect(proxy).toContain("https://www.ashefaa.com");
+    expect(proxy).toContain("'strict-dynamic'");
+    expect(proxy).toContain("script-src-attr 'none'");
+    expect(proxy).not.toMatch(/script-src[^\n;]*'unsafe-inline'/u);
     expect(config).toContain('"/admin/:path*"');
     expect(config).toContain('"/account/:path*"');
     expect(config).toContain('"/api/admin/:path*"');

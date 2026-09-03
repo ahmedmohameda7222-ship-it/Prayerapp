@@ -5,6 +5,7 @@ import { prayerEventId } from "@/lib/android/prayer-event-id";
 import { todayIso } from "@/lib/date-utils";
 import { deliverPrayerReminderEvent } from "@/lib/prayer-reminder-delivery";
 import type { PushSubscriptionRecord } from "@/lib/push/types";
+import { readBoundedJsonObject } from "@/lib/security/http-boundaries";
 import { consumeSecurityRateLimit } from "@/lib/security/rate-limit";
 import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
@@ -18,6 +19,7 @@ const TEST_REMINDER_LEAD_MINUTES = 15 as const;
 const TEST_PUSH_TTL_MS = 5 * 60_000;
 const TEST_PUSH_LIMIT = 6;
 const TEST_PUSH_WINDOW_SECONDS = 10 * 60;
+const MAX_TEST_PUSH_BODY_BYTES = 8 * 1024;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type TestMode = "reminder" | "adhan";
@@ -43,11 +45,13 @@ function parseMode(value: unknown): TestMode | null {
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
 
-  const body = await request.json().catch(() => null);
-  const endpoint = body?.endpoint;
-  const browserId = body?.browserId;
-  const mode = parseMode(body?.mode);
-  const prayer: AdhanPrayer | null = isAdhanPrayer(body?.prayer) ? body.prayer : null;
+  const parsed = await readBoundedJsonObject(request, { maxBytes: MAX_TEST_PUSH_BODY_BYTES });
+  if (!parsed.ok) return NextResponse.json({ error: parsed.message }, { status: parsed.status });
+  const body = parsed.value;
+  const endpoint = body.endpoint;
+  const browserId = body.browserId;
+  const mode = parseMode(body.mode);
+  const prayer: AdhanPrayer | null = isAdhanPrayer(body.prayer) ? body.prayer : null;
 
   if (
     !isTrustedWebPushEndpoint(endpoint)

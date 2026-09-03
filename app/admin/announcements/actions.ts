@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
-import { requireAllowedAdmin } from "@/lib/auth/admin-server";
 import type { AnnouncementType } from "@/lib/types";
 import { sendAdminContentPush } from "@/lib/push/web-push";
+import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
+import { parseAdminBoolean, parseAdminEnum, parseAdminText, parseAdminUuid } from "@/lib/security/admin-input";
 
 const validTypes: AnnouncementType[] = ["General", "Urgent", "Location update", "Community", "Ramadan", "Eid", "Donation"];
 
+type ActionResult = { success: boolean; error?: string };
 type AnnouncementPushRow = {
   id: string;
   title: string;
@@ -18,6 +20,27 @@ type AnnouncementPushRow = {
   is_urgent: boolean;
   published: boolean;
 };
+
+async function runAuditedAction(
+  token: string,
+  event: AdminAuditEvent,
+  operation: () => Promise<ActionResult>,
+): Promise<ActionResult> {
+  let audit;
+  try {
+    audit = await beginAdminAudit(token, event);
+  } catch (error) {
+    return { success: false, error: adminActionError(error, "admin.errors.auditUnavailable") };
+  }
+
+  let result: ActionResult;
+  try {
+    result = await operation();
+  } catch (error) {
+    result = { success: false, error: adminActionError(error) };
+  }
+  return completeAdminAudit(audit, result);
+}
 
 async function notifyUrgentAnnouncement(row: AnnouncementPushRow) {
   if (!row.is_urgent || !row.published) return;
@@ -40,176 +63,131 @@ async function notifyUrgentAnnouncement(row: AnnouncementPushRow) {
   }
 }
 
-function validateAnnouncement(data: Record<string, string>) {
-  const errors: string[] = [];
-  if (!data.titleAr?.trim()) errors.push("admin.errors.arabicTitleRequired");
-  if (!data.messageAr?.trim()) errors.push("admin.errors.arabicMessageRequired");
-  if (!data.type || !validTypes.includes(data.type as AnnouncementType)) {
-    errors.push("admin.errors.typeRequired");
-  }
-  if ((data.titleAr || "").length > 200 || (data.messageAr || "").length > 5000) errors.push("admin.errors.invalidInput");
-  return errors;
-}
-
-
-export async function createAnnouncementAction(
-  token: string,
-  data: Record<string, string>
-) {
-  const email = await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) {
-    return { success: false, error: "admin.errors.supabaseNotConfigured" };
-  }
-
-  const errors = validateAnnouncement(data);
-  if (errors.length > 0) {
-    return { success: false, error: errors[0] };
-  }
-
-  const db = {
-    title: data.titleAr.trim(),
-    title_ar: data.titleAr.trim(),
-    title_en: data.titleEn?.trim() || null,
-    title_de: data.titleDe?.trim() || null,
-    title_tr: data.titleTr?.trim() || null,
-    message: data.messageAr.trim(),
-    message_ar: data.messageAr.trim(),
-    message_en: data.messageEn?.trim() || null,
-    message_de: data.messageDe?.trim() || null,
-    message_tr: data.messageTr?.trim() || null,
-    type: data.type,
-    is_urgent: data.isUrgent === "true",
-    published: data.published === "true",
+function parseAnnouncement(data: Record<string, string>) {
+  return {
+    titleAr: parseAdminText(data.titleAr, { field: "titleAr", max: 200, required: true }),
+    titleEn: parseAdminText(data.titleEn ?? "", { field: "titleEn", max: 200 }),
+    titleDe: parseAdminText(data.titleDe ?? "", { field: "titleDe", max: 200 }),
+    titleTr: parseAdminText(data.titleTr ?? "", { field: "titleTr", max: 200 }),
+    messageAr: parseAdminText(data.messageAr, { field: "messageAr", max: 5_000, required: true }),
+    messageEn: parseAdminText(data.messageEn ?? "", { field: "messageEn", max: 5_000 }),
+    messageDe: parseAdminText(data.messageDe ?? "", { field: "messageDe", max: 5_000 }),
+    messageTr: parseAdminText(data.messageTr ?? "", { field: "messageTr", max: 5_000 }),
+    type: parseAdminEnum(data.type, "type", validTypes),
+    isUrgent: data.isUrgent ? parseAdminBoolean(data.isUrgent, "isUrgent") : false,
+    published: data.published ? parseAdminBoolean(data.published, "published") : false,
   };
-
-  const { data: result, error } = await client.from("announcements").insert(db).select().single();
-  if (error) {
-    return { success: false, error: "admin.errors.saveFailed" };
-  }
-
-  await notifyUrgentAnnouncement(result as AnnouncementPushRow);
-
-  revalidatePath("/admin/announcements");
-  revalidatePath("/news");
-  revalidatePath("/friday");
-  revalidatePath("/");
-  return { success: true };
 }
 
-export async function updateAnnouncementAction(
-  token: string,
-  id: string,
-  data: Record<string, string>
-) {
-  const email = await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) {
-    return { success: false, error: "admin.errors.supabaseNotConfigured" };
-  }
+export async function createAnnouncementAction(token: string, data: Record<string, string>) {
+  return runAuditedAction(token, {
+    action: "announcement.create",
+    entityType: "announcement",
+    metadata: { requestedType: data.type || null },
+  }, async () => {
+    let parsed;
+    try {
+      parsed = parseAnnouncement(data);
+    } catch (error) {
+      return { success: false, error: adminActionError(error, "admin.errors.invalidInput") };
+    }
+    const client = createServerClient();
+    if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
 
-  const errors = validateAnnouncement(data);
-  if (errors.length > 0) {
-    return { success: false, error: errors[0] };
-  }
-
-  const { data: previous } = await client
-    .from("announcements")
-    .select("is_urgent, published")
-    .eq("id", id)
-    .maybeSingle();
-
-  const db = {
-    title: data.titleAr.trim(),
-    title_ar: data.titleAr.trim(),
-    title_en: data.titleEn?.trim() || null,
-    title_de: data.titleDe?.trim() || null,
-    title_tr: data.titleTr?.trim() || null,
-    message: data.messageAr.trim(),
-    message_ar: data.messageAr.trim(),
-    message_en: data.messageEn?.trim() || null,
-    message_de: data.messageDe?.trim() || null,
-    message_tr: data.messageTr?.trim() || null,
-    type: data.type,
-    is_urgent: data.isUrgent === "true",
-    published: data.published === "true",
-  };
-
-  const { data: result, error } = await client.from("announcements").update(db).eq("id", id).select().single();
-  if (error) {
-    return { success: false, error: "admin.errors.saveFailed" };
-  }
-
-
-  if (!(previous?.is_urgent && previous?.published)) {
+    const db = {
+      title: parsed.titleAr,
+      title_ar: parsed.titleAr,
+      title_en: parsed.titleEn || null,
+      title_de: parsed.titleDe || null,
+      title_tr: parsed.titleTr || null,
+      message: parsed.messageAr,
+      message_ar: parsed.messageAr,
+      message_en: parsed.messageEn || null,
+      message_de: parsed.messageDe || null,
+      message_tr: parsed.messageTr || null,
+      type: parsed.type,
+      is_urgent: parsed.isUrgent,
+      published: parsed.published,
+    };
+    const { data: result, error } = await client.from("announcements").insert(db).select().single();
+    if (error) return { success: false, error: "admin.errors.saveFailed" };
     await notifyUrgentAnnouncement(result as AnnouncementPushRow);
-  }
+    revalidatePath("/admin/announcements"); revalidatePath("/news"); revalidatePath("/friday"); revalidatePath("/");
+    return { success: true };
+  });
+}
 
-  revalidatePath("/admin/announcements");
-  revalidatePath("/news");
-  revalidatePath("/friday");
-  revalidatePath("/");
-  return { success: true };
+export async function updateAnnouncementAction(token: string, id: string, data: Record<string, string>) {
+  let entityId: string;
+  try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "announcement.update", entityType: "announcement", entityId }, async () => {
+    let parsed;
+    try { parsed = parseAnnouncement(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    const client = createServerClient();
+    if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { data: previous } = await client.from("announcements").select("is_urgent, published").eq("id", entityId).maybeSingle();
+    const db = {
+      title: parsed.titleAr, title_ar: parsed.titleAr, title_en: parsed.titleEn || null, title_de: parsed.titleDe || null, title_tr: parsed.titleTr || null,
+      message: parsed.messageAr, message_ar: parsed.messageAr, message_en: parsed.messageEn || null, message_de: parsed.messageDe || null, message_tr: parsed.messageTr || null,
+      type: parsed.type, is_urgent: parsed.isUrgent, published: parsed.published,
+    };
+    const { data: result, error } = await client.from("announcements").update(db).eq("id", entityId).select().single();
+    if (error) return { success: false, error: "admin.errors.saveFailed" };
+    if (!(previous?.is_urgent && previous?.published)) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
+    revalidatePath("/admin/announcements"); revalidatePath("/news"); revalidatePath("/friday"); revalidatePath("/");
+    return { success: true };
+  });
 }
 
 export async function deleteAnnouncementAction(token: string, id: string) {
-  const email = await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) {
-    return { success: false, error: "admin.errors.supabaseNotConfigured" };
-  }
-
-  const { error } = await client.from("announcements").delete().eq("id", id);
-  if (error) {
-    return { success: false, error: "admin.errors.deleteFailed" };
-  }
-
-  revalidatePath("/admin/announcements");
-  revalidatePath("/news");
-  revalidatePath("/friday");
-  revalidatePath("/");
-  return { success: true };
+  let entityId: string;
+  try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "announcement.delete", entityType: "announcement", entityId }, async () => {
+    const client = createServerClient();
+    if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { error } = await client.from("announcements").delete().eq("id", entityId);
+    if (error) return { success: false, error: "admin.errors.deleteFailed" };
+    revalidatePath("/admin/announcements"); revalidatePath("/news"); revalidatePath("/friday"); revalidatePath("/");
+    return { success: true };
+  });
 }
 
-export async function togglePublishAnnouncementAction(token: string, id: string, published: boolean) {
-  const email = await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) {
-    return { success: false, error: "admin.errors.supabaseNotConfigured" };
+export async function togglePublishAnnouncementAction(token: string, id: string, published: unknown) {
+  let entityId: string;
+  let nextPublished: boolean;
+  try {
+    entityId = parseAdminUuid(id, "id");
+    nextPublished = parseAdminBoolean(published, "published");
+  } catch {
+    return { success: false, error: "admin.errors.invalidInput" };
   }
-
-  const { data: result, error } = await client.from("announcements").update({ published }).eq("id", id).select().single();
-  if (error) {
-    return { success: false, error: "admin.errors.toggleFailed" };
-  }
-
-  if (published) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
-
-  const verb = published ? "published" : "unpublished";
-  revalidatePath("/admin/announcements");
-  revalidatePath("/news");
-  revalidatePath("/friday");
-  revalidatePath("/");
-  return { success: true };
+  return runAuditedAction(token, { action: "announcement.publish", entityType: "announcement", entityId, metadata: { published: nextPublished } }, async () => {
+    const client = createServerClient();
+    if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { data: result, error } = await client.from("announcements").update({ published: nextPublished }).eq("id", entityId).select().single();
+    if (error) return { success: false, error: "admin.errors.toggleFailed" };
+    if (nextPublished) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
+    revalidatePath("/admin/announcements"); revalidatePath("/news"); revalidatePath("/friday"); revalidatePath("/");
+    return { success: true };
+  });
 }
 
-export async function toggleUrgentAnnouncementAction(token: string, id: string, isUrgent: boolean) {
-  const email = await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) {
-    return { success: false, error: "admin.errors.supabaseNotConfigured" };
+export async function toggleUrgentAnnouncementAction(token: string, id: string, isUrgent: unknown) {
+  let entityId: string;
+  let nextUrgent: boolean;
+  try {
+    entityId = parseAdminUuid(id, "id");
+    nextUrgent = parseAdminBoolean(isUrgent, "isUrgent");
+  } catch {
+    return { success: false, error: "admin.errors.invalidInput" };
   }
-
-  const { data: result, error } = await client.from("announcements").update({ is_urgent: isUrgent }).eq("id", id).select().single();
-  if (error) {
-    return { success: false, error: "admin.errors.toggleFailed" };
-  }
-
-  if (isUrgent) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
-
-  const verb = isUrgent ? "marked urgent" : "unmarked urgent";
-  revalidatePath("/admin/announcements");
-  revalidatePath("/news");
-  revalidatePath("/");
-  return { success: true };
+  return runAuditedAction(token, { action: "announcement.urgent", entityType: "announcement", entityId, metadata: { isUrgent: nextUrgent } }, async () => {
+    const client = createServerClient();
+    if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { data: result, error } = await client.from("announcements").update({ is_urgent: nextUrgent }).eq("id", entityId).select().single();
+    if (error) return { success: false, error: "admin.errors.toggleFailed" };
+    if (nextUrgent) await notifyUrgentAnnouncement(result as AnnouncementPushRow);
+    revalidatePath("/admin/announcements"); revalidatePath("/news"); revalidatePath("/");
+    return { success: true };
+  });
 }

@@ -2,138 +2,88 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
-import { requireAllowedAdmin } from "@/lib/auth/admin-server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
+import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
+import { parseAdminDate, parseAdminOptionalTime, parseAdminText, parseAdminTime, parseAdminUuid } from "@/lib/security/admin-input";
 
-function validateEvent(data: Record<string, string>): string[] {
-  const errors: string[] = [];
-  if (!data.titleAr?.trim()) errors.push("admin.errors.arabicTitleRequired");
-  if (!data.descriptionAr?.trim()) errors.push("admin.errors.arabicDescriptionRequired");
-  if (!data.locationAr?.trim()) errors.push("admin.errors.arabicLocationRequired");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date || "")) errors.push("admin.errors.dateRequired");
-  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(data.startTime || "")) errors.push("admin.errors.startTimeRequired");
-  if (data.endTime && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(data.endTime)) errors.push("admin.errors.invalidTimeFormat");
-  if (data.endTime && data.endTime <= data.startTime) errors.push("admin.errors.endTimeAfterStart");
-  if (!data.type?.trim()) errors.push("admin.errors.typeRequired");
-  if (data.titleAr?.length > 200 || data.descriptionAr?.length > 4000 || data.locationAr?.length > 300) errors.push("admin.errors.invalidInput");
-  return errors;
+type ActionResult = { success: boolean; error?: string };
+
+async function runAuditedAction(token: string, event: AdminAuditEvent, operation: () => Promise<ActionResult>): Promise<ActionResult> {
+  let audit;
+  try { audit = await beginAdminAudit(token, event); }
+  catch (error) { return { success: false, error: adminActionError(error, "admin.errors.auditUnavailable") }; }
+  let result: ActionResult;
+  try { result = await operation(); } catch (error) { result = { success: false, error: adminActionError(error) }; }
+  return completeAdminAudit(audit, result);
 }
 
-export async function createEventAction(
-  token: string,
-  data: Record<string, string>
-): Promise<{ success: boolean; error?: string }> {
-  await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-
-  const errors = validateEvent(data);
-  if (errors.length > 0) return { success: false, error: errors[0] };
-
-  const db = {
-    title: data.titleAr.trim(),
-    title_ar: data.titleAr.trim(),
-    title_en: data.titleEn?.trim() || null,
-    title_de: data.titleDe?.trim() || null,
-    title_tr: data.titleTr?.trim() || null,
-    description: data.descriptionAr.trim(),
-    description_ar: data.descriptionAr.trim(),
-    description_en: data.descriptionEn?.trim() || null,
-    description_de: data.descriptionDe?.trim() || null,
-    description_tr: data.descriptionTr?.trim() || null,
-    date: data.date,
-    start_time: data.startTime,
-    end_time: data.endTime?.trim() || null,
-    location: data.locationAr.trim(),
-    location_ar: data.locationAr.trim(),
-    location_en: data.locationEn?.trim() || null,
-    location_de: data.locationDe?.trim() || null,
-    location_tr: data.locationTr?.trim() || null,
-    type: data.type.trim(),
-    published: true,
+function parseEvent(data: Record<string, string>) {
+  const startTime = parseAdminTime(data.startTime, "startTime");
+  const endTime = parseAdminOptionalTime(data.endTime, "endTime");
+  if (endTime && endTime <= startTime) throw new Error("admin.errors.invalidInput");
+  return {
+    titleAr: parseAdminText(data.titleAr, { field: "titleAr", max: 200, required: true }),
+    titleEn: parseAdminText(data.titleEn ?? "", { field: "titleEn", max: 200 }),
+    titleDe: parseAdminText(data.titleDe ?? "", { field: "titleDe", max: 200 }),
+    titleTr: parseAdminText(data.titleTr ?? "", { field: "titleTr", max: 200 }),
+    descriptionAr: parseAdminText(data.descriptionAr, { field: "descriptionAr", max: 4_000, required: true }),
+    descriptionEn: parseAdminText(data.descriptionEn ?? "", { field: "descriptionEn", max: 4_000 }),
+    descriptionDe: parseAdminText(data.descriptionDe ?? "", { field: "descriptionDe", max: 4_000 }),
+    descriptionTr: parseAdminText(data.descriptionTr ?? "", { field: "descriptionTr", max: 4_000 }),
+    locationAr: parseAdminText(data.locationAr, { field: "locationAr", max: 300, required: true }),
+    locationEn: parseAdminText(data.locationEn ?? "", { field: "locationEn", max: 300 }),
+    locationDe: parseAdminText(data.locationDe ?? "", { field: "locationDe", max: 300 }),
+    locationTr: parseAdminText(data.locationTr ?? "", { field: "locationTr", max: 300 }),
+    date: parseAdminDate(data.date, "date"),
+    startTime,
+    endTime,
+    type: parseAdminText(data.type, { field: "type", max: 64, required: true }),
   };
-
-  const { data: result, error } = await client.from("events").insert(db).select().single();
-  if (error) return { success: false, error: "admin.errors.saveFailed" };
-
-  try {
-    await sendAdminContentPush({
-      eventKey: `event:${result.id}:published`,
-      notificationType: "event",
-      sourceId: result.id,
-      url: "/events",
-      contentTitle: {
-        fallback: result.title,
-        ar: result.title_ar,
-        en: result.title_en,
-        de: result.title_de,
-        tr: result.title_tr,
-      },
-    });
-  } catch (pushError) {
-    console.error("[event push] delivery failed", pushError);
-  }
-
-  revalidatePath("/admin/events");
-  revalidatePath("/events");
-  revalidatePath("/");
-  return { success: true };
 }
 
-export async function updateEventAction(
-  token: string,
-  id: string,
-  data: Record<string, string>
-): Promise<{ success: boolean; error?: string }> {
-  await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-
-  const errors = validateEvent(data);
-  if (errors.length > 0) return { success: false, error: errors[0] };
-
-  const db = {
-    title: data.titleAr.trim(),
-    title_ar: data.titleAr.trim(),
-    title_en: data.titleEn?.trim() || null,
-    title_de: data.titleDe?.trim() || null,
-    title_tr: data.titleTr?.trim() || null,
-    description: data.descriptionAr.trim(),
-    description_ar: data.descriptionAr.trim(),
-    description_en: data.descriptionEn?.trim() || null,
-    description_de: data.descriptionDe?.trim() || null,
-    description_tr: data.descriptionTr?.trim() || null,
-    date: data.date,
-    start_time: data.startTime,
-    end_time: data.endTime?.trim() || null,
-    location: data.locationAr.trim(),
-    location_ar: data.locationAr.trim(),
-    location_en: data.locationEn?.trim() || null,
-    location_de: data.locationDe?.trim() || null,
-    location_tr: data.locationTr?.trim() || null,
-    type: data.type.trim(),
-    published: true,
+function eventDb(parsed: ReturnType<typeof parseEvent>) {
+  return {
+    title: parsed.titleAr, title_ar: parsed.titleAr, title_en: parsed.titleEn || null, title_de: parsed.titleDe || null, title_tr: parsed.titleTr || null,
+    description: parsed.descriptionAr, description_ar: parsed.descriptionAr, description_en: parsed.descriptionEn || null, description_de: parsed.descriptionDe || null, description_tr: parsed.descriptionTr || null,
+    date: parsed.date, start_time: parsed.startTime, end_time: parsed.endTime,
+    location: parsed.locationAr, location_ar: parsed.locationAr, location_en: parsed.locationEn || null, location_de: parsed.locationDe || null, location_tr: parsed.locationTr || null,
+    type: parsed.type, published: true,
   };
-
-  const { error } = await client.from("events").update(db).eq("id", id);
-  if (error) return { success: false, error: "admin.errors.saveFailed" };
-
-  revalidatePath("/admin/events");
-  revalidatePath("/events");
-  revalidatePath("/");
-  return { success: true };
 }
 
-export async function deleteEventAction(token: string, id: string): Promise<{ success: boolean; error?: string }> {
-  await requireAllowedAdmin(token);
-  const client = createServerClient();
-  if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+export async function createEventAction(token: string, data: Record<string, string>): Promise<ActionResult> {
+  return runAuditedAction(token, { action: "event.create", entityType: "event" }, async () => {
+    let parsed; try { parsed = parseEvent(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { data: result, error } = await client.from("events").insert(eventDb(parsed)).select().single();
+    if (error) return { success: false, error: "admin.errors.saveFailed" };
+    try {
+      await sendAdminContentPush({
+        eventKey: `event:${result.id}:published`, notificationType: "event", sourceId: result.id, url: "/events",
+        contentTitle: { fallback: result.title, ar: result.title_ar, en: result.title_en, de: result.title_de, tr: result.title_tr },
+      });
+    } catch (pushError) { console.error("[event push] delivery failed", pushError); }
+    revalidatePath("/admin/events"); revalidatePath("/events"); revalidatePath("/"); return { success: true };
+  });
+}
 
-  const { error } = await client.from("events").delete().eq("id", id);
-  if (error) return { success: false, error: "admin.errors.deleteFailed" };
+export async function updateEventAction(token: string, id: string, data: Record<string, string>): Promise<ActionResult> {
+  let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "event.update", entityType: "event", entityId }, async () => {
+    let parsed; try { parsed = parseEvent(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { error } = await client.from("events").update(eventDb(parsed)).eq("id", entityId);
+    if (error) return { success: false, error: "admin.errors.saveFailed" };
+    revalidatePath("/admin/events"); revalidatePath("/events"); revalidatePath("/"); return { success: true };
+  });
+}
 
-  revalidatePath("/admin/events");
-  revalidatePath("/events");
-  revalidatePath("/");
-  return { success: true };
+export async function deleteEventAction(token: string, id: string): Promise<ActionResult> {
+  let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "event.delete", entityType: "event", entityId }, async () => {
+    const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    const { error } = await client.from("events").delete().eq("id", entityId);
+    if (error) return { success: false, error: "admin.errors.deleteFailed" };
+    revalidatePath("/admin/events"); revalidatePath("/events"); revalidatePath("/"); return { success: true };
+  });
 }

@@ -147,4 +147,13 @@ describe("Android production completion contract", () => {
     expect(bridge).toContain("NativeWork.cancelPrayerRefresh(context)");
     expect(bridge).toContain("store.resetAccountStateAndQueueAuthorityRevocation()");
   });
+
+  it("uses a fresh versionCode for the hardened unsigned release candidate", () => {
+    const manifest = JSON.parse(source("android-twa/twa-manifest.json")) as {
+      versionCode: number;
+      versionName: string;
+    };
+    expect(manifest.versionCode).toBeGreaterThan(6);
+    expect(manifest.versionName).not.toBe("1.0.3");
+  });
 });

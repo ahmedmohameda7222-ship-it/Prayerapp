@@ -1,0 +1,11 @@
+title = "Prayerapp Gitleaks configuration"
+minVersion = "8.30.0"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Azkar favorites browser localStorage key is a public storage namespace, not a credential"
+targetRules = ["generic-api-key"]
+regexTarget = "secret"
+regexes = ["^azkar_favorites_v1$"]

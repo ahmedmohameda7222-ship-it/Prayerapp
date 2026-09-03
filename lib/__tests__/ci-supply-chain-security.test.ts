@@ -7,9 +7,9 @@ const workflowDir = join(root, ".github/workflows");
 const workflowNames = readdirSync(workflowDir).filter((name) => /\.ya?ml$/u.test(name));
 const workflows = workflowNames.map((name) => ({
   name,
-  source: readFileSync(join(workflowDir, name), "utf8"),
+  source: readFileSync(join(workflowDir, name), "utf8").replace(/\r\n/g, "\n"),
 }));
-const read = (path: string) => readFileSync(join(root, path), "utf8");
+const read = (path: string) => readFileSync(join(root, path), "utf8").replace(/\r\n/g, "\n");
 
 const actionRefPattern = /^\s*-?\s*uses:\s*([^\s@]+)@([^\s#]+)(?:\s+#.*)?$/u;
 const fullShaPattern = /^[0-9a-f]{40}$/u;

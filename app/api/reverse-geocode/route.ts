@@ -1,8 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchBoundedJson } from "@/lib/security/http-boundaries";
 import { consumeSecurityRateLimit } from "@/lib/security/rate-limit";
 
 const RATE_LIMIT_WINDOW_SECONDS = 10 * 60;
 const MAX_REQUESTS_PER_WINDOW = 30;
+const UPSTREAM_TIMEOUT_MS = 5_000;
+const MAX_UPSTREAM_BYTES = 64 * 1024;
+
+type GeoapifyReverseResult = {
+  formatted?: unknown;
+  city?: unknown;
+  town?: unknown;
+  village?: unknown;
+  county?: unknown;
+  state?: unknown;
+  country?: unknown;
+};
+
+function boundedProviderString(value: unknown, maxLength: number) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  if (!normalized || normalized.length > maxLength) return null;
+  return normalized;
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -12,16 +32,16 @@ export async function GET(request: NextRequest) {
   if (!lat || !lon) {
     return NextResponse.json(
       { ok: false, message: "Missing lat or lon parameter" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const latNum = parseFloat(lat);
-  const lonNum = parseFloat(lon);
+  const latNum = Number(lat);
+  const lonNum = Number(lon);
 
   if (
-    Number.isNaN(latNum) ||
-    Number.isNaN(lonNum) ||
+    !Number.isFinite(latNum) ||
+    !Number.isFinite(lonNum) ||
     latNum < -90 ||
     latNum > 90 ||
     lonNum < -180 ||
@@ -29,16 +49,16 @@ export async function GET(request: NextRequest) {
   ) {
     return NextResponse.json(
       { ok: false, message: "Invalid lat or lon parameter" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const apiKey = process.env.GEOAPIFY_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({
-      ok: false,
-      message: "Reverse geocoding is not configured",
-    });
+    return NextResponse.json(
+      { ok: false, message: "Reverse geocoding is not configured" },
+      { status: 503 },
+    );
   }
 
   try {
@@ -69,33 +89,38 @@ export async function GET(request: NextRequest) {
     // which continues to use the device's unrounded coordinates locally.
     const roundedLat = latNum.toFixed(3);
     const roundedLon = lonNum.toFixed(3);
-    const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${roundedLat}&lon=${roundedLon}&format=json&apiKey=${apiKey}`;
-    const response = await fetch(url, { next: { revalidate: 24 * 60 * 60 } });
+    const url = new URL("https://api.geoapify.com/v1/geocode/reverse");
+    url.searchParams.set("lat", roundedLat);
+    url.searchParams.set("lon", roundedLon);
+    url.searchParams.set("format", "json");
+    url.searchParams.set("apiKey", apiKey);
 
-    if (!response.ok) {
-      return NextResponse.json({
-        ok: false,
-        message: "Reverse geocoding service unavailable",
-      });
+    const data = await fetchBoundedJson<{ results?: unknown }>(url, {
+      cache: "no-store",
+      timeoutMs: UPSTREAM_TIMEOUT_MS,
+      maxBytes: MAX_UPSTREAM_BYTES,
+    });
+    if (!Array.isArray(data.results) || data.results.length === 0) {
+      return NextResponse.json({ ok: false, message: "No location label found" }, { status: 404 });
     }
 
-    const data = await response.json();
-
-    if (!data.results || data.results.length === 0) {
-      return NextResponse.json({
-        ok: false,
-        message: "No location label found",
-      });
+    const result = data.results[0] as GeoapifyReverseResult;
+    const formatted = boundedProviderString(result?.formatted, 512);
+    if (!formatted) {
+      return NextResponse.json({ ok: false, message: "Invalid location response" }, { status: 502 });
     }
+    const city = boundedProviderString(result.city, 128)
+      || boundedProviderString(result.town, 128)
+      || boundedProviderString(result.village, 128)
+      || boundedProviderString(result.county, 128);
 
-    const result = data.results[0];
     return NextResponse.json(
       {
         ok: true,
-        formatted: result.formatted,
-        city: result.city || result.town || result.village || result.county || null,
-        state: result.state || null,
-        country: result.country || null,
+        formatted,
+        city,
+        state: boundedProviderString(result.state, 128),
+        country: boundedProviderString(result.country, 128),
       },
       {
         headers: {
@@ -104,9 +129,9 @@ export async function GET(request: NextRequest) {
       },
     );
   } catch {
-    return NextResponse.json({
-      ok: false,
-      message: "Reverse geocoding request failed",
-    });
+    return NextResponse.json(
+      { ok: false, message: "Reverse geocoding service unavailable" },
+      { status: 502 },
+    );
   }
 }

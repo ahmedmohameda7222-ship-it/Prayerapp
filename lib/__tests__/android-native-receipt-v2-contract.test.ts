@@ -10,7 +10,8 @@ describe("Android native receipt v2 contract", () => {
     const heartbeat = source("app/api/android/native-authority/heartbeat/route.ts");
 
     expect(enroll).toContain("accountGeneration");
-    expect(enroll).toContain("account_generation: body.accountGeneration");
+    expect(enroll).toContain("const accountGeneration = body.accountGeneration == null");
+    expect(enroll).toContain("account_generation: accountGeneration");
     expect(enroll).toContain("receipt_v2: false");
     expect(heartbeat).toContain("account_generation");
     expect(heartbeat).toContain("heartbeat.accountGeneration !== row.account_generation");

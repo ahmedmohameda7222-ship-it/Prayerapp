@@ -5,7 +5,7 @@ import { prayerEventId } from "@/lib/android/prayer-event-id";
 import { todayIso } from "@/lib/date-utils";
 import { deliverPrayerReminderEvent } from "@/lib/prayer-reminder-delivery";
 import type { PushSubscriptionRecord } from "@/lib/push/types";
-import { readBoundedJson } from "@/lib/security/http-boundaries";
+import { readBoundedJsonObject } from "@/lib/security/http-boundaries";
 import { consumeSecurityRateLimit } from "@/lib/security/rate-limit";
 import { isTrustedWebPushEndpoint } from "@/lib/security/web-push-endpoint";
 import { createServerClient } from "@/lib/supabase/server";
@@ -45,7 +45,7 @@ function parseMode(value: unknown): TestMode | null {
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
 
-  const parsed = await readBoundedJson<Record<string, unknown>>(request, { maxBytes: MAX_TEST_PUSH_BODY_BYTES });
+  const parsed = await readBoundedJsonObject(request, { maxBytes: MAX_TEST_PUSH_BODY_BYTES });
   if (!parsed.ok) return NextResponse.json({ error: parsed.message }, { status: parsed.status });
   const body = parsed.value;
   const endpoint = body.endpoint;

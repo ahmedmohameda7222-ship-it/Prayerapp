@@ -29,7 +29,7 @@ This register distinguishes accepted risk, accepted governance decisions, unreso
 
 - Related finding: PA-SEC-003.
 - State: **OPEN EXTERNAL RELEASE GATE; NOT ACCEPTED AS FIXED**.
-- Evidence: exact-head unsigned candidate is package `de.donaumoschee.app`, versionName `1.0.4`, versionCode `7`; final Android workflow `33763676349` passed unsigned build plus API 23/37 instrumentation; public release remains `android-v1.0.3`.
+- Evidence: final fully verified technical candidate `48d3fdbac34b255dde7bf574dd0127d7513cc9d4` produced package `de.donaumoschee.app`, versionName `1.0.4`, versionCode `7`; Android workflow `33763676349` passed unsigned build plus API 23/37 instrumentation; public release remains `android-v1.0.3`.
 - Exact unsigned hashes: APK `bf4e0de0b8bb0bff17bbf39538dfe8a8c8ba423c86d1658e59ac18742273eb47`; AAB `b16bd14780960d74bc83f36e7150a4242147851cb9c2ff1d61cb17cc31ac8dea`.
 - Risk: current public users do not receive every hardening change present in the 1.0.4 candidate.
 - Compensating controls: the protected signing workflow validates exact source provenance, package/version, permanent signer certificate and signed artifact hashes; signing secrets remain isolated from PR CI.

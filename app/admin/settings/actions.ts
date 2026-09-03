@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
-import { adminActionError, beginAdminAudit, finishAdminAudit } from "@/lib/security/admin-audit";
+import { adminActionError, beginAdminAudit, completeAdminAudit } from "@/lib/security/admin-audit";
 import { parseAdminEmail, parseAdminOptionalHttpsUrl, parseAdminText } from "@/lib/security/admin-input";
 
 type ActionResult = { success: boolean; error?: string };
@@ -11,10 +11,7 @@ export async function updateMosqueSettingsAction(token: string, data: Record<str
   let audit;
   try { audit = await beginAdminAudit(token, { action: "mosque_settings.update", entityType: "mosque_settings", entityId: "1" }); }
   catch (error) { return { success: false, error: adminActionError(error, "admin.errors.auditUnavailable") }; }
-  const fail = async (error: string): Promise<ActionResult> => {
-    try { await finishAdminAudit(audit, "failure", { error }); } catch { /* durable attempt remains */ }
-    return { success: false, error };
-  };
+  const fail = (error: string) => completeAdminAudit(audit, { success: false, error });
 
   let parsed;
   try {
@@ -58,7 +55,8 @@ export async function updateMosqueSettingsAction(token: string, data: Record<str
   };
   const { error } = await client.from("mosque_settings").upsert({ id: "1", ...db }, { onConflict: "id" });
   if (error) return fail("admin.errors.saveFailed");
-  try { await finishAdminAudit(audit, "success"); } catch { return { success: false, error: "admin.errors.auditUnavailable" }; }
+
+  const result = await completeAdminAudit(audit, { success: true });
   revalidatePath("/admin/settings"); revalidatePath("/mosque"); revalidatePath("/donations"); revalidatePath("/");
-  return { success: true };
+  return result;
 }

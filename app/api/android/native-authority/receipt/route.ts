@@ -6,7 +6,7 @@ import {
   isInstallationId,
   isNativeCredential,
 } from "@/lib/android/native-credentials";
-import { readBoundedJson } from "@/lib/security/http-boundaries";
+import { readBoundedJsonObject } from "@/lib/security/http-boundaries";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   }
 
   const now = new Date();
-  const parsed = await readBoundedJson(request, {
+  const parsed = await readBoundedJsonObject(request, {
     maxBytes: MAX_NATIVE_RECEIPT_BODY_BYTES,
   });
   if (!parsed.ok) return NextResponse.json({ error: parsed.message }, { status: parsed.status });

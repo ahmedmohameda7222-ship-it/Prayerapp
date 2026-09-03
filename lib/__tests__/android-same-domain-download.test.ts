@@ -58,7 +58,7 @@ describe("same-domain Android APK delivery", () => {
     );
     expect(response.headers.get("location")).toBeNull();
     expect([...response.headers.values()].join(" ")).not.toMatch(/github(?:usercontent)?\.com/i);
-    expect(new Uint8Array(await response.arrayBuffer())).toEqual(APK_BYTES);
+    expect(Array.from(new Uint8Array(await response.arrayBuffer()))).toEqual(Array.from(APK_BYTES));
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(fetchImpl.mock.calls[0]?.[0]).toBe(CANONICAL_UPSTREAM);
   });
@@ -107,6 +107,17 @@ describe("same-domain Android APK delivery", () => {
     expect(response.status).toBeGreaterThanOrEqual(500);
     expect(response.headers.get("location")).toBeNull();
     expect(await response.text()).not.toMatch(/github|release-assets|objects\.githubusercontent/i);
+  });
+
+  it("turns an upstream 404 into a controlled server error", async () => {
+    const response = await serveVerifiedAndroidApk({
+      releaseLoader: async () => release(),
+      fetchImpl: async () => new Response("not found", { status: 404 }),
+    });
+
+    expect(response.status).toBeGreaterThanOrEqual(500);
+    expect(response.headers.get("location")).toBeNull();
+    expect(await response.text()).not.toContain("github");
   });
 
   it("rejects an oversized upstream response before reading its body", async () => {

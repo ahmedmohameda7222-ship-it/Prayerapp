@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
-import { adminActionError, beginAdminAudit, finishAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
+import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import {
   parseAdminBoolean,
   parseAdminDate,
@@ -32,9 +32,7 @@ async function runAuditedAction(token: string, event: AdminAuditEvent, operation
   let result: ActionResult;
   try { result = await operation(); }
   catch (error) { result = { success: false, error: adminActionError(error) }; }
-  try { await finishAdminAudit(audit, result.success ? "success" : "failure", result.error ? { error: result.error } : undefined); }
-  catch { if (result.success) return { success: false, error: "admin.errors.auditUnavailable" }; }
-  return result;
+  return completeAdminAudit(audit, result);
 }
 
 async function notifyActiveCampaign(row: CampaignPushRow) {
@@ -165,22 +163,26 @@ export async function deleteDonationCampaignAction(token: string, id: string): P
   });
 }
 
-export async function toggleActiveCampaignAction(token: string, id: string, isActive: boolean): Promise<ActionResult> {
-  let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
-  return runAuditedAction(token, { action: "donation.campaign.active", entityType: "donation_campaign", entityId, metadata: { isActive: Boolean(isActive) } }, async () => {
+export async function toggleActiveCampaignAction(token: string, id: string, isActive: unknown): Promise<ActionResult> {
+  let entityId: string; let nextActive: boolean;
+  try { entityId = parseAdminUuid(id, "id"); nextActive = parseAdminBoolean(isActive, "isActive"); }
+  catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "donation.campaign.active", entityType: "donation_campaign", entityId, metadata: { isActive: nextActive } }, async () => {
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-    const { data: result, error } = await client.from("donation_campaigns").update({ is_active: Boolean(isActive) }).eq("id", entityId).select().single();
+    const { data: result, error } = await client.from("donation_campaigns").update({ is_active: nextActive }).eq("id", entityId).select().single();
     if (error) return { success: false, error: "admin.errors.toggleFailed" };
-    if (isActive) await notifyActiveCampaign(result as CampaignPushRow);
+    if (nextActive) await notifyActiveCampaign(result as CampaignPushRow);
     revalidatePath("/admin/donations"); revalidatePath("/donations"); revalidatePath("/"); return { success: true };
   });
 }
 
-export async function toggleFeaturedCampaignAction(token: string, id: string, isFeatured: boolean): Promise<ActionResult> {
-  let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
-  return runAuditedAction(token, { action: "donation.campaign.featured", entityType: "donation_campaign", entityId, metadata: { isFeatured: Boolean(isFeatured) } }, async () => {
+export async function toggleFeaturedCampaignAction(token: string, id: string, isFeatured: unknown): Promise<ActionResult> {
+  let entityId: string; let nextFeatured: boolean;
+  try { entityId = parseAdminUuid(id, "id"); nextFeatured = parseAdminBoolean(isFeatured, "isFeatured"); }
+  catch { return { success: false, error: "admin.errors.invalidInput" }; }
+  return runAuditedAction(token, { action: "donation.campaign.featured", entityType: "donation_campaign", entityId, metadata: { isFeatured: nextFeatured } }, async () => {
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
-    const { error } = await client.from("donation_campaigns").update({ is_featured: Boolean(isFeatured) }).eq("id", entityId);
+    const { error } = await client.from("donation_campaigns").update({ is_featured: nextFeatured }).eq("id", entityId);
     if (error) return { success: false, error: "admin.errors.toggleFailed" };
     revalidatePath("/admin/donations"); revalidatePath("/donations"); revalidatePath("/"); return { success: true };
   });

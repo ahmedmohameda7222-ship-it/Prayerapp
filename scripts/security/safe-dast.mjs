@@ -1,0 +1,113 @@
+#!/usr/bin/env node
+
+const baseUrl = process.env.BASE_URL || "http://127.0.0.1:3000";
+const strictCsp = process.env.EXPECT_STRICT_CSP === "1";
+
+const failures = [];
+const evidence = [];
+
+function fail(message) {
+  failures.push(message);
+}
+
+function record(name, value) {
+  evidence.push(`${name}: ${value}`);
+}
+
+async function probe(path, init = {}) {
+  const response = await fetch(new URL(path, baseUrl), {
+    redirect: "manual",
+    signal: AbortSignal.timeout(10_000),
+    ...init,
+  });
+  return response;
+}
+
+function header(response, name) {
+  return response.headers.get(name) || "";
+}
+
+function requireHeader(response, name, predicate, description) {
+  const value = header(response, name);
+  record(`${response.url} ${name}`, value || "<missing>");
+  if (!predicate(value)) fail(`${description}: ${name}=${JSON.stringify(value)}`);
+}
+
+const page = await probe("/privacy");
+record("privacy status", page.status);
+if (page.status !== 200) fail(`/privacy expected 200, received ${page.status}`);
+requireHeader(page, "strict-transport-security", (value) => value.includes("max-age=63072000"), "HSTS missing or weak");
+requireHeader(page, "x-content-type-options", (value) => value.toLowerCase() === "nosniff", "nosniff missing");
+requireHeader(page, "x-frame-options", (value) => value.toUpperCase() === "DENY", "frame protection missing");
+requireHeader(page, "referrer-policy", (value) => value === "strict-origin-when-cross-origin", "referrer policy mismatch");
+requireHeader(page, "permissions-policy", (value) => value.includes("camera=()") && value.includes("microphone=()"), "permissions policy mismatch");
+if (header(page, "x-powered-by")) fail("X-Powered-By must not be exposed");
+
+const csp = header(page, "content-security-policy");
+record("privacy CSP", csp || "<missing>");
+if (!csp) fail("Content-Security-Policy missing from page response");
+if (strictCsp) {
+  const scriptDirective = csp.split(";").map((part) => part.trim()).find((part) => part.startsWith("script-src ")) || "";
+  if (!scriptDirective.includes("'strict-dynamic'")) fail("strict CSP must contain strict-dynamic");
+  if (!/'nonce-[^']+'/u.test(scriptDirective)) fail("strict CSP must contain a per-request script nonce");
+  if (scriptDirective.includes("'unsafe-inline'")) fail("script-src must not contain unsafe-inline");
+  if (scriptDirective.includes("'unsafe-eval'")) fail("script-src must not contain unsafe-eval");
+  for (const expected of ["script-src-attr 'none'", "object-src 'none'", "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'"]) {
+    if (!csp.includes(expected)) fail(`strict CSP missing ${expected}`);
+  }
+}
+
+const secondPage = await probe("/privacy");
+const secondCsp = header(secondPage, "content-security-policy");
+if (strictCsp) {
+  const nonceOf = (value) => value.match(/'nonce-([^']+)'/u)?.[1] || "";
+  const firstNonce = nonceOf(csp);
+  const secondNonce = nonceOf(secondCsp);
+  record("nonce changes per request", String(Boolean(firstNonce && secondNonce && firstNonce !== secondNonce)));
+  if (!firstNonce || !secondNonce || firstNonce === secondNonce) fail("CSP nonce must change between independent requests");
+}
+
+const admin = await probe("/api/admin/launch-readiness");
+record("unauthorized admin status", admin.status);
+if (admin.status !== 401) fail(`unauthorized admin readiness expected 401, received ${admin.status}`);
+requireHeader(admin, "cache-control", (value) => value.includes("no-store"), "admin API must be no-store");
+
+const crossOriginDelete = await probe("/api/account/delete", {
+  method: "DELETE",
+  headers: { Origin: "https://attacker.invalid" },
+});
+record("cross-origin account delete status", crossOriginDelete.status);
+if (crossOriginDelete.status !== 403) fail(`cross-origin account deletion expected 403, received ${crossOriginDelete.status}`);
+
+const nativeInvalid = await probe("/api/android/native-authority/heartbeat", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: "{}",
+});
+record("unauthorized native heartbeat status", nativeInvalid.status);
+if (nativeInvalid.status !== 401) fail(`unauthorized native heartbeat expected 401, received ${nativeInvalid.status}`);
+requireHeader(nativeInvalid, "cache-control", (value) => value.includes("no-store"), "native authority response must be no-store");
+
+const methodProbe = await probe("/api/health", { method: "TRACE" });
+record("TRACE health status", methodProbe.status);
+if (![405, 501].includes(methodProbe.status)) fail(`TRACE should be rejected, received ${methodProbe.status}`);
+
+const openRedirectProbe = await probe("/?next=https%3A%2F%2Fattacker.invalid%2Fescape");
+record("open redirect probe status", openRedirectProbe.status);
+const location = header(openRedirectProbe, "location");
+record("open redirect location", location || "<none>");
+if (location && new URL(location, baseUrl).hostname === "attacker.invalid") fail("root query parameter created an external redirect");
+
+const sw = await probe("/sw.js");
+record("service worker status", sw.status);
+if (sw.status !== 200) fail(`/sw.js expected 200, received ${sw.status}`);
+requireHeader(sw, "cache-control", (value) => value.includes("no-store"), "service worker must not be stale-cached");
+requireHeader(sw, "content-security-policy", (value) => value.includes("default-src 'self'") && value.includes("script-src 'self'"), "service-worker CSP mismatch");
+
+console.log(evidence.join("\n"));
+if (failures.length) {
+  console.error("\nSAFE DAST FAILURES:");
+  for (const item of failures) console.error(`- ${item}`);
+  process.exit(1);
+}
+console.log("SAFE DAST PASS");

@@ -39,12 +39,13 @@ describe("durable admin audit security contract", () => {
     expect(metadata).toMatchObject({ locale: "de" });
   });
 
-  it("requires every privileged mutation family to use the durable audit helper", () => {
+  it("requires every privileged mutation family to use the durable truthful audit helper", () => {
     for (const path of ADMIN_ACTION_FILES) {
       const file = source(path);
       expect(file, `${path} must use the durable admin audit helper`).toContain("@/lib/security/admin-audit");
       expect(file, `${path} must begin a durable audit attempt before mutation`).toContain("beginAdminAudit");
-      expect(file, `${path} must record a mutation outcome`).toContain("finishAdminAudit");
+      expect(file, `${path} must preserve committed mutation semantics when terminal audit completion fails`).toContain("completeAdminAudit");
+      expect(file, `${path} must not implement bespoke terminal audit completion`).not.toContain("finishAdminAudit");
     }
   });
 

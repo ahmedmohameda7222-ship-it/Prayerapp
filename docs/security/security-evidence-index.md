@@ -18,8 +18,7 @@ The approved source authority remains the original 324-control matrix and remedi
 
 ### CI
 
-- Run `33763676446`
-- Result: **SUCCESS**
+- Run `33763676446`: **SUCCESS**
 - Binding authority hashes: PASS
 - `git diff --check`: PASS
 - production dependency audit: PASS
@@ -35,8 +34,7 @@ The approved source authority remains the original 324-control matrix and remedi
 
 ### Security scanners and DAST
 
-- Run `33763676284`
-- Result: **SUCCESS**
+- Run `33763676284`: **SUCCESS**
 - CodeQL JavaScript/TypeScript: PASS
 - Gitleaks full-history scan: PASS
 - OSV dependency scan: PASS
@@ -114,7 +112,7 @@ Active `Protect main` ruleset remains unchanged:
 - no bypass actors;
 - `required_approving_review_count: 0` retained by design for this repository model.
 
-`OPEN-135` is therefore classified **N/A** for this explicit single-maintainer governance model. The decision is non-blocking. The owner will personally perform the final manual owner review of PR #105 before separately authorizing merge. No fabricated reviewer, self-approval or second account will be created.
+`OPEN-135` is classified **N/A** for this explicit single-maintainer governance model. The decision is non-blocking. The owner will personally perform the final manual owner review of PR #105 before separately authorizing merge. No fabricated reviewer, self-approval or second account will be created.
 
 ## Recovery and monitoring evidence
 

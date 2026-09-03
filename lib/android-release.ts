@@ -1,7 +1,7 @@
 export const ANDROID_PACKAGE_ID = "de.donaumoschee.app";
 export const ANDROID_APK_ASSET_NAME = "danube-mosque.apk";
 export const ANDROID_RELEASE_METADATA_ASSET_NAME = "android-release.json";
-export const ANDROID_PUBLIC_DOWNLOAD_PATH = "/download/android/danube-mosque.apk" as const;
+export const ANDROID_PUBLIC_DOWNLOAD_PATH = "/android/download" as const;
 export const ANDROID_CERTIFICATE_SHA256 =
   "E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92";
 
@@ -12,6 +12,7 @@ export type GitHubReleaseAsset = {
   name: string;
   browser_download_url: string;
   digest?: string | null;
+  size?: number;
 };
 
 export type GitHubRelease = {
@@ -37,6 +38,7 @@ export type AndroidReleaseMetadata = {
 export type AndroidRelease = AndroidReleaseMetadata & {
   tagName: string;
   downloadUrl: string;
+  apkSize: number;
 };
 
 export type AndroidReleaseIdentity = Pick<AndroidReleaseMetadata, "versionCode" | "versionName">;
@@ -127,7 +129,7 @@ export function selectLatestAndroidRelease(
       || !Number.isFinite(Date.parse(release.published_at))
     ) continue;
     const apk = release.assets.find((asset) => asset.name === ANDROID_APK_ASSET_NAME);
-    if (!apk || !isTrustedGitHubDownload(apk.browser_download_url)) continue;
+    if (!apk || !isTrustedGitHubDownload(apk.browser_download_url) || !positiveInteger(apk.size)) continue;
 
     const suppliedMetadata = parseMetadata(metadataByTag[release.tag_name]);
     const metadataAsset = release.assets.find((asset) => asset.name === ANDROID_RELEASE_METADATA_ASSET_NAME);
@@ -145,6 +147,7 @@ export function selectLatestAndroidRelease(
       publishedAt: release.published_at,
       tagName: release.tag_name,
       downloadUrl: apk.browser_download_url,
+      apkSize: apk.size,
     });
   }
 

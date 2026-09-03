@@ -7,8 +7,8 @@ import { hasPublishableKhutbahContent, normalizeKhutbahForm, type FridayKhutbahF
 import { isFridayIso } from "@/lib/friday";
 import { createServerClient } from "@/lib/supabase/server";
 import type { FridayKhutbah } from "@/lib/types";
-import { adminActionError, beginAdminAudit, finishAdminAudit } from "@/lib/security/admin-audit";
-import { parseAdminDate, parseAdminText } from "@/lib/security/admin-input";
+import { adminActionError, beginAdminAudit, completeAdminAudit } from "@/lib/security/admin-audit";
+import { parseAdminBoolean, parseAdminDate, parseAdminText } from "@/lib/security/admin-input";
 
 function optionalDbValue(value: string) { return value || null; }
 
@@ -60,23 +60,27 @@ export async function getFridayKhutbahAdminAction(token: string, date: string) {
   return { success: true, khutbah: data ? mapKhutbah(data as Record<string, unknown>) : undefined } as const;
 }
 
-export async function saveFridayKhutbahAction(token: string, date: string, input: Partial<FridayKhutbahForm>, publish: boolean) {
+export async function saveFridayKhutbahAction(token: string, date: string, input: Partial<FridayKhutbahForm>, publish: unknown) {
   await requireAllowedAdmin(token);
-  let safeDate: string; try { safeDate = parseAdminDate(date, "date"); } catch { return { success: false, error: "admin.errors.invalidInput" } as const; }
+  let safeDate: string;
+  let safePublish: boolean;
+  try {
+    safeDate = parseAdminDate(date, "date");
+    safePublish = parseAdminBoolean(publish, "publish");
+  } catch {
+    return { success: false, error: "admin.errors.invalidInput" } as const;
+  }
   let audit;
-  try { audit = await beginAdminAudit(token, { action: "khutbah.save", entityType: "friday_khutbah", entityId: safeDate, metadata: { publish: Boolean(publish) } }); }
+  try { audit = await beginAdminAudit(token, { action: "khutbah.save", entityType: "friday_khutbah", entityId: safeDate, metadata: { publish: safePublish } }); }
   catch (error) { return { success: false, error: adminActionError(error, "admin.errors.auditUnavailable") } as const; }
-  const fail = async (error: string) => {
-    try { await finishAdminAudit(audit, "failure", { error }); } catch { /* attempt record remains durable */ }
-    return { success: false, error } as const;
-  };
+  const fail = async (error: string) => completeAdminAudit(audit, { success: false as const, error });
 
   const client = createServerClient();
   if (!client) return fail("admin.errors.supabaseNotConfigured");
   if (!(await validateFridayDate(client, safeDate))) return fail("admin.errors.invalidInput");
   let form: FridayKhutbahForm;
   try { form = parseKhutbahForm(input); } catch { return fail("admin.errors.invalidInput"); }
-  if (publish && !hasPublishableKhutbahContent(form)) return fail("khutbahContentRequired");
+  if (safePublish && !hasPublishableKhutbahContent(form)) return fail("khutbahContentRequired");
 
   const db = {
     date: safeDate,
@@ -84,13 +88,12 @@ export async function saveFridayKhutbahAction(token: string, date: string, input
     title_en: optionalDbValue(form.titleEn), content_en: optionalDbValue(form.contentEn),
     title_de: optionalDbValue(form.titleDe), content_de: optionalDbValue(form.contentDe),
     title_tr: optionalDbValue(form.titleTr), content_tr: optionalDbValue(form.contentTr),
-    published: Boolean(publish), updated_at: new Date().toISOString(),
+    published: safePublish, updated_at: new Date().toISOString(),
   };
   const { data, error } = await client.from("friday_khutbahs").upsert(db as never, { onConflict: "date" }).select().single();
   if (error || !data) return fail("admin.errors.saveFailed");
-  try { await finishAdminAudit(audit, "success"); } catch { return { success: false, error: "admin.errors.auditUnavailable" } as const; }
   revalidateKhutbahPaths(safeDate);
-  return { success: true, khutbah: mapKhutbah(data as Record<string, unknown>) } as const;
+  return completeAdminAudit(audit, { success: true as const, khutbah: mapKhutbah(data as Record<string, unknown>) });
 }
 
 export async function unpublishFridayKhutbahAction(token: string, date: string) {
@@ -99,17 +102,13 @@ export async function unpublishFridayKhutbahAction(token: string, date: string) 
   let audit;
   try { audit = await beginAdminAudit(token, { action: "khutbah.unpublish", entityType: "friday_khutbah", entityId: safeDate }); }
   catch (error) { return { success: false, error: adminActionError(error, "admin.errors.auditUnavailable") } as const; }
-  const fail = async (error: string) => {
-    try { await finishAdminAudit(audit, "failure", { error }); } catch { /* attempt record remains durable */ }
-    return { success: false, error } as const;
-  };
+  const fail = async (error: string) => completeAdminAudit(audit, { success: false as const, error });
 
   const client = createServerClient();
   if (!client) return fail("admin.errors.supabaseNotConfigured");
   if (!(await validateFridayDate(client, safeDate))) return fail("admin.errors.invalidInput");
   const { data, error } = await client.from("friday_khutbahs").update({ published: false, updated_at: new Date().toISOString() } as never).eq("date", safeDate).select().maybeSingle();
   if (error) return fail("admin.errors.saveFailed");
-  try { await finishAdminAudit(audit, "success"); } catch { return { success: false, error: "admin.errors.auditUnavailable" } as const; }
   revalidateKhutbahPaths(safeDate);
-  return { success: true, khutbah: data ? mapKhutbah(data as Record<string, unknown>) : undefined } as const;
+  return completeAdminAudit(audit, { success: true as const, khutbah: data ? mapKhutbah(data as Record<string, unknown>) : undefined });
 }

@@ -107,25 +107,26 @@ jobs:
           done
           test "$ready" = true
 
-          response_code="$(curl -sS -D /tmp/download-headers -o /tmp/domain.apk --max-redirs 0 -w '%{http_code}' "$PRODUCTION_ORIGIN$DOWNLOAD_PATH")"
+          response_code="$(curl -sS -D /tmp/download-headers -o /tmp/danube-mosque.apk --max-redirs 0 -w '%{http_code}' "$PRODUCTION_ORIGIN$DOWNLOAD_PATH")"
           test "$response_code" = "200"
           grep -Eqi '^content-type:[[:space:]]*application/vnd\.android\.package-archive' /tmp/download-headers
           grep -Eqi "^content-disposition:[[:space:]]*attachment;[[:space:]]*filename=\"danube-mosque-${version_name}\\.apk\"" /tmp/download-headers
           grep -Eqi '^cache-control:.*no-store' /tmp/download-headers
           ! grep -Eqi '^location:' /tmp/download-headers
+          # These hosts are explicitly forbidden in the user-facing response: release-assets.githubusercontent.com and objects.githubusercontent.com.
           ! grep -Eqi 'github\.com|release-assets\.githubusercontent\.com|objects\.githubusercontent\.com' /tmp/download-headers
 
-          test "$(stat -c%s /tmp/domain.apk)" -gt 0
-          printf '%s  %s\n' "$expected_sha" /tmp/domain.apk | sha256sum --check --status
-          cmp -s /tmp/release/danube-mosque.apk /tmp/domain.apk
-          unzip -t /tmp/domain.apk >/dev/null
+          test "$(stat -c%s /tmp/danube-mosque.apk)" -gt 0
+          printf '%s  %s\n' "$expected_sha" /tmp/danube-mosque.apk | sha256sum --check --status
+          cmp -s /tmp/release/danube-mosque.apk /tmp/danube-mosque.apk
+          unzip -t /tmp/danube-mosque.apk >/dev/null
 
-          signature="$($ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs /tmp/domain.apk)"
+          signature="$($ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs /tmp/danube-mosque.apk)"
           actual_cert="$(printf '%s\n' "$signature" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1 | sed 's/../&:/g;s/:$//' | tr '[:lower:]' '[:upper:]')"
           test "$actual_cert" = "$EXPECTED_CERT_SHA256"
           test "$actual_cert" = "$metadata_cert"
 
-          badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging /tmp/domain.apk)"
+          badging="$($ANDROID_HOME/build-tools/36.0.0/aapt dump badging /tmp/danube-mosque.apk)"
           printf '%s\n' "$badging" | grep -F "package: name='$package_id' versionCode='$version_code' versionName='$version_name'"
           printf '%s\n' "$badging" | grep -F "sdkVersion:'$min_sdk'"
           printf '%s\n' "$badging" | grep -F "targetSdkVersion:'$target_sdk'"

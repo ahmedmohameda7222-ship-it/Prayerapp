@@ -101,6 +101,17 @@ function errorResponse(status: 502 | 503) {
   });
 }
 
+function rejectWhenAborted(signal: AbortSignal) {
+  return new Promise<never>((_resolve, reject) => {
+    const onAbort = () => reject(new Error("Android upstream deadline exceeded"));
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 async function fetchApprovedApk(
   initialUrl: string,
   fetchImpl: FetchLike,
@@ -178,46 +189,57 @@ async function readBoundedBody(response: Response, expectedSize: number, expecte
   return output;
 }
 
+async function serveWithinDeadline(
+  dependencies: AndroidApkDownloadDependencies,
+  signal: AbortSignal,
+) {
+  const releaseLoader = dependencies.releaseLoader
+    ?? ((releaseSignal: AbortSignal) => getExpectedAndroidRelease({ signal: releaseSignal }));
+  const fetchImpl = dependencies.fetchImpl ?? fetch;
+  const method = dependencies.method ?? "GET";
+
+  const release = await releaseLoader(signal);
+  if (signal.aborted) throw new Error("Android upstream deadline exceeded");
+  if (!release || !releaseMatchesApprovedApp(release)) return errorResponse(503);
+
+  const upstream = await fetchApprovedApk(
+    canonicalApkUrl(release.tagName),
+    fetchImpl,
+    signal,
+  );
+  if (!upstream) return errorResponse(502);
+
+  const bytes = await readBoundedBody(upstream, release.apkSize, release.apkSha256);
+  if (!bytes) return errorResponse(502);
+
+  const headers = {
+    "Content-Type": "application/vnd.android.package-archive",
+    "Content-Disposition": `attachment; filename="danube-mosque-${release.versionName}.apk"`,
+    "Content-Length": String(bytes.byteLength),
+    "Cache-Control": "no-store, max-age=0, must-revalidate",
+    "CDN-Cache-Control": "no-store",
+    "Vercel-CDN-Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    ETag: `"sha256-${release.apkSha256}"`,
+  };
+
+  return new Response(method === "HEAD" ? null : bytes, {
+    status: 200,
+    headers,
+  });
+}
+
 export async function serveVerifiedAndroidApk(
   dependencies: AndroidApkDownloadDependencies = {},
 ) {
-  const releaseLoader = dependencies.releaseLoader
-    ?? ((signal: AbortSignal) => getExpectedAndroidRelease({ signal }));
-  const fetchImpl = dependencies.fetchImpl ?? fetch;
-  const method = dependencies.method ?? "GET";
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
 
   try {
-    const release = await releaseLoader(controller.signal);
-    if (controller.signal.aborted) return errorResponse(503);
-    if (!release || !releaseMatchesApprovedApp(release)) return errorResponse(503);
-
-    const upstream = await fetchApprovedApk(
-      canonicalApkUrl(release.tagName),
-      fetchImpl,
-      controller.signal,
-    );
-    if (!upstream) return errorResponse(502);
-
-    const bytes = await readBoundedBody(upstream, release.apkSize, release.apkSha256);
-    if (!bytes) return errorResponse(502);
-
-    const headers = {
-      "Content-Type": "application/vnd.android.package-archive",
-      "Content-Disposition": `attachment; filename="danube-mosque-${release.versionName}.apk"`,
-      "Content-Length": String(bytes.byteLength),
-      "Cache-Control": "no-store, max-age=0, must-revalidate",
-      "CDN-Cache-Control": "no-store",
-      "Vercel-CDN-Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff",
-      ETag: `"sha256-${release.apkSha256}"`,
-    };
-
-    return new Response(method === "HEAD" ? null : bytes, {
-      status: 200,
-      headers,
-    });
+    return await Promise.race([
+      serveWithinDeadline(dependencies, controller.signal),
+      rejectWhenAborted(controller.signal),
+    ]);
   } catch {
     return errorResponse(503);
   } finally {

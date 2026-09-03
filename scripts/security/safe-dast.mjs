@@ -132,10 +132,7 @@ if (isolatedLocalRuntime) {
   for (const [label, body, expectedError] of objectBoundaryCases) {
     const response = await probe("/api/android/native-authority/enroll", {
       method: "POST",
-      headers: {
-        Origin: new URL(baseUrl).origin,
-        "content-type": "application/json",
-      },
+      headers: { "content-type": "application/json" },
       body,
     });
     const error = await readJsonError(response);
@@ -147,10 +144,7 @@ if (isolatedLocalRuntime) {
 
   const validObject = await probe("/api/android/native-authority/enroll", {
     method: "POST",
-    headers: {
-      Origin: new URL(baseUrl).origin,
-      "content-type": "application/json",
-    },
+    headers: { "content-type": "application/json" },
     body: "{}",
   });
   const validObjectError = await readJsonError(validObject);

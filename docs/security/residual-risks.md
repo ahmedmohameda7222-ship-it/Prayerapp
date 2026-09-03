@@ -4,7 +4,7 @@ Date: 2026-09-03
 Review date: 2026-10-03, or earlier before any Production launch/release decision.
 Owner unless otherwise stated: Prayerapp Production/repository maintainer.
 
-This register distinguishes accepted risk from unresolved release gates and external evidence limitations. Documentation alone does not convert an unresolved control to PASS.
+This register distinguishes accepted risk, accepted governance decisions, unresolved release gates and external evidence limitations. Documentation alone does not convert an unresolved technical control to PASS.
 
 ## RR-001 — Supabase leaked-password protection disabled
 
@@ -29,11 +29,11 @@ This register distinguishes accepted risk from unresolved release gates and exte
 
 - Related finding: PA-SEC-003.
 - State: **OPEN EXTERNAL RELEASE GATE; NOT ACCEPTED AS FIXED**.
-- Evidence: exact-head unsigned candidate is package `de.donaumoschee.app`, versionName `1.0.4`, versionCode `7`; Android workflow `33761020400` passed unsigned build plus API 23/37 instrumentation; public release remains `android-v1.0.3`.
+- Evidence: exact-head unsigned candidate is package `de.donaumoschee.app`, versionName `1.0.4`, versionCode `7`; final Android workflow `33763676349` passed unsigned build plus API 23/37 instrumentation; public release remains `android-v1.0.3`.
 - Exact unsigned hashes: APK `bf4e0de0b8bb0bff17bbf39538dfe8a8c8ba423c86d1658e59ac18742273eb47`; AAB `b16bd14780960d74bc83f36e7150a4242147851cb9c2ff1d61cb17cc31ac8dea`.
 - Risk: current public users do not receive every hardening change present in the 1.0.4 candidate.
 - Compensating controls: the protected signing workflow validates exact source provenance, package/version, permanent signer certificate and signed artifact hashes; signing secrets remain isolated from PR CI.
-- Gate state: Production signing/publication/device QA are authorized, but the protected signer requires `workflow_dispatch`, which the connected GitHub surface cannot invoke. The workflow was not weakened or bypassed.
+- Gate state: Production signing/publication/device QA are authorized, but the protected signer/release workflow requires `workflow_dispatch`, which the connected GitHub surface cannot invoke. The workflow was not weakened or bypassed.
 
 ## RR-004 — Nonce CSP is not yet the Production web policy
 
@@ -42,16 +42,17 @@ This register distinguishes accepted risk from unresolved release gates and exte
 - Evidence: exact remediation source passes isolated CSP/DAST verification; Production deployment `dpl_39vKk5vWuBkmQrDza3FQuSU2tr8j` still serves `b18430b360313148fc76baaeda9d96844ed508a5`.
 - Risk: Production retains the pre-remediation web policy until the exact reviewed remediation source is deployed.
 - Compensating controls: existing Production security headers/authz/input validation remain active; non-destructive Production DAST continues to run; exact-head isolated DAST validates the pending strict CSP.
-- Gate state: exact-head Production deployment is authorized, but the available Vercel action cannot bind a deployment to the reviewed Git SHA/ref and no exact-head preview exists to promote. An unbound deployment was not attempted. Merge remains explicitly prohibited.
+- Gate state: exact-head Production deployment is authorized, but the available Vercel action cannot bind a deployment to the reviewed Git SHA/ref and no exact-head preview exists to promote. An unbound deployment was not attempted. Merge remains separately gated.
 
-## RR-005 — Repository human approval count is zero
+## RR-005 — Single-maintainer governance / manual owner review
 
 - Related control: OPEN-135.
-- State: **OPEN EXTERNAL GOVERNANCE GAP; NOT SILENTLY WAIVED**.
-- Evidence: active `Protect main` ruleset preserves strict required CI/Android checks, review-thread resolution, squash-only merge and no bypass actors; `required_approving_review_count` remains `0`.
-- Risk: repository policy does not universally require one independent human approval before merge.
-- Compensating controls: strict required status checks, no bypass actors, independent security review outside this implementation session and explicit no-merge instruction.
-- Gate state: changing the ruleset to one genuine independent approval is authorized, but the connected GitHub ruleset surface is read-only. No self-approval or fabricated review was created.
+- State: **ACCEPTED GOVERNANCE DECISION / NON-BLOCKING / CONTROL N/A FOR THIS REPOSITORY MODEL**.
+- Governance model: the repository has one owner/maintainer. A second human reviewer, independent GitHub approving account and `required_approving_review_count: 1` are explicitly not required.
+- Evidence: active `Protect main` ruleset preserves strict required CI/Android checks, review-thread resolution, squash-only merge, deletion/non-fast-forward protections and no bypass actors; `required_approving_review_count` remains `0` by design.
+- Required review: the sole owner will perform the final manual owner review of PR #105 before separately authorizing merge.
+- Accuracy rule: this must be described as **single-maintainer governance / manual owner review**, never as independent human review.
+- Gate state: this governance decision is explicitly accepted and is not a Prayerapp launch blocker. No ruleset mutation is required for this purpose, and no fabricated/self/second-account approval will be created.
 
 ## RR-006 — Provider backup/PITR configuration and isolated restore drill are not verified
 
@@ -89,4 +90,4 @@ This register distinguishes accepted risk from unresolved release gates and exte
 
 ## Residual-risk decision rule
 
-Only RR-001 is explicitly accepted as a non-launch-blocking technical risk. RR-002 through RR-009 are unresolved release/provider/evidence states and must not be converted to PASS merely because authorization exists or the limitation is documented.
+RR-001 is an explicitly accepted non-blocking technical risk. RR-005 is an explicitly accepted non-blocking governance decision and makes the second-reviewer requirement inapplicable to this single-maintainer repository. RR-002, RR-003, RR-004 and RR-006 through RR-009 remain unresolved release/provider/evidence states and must not be converted to PASS merely because authorization exists or the limitation is documented.

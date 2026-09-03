@@ -154,6 +154,65 @@ jobs:
           done
           BASE_URL=http://127.0.0.1:3000 EXPECT_STRICT_CSP=1 node scripts/security/safe-dast.mjs
 
+  authenticated-dast:
+    name: Safe authenticated local DAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.116.0
+          github-token: ${{ github.token }}
+      - name: Run real local Auth flows and authenticated security probes
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          supabase start
+          app_pid=""
+          cleanup() {
+            if [ -n "$app_pid" ]; then kill "$app_pid" 2>/dev/null || true; fi
+            supabase stop --no-backup >/dev/null 2>&1 || true
+            cat /tmp/prayerapp-auth-dast-next.log 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          supabase db reset --local --no-seed
+          supabase status -o env > /tmp/prayerapp-supabase.env
+          set -a
+          # shellcheck disable=SC1091
+          source /tmp/prayerapp-supabase.env
+          set +a
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="${PUBLISHABLE_KEY:-${ANON_KEY:-}}"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="${ANON_KEY:-}"
+          export SUPABASE_SECRET_KEY="${SECRET_KEY:-}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:-}"
+          export ADMIN_EMAILS="security-admin-never-match@local.invalid"
+          test -n "$NEXT_PUBLIC_SUPABASE_URL"
+          test -n "${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}}"
+          test -n "${SUPABASE_SECRET_KEY:-${SUPABASE_SERVICE_ROLE_KEY:-}}"
+          npm run build
+          npm start -- --hostname 127.0.0.1 --port 3000 > /tmp/prayerapp-auth-dast-next.log 2>&1 &
+          app_pid=$!
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/api/health >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "Authenticated DAST runtime did not become ready" >&2
+              exit 1
+            fi
+            sleep 1
+          done
+          BASE_URL=http://127.0.0.1:3000 node scripts/security/authenticated-dast.mjs
+
   production-dast:
     name: Safe deployed-production DAST
     runs-on: ubuntu-latest

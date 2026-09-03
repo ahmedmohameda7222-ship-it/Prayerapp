@@ -99,10 +99,10 @@ describe("Android direct-APK update system", () => {
     expect(page).toContain("<AndroidUpdateCard />");
   });
 
-  it("uses the approved Android 1.0.3 release candidate identity", () => {
+  it("uses the approved Android 1.0.4 hardened release-candidate identity", () => {
     const manifest = JSON.parse(source("android-twa/twa-manifest.json")) as Record<string, unknown>;
-    expect(manifest.versionCode).toBe(6);
-    expect(manifest.versionName).toBe("1.0.3");
+    expect(manifest.versionCode).toBe(7);
+    expect(manifest.versionName).toBe("1.0.4");
     expect(manifest.minimumSupportedVersionCode).toBe(3);
   });
 });

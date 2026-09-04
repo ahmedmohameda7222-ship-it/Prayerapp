@@ -28,7 +28,7 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
     const release = source("lib/android-release.ts");
     const platform = source("lib/platform.ts");
 
-    expect(release).toContain('\"/download/android/danube-mosque.apk\"');
+    expect(release).toContain('ANDROID_PUBLIC_DOWNLOAD_PATH = "/android/download"');
 
     expect(homeInstall).toContain('import { ANDROID_PUBLIC_DOWNLOAD_PATH } from "@/lib/android-release"');
     expect(homeInstall).toContain('import { isAndroidUserAgent } from "@/lib/platform"');

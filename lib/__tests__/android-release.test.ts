@@ -36,11 +36,13 @@ const release = (overrides: Partial<GitHubRelease> = {}): GitHubRelease => ({
       name: ANDROID_APK_ASSET_NAME,
       browser_download_url: "https://github.com/example/releases/download/android-v1.0.1/danube-mosque.apk",
       digest: `sha256:${apkDigest}`,
+      size: 1024,
     },
     {
       name: ANDROID_RELEASE_METADATA_ASSET_NAME,
       browser_download_url: "https://github.com/example/releases/download/android-v1.0.1/android-release.json",
       digest: `sha256:${"b".repeat(64)}`,
+      size: 512,
     },
   ],
   ...overrides,
@@ -60,6 +62,7 @@ describe("Android release selection", () => {
       versionCode: 5,
       versionName: "1.1.0",
       downloadUrl: olderHighCode.assets[0].browser_download_url,
+      apkSize: 1024,
     }));
   });
 
@@ -108,10 +111,11 @@ describe("Android release selection", () => {
         name: ANDROID_APK_ASSET_NAME,
         browser_download_url: "https://github.com/ahmedmohameda7222-ship-it/Prayerapp/releases/download/android-v1.0.0/danube-mosque.apk",
         digest: "sha256:c56a6c93325bff9c9ee6d796eec068fa300dafe2cdbdfe5d9c688ef13d006be3",
+        size: 1024,
       }],
     })], {});
 
-    expect(selected).toEqual(expect.objectContaining({ versionCode: 3, versionName: "1.0.0" }));
+    expect(selected).toEqual(expect.objectContaining({ versionCode: 3, versionName: "1.0.0", apkSize: 1024 }));
   });
 
   it("parses only public same-origin update metadata", () => {

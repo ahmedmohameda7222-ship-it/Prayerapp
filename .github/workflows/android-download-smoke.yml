@@ -6,10 +6,12 @@ on:
       - main
     paths:
       - ".github/workflows/android-download-smoke.yml"
+      - "app/android/download/**"
       - "app/download/android/**"
       - "app/api/android/release/**"
       - "lib/android-release.ts"
       - "lib/android-release-server.ts"
+      - "lib/android-apk-download-server.ts"
       - ".github/workflows/android-production-release.yml"
   release:
     types: [published]
@@ -22,7 +24,7 @@ permissions:
 env:
   GH_TOKEN: ${{ github.token }}
   PRODUCTION_ORIGIN: https://donaumoschee.vercel.app
-  DOWNLOAD_PATH: /download/android/danube-mosque.apk
+  DOWNLOAD_PATH: /android/download
   EXPECTED_CERT_SHA256: E9:98:4B:DB:36:FF:2F:8F:A5:58:29:5C:5C:06:6F:BA:ED:3A:BD:BD:CC:80:1C:83:5D:AE:1B:DD:4C:D7:0E:92
 
 jobs:
@@ -48,7 +50,7 @@ jobs:
       - name: Install Android verification tools
         run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
 
-      - name: Verify production release and live download
+      - name: Verify canonical release and same-domain live download
         id: live
         shell: bash
         run: |
@@ -63,12 +65,16 @@ jobs:
           test "$target_sdk" = "37"
           test "$min_sdk" = "23"
 
-          gh release view "$tag" --json tagName,isDraft,isPrerelease,assets \
-            --jq '.tagName == "'"$tag"'" and .isDraft == false and .isPrerelease == false and ([.assets[].name] | index("danube-mosque.apk") != null) and ([.assets[].name] | index("android-release.json") != null)' \
-            | grep -qx true
+          release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag")"
+          test "$(printf '%s' "$release_json" | jq -r '.tag_name')" = "$tag"
+          test "$(printf '%s' "$release_json" | jq -r '.draft')" = "false"
+          test "$(printf '%s' "$release_json" | jq -r '.prerelease')" = "false"
+          printf '%s' "$release_json" | jq -e \
+            '([.assets[].name] | index("danube-mosque.apk") != null) and ([.assets[].name] | index("android-release.json") != null)' \
+            >/dev/null
 
           rm -rf /tmp/release && mkdir -p /tmp/release
-          gh release download "$tag" --pattern android-release.json --dir /tmp/release
+          gh release download "$tag" --pattern android-release.json --pattern danube-mosque.apk --dir /tmp/release
           jq -e \
             --arg packageId "$package_id" \
             --arg versionName "$version_name" \
@@ -78,6 +84,11 @@ jobs:
           expected_sha="$(jq -r '.apkSha256' /tmp/release/android-release.json)"
           metadata_cert="$(jq -r '.certificateSha256' /tmp/release/android-release.json | tr '[:lower:]' '[:upper:]')"
           test "$metadata_cert" = "$EXPECTED_CERT_SHA256"
+          printf '%s' "$release_json" | jq -e \
+            --arg expectedDigest "sha256:$expected_sha" \
+            '[.assets[] | select(.name == "danube-mosque.apk" and .digest == $expectedDigest and .size > 0)] | length == 1' \
+            >/dev/null
+          printf '%s  %s\n' "$expected_sha" /tmp/release/danube-mosque.apk | sha256sum --check --status
 
           ready=false
           for attempt in $(seq 1 48); do
@@ -96,22 +107,18 @@ jobs:
           done
           test "$ready" = true
 
-          response_code="$(curl -sS -D /tmp/download-headers -o /dev/null --max-redirs 0 -w '%{http_code}' "$PRODUCTION_ORIGIN$DOWNLOAD_PATH")"
-          test "$response_code" = "307"
+          response_code="$(curl -sS -D /tmp/download-headers -o /tmp/danube-mosque.apk --max-redirs 0 -w '%{http_code}' "$PRODUCTION_ORIGIN$DOWNLOAD_PATH")"
+          test "$response_code" = "200"
           grep -Eqi '^content-type:[[:space:]]*application/vnd\.android\.package-archive' /tmp/download-headers
-          grep -Eqi '^content-disposition:[[:space:]]*attachment;[[:space:]]*filename="danube-mosque\.apk"' /tmp/download-headers
-          location="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^[^:]*:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}' /tmp/download-headers)"
-          test -n "$location"
-          printf '%s' "$location" | grep -F "/releases/download/$tag/danube-mosque.apk" >/dev/null
+          grep -Eqi "^content-disposition:[[:space:]]*attachment;[[:space:]]*filename=\"danube-mosque-${version_name}\\.apk\"" /tmp/download-headers
+          grep -Eqi '^cache-control:.*no-store' /tmp/download-headers
+          ! grep -Eqi '^location:' /tmp/download-headers
+          # These hosts are explicitly forbidden in the user-facing response: release-assets.githubusercontent.com and objects.githubusercontent.com.
+          ! grep -Eqi 'github\.com|release-assets\.githubusercontent\.com|objects\.githubusercontent\.com' /tmp/download-headers
 
-          legacy_code="$(curl -sS -D /tmp/legacy-headers -o /dev/null --max-redirs 0 -w '%{http_code}' "$PRODUCTION_ORIGIN/download/android")"
-          test "$legacy_code" = "307"
-          legacy_location="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^[^:]*:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}' /tmp/legacy-headers)"
-          printf '%s' "$legacy_location" | grep -F "$DOWNLOAD_PATH" >/dev/null
-
-          curl -fsSL "$PRODUCTION_ORIGIN$DOWNLOAD_PATH" -o /tmp/danube-mosque.apk
-          test "$(stat -c%s /tmp/danube-mosque.apk)" -gt 1000000
+          test "$(stat -c%s /tmp/danube-mosque.apk)" -gt 0
           printf '%s  %s\n' "$expected_sha" /tmp/danube-mosque.apk | sha256sum --check --status
+          cmp -s /tmp/release/danube-mosque.apk /tmp/danube-mosque.apk
           unzip -t /tmp/danube-mosque.apk >/dev/null
 
           signature="$($ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose --print-certs /tmp/danube-mosque.apk)"
@@ -124,6 +131,12 @@ jobs:
           printf '%s\n' "$badging" | grep -F "sdkVersion:'$min_sdk'"
           printf '%s\n' "$badging" | grep -F "targetSdkVersion:'$target_sdk'"
           ! printf '%s\n' "$badging" | grep -F "$package_id.debug"
+
+          legacy_code="$(curl -sS -D /tmp/legacy-headers -o /dev/null --max-redirs 0 -w '%{http_code}' "$PRODUCTION_ORIGIN/download/android")"
+          test "$legacy_code" = "307"
+          legacy_location="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^[^:]*:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}' /tmp/legacy-headers)"
+          printf '%s' "$legacy_location" | grep -F "$PRODUCTION_ORIGIN$DOWNLOAD_PATH" >/dev/null
+          ! printf '%s' "$legacy_location" | grep -E 'github\.com|githubusercontent\.com' >/dev/null
 
       - name: Publish observable commit status
         if: always()

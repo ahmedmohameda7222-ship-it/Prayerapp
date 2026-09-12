@@ -1,0 +1,50 @@
+name: Temp Align Android Required Checks
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/temp-align-android-required-checks.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: feat/more-premium-grouped-ui
+          persist-credentials: true
+      - name: Align Android PR trigger with required checks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/android-twa.yml')
+          lines = path.read_text().splitlines()
+          out = []
+          i = 0
+          changed = False
+          while i < len(lines):
+              if lines[i] == '  pull_request:' and i + 1 < len(lines) and lines[i + 1] == '    paths:':
+                  out.append('  pull_request: {}')
+                  i += 2
+                  while i < len(lines) and not lines[i].startswith('  push:'):
+                      i += 1
+                  changed = True
+                  continue
+              out.append(lines[i])
+              i += 1
+          if not changed:
+              raise SystemExit('expected pull_request paths block not found')
+          path.write_text('\n'.join(out) + '\n')
+          PY
+          git diff --check -- .github/workflows/android-twa.yml
+          git diff -- .github/workflows/android-twa.yml
+      - name: Commit workflow alignment
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/android-twa.yml
+          git commit -m "ci: align Android required checks with PR ruleset"
+          git push origin HEAD:feat/more-premium-grouped-ui

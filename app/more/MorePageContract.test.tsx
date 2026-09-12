@@ -10,12 +10,12 @@ describe("More page grouped premium UI contract", () => {
   it("renders three semantic groups instead of one segmented list", () => {
     const page = source("app/more/page.tsx");
 
-    expect(page).toContain('titleKey: "more.sections.worship"');
-    expect(page).toContain('titleKey: "more.sections.community"');
-    expect(page).toContain('titleKey: "more.sections.accountApp"');
-    expect(page).toContain('className="more-screen"');
-    expect(page).toContain('className="more-sections"');
-    expect(page).toContain('className="more-section-title"');
+    expect(page).toContain('id: "worship"');
+    expect(page).toContain('id: "community"');
+    expect(page).toContain('id: "accountApp"');
+    expect(page).toContain("styles.screen");
+    expect(page).toContain("styles.sections");
+    expect(page).toContain("styles.sectionTitle");
     expect(page).not.toContain("groupStart");
     expect(page).not.toContain("data-group-start");
   });
@@ -55,26 +55,33 @@ describe("More page grouped premium UI contract", () => {
     expect(page).not.toContain("Landmark");
   });
 
-  it("scopes the premium grouped-list treatment to More", () => {
-    const css = source("app/public-ui-refresh.css");
+  it("keeps More-specific visual polish isolated from shared public lists", () => {
+    const page = source("app/more/page.tsx");
+    const css = source("app/more/more.module.css");
 
-    expect(css).toContain(".more-sections");
-    expect(css).toContain(".more-section-title");
-    expect(css).toContain(".more-screen .native-list-group");
-    expect(css).toContain(".more-screen .native-list-row");
-    expect(css).toContain(".more-screen .native-list-row-icon");
+    expect(page).toContain('import styles from "./more.module.css"');
+    expect(css).toContain(".screen");
+    expect(css).toContain(".sections");
+    expect(css).toContain(".sectionTitle");
+    expect(css).toContain(".list");
+    expect(css).toContain(".row");
+    expect(css).toContain(".icon");
+    expect(css).toContain("min-height: 60px");
+    expect(css).toContain("var(--app-brand)");
   });
 
-  it("localizes the three section headings in every public locale", () => {
-    const localeFiles = ["messages/ar.json", "messages/en.json", "messages/de.json", "messages/tr.json"];
+  it("localizes the three section headings for every supported locale", () => {
+    const labels = source("app/more/section-labels.ts");
 
-    for (const path of localeFiles) {
-      const messages = source(path);
-      expect(messages).toContain('"more"');
-      expect(messages).toContain('"sections"');
-      expect(messages).toContain('"worship"');
-      expect(messages).toContain('"community"');
-      expect(messages).toContain('"accountApp"');
+    for (const locale of ["ar", "en", "de", "tr"]) {
+      expect(labels).toContain(`${locale}: {`);
     }
+
+    expect(labels).toContain('worship: "العبادة"');
+    expect(labels).toContain('community: "المجتمع"');
+    expect(labels).toContain('accountApp: "الحساب والتطبيق"');
+    expect(labels).toContain('worship: "Worship"');
+    expect(labels).toContain('community: "Community"');
+    expect(labels).toContain('accountApp: "Account & App"');
   });
 });

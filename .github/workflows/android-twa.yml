@@ -1,20 +1,7 @@
 name: Android TWA
 
 on:
-  pull_request:
-    paths:
-      - "android-twa/**"
-      - "app/api/android/**"
-      - "app/api/cron/prayer-reminders/**"
-      - "components/providers/NativeAndroidProvider.tsx"
-      - "components/settings/PrayerSystemTestControls.tsx"
-      - "lib/android/**"
-      - "lib/prayer-reminder-delivery.ts"
-      - "lib/__tests__/android-*.test.ts"
-      - "public/sw.js"
-      - "public/manifest.webmanifest"
-      - "public/.well-known/assetlinks.json"
-      - ".github/workflows/android-twa.yml"
+  pull_request: {}
   push:
     branches: [main]
     paths:

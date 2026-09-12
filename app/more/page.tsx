@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ComponentType } from "react";
 import { BookOpen, CalendarDays, ChevronRight, Compass, HandHeart, Moon, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -8,6 +9,13 @@ import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { MORE_SECTION_LABELS, type MoreSectionId } from "./section-labels";
 import styles from "./more.module.css";
+
+type MoreItem = readonly [string, string, ComponentType<{ className?: string }>];
+
+type MoreSection = {
+  id: MoreSectionId;
+  items: readonly MoreItem[];
+};
 
 const sections = [
   {
@@ -34,10 +42,7 @@ const sections = [
       ["/privacy", "legal.privacyTitle", ShieldCheck],
     ],
   },
-] as const satisfies ReadonlyArray<{
-  id: MoreSectionId;
-  items: ReadonlyArray<readonly [string, string, React.ComponentType<{ className?: string }>] >;
-}>;
+] as const satisfies readonly MoreSection[];
 
 export default function MorePage() {
   const { t, locale } = useTranslation();

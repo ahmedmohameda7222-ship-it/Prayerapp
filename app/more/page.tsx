@@ -1,45 +1,78 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, CalendarDays, ChevronRight, Compass, HandHeart, Landmark, Moon, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronRight, Compass, HandHeart, Moon, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import { MORE_SECTION_LABELS, type MoreSectionId } from "./section-labels";
+import styles from "./more.module.css";
 
-const items = [
-  ["/azkar", "azkar.title", BookOpen, false],
-  ["/ramadan", "ramadan.title", Moon, false],
-  ["/qibla", "qibla.title", Compass, false],
-  ["/events", "events.title", CalendarDays, true],
-  ["/donations", "donations.title", HandHeart, false],
-  ["/mosque", "mosque.title", Landmark, true],
-  ["/account", "phase1.account", UserRound, true],
-  ["/settings", "settings.title", Settings, false],
-  ["/privacy", "legal.privacyTitle", ShieldCheck, true],
-] as const;
+const sections = [
+  {
+    id: "worship",
+    items: [
+      ["/azkar", "azkar.title", BookOpen],
+      ["/ramadan", "ramadan.title", Moon],
+      ["/qibla", "qibla.title", Compass],
+    ],
+  },
+  {
+    id: "community",
+    items: [
+      ["/events", "events.title", CalendarDays],
+      ["/donations", "donations.title", HandHeart],
+      ["/mosque", "mosque.title", MosqueIcon],
+    ],
+  },
+  {
+    id: "accountApp",
+    items: [
+      ["/account", "phase1.account", UserRound],
+      ["/settings", "settings.title", Settings],
+      ["/privacy", "legal.privacyTitle", ShieldCheck],
+    ],
+  },
+] as const satisfies ReadonlyArray<{
+  id: MoreSectionId;
+  items: ReadonlyArray<readonly [string, string, React.ComponentType<{ className?: string }>] >;
+}>;
 
 export default function MorePage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   return (
     <AppShell>
       <PageHeader titleKey="nav.more" backHref={null} />
-      <div className="native-list-group" role="list">
-        {items.map(([href, labelKey, Icon, groupStart]) => (
-          <Link
-            key={href}
-            href={href}
-            className="native-list-row"
-            data-group-start={groupStart ? "true" : undefined}
-            role="listitem"
-          >
-            <span className="native-list-row-icon" aria-hidden="true">
-              <Icon className="h-5 w-5" />
-            </span>
-            <span className="native-list-row-title">{t(labelKey)}</span>
-            <ChevronRight className="native-list-row-chevron h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </Link>
-        ))}
+      <div className={styles.screen}>
+        <div className={styles.sections}>
+          {sections.map((section) => {
+            const headingId = `more-${section.id}-heading`;
+
+            return (
+              <section key={section.id} className={styles.section} aria-labelledby={headingId}>
+                <h2 id={headingId} className={styles.sectionTitle}>
+                  {MORE_SECTION_LABELS[locale][section.id]}
+                </h2>
+                <div className={`native-list-group ${styles.list}`} role="list">
+                  {section.items.map(([href, labelKey, Icon]) => (
+                    <Link key={href} href={href} className={`native-list-row ${styles.row}`} role="listitem">
+                      <span className={`native-list-row-icon ${styles.icon}`} aria-hidden="true">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span className="native-list-row-title">{t(labelKey)}</span>
+                      <ChevronRight
+                        className={`native-list-row-chevron h-5 w-5 rtl:rotate-180 ${styles.chevron}`}
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
       </div>
     </AppShell>
   );

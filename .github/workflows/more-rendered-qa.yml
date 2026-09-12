@@ -1,0 +1,107 @@
+name: More Rendered QA
+
+on:
+  pull_request:
+    paths:
+      - "app/more/**"
+      - "components/more/**"
+      - ".github/workflows/more-rendered-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  rendered-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: |
+          npx -y playwright@1.55.0 install chromium
+      - name: Start app
+        run: |
+          npm run dev -- --hostname 127.0.0.1 > /tmp/prayerapp-dev.log 2>&1 &
+          echo $! > /tmp/prayerapp-dev.pid
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000/more >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/prayerapp-dev.log
+          exit 1
+      - name: Rendered mobile QA
+        run: |
+          cat > /tmp/more-qa.mjs <<'EOF'
+          import { chromium, devices } from 'playwright';
+          import fs from 'node:fs';
+
+          const browser = await chromium.launch({headless: true});
+          const context = await browser.newContext({
+            ...devices['iPhone 13'],
+            locale: 'ar-EG',
+          });
+          const page = await context.newPage();
+          const consoleIssues = [];
+          page.on('console', msg => {
+            if (['error','warning'].includes(msg.type())) consoleIssues.push(`${msg.type()}: ${msg.text()}`);
+          });
+          page.on('pageerror', err => consoleIssues.push(`pageerror: ${err.message}`));
+
+          await page.goto('http://127.0.0.1:3000/more', { waitUntil: 'networkidle' });
+          const title = await page.title();
+          const url = page.url();
+          const bodyText = await page.locator('body').innerText();
+          const sectionCount = await page.locator('section').count();
+          const listCount = await page.locator('[role="list"]').count();
+          const rowCount = await page.locator('[role="listitem"]').count();
+          const overlayCount = await page.locator('nextjs-portal, [data-nextjs-dialog-overlay], [data-next-badge-root]').count();
+
+          await page.screenshot({ path: '/tmp/more-mobile.png', fullPage: true });
+
+          const firstRow = page.locator('[role="listitem"]').first();
+          const firstHref = await firstRow.getAttribute('href');
+          await firstRow.click();
+          await page.waitForLoadState('domcontentloaded');
+          const interactedUrl = page.url();
+
+          const report = {
+            title,
+            url,
+            sectionCount,
+            listCount,
+            rowCount,
+            overlayCount,
+            firstHref,
+            interactedUrl,
+            bodySample: bodyText.slice(0, 2000),
+            consoleIssues,
+          };
+          fs.writeFileSync('/tmp/more-qa.json', JSON.stringify(report, null, 2));
+          console.log(JSON.stringify(report, null, 2));
+          await browser.close();
+
+          if (!url.endsWith('/more')) process.exit(2);
+          if (sectionCount !== 3 || listCount !== 3 || rowCount !== 9) process.exit(3);
+          if (overlayCount !== 0) process.exit(4);
+          if (firstHref !== '/azkar' || !interactedUrl.endsWith('/azkar')) process.exit(5);
+          if (consoleIssues.some(x => x.startsWith('pageerror:') || x.startsWith('error:'))) process.exit(6);
+          EOF
+          npx -y -p playwright@1.55.0 node /tmp/more-qa.mjs
+      - name: Upload rendered evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: more-rendered-qa
+          path: |
+            /tmp/more-mobile.png
+            /tmp/more-qa.json
+            /tmp/prayerapp-dev.log
+          if-no-files-found: warn

@@ -10,9 +10,10 @@ const workflow = () => readFileSync(
 const occurrences = (source: string, value: string) => source.split(value).length - 1;
 
 describe("Android CI coverage contract", () => {
-  it("triggers Android validation for every shared native-delivery contract surface", () => {
+  it("runs Android validation on every PR while keeping main pushes scoped to native-delivery surfaces", () => {
     const source = workflow();
-    const requiredPaths = [
+    const triggers = source.slice(source.indexOf("on:"), source.indexOf("permissions:"));
+    const requiredPushPaths = [
       '"app/api/android/**"',
       '"app/api/cron/prayer-reminders/**"',
       '"components/providers/NativeAndroidProvider.tsx"',
@@ -23,8 +24,12 @@ describe("Android CI coverage contract", () => {
       '"public/sw.js"',
     ];
 
-    for (const path of requiredPaths) {
-      expect(occurrences(source, path), `${path} must be covered for PR and main push`).toBe(2);
+    expect(triggers).toContain("  pull_request: {}");
+    expect(triggers).toContain("  push:");
+    expect(triggers).toContain("    branches: [main]");
+
+    for (const path of requiredPushPaths) {
+      expect(occurrences(triggers, path), `${path} must remain covered by the main push filter`).toBe(1);
     }
   });
 

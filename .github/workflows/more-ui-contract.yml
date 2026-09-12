@@ -23,4 +23,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx vitest run app/more/MorePageContract.test.tsx
+      - name: Semantic groups
+        run: npx vitest run app/more/MorePageContract.test.tsx -t "renders three semantic groups instead of one segmented list"
+      - name: Row order and icons
+        run: npx vitest run app/more/MorePageContract.test.tsx -t "keeps the approved row order and refined icon semantics"
+      - name: Route-scoped styling
+        run: npx vitest run app/more/MorePageContract.test.tsx -t "keeps More-specific visual polish isolated from shared public lists"
+      - name: Localized section headings
+        run: npx vitest run app/more/MorePageContract.test.tsx -t "localizes the three section headings for every supported locale"

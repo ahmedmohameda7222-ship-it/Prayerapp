@@ -1,0 +1,56 @@
+.screen {
+  width: 100%;
+  max-width: 680px;
+  margin-inline: auto;
+  padding-block-end: var(--ui-space-2);
+}
+
+.sections {
+  display: grid;
+  gap: 22px;
+}
+
+.section {
+  display: grid;
+  gap: var(--ui-space-2);
+}
+
+.sectionTitle {
+  margin: 0 var(--ui-space-1);
+  color: var(--app-text-secondary);
+  font-size: var(--ui-text-secondary);
+  font-weight: var(--ui-weight-semibold);
+  line-height: 1.4;
+}
+
+.list {
+  border-color: color-mix(in srgb, var(--app-divider) 82%, transparent);
+  border-radius: var(--ui-radius-card);
+  background: var(--app-surface);
+  box-shadow: 0 1px 2px rgba(23, 63, 52, 0.035);
+}
+
+.row {
+  min-height: 60px;
+  grid-template-columns: 36px minmax(0, 1fr) 18px;
+  gap: var(--ui-space-3);
+  padding: 10px 14px;
+}
+
+.icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--app-brand) 8%, var(--app-surface));
+  color: var(--app-brand);
+}
+
+.chevron {
+  color: color-mix(in srgb, var(--app-text-secondary) 62%, transparent);
+}
+
+@media (min-width: 768px) {
+  .sections {
+    gap: var(--ui-space-6);
+  }
+}

@@ -53,13 +53,13 @@ function isoDate(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
-function addDays(value: string, days: number): string {
+export function addIsoDays(value: string, days: number): string {
   const date = parseIsoDate(value);
   date.setUTCDate(date.getUTCDate() + days);
   return isoDate(date);
 }
 
-function oneCalendarYearEnd(startDate: string): string {
+export function oneCalendarYearEnd(startDate: string): string {
   const start = parseIsoDate(startDate);
   const anniversary = new Date(
     Date.UTC(
@@ -94,12 +94,12 @@ export function buildExtensionPreview(
 
   let firstMissing = today;
   while (existing.has(firstMissing)) {
-    firstMissing = addDays(firstMissing, 1);
+    firstMissing = addIsoDays(firstMissing, 1);
   }
 
   const endDate = oneCalendarYearEnd(firstMissing);
   const rows: PrayerCalculationResult[] = [];
-  for (let date = firstMissing; date <= endDate; date = addDays(date, 1)) {
+  for (let date = firstMissing; date <= endDate; date = addIsoDays(date, 1)) {
     if (!existing.has(date)) rows.push(calculatePrayerTimes(date, settings));
   }
 
@@ -126,7 +126,7 @@ export function buildRecalculationPreview(
   const rows: PrayerScheduleDiffRow[] = [];
   let changedPrayerCount = 0;
 
-  for (let date = startDate; date <= endDate; date = addDays(date, 1)) {
+  for (let date = startDate; date <= endDate; date = addIsoDays(date, 1)) {
     const previous = byDate.get(date) ?? null;
     const next = calculatePrayerTimes(date, settings);
     const changedPrayers = PRAYER_KEYS.filter(

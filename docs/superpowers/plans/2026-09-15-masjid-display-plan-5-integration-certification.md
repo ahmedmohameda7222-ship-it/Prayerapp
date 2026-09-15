@@ -1,299 +1,553 @@
 # Masjid Display Plan 5 — Integration, Deployment, Security, and Production Certification Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Integrate the Prayerapp and independent Masjid Display deliverables, make CI enforce both projects and their contract, certify prayer calculations/state/offline/Test Mode behavior, document independent deployment/rollback, and complete physical TV readiness before declaring production-ready.
+**Goal:** Integrate Prayerapp and the independent Masjid Display, enforce their contract in CI, certify prayer calculation/state/offline/Test Mode/security behavior, document independent deployment/rollback, and record physical TV/QR/soak evidence before any production-ready claim.
 
-**Architecture:** Production readiness is a gated certification, not merely a successful build. Automated tests prove deterministic religious-state and contract behavior; database dry-runs prove safe migration/cutover; security checks prove the display is read-only and safe; physical/soak QA proves real TV behavior. Prayerapp and Masjid Display deploy independently but remain compatible through Feed schema versioning.
+**Architecture:** Production readiness is an evidence gate, not a successful build. Automated tests prove deterministic cross-project contracts and religious/runtime boundaries; local/staging database and calibration exercises prove migration/calculation safety; security review proves read-only public boundaries; physical TV and soak testing prove actual browser/display behavior. Root Prayerapp and `masjid-display/` deploy independently but stay compatible through Feed schema versioning.
 
-**Tech Stack:** Existing GitHub Actions CI, root Next.js/Vitest/Supabase checks, nested Masjid Display Next.js/Vitest checks, Vercel independent-project deployment, manual Samsung/TV physical QA.
+**Tech Stack:** Existing GitHub Actions, root Next.js/Vitest/Supabase toolchain, nested Masjid Display Next.js/Vitest toolchain, Vercel separate-project deployment, physical Samsung/TV browser QA.
 
-## Branch / prerequisite assumptions
+**Spec:** `docs/superpowers/specs/2026-09-15-masjid-display-design.md`
 
-- Continue on `feat/masjid-display` after Plans 1–4 are individually green.
-- Root feed schema is v1 and TV consumer explicitly supports v1.
-- Do not declare production-ready until every critical certification row below is evidenced.
-- Physical TV steps may be executed by a human, but results must be recorded in-repo.
+## Global Constraints
 
-## Task 1: Add cross-project contract compatibility test
+- Do not weaken existing required CI/security checks.
+- Feed producer and consumer both support schema version `1` before deployment.
+- Root and TV projects remain independently deployable/rollbackable.
+- No production-ready claim without recorded Prayer Engine calibration and database migration evidence.
+- Any unexplained prayer-calculation delta greater than one minute is release-blocking.
+- Any black screen, stale transient prayer replay, guessed prayer time, uncontrolled reload loop, or Test Mode leakage into production LKG is release-blocking.
+- Physical UI must be responsive/adaptive/fluid; 32-inch 1080p is a minimum/reference QA target, not a hard-coded target.
+- Persistent Prayerapp QR and Campaign QR must be physically scanned in QA.
+- Initial soak is at least 24 hours; extend to 72 hours before final release when practical.
+- Manual evidence documents begin `BLOCKED` until the corresponding check is actually executed and recorded; never fabricate PASS.
+
+---
+
+### Task 1: Enforce producer/consumer Feed v1 compatibility and both builds in CI
 
 **Files:**
 - Create: `scripts/verify-masjid-display-contract.mjs`
 - Create: `lib/__tests__/masjid-display-cross-project-contract.test.ts`
-- Reuse: `lib/masjid-display/__fixtures__/feed-v1.json`
-- Reuse: `masjid-display/lib/__fixtures__/feed-v1.json`
-
-1. Write a failing test that verifies producer and consumer golden fixtures are semantically identical and both declare schema v1.
-2. Script/test must fail when required fields diverge or one side changes schema without the other acknowledging it.
-3. Do not compare whitespace/key order; compare parsed semantics and validator acceptance.
-4. Run `npx vitest run lib/__tests__/masjid-display-cross-project-contract.test.ts`.
-5. Commit: `test: enforce display feed producer consumer contract`.
-
-## Task 2: Extend CI to test both applications
-
-**Files:**
 - Modify: `.github/workflows/ci.yml`
-- Create/modify: `lib/__tests__/masjid-display-ci-contract.test.ts`
+- Create: `lib/__tests__/masjid-display-ci-contract.test.ts`
 
-1. First add a source/CI contract test requiring the Masjid Display checks before modifying CI.
-2. Add deterministic CI steps/jobs for root:
-   - install with lockfile;
-   - root tests;
-   - lint;
-   - typecheck;
-   - build;
-   - existing Supabase/migration checks.
-3. Add nested `masjid-display/` steps:
-   - `npm ci`;
-   - `npm test`;
-   - `npm run lint`;
-   - `npm run typecheck`;
-   - `npm run build`.
-4. Run the cross-project contract verifier in CI.
-5. Preserve existing required checks/security workflows; do not weaken them to make the feature pass.
-6. Commit: `ci: certify masjid display project`.
+**Interfaces:**
+- Consumes: root golden `lib/masjid-display/__fixtures__/feed-v1.json`, TV golden `masjid-display/lib/__fixtures__/feed-v1.json`.
+- Produces: `node scripts/verify-masjid-display-contract.mjs` exit 0 only when semantic fixtures/schema match; CI checks both projects.
 
-## Task 3: Add an automated religious-state certification suite
+- [ ] **Step 1: Write the failing cross-project contract test**
 
-**Files:**
-- Create: `masjid-display/lib/state/certification.test.ts`
-- Reuse: state modules from Plan 4
+```ts
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
 
-1. Build a table-driven suite covering all five obligatory prayers and Friday with one-second boundary assertions.
-2. Required cases:
-   - T-10 approach;
-   - exact prayer instant;
-   - Iqama delay 0, 1, 2, and larger;
-   - two-minute Iqama Now;
-   - prayer-in-progress duration starts at original Iqama instant;
-   - Sunrise creates no state;
-   - midnight/day rollover;
-   - Friday Dhuhr → primary Jumuah;
-   - extra Jumuah manual services;
-   - T-60 first Friday focus;
-   - T-10 next-service focus;
-   - 30-minute holds and overlap preemption;
-   - wake jump over expired states.
-3. Run only the certification suite and make failures human-readable with scenario/date/time labels.
-4. Commit: `test: certify prayer and friday display state boundaries`.
+const readJson = (path: string) => JSON.parse(readFileSync(path, "utf8"));
 
-## Task 4: Add Prayer Engine calendar/DST certification suite
+describe("Masjid Display producer/consumer contract", () => {
+  it("keeps Feed v1 golden fixtures semantically identical", () => {
+    const producer = readJson("lib/masjid-display/__fixtures__/feed-v1.json");
+    const consumer = readJson("masjid-display/lib/__fixtures__/feed-v1.json");
+    expect(producer.schemaVersion).toBe(1);
+    expect(consumer.schemaVersion).toBe(1);
+    expect(consumer).toEqual(producer);
+  });
+});
+```
+
+- [ ] **Step 2: Create the verifier script**
+
+```js
+import { readFile } from "node:fs/promises";
+import assert from "node:assert/strict";
+
+const producer = JSON.parse(await readFile("lib/masjid-display/__fixtures__/feed-v1.json", "utf8"));
+const consumer = JSON.parse(await readFile("masjid-display/lib/__fixtures__/feed-v1.json", "utf8"));
+assert.equal(producer.schemaVersion, 1);
+assert.equal(consumer.schemaVersion, 1);
+assert.deepEqual(consumer, producer);
+console.log("Masjid Display Feed v1 producer/consumer contract: PASS");
+```
+
+- [ ] **Step 3: Write a failing CI-source contract test before editing CI**
+
+```ts
+it("CI verifies root, TV, and cross-project contract", () => {
+  const yaml = readFileSync(".github/workflows/ci.yml", "utf8");
+  expect(yaml).toContain("scripts/verify-masjid-display-contract.mjs");
+  expect(yaml).toContain("working-directory: masjid-display");
+  expect(yaml).toContain("npm run typecheck");
+});
+```
+
+Run: `npx vitest run lib/__tests__/masjid-display-cross-project-contract.test.ts lib/__tests__/masjid-display-ci-contract.test.ts`
+
+Expected: cross-project test may PASS if fixtures already match; CI contract FAILS until workflow is changed.
+
+- [ ] **Step 4: Extend CI without weakening existing jobs**
+
+Add nested-project commands equivalent to:
+
+```yaml
+- name: Install Masjid Display
+  working-directory: masjid-display
+  run: npm ci
+- name: Test Masjid Display
+  working-directory: masjid-display
+  run: npm test
+- name: Lint Masjid Display
+  working-directory: masjid-display
+  run: npm run lint
+- name: Typecheck Masjid Display
+  working-directory: masjid-display
+  run: npm run typecheck
+- name: Build Masjid Display
+  working-directory: masjid-display
+  run: npm run build
+- name: Verify Masjid Display contract
+  run: node scripts/verify-masjid-display-contract.mjs
+```
+
+Preserve all existing root/security/Supabase checks and permissions.
+
+- [ ] **Step 5: Run and commit**
+
+Run: `node scripts/verify-masjid-display-contract.mjs && npx vitest run lib/__tests__/masjid-display-cross-project-contract.test.ts lib/__tests__/masjid-display-ci-contract.test.ts`
+
+Expected: PASS.
+
+```bash
+git add scripts/verify-masjid-display-contract.mjs lib/__tests__/masjid-display-cross-project-contract.test.ts lib/__tests__/masjid-display-ci-contract.test.ts .github/workflows/ci.yml
+git commit -m "ci: certify masjid display producer consumer contract"
+```
+
+### Task 2: Add automated Prayer Engine and display-state certification suites
 
 **Files:**
 - Create: `lib/prayer-engine/calendar-certification.test.ts`
-- Reuse: `lib/prayer-engine/fixtures/degendorf-reference.ts`
+- Create: `masjid-display/lib/state/certification.test.ts`
 
-1. Cover winter, summer, Europe/Berlin DST start/end, solstice-adjacent dates, leap day where relevant, December/January transition, and repeated deterministic generation.
-2. Assert final ceil-to-minute behavior and per-prayer offsets.
-3. Verify no code applies a hard-coded +1/+2 hour DST adjustment.
-4. Fail the suite if reviewed historical/reference fixture delta is unexplained and >1 minute.
-5. Commit: `test: certify prayer engine calendar behavior`.
+**Interfaces:**
+- Consumes: reviewed Prayer Engine fixtures/settings and final state resolver.
+- Produces: explicit release-gate suites for calendar/DST/rounding and prayer/Friday boundaries.
 
-## Task 5: Perform historical calibration sign-off
+- [ ] **Step 1: Write the Prayer Engine calendar certification table**
 
-**Files:**
-- Create: `docs/masjid-display/prayer-engine-calibration.md`
+```ts
+const cases = [
+  ["winter", "2026-01-15"],
+  ["dst-start-before", "2026-03-28"],
+  ["dst-start-after", "2026-03-29"],
+  ["summer", "2026-06-21"],
+  ["dst-end-before", "2026-10-24"],
+  ["dst-end-after", "2026-10-25"],
+  ["winter-solstice", "2026-12-21"],
+  ["year-end", "2026-12-31"],
+] as const;
 
-1. In a non-production/local/staging environment, run Admin Calibration against representative existing published historical schedule rows.
-2. Record:
-   - exact coordinates/profile values;
-   - library version;
-   - date ranges sampled;
-   - per-prayer delta summary;
-   - each >1-minute delta and its explanation/resolution.
-3. Do not adjust offsets solely to make one isolated day match; profile changes require evidence across representative periods.
-4. The document must end with either `PASS` plus evidence or `BLOCKED` plus unresolved discrepancies. Never fabricate a PASS.
-5. Commit the evidence only after review: `docs: record prayer engine calibration evidence`.
+it.each(cases)("certifies %s on %s", (_name, date) => {
+  const fixture = fixtureFor(date);
+  expect(calculatePrayerTimes(date, fixture.settings)).toEqual({ date, ...fixture.expected });
+});
+```
 
-## Task 6: Dry-run database migrations and destructive Iqama cutover
+Include leap-day fixture when the reviewed reference set contains one, and explicitly test ceiling/offset behavior. Add a source-level assertion that the engine does not contain manual `+ 60 * 60`/`+ 2 * 60 * 60` DST patches.
 
-**Files:**
-- Create: `docs/masjid-display/migration-certification.md`
-- Review all new `supabase/migrations/20260915*.sql`
+- [ ] **Step 2: Write the display-state certification matrix**
 
-1. Create/reset a local database from the entire migration chain.
-2. Seed/restore a production-like snapshot containing historical prayer rows and Maghrib Program fields.
-3. Apply additive settings/content/test migrations and verify row counts/data.
-4. Verify root code has zero active references to legacy absolute-Iqama fields before applying the drop migration.
-5. Apply the drop migration and prove:
-   - six daily prayer schedule values unchanged;
-   - history unchanged;
-   - Maghrib Program retained;
-   - Jumuah retained;
-   - new delay settings remain canonical.
-6. Record commands, row counts, checksums/sample comparisons, and PASS/BLOCKED result.
-7. Commit: `docs: certify masjid display database migration`.
+```ts
+it.each([
+  ["T-10", "17:50:00", "PRAYER_APPROACHING"],
+  ["prayer", "18:00:00", "PRAYER_TIME_NOW"],
+  ["iqama", "18:10:00", "IQAMA_NOW"],
+  ["in-progress", "18:12:00", "PRAYER_IN_PROGRESS"],
+])("certifies %s boundary", (_label, time, expected) => {
+  expect(resolveDisplayState(certFeed, local(time)).state.kind).toBe(expected);
+});
+```
 
-## Task 7: Add Feed/LKG/offline end-to-end certification tests
+Extend the table to every obligatory prayer, delay 0/1/2/larger, Sunrise none, midnight rollover, in-progress end from original Iqama, Friday T-60, additional T-10, 30m hold, overlap preemption, multiple additional services, and wake jump across expired states.
+
+- [ ] **Step 3: Run both suites**
+
+Run:
+
+```bash
+npx vitest run lib/prayer-engine/calendar-certification.test.ts
+cd masjid-display && npx vitest run lib/state/certification.test.ts
+```
+
+Expected: PASS. Any >1-minute fixture mismatch or wrong state boundary blocks progression.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add lib/prayer-engine/calendar-certification.test.ts masjid-display/lib/state/certification.test.ts
+git commit -m "test: certify prayer engine and display state boundaries"
+```
+
+### Task 3: Add automated offline/LKG and Test Mode integration certification
 
 **Files:**
 - Create: `masjid-display/lib/runtime/offline-certification.test.tsx`
-- Create: `app/api/public/masjid-display/route.integration.test.ts` if the repo's route-test harness supports it
-
-1. Test full chain with controlled responses:
-   - initial 200 accepted;
-   - 304 retains LKG;
-   - timeout/5xx retains LKG;
-   - malformed 200 rejected;
-   - unsupported schema rejected;
-   - corrupt local cache discarded;
-   - reconnect refresh;
-   - wake/visibility refresh;
-   - local expiration of announcement/event/campaign/urgent while offline;
-   - prayer horizon valid;
-   - prayer horizon exhausted → no guessed prayer state + warning.
-2. Assert rejected responses never overwrite LKG.
-3. Commit: `test: certify display offline recovery behavior`.
-
-## Task 8: Add real-TV Test Mode integration certification
-
-**Files:**
 - Create: `masjid-display/lib/runtime/test-mode-certification.test.tsx`
 - Create: `docs/masjid-display/test-mode-demo.md`
 
-1. Automated tests:
-   - Admin state active → TV test endpoint/proxy → override within next ~2-second poll;
-   - synthetic countdown ticks;
-   - production LKG is unchanged;
-   - Test Mode badge present;
-   - persistent Prayerapp QR remains;
-   - Stop returns to freshly resolved real state;
-   - 15-minute auto-expiry returns to real state;
-   - Extend +15 changes expiry only.
-2. Manual demo checklist lists every Admin scenario and expected TV presentation so the university demo can be rehearsed without real data.
-3. Explicitly state synthetic data is expected in this mode and must never be saved into prayer/content production tables.
-4. Commit: `test: certify admin controlled tv test mode`.
+**Interfaces:**
+- Consumes: final TV runtime hooks, Feed/Test proxies, synthetic fixtures.
+- Produces: automated release gates proving network/wake/Test behavior plus a repeatable university demo checklist.
 
-## Task 9: Security boundary review
+- [ ] **Step 1: Write offline/LKG certification tests**
+
+```tsx
+it("never poisons LKG with malformed 200 and disables prayer claims after coverage expires", async () => {
+  seedLkg(validFeed);
+  mockProductionFetch(jsonResponse({ schemaVersion: 99 }));
+  const { result } = renderHook(() => useDisplayRuntime());
+  await flushInitialFetch();
+  expect(loadLkg()?.snapshot.snapshotRevision).toBe(validFeed.snapshotRevision);
+
+  setLogicalNow(afterPrayerCoverage(validFeed));
+  await tickRuntime();
+  expect(result.current.prayerDataStale).toBe(true);
+  expect(result.current.state.kind).toBe("PRAYER_DATA_UNAVAILABLE");
+});
+```
+
+Add initial online/no cache, offline valid LKG, corrupt LKG, 304, timeout/5xx, reconnect, visibility/wake, local content expiry/activation, and no stale transient replay.
+
+- [ ] **Step 2: Write Test Mode certification tests**
+
+```tsx
+it("applies synthetic state, keeps persistent app URL, never writes synthetic LKG, then returns to current real state", async () => {
+  seedLkg(realFeed);
+  mockTestSequence([activePrayerApproaching, { active: false }]);
+  const { result } = renderHook(() => useDisplayRuntime());
+  await vi.advanceTimersByTimeAsync(2_000);
+  expect(result.current.testMode).toBe(true);
+  expect(result.current.publicAppUrl).toBe(realFeed.mosque.publicAppUrl);
+  expect(loadLkg()?.snapshot.snapshotRevision).toBe(realFeed.snapshotRevision);
+
+  await vi.advanceTimersByTimeAsync(2_000);
+  expect(result.current.testMode).toBe(false);
+  expect(result.current.state).toEqual(resolveDisplayState(realFeed, result.current.logicalNow));
+});
+```
+
+Add exact 15-minute expiry and Extend +15 behavior at the Admin/root endpoint integration boundary.
+
+- [ ] **Step 3: Run tests**
+
+Run: `cd masjid-display && npx vitest run lib/runtime/offline-certification.test.tsx lib/runtime/test-mode-certification.test.tsx`
+
+Expected: PASS.
+
+- [ ] **Step 4: Write the deterministic demo checklist**
+
+`docs/masjid-display/test-mode-demo.md` must list each Admin Test scenario in button order, expected TV state/visible countdown, mandatory TEST MODE badge, persistent Prayerapp QR, Stop behavior, and the statement that synthetic data never enters production tables/LKG. The checklist is executable before real mosque data exists.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add masjid-display/lib/runtime/offline-certification.test.tsx masjid-display/lib/runtime/test-mode-certification.test.tsx docs/masjid-display/test-mode-demo.md
+git commit -m "test: certify display offline and test mode recovery"
+```
+
+### Task 4: Perform and record Prayer Engine calibration and database migration dry-run
+
+**Files:**
+- Create: `docs/masjid-display/prayer-engine-calibration.md`
+- Create: `docs/masjid-display/migration-certification.md`
+
+**Interfaces:**
+- Consumes: actual reviewed historical Prayerapp rows, exact active calculation settings, full Supabase migration chain.
+- Produces: evidence documents ending in `PASS` or `BLOCKED` based on executed results.
+
+- [ ] **Step 1: Create the calibration document in BLOCKED state before execution**
+
+Use this exact structure:
+
+```md
+# Prayer Engine Calibration Evidence
+Status: BLOCKED
+Library: adhan@4.4.6
+Calculation settings: recorded below
+Historical date range: recorded below
+
+## Results
+| Date | Prayer | Existing | Generated | Delta min | Explanation |
+| --- | --- | --- | --- | ---: | --- |
+
+## Decision
+BLOCKED until every unexplained absolute delta > 1 minute is resolved.
+```
+
+- [ ] **Step 2: Execute calibration against real reviewed historical rows**
+
+Use the Admin calibration/server path in a non-production or read-only context. Record exact coordinates, timezone, angles/rule, Asr/high-latitude settings, offsets, sampled dates, all >1-minute deltas and explanations. Do not tune to one isolated day without evidence across representative periods.
+
+Expected: document becomes `PASS` only after no unexplained >1-minute delta remains; otherwise it stays `BLOCKED`.
+
+- [ ] **Step 3: Create migration-certification document in BLOCKED state**
+
+Record pre-migration row counts/sample hashes for `prayer_times`, Jumuah, and Maghrib Program fields; commands used; additive migration result; cutover gate; destructive drop result; post-migration counts/sample hashes.
+
+- [ ] **Step 4: Execute local/staging production-like migration dry-run**
+
+Run `supabase db reset`, load a production-like/reviewed snapshot using the repository-approved fixture/restore method, apply/check migrations, then verify:
+- six daily prayer values unchanged;
+- historical row count unchanged except intentionally generated local test rows, if any are explicitly excluded;
+- Maghrib Program fields preserved;
+- Jumuah preserved;
+- absolute Iqama columns absent only after cutover migration;
+- shared settings/delays remain canonical.
+
+Expected: set migration evidence to PASS only with recorded comparisons.
+
+- [ ] **Step 5: Commit evidence**
+
+```bash
+git add docs/masjid-display/prayer-engine-calibration.md docs/masjid-display/migration-certification.md
+git commit -m "docs: record prayer engine and migration certification"
+```
+
+Do not make this commit claim PASS if either document remains BLOCKED.
+
+### Task 5: Perform attacker-perspective security review and add regression tests for findings
 
 **Files:**
 - Create: `docs/masjid-display/security-review.md`
-- Add/modify: security tests under `lib/__tests__/` and `masjid-display/lib/__tests__/` as findings require
+- Create/modify: `lib/__tests__/masjid-display-feed-security.test.ts`
+- Create: `masjid-display/lib/security-boundary.test.ts`
 
-1. Review from an attacker perspective:
-   - TV public domain has no Admin/login/mutation surface;
-   - TV browser bundle contains no Supabase service/anon dependency unless explicitly harmless and needed (design target: none);
-   - public feed/test endpoints expose only allowlisted display data;
-   - Admin Test Mode writes require existing Admin authorization;
-   - direct database policy cannot be used to mutate test/settings tables anonymously;
-   - proxy cannot be turned into arbitrary SSRF by user-controlled upstream URL;
-   - URLs rendered into QR are treated as data, not HTML;
-   - dynamic content is React-escaped/no unsafe HTML sink;
-   - diagnostics exposes no secrets.
-2. Reuse existing security-hardening conventions instead of weakening CSP/headers.
-3. Record findings and residual risks. Fix confirmed defects with regression tests before PASS.
-4. Commit: `docs: certify masjid display security boundary`.
+**Interfaces:**
+- Consumes: final root Feed/Test endpoints, Admin Test actions, TV proxy/runtime bundle/import graph.
+- Produces: PASS/BLOCKED security evidence and regression tests for confirmed defects.
 
-## Task 10: Add deployment and rollback documentation
+- [ ] **Step 1: Write automated boundary tests**
+
+```ts
+it("TV project has no Supabase or audio runtime dependency", () => {
+  const pkg = JSON.parse(readFileSync("masjid-display/package.json", "utf8"));
+  expect(pkg.dependencies?.["@supabase/supabase-js"]).toBeUndefined();
+  expect(JSON.stringify(pkg.dependencies)).not.toMatch(/audio|howler/i);
+});
+
+it("proxy upstream cannot be selected by a request parameter", () => {
+  const source = readFileSync("masjid-display/lib/upstream.ts", "utf8");
+  expect(source).toContain("process.env.PRAYERAPP_ORIGIN");
+  expect(source).not.toMatch(/searchParams.*url|request.*origin/i);
+});
+```
+
+Also retain root tests that Feed/Test endpoints export no mutation handler and error responses leak no raw stack/Supabase object.
+
+- [ ] **Step 2: Run automated security tests**
+
+Run: `npx vitest run lib/__tests__/masjid-display-feed-security.test.ts && cd masjid-display && npx vitest run lib/security-boundary.test.ts`
+
+Expected: PASS.
+
+- [ ] **Step 3: Review manual attack boundaries and record evidence**
+
+Document checks for: public TV domain no Admin surface; Test writes require Admin auth; RLS blocks anonymous settings/test mutations; proxy SSRF is fixed-origin; React renders content as escaped text; QR URL treated as data; diagnostics has no secrets; no browser service-role/anon dependency; public payload allowlist only.
+
+- [ ] **Step 4: Fix any confirmed defect through a failing regression test first**
+
+For each defect, add a failing test in the owning project, run it to fail, implement the minimal fix, rerun to pass, then update `security-review.md`. If unresolved, status remains BLOCKED.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add docs/masjid-display/security-review.md lib/__tests__/masjid-display-feed-security.test.ts masjid-display/lib/security-boundary.test.ts
+git commit -m "docs: certify masjid display security boundary"
+```
+
+### Task 6: Document independent deployment, rollback, and operations
 
 **Files:**
 - Create: `masjid-display/README.md`
 - Create: `docs/masjid-display/deployment.md`
-- Modify: `.env.example` only if root feed/deployment settings require documented variables
-- Review: `masjid-display/.env.example`
+- Review/Modify: `masjid-display/.env.example`
 
-1. Document two separate Vercel projects:
-   - Prayerapp root directory `/`;
-   - Masjid Display root directory `masjid-display/`.
-2. Document display server env for Prayerapp upstream origin; browser must not receive a secret.
-3. Document feed schema compatibility/deploy order: backward-compatible v1 producer changes first; breaking changes require new schema support before producer switch.
-4. Document independent rollback for root and TV projects.
-5. Document first boot, cache behavior, network outage behavior, and diagnostics access.
-6. Commit: `docs: document masjid display deployment and rollback`.
+**Interfaces:**
+- Consumes: final app/environment contract.
+- Produces: repeatable two-project Vercel deployment and rollback runbook.
 
-## Task 11: Responsive/physical readability certification matrix
+- [ ] **Step 1: Document the two projects exactly**
+
+Root project:
+- repository root directory `/`;
+- existing Prayerapp domain;
+- owns Admin, Supabase access, public Feed/Test endpoints.
+
+TV project:
+- root directory `masjid-display/`;
+- independent domain;
+- server env `PRAYERAPP_ORIGIN=https://<actual-prayerapp-origin>` set in deployment UI;
+- no browser secret.
+
+Use the actual deployment domain value at execution time; if it is not yet assigned, the runbook instructs the operator to copy it from the Vercel project settings rather than inventing one.
+
+- [ ] **Step 2: Document compatibility/deploy order**
+
+For schema v1 backward-compatible additions: deploy producer first, then consumer as needed. For a future breaking schema: consumer must first support the new schema alongside old, then producer changes; never switch both atomically by assumption.
+
+- [ ] **Step 3: Document rollback/first boot/outage/diagnostics**
+
+Include independent root/TV Vercel rollback, LKG startup, 35-day prayer-horizon behavior, stale warning, wake/reconnect, Test Mode stop/expiry, and `?diagnostics=1` read-only usage.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add masjid-display/README.md masjid-display/.env.example docs/masjid-display/deployment.md
+git commit -m "docs: document masjid display deployment and rollback"
+```
+
+### Task 7: Execute physical responsive/QR certification and long-duration soak
 
 **Files:**
 - Create: `docs/masjid-display/physical-tv-certification.md`
-
-1. Record test devices/viewports, at minimum:
-   - 32-inch 1080p reference/minimum QA target;
-   - at least one larger 16:9 TV/display;
-   - 4K viewport/device if available.
-2. For each, verify:
-   - no hard-coded 32-inch assumptions;
-   - fluid scaling and adaptive one/two-card composition;
-   - Arabic shaping/RTL correct;
-   - German text does not clip;
-   - Prayer strip readable;
-   - main clock/prayer/countdown readable at practical mosque distance;
-   - safe area survives TV/browser overscan;
-   - persistent Prayerapp QR scans from practical distance;
-   - Campaign QR scans when displayed;
-   - Urgent bar readable;
-   - long AR/DE test scenario remains usable;
-   - pixel shift is not visually distracting and does not clip content.
-3. Record screenshots/photos only where repository policy/privacy permits; the written result must still identify PASS/BLOCKED per item.
-4. Do not shrink essential text below the chosen responsive minimum merely to force two cards.
-5. Commit actual QA evidence: `docs: record physical tv readability certification`.
-
-## Task 12: Samsung/browser wake and long-duration soak certification
-
-**Files:**
 - Create: `docs/masjid-display/soak-test.md`
 
-1. Run the display continuously for an initial 24-hour test; extend to 72 hours before final production sign-off when practical.
-2. Exercise:
-   - idle for hours;
-   - TV/browser sleep and wake;
-   - visibility/background timer throttling;
-   - network disconnect/reconnect;
-   - Prayer/Friday synthetic Test Mode transitions;
-   - repeated 60-second feed polls and ~2-second test-control polls while Test Mode is active;
-   - memory stability/no progressive UI slowdown;
-   - watchdog does not cause normal periodic reloads.
-3. Record start/end versions, device/browser, failures/recoveries, and PASS/BLOCKED.
-4. Any black-screen, stale-transient replay, timer-based incorrect prayer state, or uncontrolled reload is release-blocking.
-5. Commit evidence when completed.
+**Interfaces:**
+- Consumes: deployable TV build and Admin Test console.
+- Produces: recorded physical evidence with explicit PASS/BLOCKED status.
 
-## Task 13: Add final production certification checklist
+- [ ] **Step 1: Create both evidence docs in BLOCKED state before testing**
+
+Physical matrix rows must include at minimum:
+- 32-inch 1080p reference/minimum QA device;
+- at least one larger 16:9 display when available;
+- 4K display/viewport when available;
+- Arabic RTL/shaping;
+- German clipping;
+- Prayer strip/readability;
+- practical-distance clock/countdown;
+- safe area/overscan;
+- persistent Prayerapp QR scan;
+- Campaign QR scan;
+- Urgent readability;
+- long bilingual synthetic scenario;
+- pixel-shift visibility/clipping.
+
+- [ ] **Step 2: Execute responsive physical tests with Admin synthetic scenarios**
+
+Use Test Mode to force Prayer Approaching, Waiting Iqama, Jumuah, Urgent, long bilingual, Event pair, Campaign+QR, and stale-data states. Record device/browser/resolution and each result. Do not mark a device PASS if essential information becomes unreadable or QR cannot scan at a practical distance.
+
+- [ ] **Step 3: Execute 24-hour initial soak**
+
+Record exact deployed app version/commit, device/browser, start/end timestamps. Exercise idle, sleep/wake, background timer throttling, disconnect/reconnect, Test Mode start/stop/expiry, repeated production/test polling, and memory/UI responsiveness. Any black screen/stale religious state/uncontrolled reload is BLOCKED.
+
+- [ ] **Step 4: Extend to 72 hours before final release when practical**
+
+If operational constraints prevent 72 hours, record the limitation explicitly; do not silently call it completed. At minimum the 24-hour test must PASS for release consideration.
+
+- [ ] **Step 5: Commit evidence**
+
+```bash
+git add docs/masjid-display/physical-tv-certification.md docs/masjid-display/soak-test.md
+git commit -m "docs: record masjid display physical and soak certification"
+```
+
+### Task 8: Build the final production certification gate and run all repository checks
 
 **Files:**
 - Create: `docs/masjid-display/production-certification.md`
 
-1. Create a table with evidence links/status for:
-   - Prayer Engine calibration — PASS required;
-   - DB migration dry-run — PASS required;
-   - root unit/integration tests — PASS;
-   - TV state-machine tests — PASS;
-   - Feed contract/security tests — PASS;
-   - offline/LKG tests — PASS;
-   - Admin/Test Mode tests — PASS;
-   - browser wake/recovery tests — PASS;
-   - responsive/32-inch reference physical QA — PASS;
-   - larger/4K adaptive QA — PASS or explicitly documented available-device limitation before release decision;
-   - QR scan tests — PASS;
-   - 24–72h soak — PASS;
-   - security review — PASS.
-2. Do not mark any row PASS without linked evidence or executed command/result.
-3. Release status is `BLOCKED` if any critical row is unresolved.
-4. Commit: `docs: add masjid display production certification gate`.
+**Interfaces:**
+- Consumes: evidence from Tasks 1–7 and all automated suites.
+- Produces: one auditable release status `PASS` or `BLOCKED`.
 
-## Task 14: Final repository verification
+- [ ] **Step 1: Create the evidence table**
 
-1. Root: `npm ci && npm test && npm run lint && npx tsc --noEmit && npm run build`.
-2. TV: `cd masjid-display && npm ci && npm test && npm run lint && npm run typecheck && npm run build`.
-3. Database: `supabase db reset` and migration certification checks.
-4. Run `node scripts/verify-masjid-display-contract.mjs`.
-5. Grep forbidden final-state patterns:
-   - legacy absolute Iqama fields in active application code;
-   - audio imports/components under `masjid-display/`;
-   - Supabase client imports under `masjid-display/`;
-   - direct TV mutation APIs.
-6. Verify Admin Test Mode can be stopped and production display immediately resolves current real state.
-7. Verify production Feed stays v1-compatible with deployed TV build.
-8. If anything fails, fix through TDD and rerun the entire affected certification gate; do not waive failures.
+```md
+# Masjid Display Production Certification
+Status: BLOCKED
 
-## Completion standard
+| Gate | Required | Evidence | Status |
+| --- | --- | --- | --- |
+| Prayer Engine calibration | Yes | prayer-engine-calibration.md | BLOCKED |
+| Database migration dry-run | Yes | migration-certification.md | BLOCKED |
+| Root tests/build | Yes | command output/CI | BLOCKED |
+| TV tests/build | Yes | command output/CI | BLOCKED |
+| Feed/security | Yes | security-review.md | BLOCKED |
+| Offline/LKG | Yes | automated certification | BLOCKED |
+| Test Mode | Yes | automated + demo check | BLOCKED |
+| 32-inch reference physical QA | Yes | physical-tv-certification.md | BLOCKED |
+| Prayerapp/Campaign QR scans | Yes | physical-tv-certification.md | BLOCKED |
+| Wake/soak | Yes | soak-test.md | BLOCKED |
+```
 
-The Masjid Display feature is production-ready only when the automated suite is green **and** the certification evidence records critical manual gates as PASS. A green build alone is insufficient. The system must demonstrate accurate/calibrated prayer generation, correct deterministic state transitions, safe delay-derived Iqama, robust offline/wake recovery, safe public/read-only boundaries, reliable Admin-driven Test Mode, persistent app QR behavior, and readable responsive TV presentation.
+Add larger/4K adaptive QA as a tracked row; if hardware is unavailable, record that limitation explicitly in Evidence rather than claiming PASS.
 
-## Execution order across all five plans
+- [ ] **Step 2: Run final root verification**
 
-1. `2026-09-15-masjid-display-plan-1-prayer-engine-db.md`
-2. `2026-09-15-masjid-display-plan-2-admin-test-control.md`
-3. `2026-09-15-masjid-display-plan-3-display-feed.md`
-4. `2026-09-15-masjid-display-plan-4-tv-runtime-ui.md`
-5. This integration/certification plan.
+```bash
+npm ci
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
+supabase db reset
+node scripts/verify-masjid-display-contract.mjs
+```
 
-Do not start a later plan with prerequisite failures outstanding.
+Expected: all exit 0.
+
+- [ ] **Step 3: Run final TV verification**
+
+```bash
+cd masjid-display
+npm ci
+npm test
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Expected: all exit 0.
+
+- [ ] **Step 4: Run forbidden-final-state grep**
+
+From repository root:
+
+```bash
+git grep -nE 'fajr_iqama|dhuhr_iqama|asr_iqama|maghrib_iqama|isha_iqama|fajrIqama|dhuhrIqama|asrIqama|maghribIqama|ishaIqama' -- app components lib || true
+git grep -nE '@supabase/supabase-js|new Audio\(|<audio' -- masjid-display || true
+```
+
+Expected: no active legacy absolute-Iqama matches in root application code and no TV Supabase/audio runtime matches.
+
+- [ ] **Step 5: Update the certification table strictly from evidence**
+
+Only change a row to PASS when its linked document/CI/command result actually passed. Overall `Status: PASS` requires every critical “Required: Yes” row PASS. Otherwise leave `Status: BLOCKED`.
+
+- [ ] **Step 6: Commit the final certification record**
+
+```bash
+git add docs/masjid-display/production-certification.md
+git commit -m "docs: add masjid display production certification gate"
+```
+
+## Exit Criteria
+
+- Producer/consumer contract is CI-enforced.
+- Root and TV tests/lint/typecheck/builds are green without weakening existing checks.
+- Prayer Engine calendar/calibration and display-state boundary suites pass.
+- Database cutover has recorded migration evidence.
+- Offline/LKG/Test Mode/security behaviors are certified.
+- Independent deployment/rollback runbook exists.
+- Physical responsive/QR and soak evidence is recorded.
+- Production certification remains BLOCKED until every critical gate actually passes; only then may the feature be called production-ready.
+
+## Execution Order Across the Five Plans
+
+1. `docs/superpowers/plans/2026-09-15-masjid-display-plan-1-prayer-engine-db.md`
+2. `docs/superpowers/plans/2026-09-15-masjid-display-plan-2-admin-test-control.md`
+3. `docs/superpowers/plans/2026-09-15-masjid-display-plan-3-display-feed.md`
+4. `docs/superpowers/plans/2026-09-15-masjid-display-plan-4-tv-runtime-ui.md`
+5. This plan.
+
+Do not begin a later plan with a prerequisite gate unresolved.

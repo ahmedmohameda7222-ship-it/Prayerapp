@@ -1,86 +1,244 @@
 # Masjid Display Plan 3 — Public Display Feed and Contract Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the stable, versioned, atomic, public read-only Masjid Display Feed using existing Prayerapp domain/data sources, with offline-capable scheduling metadata, strict output minimization, stable ETag support, and contract tests.
+**Goal:** Build the stable versioned public read-only Display Feed v1 that projects Prayerapp’s existing data into one validated atomic snapshot with offline-capable scheduling metadata and stable ETag behavior.
 
-**Architecture:** The root Prayerapp assembles one safe snapshot from existing published data and the new shared settings. It does not duplicate database/business ownership in the TV app. The feed is a public GET-only projection with schema version `1`. The snapshot deliberately includes currently relevant **and near-future scheduled** content so a TV that goes offline can still activate/expire items at the correct local time. Runtime eligibility is therefore repeated defensively on the TV from the same explicit scheduling fields. Current time synchronization comes from the HTTP `Date` header, not from regenerating the response body every second.
+**Architecture:** Root Prayerapp assembles the feed through existing domain/data functions plus the new shared settings; the feed is not a second source of truth. It sends a ~35-day operating window and published current/near-future content required for offline activation/expiry. The returned representation is deterministic for unchanged semantic data/window so conditional GETs can use a strong ETag; current time is conveyed separately by HTTP response time.
 
-**Tech Stack:** Next.js route handlers, TypeScript, existing Prayerapp data layer/caches, Vitest, Node/Web Crypto hashing as appropriate.
+**Tech Stack:** Next.js route handlers, TypeScript 5, existing data/cache layer, Vitest 4.1.9, Node `crypto` for canonical content hashing.
 
-## Branch / prerequisite assumptions
+**Spec:** `docs/superpowers/specs/2026-09-15-masjid-display-design.md`
 
-- Continue on `feat/masjid-display` after Plans 1–2.
-- Root Prayerapp already has delay-derived Iqama settings, display settings, content scheduling fields, public app URL, and Test Mode control.
-- No `masjid-display/` consumer code is required yet; Plan 4 consumes the resulting contract.
+## Global Constraints
 
-## Task 1: Extract canonical Azkar time-category logic
+- Feed endpoint is public GET-only and requires no TV session/token.
+- Feed schema version is exactly `1`.
+- The feed exposes only public display fields; no service secrets, account/admin data, audit data, coordinates, or calculation angles.
+- Feed contains shared Iqama delays, never absolute Iqama times.
+- Prayer coverage is previous mosque-local day plus approximately 35 future days.
+- Primary Jumuah is Friday Dhuhr; `jumuah_times` supplies additional services only.
+- Published future-scheduled content needed during the offline horizon must remain in the snapshot even before activation.
+- Already irreversibly expired old content should be excluded.
+- Dynamic content must be complete Arabic + German; invalid legacy items are defensively omitted rather than corrupting prayer data.
+- Required prayer/settings corruption rejects the whole snapshot; do not partially salvage religious state.
+- Same semantic representation must produce the same `snapshotRevision` and ETag.
+- HTTP response time is used for clock correction; wall-clock seconds must not mutate the feed body/ETag.
+- Test Control remains a separate endpoint and is not embedded in the 60-second production feed.
+
+---
+
+### Task 1: Extract canonical Azkar smart-category logic
 
 **Files:**
 - Create: `lib/azkar-routine.ts`
 - Create: `lib/azkar-routine.test.ts`
 - Modify: `components/azkar/AzkarRoutine.tsx`
 
-1. Write failing tests for the existing behavior: Friday → Friday; 04:00–11:59 Morning; 15:00–21:59 Evening; 22:00–03:59 Sleep; otherwise Morning.
-2. Move `mosqueClock`/`smartDefaultCategory` behavior into a pure shared module using `APP_TIME_ZONE`.
-3. Update `components/azkar/AzkarRoutine.tsx` to call the shared function without changing existing public behavior.
-4. Run targeted tests.
-5. Commit: `refactor: share azkar routine selection logic`.
+**Interfaces:**
+- Consumes: `Date`, `APP_TIME_ZONE`.
+- Produces: `smartAzkarCategory(date: Date): AzkarCategory`.
 
-## Task 2: Define Feed v1 domain contract
+- [ ] **Step 1: Write the failing pure tests**
+
+```ts
+import { describe, expect, it } from "vitest";
+import { smartAzkarCategory } from "./azkar-routine";
+
+const at = (iso: string) => new Date(iso);
+
+describe("smartAzkarCategory", () => {
+  it("selects Friday before time-of-day rules", () => {
+    expect(smartAzkarCategory(at("2026-09-18T11:00:00Z"))).toBe("Friday");
+  });
+  it("uses Morning from 04 through 11", () => {
+    expect(smartAzkarCategory(at("2026-09-17T04:00:00Z"))).toBe("Morning");
+  });
+  it("uses Evening from 15 through 21", () => {
+    expect(smartAzkarCategory(at("2026-09-17T17:00:00Z"))).toBe("Evening");
+  });
+  it("uses Sleep from 22 through 03", () => {
+    expect(smartAzkarCategory(at("2026-09-17T22:30:00Z"))).toBe("Sleep");
+  });
+});
+```
+
+Choose test UTC instants so their `Europe/Berlin` local hour matches the named boundary.
+
+- [ ] **Step 2: Run and verify failure**
+
+Run: `npx vitest run lib/azkar-routine.test.ts`
+
+Expected: FAIL because the shared function does not exist.
+
+- [ ] **Step 3: Implement by extracting existing behavior exactly**
+
+```ts
+export function smartAzkarCategory(date: Date): AzkarCategory {
+  const { weekday, hour } = mosqueClock(date);
+  if (weekday === "Fri") return "Friday";
+  if (hour >= 4 && hour < 12) return "Morning";
+  if (hour >= 15 && hour < 22) return "Evening";
+  if (hour >= 22 || hour < 4) return "Sleep";
+  return "Morning";
+}
+```
+
+Move `mosqueClock` into this module using `APP_TIME_ZONE`, then replace the private component helper call with `smartAzkarCategory`.
+
+- [ ] **Step 4: Run tests**
+
+Run: `npx vitest run lib/azkar-routine.test.ts && npm test -- --run components/azkar`
+
+Expected: shared tests PASS; if test-script filtering is unsupported, run `npm test`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/azkar-routine.ts lib/azkar-routine.test.ts components/azkar/AzkarRoutine.tsx
+git commit -m "refactor: share azkar routine selection logic"
+```
+
+### Task 2: Define Feed v1 DTOs and runtime self-validation
 
 **Files:**
 - Create: `lib/masjid-display/feed-contract.ts`
+- Create: `lib/masjid-display/validate-feed.ts`
 - Create: `lib/masjid-display/feed-contract.test.ts`
+- Create: `lib/masjid-display/validate-feed.test.ts`
 
-1. Write failing tests for strict `MasjidDisplayFeedV1` containing only:
-   - `schemaVersion: 1`;
-   - `snapshotRevision`;
-   - deterministic `generatedAt` metadata tied to the snapshot revision/window, never the current second;
-   - timezone;
-   - safe mosque identity + `publicAppUrl`;
-   - published prayer schedule operating window;
-   - five Iqama delays;
-   - additional Jumuah services;
-   - display prayer durations + Azkar playlist IDs;
-   - selected Azkar source data;
-   - published schedulable announcements including future `displayFrom` items within the feed horizon;
-   - current/upcoming Events including enough future entries for offline operation;
-   - active/future-scheduled Campaigns with their start/end metadata.
-2. Explicitly test absence of calculation coordinates/angles, admin users, audit logs, account data, Supabase keys, unpublished content, and legacy absolute-Iqama fields.
-3. Define DTOs separate from database row types.
-4. Commit: `feat: define masjid display feed v1 contract`.
+**Interfaces:**
+- Consumes: root domain types.
+- Produces:
+  - `MasjidDisplayFeedV1`
+  - `validateMasjidDisplayFeed(value: unknown): MasjidDisplayFeedV1`.
 
-## Task 3: Implement shared scheduling/eligibility helpers
+- [ ] **Step 1: Write the failing shape/allowlist test**
+
+```ts
+it("accepts only Feed v1 public fields", () => {
+  const feed = validFeedFixture();
+  expect(validateMasjidDisplayFeed(feed).schemaVersion).toBe(1);
+  const json = JSON.stringify(feed);
+  for (const forbidden of ["service_role", "admin_users", "audit_logs", "latitude", "fajrAngle", "fajrIqama"]) {
+    expect(json).not.toContain(forbidden);
+  }
+});
+```
+
+Add rejection cases for unsupported schema, duplicate prayer dates, invalid `HH:MM`, missing/negative Iqama delay, out-of-range display duration, duplicate content IDs, invalid `publicAppUrl`/`donationUrl`, and incomplete AR/DE dynamic content.
+
+- [ ] **Step 2: Run and verify failure**
+
+Run: `npx vitest run lib/masjid-display/feed-contract.test.ts lib/masjid-display/validate-feed.test.ts`
+
+Expected: FAIL.
+
+- [ ] **Step 3: Define the DTO boundary**
+
+Use a serializable type whose top level is exactly:
+
+```ts
+export interface MasjidDisplayFeedV1 {
+  schemaVersion: 1;
+  snapshotRevision: string;
+  generatedAt: string;
+  timezone: string;
+  mosque: { nameAr: string; nameDe: string; address: string; publicAppUrl: string };
+  prayers: { schedule: DisplayPrayerDay[]; iqamaDelays: DisplayIqamaDelays; additionalJumuah: DisplayJumuahService[] };
+  displaySettings: DisplaySettingsDto;
+  azkar: DisplayAzkarDto[];
+  announcements: DisplayAnnouncementDto[];
+  events: DisplayEventDto[];
+  campaigns: DisplayCampaignDto[];
+}
+```
+
+`DisplayPrayerDay` contains date, six prayer `HH:MM` values, published Maghrib Program informational fields, and no absolute-Iqama properties.
+
+- [ ] **Step 4: Implement strict validation**
+
+Validate all required fields/types and explicit constraints. Throw a typed `DisplayFeedValidationError` listing path/reason. Required religious/settings corruption is fatal. The builder in Task 5 will pre-filter invalid dynamic items before this final whole-feed validation.
+
+- [ ] **Step 5: Run tests and commit**
+
+Run: `npx vitest run lib/masjid-display/feed-contract.test.ts lib/masjid-display/validate-feed.test.ts`
+
+Expected: PASS.
+
+```bash
+git add lib/masjid-display/feed-contract.ts lib/masjid-display/validate-feed.ts lib/masjid-display/feed-contract.test.ts lib/masjid-display/validate-feed.test.ts
+git commit -m "feat: define masjid display feed v1 contract"
+```
+
+### Task 3: Implement shared content inclusion/runtime-eligibility and Azkar projection
 
 **Files:**
 - Create: `lib/masjid-display/content-eligibility.ts`
 - Create: `lib/masjid-display/content-eligibility.test.ts`
-
-1. Write pure tests for **runtime eligibility at a supplied `now`**:
-   - Announcement: published, AR+DE complete, `displayFrom/displayUntil` bounds;
-   - Event: current/upcoming, expires at endTime or end-of-date;
-   - Campaign: active, AR+DE complete, start/end bounds, optional URL;
-   - Urgent uses the same announcement scheduling window.
-2. Add a separate **feed-inclusion** predicate that includes items which are not yet active but can become active inside the offline operating horizon. A future `displayFrom` item must not be discarded merely because it is not active at fetch time.
-3. Exclude content that is already irreversibly expired before the feed operating window.
-4. Keep all helpers pure with explicit `now`, timezone, and horizon inputs.
-5. Commit: `feat: add display scheduling eligibility rules`.
-
-## Task 4: Implement selected Azkar projection
-
-**Files:**
 - Create: `lib/masjid-display/azkar-selection.ts`
 - Create: `lib/masjid-display/azkar-selection.test.ts`
 - Reuse: `lib/data/azkar.ts`
 - Reuse: `lib/azkar-routine.ts`
 
-1. Test that only playlist IDs are projected; current smart category wins; no category match falls back to any selected published Azkar; empty playlist is empty; unknown IDs are ignored defensively.
-2. Include enough selected canonical Azkar data for offline category selection/rotation rather than only the item active at fetch time.
-3. Preserve stable IDs, Arabic, German, source, repeat count, and category.
-4. Commit: `feat: project display azkar playlist`.
+**Interfaces:**
+- Consumes: published Announcement/Event/Campaign data, `now`, timezone, feed horizon, selected Azkar IDs.
+- Produces:
+  - `isAnnouncementActive(item, now): boolean`
+  - `includeAnnouncementInFeed(item, now, horizonEnd): boolean`
+  - equivalent Event/Campaign helpers
+  - `selectDisplayAzkar(all, playlistIds): DisplayAzkarDto[]`.
 
-## Task 5: Build atomic snapshot assembler
+- [ ] **Step 1: Write failing scheduling tests**
+
+```ts
+it("includes a future announcement that activates inside the offline horizon", () => {
+  const item = announcement({ displayFrom: "2026-09-20T08:00:00Z", displayUntil: "2026-09-21T08:00:00Z" });
+  expect(isAnnouncementActive(item, new Date("2026-09-15T08:00:00Z"))).toBe(false);
+  expect(includeAnnouncementInFeed(item, new Date("2026-09-15T08:00:00Z"), new Date("2026-10-20T23:59:59Z"))).toBe(true);
+});
+
+it("drops irreversibly expired announcements", () => {
+  const item = announcement({ displayUntil: "2026-09-14T08:00:00Z" });
+  expect(includeAnnouncementInFeed(item, new Date("2026-09-15T08:00:00Z"), new Date("2026-10-20T23:59:59Z"))).toBe(false);
+});
+```
+
+Add Event end/end-of-date tests and Campaign active/start/optional-end tests.
+
+- [ ] **Step 2: Write failing Azkar projection tests**
+
+```ts
+it("projects all selected published Azkar needed for offline category changes", () => {
+  const result = selectDisplayAzkar(allAzkar, ["morning-a", "evening-b", "unknown"]);
+  expect(result.map((item) => item.id)).toEqual(["morning-a", "evening-b"]);
+});
+```
+
+- [ ] **Step 3: Run and verify failure**
+
+Run: `npx vitest run lib/masjid-display/content-eligibility.test.ts lib/masjid-display/azkar-selection.test.ts`
+
+Expected: FAIL.
+
+- [ ] **Step 4: Implement pure helpers**
+
+Runtime-active functions use exact scheduling bounds. Feed-inclusion functions include published content capable of becoming active before `horizonEnd`; they exclude content already expired before `now`. Event without endTime expires at mosque-local `23:59:59.999` of its event date. Campaign without endDate has no upper bound while `isActive` is true.
+
+`selectDisplayAzkar` intersects playlist IDs with canonical published items and returns category, Arabic, German, source, repeatCount, sortOrder, and stable ID; it does not filter by current category at feed-build time.
+
+- [ ] **Step 5: Run tests and commit**
+
+Run: `npx vitest run lib/masjid-display/content-eligibility.test.ts lib/masjid-display/azkar-selection.test.ts`
+
+Expected: PASS.
+
+```bash
+git add lib/masjid-display/content-eligibility.ts lib/masjid-display/content-eligibility.test.ts lib/masjid-display/azkar-selection.ts lib/masjid-display/azkar-selection.test.ts
+git commit -m "feat: add display content scheduling projection"
+```
+
+### Task 4: Assemble one atomic deterministic snapshot
 
 **Files:**
 - Create: `lib/masjid-display/build-feed.ts`
@@ -96,97 +254,244 @@
 - Reuse: `lib/data/azkar.ts`
 - Reuse/adapt: `lib/friday.ts`
 
-1. Write a failing assembler test using mocked data functions.
-2. Prayer window: previous local date through approximately 35 days ahead; never send years of rows.
-3. Include only published prayer rows and additional Jumuah rows relevant to that operating window.
-4. Primary Friday Jumuah is semantically Dhuhr; do not duplicate it from `jumuah_times`.
-5. Include Iqama **delays**, never absolute Iqama times.
-6. Include published dynamic content needed for current/near-future offline scheduling, preserving start/end metadata. Do not filter future scheduled items out with a “currently active only” predicate.
-7. Build one complete DTO in memory. Missing/invalid required religious settings produce a typed build failure/degraded setup result; never fabricate defaults.
-8. Make the snapshot window anchor deterministic (mosque-local date). The body must not vary because one wall-clock second passed.
-9. Derive `generatedAt` deterministically from the semantic snapshot basis (for example the latest included source-update timestamp and/or operating-window anchor). Never set it to `new Date()` on every request.
-10. Commit: `feat: assemble atomic masjid display snapshot`.
+**Interfaces:**
+- Consumes: existing data functions + `now`.
+- Produces: `buildMasjidDisplayFeed(now?: Date): Promise<Omit<MasjidDisplayFeedV1,"snapshotRevision">>` with deterministic content for the local-date operating window.
 
-## Task 6: Add deterministic snapshot revision and ETag
+- [ ] **Step 1: Write the failing assembler test**
+
+```ts
+it("builds previous-day plus 35-day prayer coverage and preserves future scheduled content", async () => {
+  const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00Z"), deps);
+  expect(feed.prayers.schedule[0].date).toBe("2026-09-14");
+  expect(feed.prayers.schedule.at(-1)?.date).toBe("2026-10-20");
+  expect(feed.announcements.some((item) => item.displayFrom === "2026-09-20T08:00:00Z")).toBe(true);
+  expect(JSON.stringify(feed.prayers.schedule)).not.toContain("Iqama");
+});
+```
+
+Also assert first Friday service is not duplicated into `additionalJumuah` and primary semantic time equals that Friday’s Dhuhr.
+
+- [ ] **Step 2: Run and verify failure**
+
+Run: `npx vitest run lib/masjid-display/build-feed.test.ts`
+
+Expected: FAIL.
+
+- [ ] **Step 3: Implement deterministic operating-window calculation**
+
+Use mosque-local `todayIso(now)`; start = previous local date; end = local date +35 days. Query published prayer rows within that range, plus additional Jumuah rows in range. Use existing Friday resolver semantics rather than creating a second primary-service record.
+
+- [ ] **Step 4: Assemble only allowlisted fields and pre-filter bad dynamic legacy rows**
+
+If prayer settings or display settings are missing/invalid, throw a typed build error. For each dynamic item, run bilingual/shape validation; omit invalid legacy items and emit a server diagnostic through the repository’s normal logging mechanism. Include future schedulable items via Task 3 inclusion functions.
+
+- [ ] **Step 5: Make `generatedAt` deterministic**
+
+Set it from the latest relevant included source `updatedAt/createdAt` timestamp, falling back to the local-day window anchor timestamp when included sources expose no update timestamp. It must not equal request-time `new Date()` solely because a request occurred.
+
+- [ ] **Step 6: Run tests and commit**
+
+Run: `npx vitest run lib/masjid-display/build-feed.test.ts`
+
+Expected: PASS.
+
+```bash
+git add lib/masjid-display/build-feed.ts lib/masjid-display/build-feed.test.ts
+git commit -m "feat: assemble atomic masjid display snapshot"
+```
+
+### Task 5: Add canonical serialization, snapshot revision, and ETag
 
 **Files:**
 - Create: `lib/masjid-display/feed-etag.ts`
 - Create: `lib/masjid-display/feed-etag.test.ts`
+- Modify: `lib/masjid-display/build-feed.ts`
 
-1. Test: same semantic snapshot → same revision/ETag; object-key order does not matter; any semantic field change changes revision; one second of wall time does not change revision.
-2. Implement canonical serialization of the **entire returned representation** followed by cryptographic digest, or use a documented weak ETag only if `generatedAt` is intentionally excluded as semantically insignificant. Prefer making the body itself deterministic so a strong ETag is valid.
-3. `snapshotRevision` must have a documented stable invariant and must agree with the representation used for ETag.
-4. Commit: `feat: add stable display feed etag`.
+**Interfaces:**
+- Consumes: validated feed body without revision.
+- Produces:
+  - `canonicalJson(value: unknown): string`
+  - `finalizeFeed(body): MasjidDisplayFeedV1`
+  - `etagForFeed(feed): string`.
 
-## Task 7: Add public GET-only Display Feed route
+- [ ] **Step 1: Write failing stability tests**
+
+```ts
+it("gives the same revision and ETag for the same semantic representation", () => {
+  const a = finalizeFeed(feedBody({ mosque: { nameAr: "أ", nameDe: "A" } }));
+  const b = finalizeFeed(feedBody({ mosque: { nameDe: "A", nameAr: "أ" } }));
+  expect(a.snapshotRevision).toBe(b.snapshotRevision);
+  expect(etagForFeed(a)).toBe(etagForFeed(b));
+});
+
+it("changes revision when content changes", () => {
+  const a = finalizeFeed(feedBody({ mosque: { nameDe: "A" } }));
+  const b = finalizeFeed(feedBody({ mosque: { nameDe: "B" } }));
+  expect(a.snapshotRevision).not.toBe(b.snapshotRevision);
+});
+```
+
+- [ ] **Step 2: Run and verify failure**
+
+Run: `npx vitest run lib/masjid-display/feed-etag.test.ts`
+
+Expected: FAIL.
+
+- [ ] **Step 3: Implement canonical JSON and hash**
+
+Recursively sort object keys while preserving array order, stringify, and hash with SHA-256:
+
+```ts
+import { createHash } from "node:crypto";
+
+export function sha256(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+export function etagForFeed(feed: MasjidDisplayFeedV1) {
+  return `"${sha256(canonicalJson(feed))}"`;
+}
+```
+
+Derive `snapshotRevision` from the canonical body before inserting the revision field, then validate the finalized feed. Because `generatedAt` is deterministic, the strong ETag covers the entire representation.
+
+- [ ] **Step 4: Run tests and commit**
+
+Run: `npx vitest run lib/masjid-display/feed-etag.test.ts lib/masjid-display/validate-feed.test.ts`
+
+Expected: PASS.
+
+```bash
+git add lib/masjid-display/feed-etag.ts lib/masjid-display/feed-etag.test.ts lib/masjid-display/build-feed.ts
+git commit -m "feat: add stable display feed revision and etag"
+```
+
+### Task 6: Expose GET-only public feed with conditional requests
 
 **Files:**
 - Create: `app/api/public/masjid-display/route.ts`
 - Create: `app/api/public/masjid-display/route.test.ts`
 
-1. Write route tests: GET returns Feed v1 + ETag + Date; matching If-None-Match returns 304/no body; unsupported methods rejected; safe 5xx errors; no auth/session required; allowlisted fields only; repeated request one second later is byte/ETag stable when source/window unchanged.
-2. Implement via `buildMasjidDisplayFeed()`.
-3. Add cache semantics that permit conditional revalidation. Test-control state remains separate from this 60-second production feed.
-4. Ensure response time header is present/usable on 200 and 304 for logical-clock correction.
-5. Commit: `feat: expose public masjid display feed`.
+**Interfaces:**
+- Consumes: `buildMasjidDisplayFeed`, `finalizeFeed`, `etagForFeed`.
+- Produces: `GET /api/public/masjid-display` with `200` or conditional `304`.
 
-## Task 8: Validate feed before publication
+- [ ] **Step 1: Write failing route tests**
 
-**Files:**
-- Create: `lib/masjid-display/validate-feed.ts`
-- Create: `lib/masjid-display/validate-feed.test.ts`
-- Modify: `lib/masjid-display/build-feed.ts`
-- Modify: `app/api/public/masjid-display/route.ts`
+```ts
+it("returns 304 for matching If-None-Match", async () => {
+  const first = await GET(new Request("https://app.test/api/public/masjid-display"));
+  const etag = first.headers.get("etag")!;
+  const second = await GET(new Request("https://app.test/api/public/masjid-display", {
+    headers: { "if-none-match": etag },
+  }));
+  expect(second.status).toBe(304);
+  expect(await second.text()).toBe("");
+  expect(second.headers.get("date")).toBeTruthy();
+});
+```
 
-1. Write failures for duplicate/unordered prayer dates, invalid HH:MM, missing/negative delays, invalid durations, duplicate IDs where prohibited, malformed URL, unsupported schema, and incomplete AR/DE dynamic items.
-2. Required prayer/settings corruption fails the whole snapshot; do not partial-salvage religious state.
-3. Invalid legacy dynamic item is defensively omitted with server diagnostic/log signal so prayer data remains available.
-4. Validate before hashing/sending.
-5. Commit: `feat: validate display feed before publication`.
+Add tests for public no-auth GET, safe 5xx body, allowlisted output, same body/ETag one second later with unchanged source/window, and absence of exported mutation handlers.
 
-## Task 9: Add golden Feed v1 fixture
+- [ ] **Step 2: Run and verify failure**
+
+Run: `npx vitest run app/api/public/masjid-display/route.test.ts`
+
+Expected: FAIL.
+
+- [ ] **Step 3: Implement the route**
+
+Build/finalize/validate once per request; calculate ETag; compare `If-None-Match`; return `304` with ETag/Date when matched. For `200`, return JSON plus ETag and a cache policy that allows revalidation. Catch internal errors and return a generic error identifier/status without raw Supabase/stack details.
+
+Only export `GET`; Next automatically returns method-not-allowed/not-found behavior for unimplemented verbs according to the route handler runtime.
+
+- [ ] **Step 4: Run tests and commit**
+
+Run: `npx vitest run app/api/public/masjid-display/route.test.ts`
+
+Expected: PASS.
+
+```bash
+git add app/api/public/masjid-display/route.ts app/api/public/masjid-display/route.test.ts
+git commit -m "feat: expose public masjid display feed"
+```
+
+### Task 7: Add producer golden fixture, security tests, and verify Plan 3
 
 **Files:**
 - Create: `lib/masjid-display/__fixtures__/feed-v1.json`
 - Create: `lib/masjid-display/feed-golden.test.ts`
+- Create: `lib/__tests__/masjid-display-feed-security.test.ts`
 
-1. Build deterministic synthetic data covering prayer schedule, extra Jumuah, future-scheduled + active announcements, urgent/special/general, current/upcoming Event, future/active Campaign with/without URL, Azkar, settings, and persistent Prayerapp URL.
-2. Test root validator accepts it.
-3. Keep it stable/reviewable for Plan 4 consumer compatibility.
-4. Commit: `test: add display feed v1 golden fixture`.
+**Interfaces:**
+- Consumes: final producer validator/route.
+- Produces: stable Feed v1 fixture used by Plan 4 consumer compatibility tests.
 
-## Task 10: Security/caching verification
+- [ ] **Step 1: Create a deterministic synthetic golden fixture**
 
-**Files:**
-- Create/modify: `lib/__tests__/masjid-display-feed-security.test.ts`
-- Review: `next.config.ts` only if route-specific headers require changes
+Include: 35-day-capable prayer sample window, extra Jumuah, active + future-scheduled Announcements including urgent/special, current/upcoming Event, active/future Campaign with and without URL, selected Morning/Evening Azkar, display settings, five delays, mosque/public app URL. Use synthetic IDs/content only.
 
-1. Public Feed/Test-Control endpoints are read-only.
-2. No service-role key/private payload serialized.
-3. No private/admin table is required solely to build public feed.
-4. Error paths expose no stack/raw Supabase errors.
-5. Error responses cannot become valid LKG candidates through cache headers/status confusion.
-6. Commit: `test: harden masjid display public feed boundary`.
+- [ ] **Step 2: Write the golden/security tests**
 
-## Task 11: Verify Plan 3
+```ts
+it("accepts the producer golden fixture", () => {
+  const fixture = JSON.parse(readFileSync("lib/masjid-display/__fixtures__/feed-v1.json", "utf8"));
+  expect(validateMasjidDisplayFeed(fixture).schemaVersion).toBe(1);
+});
 
-1. `npx vitest run lib/masjid-display app/api/public/masjid-display`.
-2. `npm test`.
-3. `npm run lint`.
-4. `npx tsc --noEmit`.
-5. `npm run build`.
-6. Local `curl`: capture body/ETag, repeat after one second (expect same representation/ETag), then send `If-None-Match` (expect 304).
-7. Test a future-scheduled Announcement in the snapshot and prove the JSON contains its scheduling metadata before activation.
-8. Inspect JSON for safe field allowlisting.
-9. Commit stabilization fixes separately.
+it("contains no private/admin/calculation fields", () => {
+  const json = readFileSync("lib/masjid-display/__fixtures__/feed-v1.json", "utf8");
+  for (const forbidden of ["admin_users", "audit_logs", "service_role", "latitude", "longitude", "fajr_iqama"]) {
+    expect(json).not.toContain(forbidden);
+  }
+});
+```
 
-## Exit criteria
+- [ ] **Step 3: Run focused Plan 3 tests**
 
-- One versioned atomic Feed v1 represents all TV production data.
-- Future scheduled content needed for offline activation is retained with explicit scheduling metadata.
-- Representation and ETag are stable when semantic content/window is stable.
-- HTTP response time can correct the TV clock without changing snapshot content each second.
-- Feed exposes no calculation internals, secrets, accounts, admin data, or legacy absolute Iqama.
-- Golden producer fixture exists for consumer compatibility tests.
+Run: `npx vitest run lib/masjid-display app/api/public/masjid-display lib/__tests__/masjid-display-feed-security.test.ts`
 
-**Next plan:** `2026-09-15-masjid-display-plan-4-tv-runtime-ui.md`.
+Expected: PASS.
+
+- [ ] **Step 4: Run full root verification**
+
+```bash
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+Expected: all exit 0.
+
+- [ ] **Step 5: Manually verify conditional representation stability**
+
+With the local app running:
+
+```bash
+curl -sS -D /tmp/feed-h1 -o /tmp/feed-b1 http://localhost:3000/api/public/masjid-display
+sleep 1
+curl -sS -D /tmp/feed-h2 -o /tmp/feed-b2 http://localhost:3000/api/public/masjid-display
+cmp /tmp/feed-b1 /tmp/feed-b2
+```
+
+Expected: `cmp` exits 0 when data/local-date window did not change. Capture ETag from the first headers and send it in `If-None-Match`; expected `304`.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/masjid-display/__fixtures__/feed-v1.json lib/masjid-display/feed-golden.test.ts lib/__tests__/masjid-display-feed-security.test.ts
+git commit -m "test: certify masjid display feed v1 producer"
+```
+
+## Exit Criteria
+
+- Feed v1 is one atomic validated read-only projection.
+- Future scheduled content needed for offline activation remains in the feed with explicit timing metadata.
+- Feed body/revision/ETag are stable for unchanged semantic content/window.
+- Prayer/settings corruption cannot become a partially valid religious snapshot.
+- Calculation internals, secrets, accounts, admin data, and absolute Iqama are absent.
+- Producer golden fixture exists and root tests/build are green.
+
+**Next plan:** `docs/superpowers/plans/2026-09-15-masjid-display-plan-4-tv-runtime-ui.md`

@@ -8,8 +8,10 @@ import { createServerClient } from "@/lib/supabase/server";
 import type { PrayerTime } from "@/lib/types";
 import { calibrateSchedule, type CalibrationReport } from "./calibration";
 import {
+  addIsoDays,
   buildExtensionPreview,
   buildRecalculationPreview,
+  oneCalendarYearEnd,
   type PrayerScheduleDiff,
   type PrayerSchedulePreview,
 } from "./generate";
@@ -111,6 +113,68 @@ function affectedCount(value: unknown): number {
   return result;
 }
 
+async function loadPrayerTimesRange(
+  startDate: string,
+  endDate: string,
+  dependencies: PrayerEngineServerDependencies,
+): Promise<PrayerTime[]> {
+  if (endDate < startDate) return [];
+
+  const rows: PrayerTime[] = [];
+  for (let cursor = startDate; cursor <= endDate; ) {
+    const fullChunkEnd = addIsoDays(cursor, 365);
+    const chunkEnd = fullChunkEnd < endDate ? fullChunkEnd : endDate;
+    rows.push(
+      ...(await dependencies.getPrayerTimes(
+        true,
+        cursor,
+        chunkEnd,
+        400,
+      )),
+    );
+    cursor = addIsoDays(chunkEnd, 1);
+  }
+  return rows;
+}
+
+async function loadExtensionBasisDates(
+  today: string,
+  dependencies: PrayerEngineServerDependencies,
+): Promise<string[]> {
+  const dates = new Set<string>();
+  let cursor = today;
+
+  // Match the database race check's bounded future search while keeping each
+  // PostgREST request below the existing 400-row data-layer default.
+  for (let window = 0; window < 10; window++) {
+    const windowEnd = addIsoDays(cursor, 365);
+    const rows = await loadPrayerTimesRange(cursor, windowEnd, dependencies);
+    rows.forEach((row) => dates.add(row.date));
+
+    let firstMissing = cursor;
+    while (firstMissing <= windowEnd && dates.has(firstMissing)) {
+      firstMissing = addIsoDays(firstMissing, 1);
+    }
+
+    if (firstMissing <= windowEnd) {
+      const horizonEnd = oneCalendarYearEnd(firstMissing);
+      if (windowEnd < horizonEnd) {
+        const remaining = await loadPrayerTimesRange(
+          addIsoDays(windowEnd, 1),
+          horizonEnd,
+          dependencies,
+        );
+        remaining.forEach((row) => dates.add(row.date));
+      }
+      return [...dates];
+    }
+
+    cursor = addIsoDays(windowEnd, 1);
+  }
+
+  throw new Error("No missing prayer schedule date found within ten years");
+}
+
 export async function previewScheduleExtension(
   today = todayIso(),
   dependencies: PrayerEngineServerDependencies = defaultDependencies(),
@@ -120,12 +184,8 @@ export async function previewScheduleExtension(
     throw new Error("Recalculate the future schedule before extending it");
   }
 
-  const existing = await dependencies.getPrayerTimes(true, today);
-  return buildExtensionPreview(
-    existing.map((row) => row.date),
-    today,
-    settings,
-  );
+  const existingDates = await loadExtensionBasisDates(today, dependencies);
+  return buildExtensionPreview(existingDates, today, settings);
 }
 
 export async function commitScheduleExtension(
@@ -141,12 +201,8 @@ export async function commitScheduleExtension(
     throw new Error("Prayer calculation revision changed; preview again");
   }
 
-  const existing = await dependencies.getPrayerTimes(true, today);
-  const fresh = buildExtensionPreview(
-    existing.map((row) => row.date),
-    today,
-    settings,
-  );
+  const existingDates = await loadExtensionBasisDates(today, dependencies);
+  const fresh = buildExtensionPreview(existingDates, today, settings);
   if (!previewRowsEqual(preview, fresh)) {
     throw new Error("Prayer schedule changed; preview again");
   }
@@ -176,7 +232,7 @@ export async function previewFutureRecalculation(
     throw new Error("Future recalculation cannot start before mosque-local today");
   }
   const settings = requireSettings(await dependencies.getSettings());
-  const existing = await dependencies.getPrayerTimes(true, startDate, endDate);
+  const existing = await loadPrayerTimesRange(startDate, endDate, dependencies);
   return buildRecalculationPreview(
     existing.map(toCalculationRow),
     startDate,
@@ -199,10 +255,10 @@ export async function commitFutureRecalculation(
     throw new Error("Prayer calculation revision changed; preview again");
   }
 
-  const existing = await dependencies.getPrayerTimes(
-    true,
+  const existing = await loadPrayerTimesRange(
     preview.startDate,
     preview.endDate,
+    dependencies,
   );
   const fresh = buildRecalculationPreview(
     existing.map(toCalculationRow),
@@ -239,6 +295,6 @@ export async function calibrateAgainstHistoricalSchedule(
   dependencies: PrayerEngineServerDependencies = defaultDependencies(),
 ): Promise<CalibrationReport> {
   const settings = requireSettings(await dependencies.getSettings());
-  const existing = await dependencies.getPrayerTimes(true, startDate, endDate);
+  const existing = await loadPrayerTimesRange(startDate, endDate, dependencies);
   return calibrateSchedule(existing.map(toCalculationRow), settings);
 }

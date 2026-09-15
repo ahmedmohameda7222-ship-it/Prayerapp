@@ -1,6 +1,5 @@
 import "server-only";
 import { getPrayerSettings } from "@/lib/data/prayer-settings";
-import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { invalidateCachePrefix } from "@/lib/data/cache";
 import { clearPersistentCachePrefix } from "@/lib/data/persistent-public-cache";
 import { todayIso } from "@/lib/date-utils";
@@ -45,10 +44,45 @@ function invalidatePrayerCaches(): void {
   clearPersistentCachePrefix("prayer_time_");
 }
 
+async function getPrayerTimesForEngine(
+  includeUnpublished = false,
+  startDate?: string,
+  endDate?: string,
+  limit?: number,
+): Promise<PrayerTime[]> {
+  const client = createServerClient();
+  if (!client) throw new Error("Supabase is not configured");
+
+  let query = client
+    .from("prayer_times")
+    .select("id,date,fajr,sunrise,dhuhr,asr,maghrib,isha,published,updated_at")
+    .order("date", { ascending: true });
+  if (!includeUnpublished) query = query.eq("published", true);
+  if (startDate) query = query.gte("date", startDate);
+  if (endDate) query = query.lte("date", endDate);
+  if (limit) query = query.limit(limit);
+
+  const { data, error } = await query;
+  if (error || !data) throw new Error("Unable to load prayer times");
+
+  return data.map((row: Record<string, unknown>) => ({
+    id: String(row.id),
+    date: String(row.date),
+    fajr: String(row.fajr),
+    sunrise: String(row.sunrise),
+    dhuhr: String(row.dhuhr),
+    asr: String(row.asr),
+    maghrib: String(row.maghrib),
+    isha: String(row.isha),
+    published: Boolean(row.published),
+    updatedAt: row.updated_at ? String(row.updated_at) : new Date().toISOString(),
+  }));
+}
+
 function defaultDependencies(): PrayerEngineServerDependencies {
   return {
     getSettings: getPrayerSettings,
-    getPrayerTimes,
+    getPrayerTimes: getPrayerTimesForEngine,
     rpc: async (name, args) => {
       const client = createServerClient();
       if (!client) throw new Error("Supabase is not configured");

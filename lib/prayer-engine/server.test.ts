@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { nextCalculationRevision } from "@/lib/data/prayer-settings";
 import type { PrayerTime } from "@/lib/types";
@@ -43,6 +44,16 @@ function scheduleRow(date: string): PrayerTime {
 }
 
 describe("prayer engine server orchestration", () => {
+  it("uses a service-role reader for internal schedule basis reads", () => {
+    const source = readFileSync("lib/prayer-engine/server.ts", "utf8");
+    expect(source).not.toContain(
+      'import { getPrayerTimes } from "@/lib/data/prayer-times";',
+    );
+    expect(source).toContain("async function getPrayerTimesForEngine");
+    expect(source).toContain('.from("prayer_times")');
+    expect(source).toContain("getPrayerTimes: getPrayerTimesForEngine");
+  });
+
   it("preview performs no RPC write", async () => {
     const rpc = vi.fn();
     await previewScheduleExtension("2026-09-15", deps({ rpc }));

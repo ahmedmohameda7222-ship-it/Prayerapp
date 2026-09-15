@@ -61,9 +61,16 @@ export function calculatePrayerTimes(
     params,
   );
 
+  const zeroMinuteFixedIsha =
+    settings.ishaRule === "fixed_minutes" &&
+    settings.ishaMinutesAfterMaghrib === 0;
+
   const result = { date } as PrayerCalculationResult;
   for (const key of PRAYER_KEYS) {
-    const rawInstant = calculated[key];
+    const rawInstant =
+      key === "isha" && zeroMinuteFixedIsha
+        ? calculated.maghrib
+        : calculated[key];
     if (!(rawInstant instanceof Date) || Number.isNaN(rawInstant.getTime())) {
       throw new Error(`Unable to calculate ${key} for ${date}`);
     }

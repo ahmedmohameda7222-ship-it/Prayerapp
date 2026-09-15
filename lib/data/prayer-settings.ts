@@ -37,9 +37,10 @@ function mapFromDb(row: Record<string, unknown>): PrayerCalculationSettings {
   });
 }
 
-function mapToDb(settings: PrayerCalculationSettings): Record<string, unknown> {
+function mutablePrayerSettingsValues(
+  settings: PrayerCalculationSettings,
+): Record<string, unknown> {
   return {
-    id: "1",
     latitude: settings.latitude,
     longitude: settings.longitude,
     timezone: settings.timezone,
@@ -61,9 +62,24 @@ function mapToDb(settings: PrayerCalculationSettings): Record<string, unknown> {
     maghrib_iqama_delay_minutes: settings.iqamaDelays.maghrib,
     isha_iqama_delay_minutes: settings.iqamaDelays.isha,
     calculation_revision: settings.calculationRevision,
-    applied_calculation_revision: settings.appliedCalculationRevision,
     updated_at: new Date().toISOString(),
   };
+}
+
+export function prayerSettingsInsertValues(
+  settings: PrayerCalculationSettings,
+): Record<string, unknown> {
+  return {
+    id: "1",
+    ...mutablePrayerSettingsValues(settings),
+    applied_calculation_revision: 0,
+  };
+}
+
+export function prayerSettingsUpdateValues(
+  settings: PrayerCalculationSettings,
+): Record<string, unknown> {
+  return mutablePrayerSettingsValues(settings);
 }
 
 function calculationFingerprint(settings: PrayerCalculationSettings): string {
@@ -118,12 +134,11 @@ export async function savePrayerSettings(
     calculationRevision: nextCalculationRevision(current, validated),
     appliedCalculationRevision: current?.appliedCalculationRevision ?? 0,
   };
-  const dbRow = mapToDb(stored);
 
   if (!current) {
     const { data, error } = await client
       .from("prayer_settings")
-      .insert(dbRow as never)
+      .insert(prayerSettingsInsertValues(stored) as never)
       .select()
       .single();
     if (error || !data) throw new Error("Unable to create prayer settings");
@@ -132,7 +147,7 @@ export async function savePrayerSettings(
 
   const { data, error } = await client
     .from("prayer_settings")
-    .update(dbRow as never)
+    .update(prayerSettingsUpdateValues(stored) as never)
     .eq("id", "1")
     .eq("calculation_revision", current.calculationRevision)
     .select()

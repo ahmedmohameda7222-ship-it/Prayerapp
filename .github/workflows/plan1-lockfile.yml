@@ -1,0 +1,33 @@
+name: Plan 1 Lockfile Generation
+
+on:
+  push:
+    branches: [feat/masjid-display]
+    paths:
+      - package.json
+      - .github/workflows/plan1-lockfile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Generate exact Adhan lock entry
+        run: npm install --package-lock-only --save-exact adhan@4.4.6
+      - name: Commit generated lockfile when changed
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: lock prayer calculation dependency"
+          git push

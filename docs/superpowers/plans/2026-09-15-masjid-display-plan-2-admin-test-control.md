@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Expose Prayer Engine controls in Prayerapp Admin, add display/content settings, convert root Prayerapp to shared delay-derived Iqama, add a real-TV synthetic Test Mode control plane, then remove legacy absolute-Iqama storage behind an explicit cutover gate.
+**Goal:** Expose Prayer Engine controls in Prayerapp Admin, add display/content settings, convert root Prayerapp to shared delay-derived Iqama, add a real-TV synthetic Test Mode that works before real prayer/content data exists, then remove legacy absolute-Iqama storage behind an explicit cutover gate.
 
-**Architecture:** Admin remains in the root Prayerapp and follows existing authenticated server-action/data-layer patterns. `masjid_display_settings` owns display-only behavior; existing content tables gain only display scheduling/URL fields; a dedicated singleton `masjid_display_test_state` stores temporary synthetic scenarios. Legacy absolute Iqama fields are removed only after every root consumer has been converted and target-environment shared delays are verified.
+**Architecture:** Admin remains in root Prayerapp using existing authenticated server-action/data-layer patterns. `masjid_display_settings` owns only TV behavior. Existing content tables gain only display scheduling/URL fields. A dedicated singleton `masjid_display_test_state` stores temporary synthetic scenarios. The public Test Control projection is independent of the production Display Feed so the real TV can be demonstrated before prayer/content setup; it needs only a configured canonical Prayerapp public URL for the persistent QR. Legacy absolute Iqama is removed only after all root consumers are converted and target shared delays are verified.
 
 **Tech Stack:** Next.js 16.3.3 Admin pages/server actions, TypeScript 5, Supabase/PostgreSQL, Vitest/Testing Library, Plan 1 prayer-engine modules.
 
@@ -13,44 +13,39 @@
 ## Global Constraints
 
 - No `show_on_masjid_display` opt-in: published display-relevant content is automatically eligible when contextually valid.
-- Published Announcements, Events, and Donation Campaigns must have complete Arabic + German display fields.
-- Never auto-translate or copy one language into another.
-- `masjid_display_settings` contains only five prayer-in-progress durations and Azkar playlist IDs; no calculation settings or Iqama delays.
-- Prayer-in-progress durations are 2–120 minutes inclusive.
+- Published Announcements, Events, and Donation Campaigns require complete Arabic + German display fields; never auto-translate/copy languages.
+- `masjid_display_settings` contains only five prayer-in-progress durations (2–120 minutes inclusive) and Azkar playlist IDs.
 - All five Iqama delays stay in `prayer_settings`; `0` is valid.
 - Final root Prayerapp must not read/write absolute daily Iqama times.
-- Maghrib Program keeps `enabled`, lesson title, lesson duration, and manual `combinedIshaTime`; it loses absolute Maghrib Iqama.
+- Maghrib Program keeps enabled/title/duration/manual `combinedIshaTime`; it loses absolute Maghrib Iqama.
 - First Friday Jumuah remains Friday Dhuhr; additional Jumuah stays manual per date.
-- Test Mode controls the real TV, uses synthetic data only, default TTL is 15 minutes, and never inserts fake rows into production prayer/content tables.
-- Test Control public endpoint is GET-only/read-only and `no-store`.
-- Persistent Prayerapp QR source is canonical `mosque_settings.public_app_url`; do not store QR images.
+- Test Mode controls the real TV, uses synthetic data only, default TTL exactly 15 minutes, and never inserts fake prayer/content rows.
+- Test Mode must remain usable when no valid production Feed/LKG exists; starting it requires a valid `mosque_settings.public_app_url` so the persistent real Prayerapp QR can still render.
+- Test Control public endpoint is GET-only/read-only, `no-store`, and must not depend on valid prayer settings/display feed construction.
+- Persistent Prayerapp QR source is `mosque_settings.public_app_url`; do not store QR images.
 
 ---
 
-### Task 1: Add display settings, content scheduling, app URL, and test-state schema
+### Task 1: Add display/content/test-control schema
 
 **Files:**
 - Create: `supabase/migrations/20260915222000_masjid_display_admin_schema.sql`
 - Create: `lib/__tests__/masjid-display-admin-schema.test.ts`
 
 **Interfaces:**
-- Consumes: existing `announcements`, `donation_campaigns`, `mosque_settings` tables.
-- Produces: `masjid_display_settings`, `masjid_display_test_state`, Announcement scheduling/style fields, nullable Campaign end/URL, mosque `public_app_url`.
+- Consumes: existing `announcements`, `donation_campaigns`, `mosque_settings`.
+- Produces: `masjid_display_settings`, `masjid_display_test_state`, Announcement scheduling/style fields, nullable Campaign end/URL, `public_app_url`.
 
-- [ ] **Step 1: Write the failing schema contract test**
+- [ ] **Step 1: Write the failing schema test**
 
 ```ts
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const sql = () => readFileSync(
-  "supabase/migrations/20260915222000_masjid_display_admin_schema.sql",
-  "utf8",
-).toLowerCase();
+const sql = () => readFileSync("supabase/migrations/20260915222000_masjid_display_admin_schema.sql", "utf8").toLowerCase();
 
 describe("masjid display admin schema", () => {
-  it("adds the two singleton control tables and content fields", () => {
-    const migration = sql();
+  it("adds display settings, test state, scheduling, donation URL, and app URL", () => {
     for (const token of [
       "create table public.masjid_display_settings",
       "fajr_prayer_duration_minutes",
@@ -61,22 +56,21 @@ describe("masjid display admin schema", () => {
       "display_until",
       "donation_url",
       "public_app_url",
-    ]) expect(migration).toContain(token);
+    ]) expect(sql()).toContain(token);
   });
-
   it("makes campaign end_date nullable", () => {
     expect(sql()).toMatch(/alter column end_date drop not null/);
   });
 });
 ```
 
-- [ ] **Step 2: Run the test and verify failure**
+- [ ] **Step 2: Run and verify failure**
 
 Run: `npx vitest run lib/__tests__/masjid-display-admin-schema.test.ts`
 
-Expected: FAIL because the migration is missing.
+Expected: FAIL.
 
-- [ ] **Step 3: Create the migration with exact constraints**
+- [ ] **Step 3: Create the migration**
 
 ```sql
 create table public.masjid_display_settings (
@@ -112,24 +106,25 @@ alter table public.announcements
 alter table public.donation_campaigns alter column end_date drop not null;
 alter table public.donation_campaigns add column donation_url text;
 alter table public.mosque_settings add column public_app_url text;
+
+alter table public.masjid_display_settings enable row level security;
+alter table public.masjid_display_test_state enable row level security;
 ```
 
-Enable RLS on both new singleton tables and do not grant anonymous/authenticated writes.
+Do not create anonymous/authenticated write policies for either new singleton table.
 
-- [ ] **Step 4: Verify schema locally**
+- [ ] **Step 4: Verify and commit**
 
 Run: `npx vitest run lib/__tests__/masjid-display-admin-schema.test.ts && supabase db reset`
 
-Expected: PASS and local database reset exits 0.
-
-- [ ] **Step 5: Commit**
+Expected: PASS.
 
 ```bash
 git add supabase/migrations/20260915222000_masjid_display_admin_schema.sql lib/__tests__/masjid-display-admin-schema.test.ts
 git commit -m "feat: add masjid display admin schema"
 ```
 
-### Task 2: Extend root domain/data contracts and enforce bilingual publication
+### Task 2: Extend data contracts and enforce AR+DE publication
 
 **Files:**
 - Modify: `lib/types.ts`
@@ -146,46 +141,29 @@ git commit -m "feat: add masjid display admin schema"
 - Modify: `app/admin/donations/actions.ts`
 
 **Interfaces:**
-- Consumes: existing localized content types/data mappers.
-- Produces:
-  - `AnnouncementDisplayStyle = "normal" | "special"`
-  - `MasjidDisplaySettings`
-  - discriminated `MasjidDisplayTestScenario`/`MasjidDisplayTestState`
-  - `validateDisplayPublishableContent(kind, item): string[]`.
+- Produces `AnnouncementDisplayStyle`, `MasjidDisplaySettings`, discriminated Test Scenario/State types, and `validateDisplayPublishableContent(kind,item): string[]`.
 
-- [ ] **Step 1: Write failing publication-validation tests**
+- [ ] **Step 1: Write failing bilingual tests**
 
 ```ts
-import { describe, expect, it } from "vitest";
-import { validateDisplayPublishableContent } from "./content-validation";
+it("rejects a published announcement missing German message", () => {
+  expect(validateDisplayPublishableContent("announcement", {
+    published: true,
+    titleAr: "تنبيه",
+    messageAr: "نص",
+    titleDe: "Hinweis",
+    messageDe: "",
+  })).toContain("German message is required for published display content");
+});
 
-describe("display bilingual publication", () => {
-  it("rejects a published announcement missing German message", () => {
-    const errors = validateDisplayPublishableContent("announcement", {
-      published: true,
-      titleAr: "تنبيه",
-      messageAr: "نص",
-      titleDe: "Hinweis",
-      messageDe: "",
-    });
-    expect(errors).toContain("German message is required for published display content");
-  });
-
-  it("allows incomplete unpublished drafts", () => {
-    expect(validateDisplayPublishableContent("announcement", { published: false })).toEqual([]);
-  });
+it("allows incomplete unpublished drafts", () => {
+  expect(validateDisplayPublishableContent("announcement", { published: false })).toEqual([]);
 });
 ```
 
-Add corresponding Event cases for AR+DE title/description/location and Campaign cases for AR+DE title/description.
+Add Event AR+DE title/description/location and Campaign AR+DE title/description cases.
 
-- [ ] **Step 2: Run tests and verify failure**
-
-Run: `npx vitest run lib/masjid-display/content-validation.test.ts lib/__tests__/masjid-display-data-contract.test.ts`
-
-Expected: FAIL because types/mappers/validator are missing.
-
-- [ ] **Step 3: Add the exact type surface**
+- [ ] **Step 2: Define exact types**
 
 ```ts
 export type AnnouncementDisplayStyle = "normal" | "special";
@@ -220,30 +198,26 @@ export type MasjidDisplayTestScenario =
   | "long_bilingual";
 ```
 
-Extend existing interfaces with `displayStyle`, `displayFrom`, `displayUntil`, optional Campaign `endDate`/`donationUrl`, and MosqueSettings `publicAppUrl`.
+Extend Announcement with style/from/until, Campaign with optional endDate/donationUrl, MosqueSettings with `publicAppUrl`.
 
-- [ ] **Step 4: Implement centralized mappers and validator**
+- [ ] **Step 3: Implement mappers and validator**
 
-Use existing `localizedFieldsFromDb/localizedFieldsToDb` conventions. `validateDisplayPublishableContent` returns exact human-readable field errors only when the item is being published/active for display. It must not mutate content.
+Reuse existing `localizedFieldsFromDb/localizedFieldsToDb`; drafts may be incomplete. Published Announcement requires AR+DE title/message, Event requires AR+DE title/description/location, active display Campaign requires AR+DE title/description. Validator returns field errors and never mutates/translates content.
 
-- [ ] **Step 5: Wire the validator into existing Admin actions**
-
-Before create/update results in a published Announcement/Event or active published Campaign, run the validator and return/rethrow the repository's normal Admin validation result format. Do not duplicate field rules inside page components.
-
-- [ ] **Step 6: Run targeted tests**
+- [ ] **Step 4: Wire existing Admin actions and run tests**
 
 Run: `npx vitest run lib/masjid-display/content-validation.test.ts lib/__tests__/masjid-display-data-contract.test.ts`
 
-Expected: PASS.
+Expected: PASS after action/data integration.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add lib/types.ts lib/data/announcements.ts lib/data/donations.ts lib/data/mosque-settings.ts lib/data/masjid-display-settings.ts lib/data/masjid-display-test-state.ts lib/masjid-display/content-validation.ts lib/masjid-display/content-validation.test.ts lib/__tests__/masjid-display-data-contract.test.ts app/admin/announcements/actions.ts app/admin/events/actions.ts app/admin/donations/actions.ts
 git commit -m "feat: extend masjid display data contracts"
 ```
 
-### Task 3: Build Prayer Engine Admin with Preview-before-commit workflows
+### Task 3: Build Prayer Engine Admin
 
 **Files:**
 - Create: `app/admin/prayer-engine/page.tsx`
@@ -254,23 +228,17 @@ git commit -m "feat: extend masjid display data contracts"
 - Reuse: `lib/auth/admin-actions.ts`
 
 **Interfaces:**
-- Consumes: Plan 1 settings/calibration/preview/commit functions.
-- Produces Admin actions:
-  - `saveSettingsAction(input)`
-  - `calibrateAction(startDate, endDate)`
-  - `previewExtensionAction()` / `commitExtensionAction(previewBasis)`
-  - `previewRecalculationAction(startDate, endDate)` / `commitRecalculationAction(previewBasis)`.
+- Produces authenticated settings save, calibration, extension Preview/Commit, and recalculation Preview/Commit actions.
 
-- [ ] **Step 1: Write the failing page test**
+- [ ] **Step 1: Write failing UI tests**
 
 ```tsx
-it("shows explicit settings, sync warning, and guarded schedule actions", async () => {
+it("shows explicit settings and blocks extension while revisions differ", () => {
   render(<PrayerEnginePageForTest settings={outOfSyncSettings} />);
   expect(screen.getByLabelText(/Fajr angle/i)).toBeInTheDocument();
   expect(screen.getByLabelText(/Fajr Iqama delay/i)).toHaveValue(0);
   expect(screen.getByText(/Needs Recalculation/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Extend Schedule \+1 Year/i })).toBeDisabled();
-  expect(screen.getByRole("button", { name: /Preview Recalculation/i })).toBeEnabled();
 });
 ```
 
@@ -278,30 +246,28 @@ it("shows explicit settings, sync warning, and guarded schedule actions", async 
 
 Run: `npx vitest run app/admin/prayer-engine/__tests__/page.test.tsx`
 
-Expected: FAIL because the page does not exist.
+Expected: FAIL.
 
-- [ ] **Step 3: Implement Admin actions as thin authenticated wrappers**
+- [ ] **Step 3: Implement authenticated thin actions**
 
-Each action validates Admin auth using existing patterns, parses form data into Plan 1 domain input, and calls exactly one domain function. Preview actions must not call commit functions. Commit actions require the revision/date basis returned by the preview.
+Preview actions call only Plan 1 preview/calibration functions. Commit actions require the exact revision/date-range basis returned by Preview. Saving calculation settings never calls a schedule commit.
 
-- [ ] **Step 4: Implement the page**
+- [ ] **Step 4: Implement page**
 
-Render explicit coordinates/timezone/Fajr/Isha/Asr/high-latitude fields, six calculation offsets, five Iqama delays, revision status, Calibration range/action, Extend Preview/confirmation, and Recalculate Preview/Diff/confirmation. Preview output must show exact range, row count, and representative old/new values.
+Render coordinates/timezone, Fajr/Isha mode fields, Asr/high-latitude, six offsets, five delays, revision status, Calibration range, Extend Preview/confirmation, Recalculate Preview/Diff/confirmation. Preview shows exact range, row count, changed count and representative rows.
 
-- [ ] **Step 5: Add Admin home navigation and run tests**
+- [ ] **Step 5: Add Admin home card, run, commit**
 
-Run: `npx vitest run app/admin/prayer-engine/__tests__/page.test.tsx && npm test -- --run app/admin/prayer-engine`
+Run: `npx vitest run app/admin/prayer-engine/__tests__/page.test.tsx && npm test`
 
-Expected: PASS; if the second filter form is unsupported by the current script, run the first command plus `npm test`.
-
-- [ ] **Step 6: Commit**
+Expected: PASS.
 
 ```bash
 git add app/admin/prayer-engine app/admin/page.tsx
 git commit -m "feat: add prayer engine admin workflow"
 ```
 
-### Task 4: Convert Prayer Times and public root consumers to delay-derived Iqama
+### Task 4: Cut root Prayer Times/Iqama consumers to shared delays
 
 **Files:**
 - Modify: `app/admin/prayer-times/page.tsx`
@@ -311,14 +277,14 @@ git commit -m "feat: add prayer engine admin workflow"
 - Modify: `lib/types.ts`
 - Modify: `lib/data/prayer-times.ts`
 - Modify: `lib/prayer-utils.ts`
-- Modify: exact root consumers returned by grep.
+- Modify: exact consumers returned by grep.
 - Stop linking to: `app/admin/prayer-times/import/page.tsx`
 
 **Interfaces:**
-- Consumes: `PrayerTime` six stored times + shared `PrayerIqamaDelays`.
-- Produces: all root public/admin Iqama presentation through `deriveIqamaInstant`; no active `getIqama`/absolute-Iqama consumer.
+- Consumes: six stored prayer times + shared `PrayerIqamaDelays`.
+- Produces: root Prayerapp Iqama presentation exclusively through `deriveIqamaInstant`.
 
-- [ ] **Step 1: Inventory legacy consumers before editing**
+- [ ] **Step 1: Inventory legacy references**
 
 Run:
 
@@ -326,46 +292,28 @@ Run:
 git grep -nE 'fajrIqama|dhuhrIqama|asrIqama|maghribIqama|ishaIqama|getIqama\(' -- app components lib
 ```
 
-Expected: non-empty current legacy consumer list. Save this list in the task/PR notes.
+Expected: current legacy list; record it in PR notes.
 
-- [ ] **Step 2: Write failing Admin and public Iqama tests**
+- [ ] **Step 2: Write failing cutover tests**
 
 ```tsx
-it("does not render absolute Iqama inputs", async () => {
+it("does not render absolute Iqama inputs", () => {
   render(<PrayerTimeEditForTest prayer={prayer} />);
   expect(screen.queryByLabelText(/Fajr Iqama time/i)).not.toBeInTheDocument();
-  expect(screen.getByLabelText(/Fajr/i)).toHaveValue(prayer.fajr);
 });
 ```
 
-For a public consumer:
+Add public tests that delay `0` yields prayer time itself and delay `10` yields +10 minutes; Friday Dhuhr does not show normal Dhuhr Iqama.
 
-```ts
-it("uses the shared delay including zero", () => {
-  expect(formatHm(deriveIqamaInstant("2026-09-15", "18:00", 0))).toBe("18:00");
-  expect(formatHm(deriveIqamaInstant("2026-09-15", "18:00", 10))).toBe("18:10");
-});
-```
+- [ ] **Step 3: Remove absolute fields from root domain/new writes**
 
-- [ ] **Step 3: Run targeted tests and verify failure**
+Remove `fajrIqama/dhuhrIqama/asrIqama/maghribIqama/ishaIqama` from final `PrayerTime`; remove `maghribIqamaTime`; stop mapping DB absolute fields in `lib/data/prayer-times.ts`. Preserve six times, published/notes, and Maghrib Program enabled/title/duration/combinedIshaTime.
 
-Run: `npx vitest run app/admin/prayer-times/__tests__/page.test.tsx lib/__tests__/prayer-utils.test.ts`
+- [ ] **Step 4: Convert consumers through one shared-settings boundary**
 
-Expected: at least the new UI assertion fails before cutover.
+Fetch shared delays once in the owning page/data view-model boundary and pass them downward; child components do not query settings individually. Remove legacy `getIqama` after final caller disappears. Remove CSV import navigation as the primary schedule workflow without deleting unrelated utilities still referenced elsewhere.
 
-- [ ] **Step 4: Remove absolute-Iqama domain mapping**
-
-Remove `fajrIqama/dhuhrIqama/asrIqama/maghribIqama/ishaIqama` from final `PrayerTime`, remove `maghribIqamaTime` from `MaghribProgram`, and remove corresponding map reads/writes from `lib/data/prayer-times.ts`. Preserve Maghrib `enabled`, lesson title/duration, `combinedIshaTime`, notes, published status, and all six prayer times.
-
-- [ ] **Step 5: Convert all root consumers through one shared-settings boundary**
-
-Fetch `prayer_settings` once in the page/domain data path and pass the five delay values to view-model/component logic. Do not query settings independently from every child component. Friday primary Jumuah suppresses normal Dhuhr Iqama.
-
-- [ ] **Step 6: Remove old helper and CSV primary navigation**
-
-After grep shows no caller, delete legacy `getIqama(prayer,name)` semantics. Remove links/buttons that make CSV import the primary Prayer Times workflow; leave unrelated CSV utilities/files until a separate grep confirms no other feature uses them.
-
-- [ ] **Step 7: Run cutover tests and grep**
+- [ ] **Step 5: Verify and commit**
 
 Run:
 
@@ -374,16 +322,14 @@ npx vitest run app/admin/prayer-times/__tests__/page.test.tsx lib/__tests__/pray
 git grep -nE 'fajrIqama|dhuhrIqama|asrIqama|maghribIqama|ishaIqama|getIqama\(' -- app components lib || true
 ```
 
-Expected: tests PASS and grep returns no active application matches.
-
-- [ ] **Step 8: Commit**
+Expected: tests PASS; no active application match.
 
 ```bash
 git add app/admin/prayer-times lib/types.ts lib/data/prayer-times.ts lib/prayer-utils.ts app components lib
 git commit -m "refactor: derive prayerapp iqama from shared delays"
 ```
 
-### Task 5: Add Display Settings and extend existing content/settings Admin UI
+### Task 5: Add Display/content/settings Admin controls
 
 **Files:**
 - Create: `app/admin/masjid-display/page.tsx`
@@ -399,43 +345,29 @@ git commit -m "refactor: derive prayerapp iqama from shared delays"
 - Create: `lib/__tests__/mosque-public-app-url.test.ts`
 
 **Interfaces:**
-- Consumes: Task 2 data mappers/validators and canonical hardcoded Azkar IDs.
-- Produces: Admin-editable display durations/playlist, Announcement style/window, Campaign URL/optional end date, `public_app_url`.
+- Produces Admin-editable display durations/playlist, Announcement style/window, Campaign URL/optional end, `public_app_url`.
 
-- [ ] **Step 1: Write failing UI tests**
+- [ ] **Step 1: Write failing UI/action tests**
 
 ```tsx
 it("edits only display-specific settings", () => {
   render(<MasjidDisplaySettingsForTest settings={displaySettings} azkar={azkarItems} />);
   expect(screen.getByLabelText(/Fajr prayer duration/i)).toHaveValue(10);
-  expect(screen.getByText(/morning-praise-allah-alone/i)).toBeInTheDocument();
   expect(screen.queryByLabelText(/Fajr Iqama delay/i)).not.toBeInTheDocument();
-});
-
-it("allows campaign without end date and optional URL", () => {
-  render(<DonationAdminForTest />);
-  expect(screen.getByLabelText(/End date/i)).not.toBeRequired();
-  expect(screen.getByLabelText(/Donation URL/i)).toBeInTheDocument();
 });
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+Also test: Announcement style + optional from/until and inverted-window rejection; Campaign blank end + optional URL; Settings public app URL.
 
-Run: `npx vitest run app/admin/masjid-display/__tests__/page.test.tsx lib/__tests__/admin-masjid-display-content.test.ts lib/__tests__/mosque-public-app-url.test.ts`
+- [ ] **Step 2: Implement Display Settings page/actions**
 
-Expected: FAIL.
+Validate each duration integer 2–120. Intersect saved Azkar playlist IDs with canonical `getAzkarItems(true)` IDs and reject unknown IDs. No calculation/Iqama/Jumuah editor belongs on this page.
 
-- [ ] **Step 3: Implement display settings actions/page**
+- [ ] **Step 3: Extend existing content pages minimally**
 
-Validate durations as integers 2–120. Validate every `azkarPlaylistId` against canonical `getAzkarItems(true)` IDs; reject unknown IDs. The page contains no Iqama/calculation/Jumuah editor.
+Announcement gets Normal/Special + optional schedule; Event keeps required AR+DE fields; Campaign end date becomes optional and donation URL accepts only HTTP(S); never add QR image upload.
 
-- [ ] **Step 4: Extend existing content pages**
-
-Announcement page adds Normal/Special style and optional start/end datetime inputs. Event page preserves/labels required AR+DE fields. Donation Campaign UI permits blank end date and optional HTTP(S) URL; never adds a QR-image upload.
-
-- [ ] **Step 5: Add `public_app_url` to existing Settings page**
-
-Validation rule:
+- [ ] **Step 4: Add canonical app URL with exact validation**
 
 ```ts
 export function validatePublicAppUrl(value: string, env = process.env.NODE_ENV) {
@@ -448,20 +380,18 @@ export function validatePublicAppUrl(value: string, env = process.env.NODE_ENV) 
 }
 ```
 
-- [ ] **Step 6: Add Admin cards and run tests**
+- [ ] **Step 5: Run and commit**
 
 Run: `npx vitest run app/admin/masjid-display/__tests__/page.test.tsx lib/__tests__/admin-masjid-display-content.test.ts lib/__tests__/mosque-public-app-url.test.ts`
 
 Expected: PASS.
-
-- [ ] **Step 7: Commit**
 
 ```bash
 git add app/admin/masjid-display app/admin/announcements/page.tsx app/admin/events/page.tsx app/admin/donations/page.tsx app/admin/settings app/admin/page.tsx lib/__tests__/admin-masjid-display-content.test.ts lib/__tests__/mosque-public-app-url.test.ts
 git commit -m "feat: add masjid display admin controls"
 ```
 
-### Task 6: Implement synthetic fixtures and the real-TV Test Mode control plane
+### Task 6: Implement synthetic fixtures and real-TV Test Control independent of production data
 
 **Files:**
 - Create: `lib/masjid-display/test-fixtures.ts`
@@ -472,80 +402,94 @@ git commit -m "feat: add masjid display admin controls"
 - Create: `app/api/public/masjid-display-test-control/route.ts`
 - Create: `app/api/public/masjid-display-test-control/route.test.ts`
 - Modify: `app/admin/page.tsx`
+- Reuse: `lib/data/mosque-settings.ts`
 
 **Interfaces:**
-- Consumes: `MasjidDisplayTestScenario`, `masjid_display_test_state` data layer.
 - Produces:
   - `buildTestFixture(scenario, startedAt): MasjidDisplaySyntheticPayload`
   - Admin `startTestScenario`, `stopTestScenario`, `extendTestScenario`
-  - GET `/api/public/masjid-display-test-control` returning `{ active: false } | { active: true, scenario, startedAt, expiresAt, payload }`.
-
-- [ ] **Step 1: Write failing synthetic-fixture tests**
+  - public GET response:
 
 ```ts
-it("builds a ticking ten-minute prayer-approaching fixture", () => {
+type TestControlResponse =
+  | { active: false }
+  | {
+      active: true;
+      scenario: MasjidDisplayTestScenario;
+      startedAt: string;
+      expiresAt: string;
+      publicAppUrl: string;
+      payload: MasjidDisplaySyntheticPayload;
+    };
+```
+
+- [ ] **Step 1: Write failing fixture tests**
+
+```ts
+it("builds a real ticking ten-minute approaching target", () => {
   const startedAt = new Date("2026-09-15T18:00:00Z");
   const fixture = buildTestFixture("prayer_approaching", startedAt);
   expect(fixture.targetAt).toBe("2026-09-15T18:10:00.000Z");
-  expect(JSON.stringify(fixture)).toContain("test-");
-});
-
-it("never uses production row IDs", () => {
-  for (const scenario of TEST_SCENARIOS) {
-    expect(JSON.stringify(buildTestFixture(scenario, new Date(0)))).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/i);
-  }
 });
 ```
 
-- [ ] **Step 2: Implement every approved scenario explicitly**
+Cover every approved scenario: Normal, Prayer Approaching 10m, Prayer Time Now, Waiting Iqama 5m, Iqama Now, Prayer In Progress, first Jumuah 60m, next Jumuah 10m, Jumuah Now, Urgent AR/DE, Special, Event, Campaign+QR, Azkar, Offline/LKG, stale horizon, missing settings, long bilingual. Synthetic IDs use a `test-` prefix and never production UUIDs.
 
-The fixture switch must cover: Normal, Prayer Approaching 10m, Prayer Time Now, Waiting for Iqama 5m, Iqama Now, Prayer In Progress, first Jumuah 60m, next Jumuah 10m, Jumuah Now, Urgent AR/DE, Special Display, Event, Campaign+QR, Azkar, Offline/LKG, stale horizon, missing settings, long bilingual. Unknown scenario throws.
-
-- [ ] **Step 3: Write failing Admin action/page tests**
+- [ ] **Step 2: Write failing Admin-action tests**
 
 ```ts
-it("starts a scenario for exactly fifteen minutes", async () => {
-  const now = new Date("2026-09-15T18:00:00Z");
-  const result = await startTestScenarioForTest("iqama_now", now);
+it("starts for exactly fifteen minutes and requires the real public app URL", async () => {
+  mockMosqueSettings({ publicAppUrl: "https://prayer.example.test" });
+  const result = await startTestScenarioForTest("iqama_now", new Date("2026-09-15T18:00:00Z"));
   expect(result.expiresAt).toBe("2026-09-15T18:15:00.000Z");
-  expect(result.storageTarget).toBe("masjid_display_test_state");
+});
+
+it("rejects start when public_app_url is missing", async () => {
+  mockMosqueSettings({ publicAppUrl: "" });
+  await expect(startTestScenarioForTest("normal", new Date())).rejects.toThrow(/public app url/i);
 });
 ```
 
-Also assert Stop disables the singleton and Extend adds exactly 15 minutes without modifying payload/content tables.
+Also assert Start/Extend/Stop writes only `masjid_display_test_state`; default TTL 15m; Extend adds exactly 15m to current expiry.
 
-- [ ] **Step 4: Implement authenticated remote-control page/actions**
+- [ ] **Step 3: Implement remote-control Admin page/actions**
 
-Use existing Admin auth. Starting writes only the singleton test-state row, with fixture payload, `started_at`, and `expires_at = started_at + 15m`. The page has scenario buttons, active state, Stop, Extend +15. It does not render an embedded TV preview.
+Use existing Admin auth. Build the selected synthetic payload at `started_at`; store only the singleton test state. The page is a remote control, not an embedded preview. Add Admin home card.
 
-- [ ] **Step 5: Write failing public route tests and implement the route**
+- [ ] **Step 4: Write failing public endpoint independence test**
 
 ```ts
-it("returns inactive for expired test state", async () => {
-  mockTestState({ enabled: true, expiresAt: "2026-09-15T18:00:00Z" });
-  setNow("2026-09-15T18:00:01Z");
+it("returns active synthetic test even when prayer settings are absent", async () => {
+  mockPrayerSettings(null);
+  mockMosqueSettings({ publicAppUrl: "https://prayer.example.test" });
+  mockActiveTestState();
   const response = await GET(new Request("https://app.test/api/public/masjid-display-test-control"));
-  expect(await response.json()).toEqual({ active: false });
-  expect(response.headers.get("cache-control")).toContain("no-store");
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({
+    active: true,
+    publicAppUrl: "https://prayer.example.test",
+  });
 });
 ```
 
-GET returns only allowlisted synthetic fields. No POST/PUT/PATCH/DELETE handler is exported.
+Add expired → `{active:false}`, no private/Admin fields, and `Cache-Control: no-store` tests.
 
-- [ ] **Step 6: Run all Test Mode tests**
+- [ ] **Step 5: Implement GET-only Test Control route**
+
+Read only the singleton test state and mosque public URL; do not call `buildMasjidDisplayFeed`, `getPrayerSettings`, or require display settings. If enabled but expired, return inactive. If active, validate `publicAppUrl` and return the allowlisted response above. Export no mutation handler.
+
+- [ ] **Step 6: Run and commit**
 
 Run: `npx vitest run lib/masjid-display/test-fixtures.test.ts app/admin/masjid-display-test/__tests__/page.test.tsx app/api/public/masjid-display-test-control/route.test.ts`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
-
 ```bash
 git add lib/masjid-display/test-fixtures.ts lib/masjid-display/test-fixtures.test.ts app/admin/masjid-display-test app/api/public/masjid-display-test-control app/admin/page.tsx
-git commit -m "feat: add real tv masjid display test control"
+git commit -m "feat: add independent real tv test control"
 ```
 
-### Task 7: Execute the absolute-Iqama removal gate and migration
+### Task 7: Gate and remove legacy absolute-Iqama columns
 
 **Files:**
 - Create: `docs/masjid-display/iqama-cutover-checklist.md`
@@ -553,12 +497,10 @@ git commit -m "feat: add real tv masjid display test control"
 - Create: `lib/__tests__/absolute-iqama-removal-contract.test.ts`
 
 **Interfaces:**
-- Consumes: fully converted root Prayerapp from Task 4 and configured target `prayer_settings` delays.
-- Produces: final schema with no `fajr_iqama`, `dhuhr_iqama`, `asr_iqama`, `maghrib_iqama`, `isha_iqama`.
+- Consumes: completed root code cutover and verified target `prayer_settings` delays.
+- Produces: final schema without five absolute-Iqama columns.
 
-- [ ] **Step 1: Verify code cutover before creating the destructive migration**
-
-Run:
+- [ ] **Step 1: Verify code cutover**
 
 ```bash
 git grep -nE 'fajr_iqama|dhuhr_iqama|asr_iqama|maghrib_iqama|isha_iqama|fajrIqama|dhuhrIqama|asrIqama|maghribIqama|ishaIqama' -- app components lib || true
@@ -566,16 +508,16 @@ npm test
 npm run build
 ```
 
-Expected: no active code matches; tests/build PASS.
+Expected: no active application matches; tests/build PASS.
 
-- [ ] **Step 2: Verify target-environment delays and record the gate**
+- [ ] **Step 2: Verify target delays and record gate**
 
-The checklist must record a query/result confirming one `prayer_settings` row with all five delay columns non-null; zero is accepted. If the target environment cannot be queried/verified, mark the deployment step `BLOCKED` and do not apply the destructive migration there.
+Record an actual target-environment query/result showing one `prayer_settings` row with all five delay columns non-null. Zero is valid. If target access/evidence is unavailable, mark destructive deployment `BLOCKED` and do not apply it there.
 
-- [ ] **Step 3: Write failing migration test**
+- [ ] **Step 3: Write failing migration contract and implement drop**
 
 ```ts
-it("drops all five absolute Iqama columns but preserves Maghrib Program", () => {
+it("drops five absolute Iqama columns only", () => {
   const sql = readFileSync("supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql", "utf8").toLowerCase();
   for (const name of ["fajr_iqama","dhuhr_iqama","asr_iqama","maghrib_iqama","isha_iqama"]) {
     expect(sql).toContain(`drop column if exists ${name}`);
@@ -583,8 +525,6 @@ it("drops all five absolute Iqama columns but preserves Maghrib Program", () => 
   expect(sql).not.toContain("drop column if exists maghrib_combined_isha_time");
 });
 ```
-
-- [ ] **Step 4: Create and verify the drop migration**
 
 ```sql
 alter table public.prayer_times
@@ -595,11 +535,11 @@ alter table public.prayer_times
   drop column if exists isha_iqama;
 ```
 
+- [ ] **Step 4: Verify and commit**
+
 Run: `npx vitest run lib/__tests__/absolute-iqama-removal-contract.test.ts && supabase db reset`
 
-Expected: PASS. Fresh environments without configured singleton settings remain “setup incomplete”; they do not restore legacy Iqama.
-
-- [ ] **Step 5: Commit**
+Expected: PASS; fresh environments without singleton settings remain setup-incomplete rather than restoring legacy Iqama.
 
 ```bash
 git add docs/masjid-display/iqama-cutover-checklist.md supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql lib/__tests__/absolute-iqama-removal-contract.test.ts
@@ -612,12 +552,9 @@ git commit -m "refactor: remove absolute iqama storage"
 - Review: all Plan 2 changes.
 
 **Interfaces:**
-- Consumes: completed Admin, content, Iqama cutover, Test Control.
-- Produces: root Prayerapp ready to serve Feed v1 in Plan 3.
+- Produces: root Prayerapp ready for Feed v1 and independent TV test control.
 
-- [ ] **Step 1: Run focused regression suites**
-
-Run:
+- [ ] **Step 1: Run focused regressions**
 
 ```bash
 npx vitest run app/admin/prayer-engine app/admin/prayer-times app/admin/masjid-display app/admin/masjid-display-test app/api/public/masjid-display-test-control lib/masjid-display lib/admin-jumuah-validation.test.ts lib/__tests__/admin-jumuah-ui-cleanup.test.ts
@@ -637,21 +574,19 @@ supabase db reset
 
 Expected: all exit 0.
 
-- [ ] **Step 3: Prove no production-data pollution from Test Mode**
+- [ ] **Step 3: Prove Test Mode causes no production data mutation**
 
-Against local Supabase, capture counts/checksums for `prayer_times`, `announcements`, `events`, `donation_campaigns`; start/extend/stop one synthetic test; compare again. Expected: only `masjid_display_test_state` changed.
+Against local Supabase, record counts/checksums of `prayer_times`, `announcements`, `events`, and `donation_campaigns`; Start→Extend→Stop one synthetic test; compare again. Expected: only `masjid_display_test_state` changed.
 
-- [ ] **Step 4: Final legacy grep**
+- [ ] **Step 4: Prove Test Control works before production prayer data**
 
-Run:
+In a local fixture/database state with no `prayer_settings` row and no valid Display Feed, keep a valid `public_app_url`, start a synthetic scenario, call `/api/public/masjid-display-test-control`. Expected: active 200 response with synthetic payload and real `publicAppUrl`.
 
-```bash
-git grep -nE 'fajr_iqama|dhuhr_iqama|asr_iqama|maghrib_iqama|isha_iqama|fajrIqama|dhuhrIqama|asrIqama|maghribIqama|ishaIqama' -- app components lib || true
-```
+- [ ] **Step 5: Final legacy grep**
 
-Expected: no active application/domain matches.
+Run the Task 7 grep again. Expected: no active application/domain matches.
 
-- [ ] **Step 5: Commit stabilization only if verification required a fix**
+- [ ] **Step 6: Commit stabilization only if required**
 
 ```bash
 git add -A
@@ -662,11 +597,11 @@ Skip if no fix was needed.
 
 ## Exit Criteria
 
-- Root Admin exposes prayer-engine generation/calibration with explicit preview/confirmation.
-- Root Prayerapp uses only shared delay-derived Iqama and final schema has no absolute-Iqama source.
-- Display settings, AR+DE content rules, scheduling fields, donation URL, and public Prayerapp URL are configured through existing Admin surfaces.
-- Synthetic Test Mode is Admin-write/public-read-only, 15-minute TTL, and does not pollute production data.
+- Admin safely configures/calibrates/generates/recalculates prayer schedules.
+- Root Prayerapp uses only shared delay-derived Iqama; final schema has no absolute-Iqama source.
+- Display settings, AR+DE content rules, scheduling fields, donation URL, and public Prayerapp URL are administered through existing root surfaces.
+- Synthetic real-TV Test Mode is Admin-write/public-read-only, exact 15-minute TTL, works without production prayer/feed data, always carries the real configured Prayerapp URL, and never pollutes production tables.
 - First Jumuah remains Friday Dhuhr and additional Jumuah remains manual.
-- Root tests, typecheck, build, and local DB reset are green.
+- Root tests/typecheck/build/DB reset are green.
 
 **Next plan:** `docs/superpowers/plans/2026-09-15-masjid-display-plan-3-display-feed.md`

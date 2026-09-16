@@ -6,7 +6,7 @@ function addMinutes(iso: string, minutes: number) {
   return new Date(value.getTime() + minutes * 60 * 1000).toISOString();
 }
 
-function copy(scenario: MasjidDisplayTestScenario, messageAr: string, messageDe: string) {
+function copy<S extends MasjidDisplayTestScenario>(scenario: S, messageAr: string, messageDe: string) {
   return {
     scenario,
     id: `test-${scenario}`,

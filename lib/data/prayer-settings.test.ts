@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   prayerSettingsInsertValues,
@@ -19,5 +20,25 @@ describe("prayer settings persistence mapping", () => {
     expect(
       prayerSettingsUpdateValues(validSettings),
     ).not.toHaveProperty("applied_calculation_revision");
+  });
+
+  it("versions every settings save independently of calculation revision", () => {
+    const source = readFileSync("lib/data/prayer-settings.ts", "utf8");
+    const schema = readFileSync(
+      "supabase/migrations/20260915220000_masjid_display_prayer_settings.sql",
+      "utf8",
+    ).toLowerCase();
+
+    expect(schema).toContain("row_revision bigint not null default 1");
+    expect(source).toContain('.eq("row_revision", currentRow.rowRevision)');
+    expect(source).toContain("row_revision: currentRow.rowRevision + 1");
+  });
+
+  it("advances row revision when schedule synchronization mutates prayer settings", () => {
+    const persistence = readFileSync(
+      "supabase/migrations/20260915221000_prayer_schedule_atomic_generation.sql",
+      "utf8",
+    ).toLowerCase();
+    expect((persistence.match(/row_revision\s*=\s*row_revision\s*\+\s*1/g) || []).length).toBeGreaterThanOrEqual(2);
   });
 });

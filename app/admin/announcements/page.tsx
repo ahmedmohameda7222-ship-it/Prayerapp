@@ -34,7 +34,14 @@ const emptyForm = {
   type: "General",
   isUrgent: "false",
   published: "true",
+  displayStyle: "normal",
+  displayFrom: "",
+  displayUntil: "",
 };
+
+function dateTimeInputValue(value?: string) {
+  return value ? value.slice(0, 16) : "";
+}
 
 export default function AdminAnnouncementsPage() {
   const { session } = useAdminAuth();
@@ -70,6 +77,9 @@ export default function AdminAnnouncementsPage() {
       type: item.type,
       isUrgent: String(item.isUrgent),
       published: String(item.published),
+      displayStyle: item.displayStyle || "normal",
+      displayFrom: dateTimeInputValue(item.displayFrom),
+      displayUntil: dateTimeInputValue(item.displayUntil),
     });
     setEditingId(item.id);
     setError("");
@@ -173,66 +183,59 @@ export default function AdminAnnouncementsPage() {
               disabled={!hasSupabase || isPending}
             />
 
-            <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
-              {t("admin.type")}
-              <select
-                value={form.type}
-                onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
-                disabled={!hasSupabase || isPending}
-                className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50"
-              >
-                {validTypes.map((type) => (
-                  <option key={type} value={type}>{t(`announcementTypes.${type}`)}</option>
-                ))}
-              </select>
-            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                {t("admin.type")}
+                <select
+                  value={form.type}
+                  onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
+                  disabled={!hasSupabase || isPending}
+                  className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)]"
+                >
+                  {validTypes.map((type) => <option key={type} value={type}>{t(`announcementTypes.${type}`)}</option>)}
+                </select>
+              </label>
+              <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                TV display style
+                <select
+                  value={form.displayStyle}
+                  onChange={(event) => setForm((current) => ({ ...current, displayStyle: event.target.value }))}
+                  disabled={!hasSupabase || isPending}
+                  className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)]"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="special">Special display</option>
+                </select>
+              </label>
+              <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                Display from (optional)
+                <input type="datetime-local" value={form.displayFrom} onChange={(event) => setForm((current) => ({ ...current, displayFrom: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3" />
+              </label>
+              <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
+                Display until (optional)
+                <input type="datetime-local" value={form.displayUntil} onChange={(event) => setForm((current) => ({ ...current, displayUntil: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3" />
+              </label>
+            </div>
 
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3 text-sm font-bold text-[var(--color-emerald)]">
-                <input
-                  type="checkbox"
-                  checked={form.isUrgent === "true"}
-                  onChange={(event) => setForm((current) => ({ ...current, isUrgent: String(event.target.checked) }))}
-                  disabled={!hasSupabase || isPending}
-                  className="h-5 w-5 accent-[var(--color-emerald)]"
-                />
+                <input type="checkbox" checked={form.isUrgent === "true"} onChange={(event) => setForm((current) => ({ ...current, isUrgent: String(event.target.checked) }))} disabled={!hasSupabase || isPending} className="h-5 w-5 accent-[var(--color-emerald)]" />
                 {t("admin.markUrgent")}
               </label>
               <label className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3 text-sm font-bold text-[var(--color-emerald)]">
-                <input
-                  type="checkbox"
-                  checked={form.published === "true"}
-                  onChange={(event) => setForm((current) => ({ ...current, published: String(event.target.checked) }))}
-                  disabled={!hasSupabase || isPending}
-                  className="h-5 w-5 accent-[var(--color-emerald)]"
-                />
+                <input type="checkbox" checked={form.published === "true"} onChange={(event) => setForm((current) => ({ ...current, published: String(event.target.checked) }))} disabled={!hasSupabase || isPending} className="h-5 w-5 accent-[var(--color-emerald)]" />
                 {t("admin.published")}
               </label>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button type="submit" disabled={!hasSupabase || isPending}>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                {editingId ? t("common.update") : t("common.create")}
-              </Button>
-              {editingId ? (
-                <Button type="button" variant="ghost" onClick={resetForm} disabled={isPending}>
-                  {t("common.cancel")}
-                </Button>
-              ) : null}
+              <Button type="submit" disabled={!hasSupabase || isPending}><Plus className="h-4 w-4" aria-hidden="true" />{editingId ? t("common.update") : t("common.create")}</Button>
+              {editingId ? <Button type="button" variant="ghost" onClick={resetForm} disabled={isPending}>{t("common.cancel")}</Button> : null}
             </div>
           </form>
         </Card>
 
-        <AnnouncementsTable
-          items={items}
-          disabled={isPending}
-          locale={locale}
-          onEdit={fillForm}
-          onTogglePublish={handleTogglePublish}
-          onToggleUrgent={handleToggleUrgent}
-          onDelete={handleDelete}
-        />
+        <AnnouncementsTable items={items} disabled={isPending} locale={locale} onEdit={fillForm} onTogglePublish={handleTogglePublish} onToggleUrgent={handleToggleUrgent} onDelete={handleDelete} />
       </div>
     </AdminShell>
   );

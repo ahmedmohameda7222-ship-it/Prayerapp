@@ -38,6 +38,11 @@ function mapToDb(item: Partial<JumuahTime>): Record<string, unknown> {
   return db;
 }
 
+export function invalidateJumuahPublicCache() {
+  invalidateCachePrefix("jumuah_times");
+  clearPersistentCachePrefix("jumuah_times");
+}
+
 export async function getJumuahTimes(includeUnpublished = false): Promise<JumuahTime[]> {
   const client = createClient();
   if (!client) return [];
@@ -76,8 +81,7 @@ export async function createJumuahTime(item: Omit<JumuahTime, "id">): Promise<Ju
   if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("jumuah_times").insert(mapToDb(item) as never).select().single();
   if (error || !data) throw new Error("Failed to create Jumu'ah time");
-  invalidateCachePrefix("jumuah_times");
-  clearPersistentCachePrefix("jumuah_times");
+  invalidateJumuahPublicCache();
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -86,8 +90,7 @@ export async function updateJumuahTime(id: string, item: Partial<JumuahTime>): P
   if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("jumuah_times").update(mapToDb(item) as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update Jumu'ah time");
-  invalidateCachePrefix("jumuah_times");
-  clearPersistentCachePrefix("jumuah_times");
+  invalidateJumuahPublicCache();
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -96,6 +99,5 @@ export async function deleteJumuahTime(id: string): Promise<void> {
   if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("jumuah_times").delete().eq("id", id);
   if (error) throw new Error("Failed to delete Jumu'ah time");
-  invalidateCachePrefix("jumuah_times");
-  clearPersistentCachePrefix("jumuah_times");
+  invalidateJumuahPublicCache();
 }

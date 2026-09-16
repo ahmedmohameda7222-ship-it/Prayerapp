@@ -134,8 +134,24 @@ function diffRowsEqual(left: PrayerScheduleDiff, right: PrayerScheduleDiff): boo
     left.startDate === right.startDate &&
     left.endDate === right.endDate &&
     left.settingsRevision === right.settingsRevision &&
-    JSON.stringify(left.rows.map((row) => row.next)) ===
-      JSON.stringify(right.rows.map((row) => row.next))
+    JSON.stringify(left.rows) === JSON.stringify(right.rows)
+  );
+}
+
+function expectedRecalculationRows(preview: PrayerScheduleDiff) {
+  return preview.rows.map((row) =>
+    row.previous
+      ? {
+          date: row.date,
+          exists: true,
+          fajr: row.previous.fajr,
+          sunrise: row.previous.sunrise,
+          dhuhr: row.previous.dhuhr,
+          asr: row.previous.asr,
+          maghrib: row.previous.maghrib,
+          isha: row.previous.isha,
+        }
+      : { date: row.date, exists: false },
   );
 }
 
@@ -308,6 +324,7 @@ export async function commitFutureRecalculation(
     "commit_prayer_schedule_recalculation",
     {
       p_rows: preview.rows.map((row) => row.next),
+      p_expected_rows: expectedRecalculationRows(preview),
       p_expected_revision: preview.settingsRevision,
       p_today: today,
       p_start_date: preview.startDate,

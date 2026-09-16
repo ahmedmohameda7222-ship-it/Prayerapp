@@ -1,8 +1,9 @@
 export type PrayerName = "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
+export type ObligatoryPrayerName = Exclude<PrayerName, "sunrise">;
+export type PrayerIqamaTimes = Partial<Record<ObligatoryPrayerName, string>>;
 
 export interface MaghribProgram {
   enabled: boolean;
-  maghribIqamaTime?: string;
   lessonTitle?: string;
   lessonDurationMinutes?: number;
   combinedIshaTime?: string;
@@ -45,11 +46,6 @@ export interface PrayerTime {
   asr: string;
   maghrib: string;
   isha: string;
-  fajrIqama?: string;
-  dhuhrIqama?: string;
-  asrIqama?: string;
-  maghribIqama?: string;
-  ishaIqama?: string;
   maghribProgram?: MaghribProgram;
   note?: string;
   noteAr?: string;
@@ -285,8 +281,8 @@ type TestCopy = { titleAr: string; titleDe: string; messageAr: string; messageDe
 
 export type MasjidDisplayTestPayload =
   | (TestBase<"normal" | "urgent" | "special_display" | "offline" | "stale_prayer_data" | "missing_settings" | "long_bilingual"> & TestCopy)
-  | (TestBase<"prayer_approaching" | "waiting_for_iqama" | "friday_first_countdown" | "friday_next_countdown"> & TestCopy & { targetAt: string; prayer?: Exclude<PrayerName, "sunrise"> })
-  | (TestBase<"prayer_time_now" | "iqama_now" | "prayer_in_progress" | "jumuah_now"> & TestCopy & { prayer?: Exclude<PrayerName, "sunrise"> })
+  | (TestBase<"prayer_approaching" | "waiting_for_iqama" | "friday_first_countdown" | "friday_next_countdown"> & TestCopy & { targetAt: string; prayer?: ObligatoryPrayerName })
+  | (TestBase<"prayer_time_now" | "iqama_now" | "prayer_in_progress" | "jumuah_now"> & TestCopy & { prayer?: ObligatoryPrayerName })
   | (TestBase<"event"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string; locationAr: string; locationDe: string; startsAt: string })
   | (TestBase<"campaign"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string; donationUrl: string })
   | (TestBase<"azkar"> & { azkarId: string; arabicText: string; germanText: string });

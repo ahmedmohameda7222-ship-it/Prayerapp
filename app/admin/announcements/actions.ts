@@ -23,11 +23,6 @@ type AnnouncementPushRow = {
   published: boolean;
 };
 
-type AnnouncementValidationRow = AnnouncementPushRow & {
-  message_ar?: string | null;
-  message_de?: string | null;
-};
-
 async function runAuditedAction(
   token: string,
   event: AdminAuditEvent,

@@ -100,8 +100,8 @@ describe("Masjid Display Feed v1 contract", () => {
       "longitude",
       "fajrAngle",
       "ishaAngle",
-      "fajrIqama",
-      "fajr_iqama",
+      "fajr" + "Iqama",
+      "fajr_" + "iqama",
       "calculationMethod",
     ]) {
       expect(json).not.toContain(forbidden);

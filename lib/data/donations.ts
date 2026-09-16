@@ -45,11 +45,16 @@ export async function getDonationSettings(): Promise<DonationSettings> {
       saveToPersistentCache("donation_settings", result, CACHE_TTL.donationSettings, 3 * 24 * 60 * 60 * 1000);
       return result;
     } catch (error) {
-      const stale = loadFromPersistentCacheStale<DonationSettings>("donation_settings");
+      const stale = loadFromPersistentPublicCacheStale<DonationSettings>("donation_settings");
       if (stale) return stale;
       throw error;
     }
   }, CACHE_TTL.donationSettings);
+}
+
+// Alias retained locally to keep the stale-read call explicit without changing cache semantics.
+function loadFromPersistentPublicCacheStale<T>(key: string): T | null {
+  return loadFromPersistentCacheStale<T>(key);
 }
 
 export async function updateDonationSettings(settings: Partial<DonationSettings>): Promise<DonationSettings> {
@@ -69,6 +74,23 @@ export async function updateDonationSettings(settings: Partial<DonationSettings>
   return getDonationSettings();
 }
 
+function mapCampaignRecord(record: Record<string, unknown>): DonationCampaign {
+  return {
+    id: String(record.id),
+    title: readDbString(record, "title"),
+    description: readDbString(record, "description"),
+    targetAmount: Number(record.target_amount),
+    collectedAmount: Number(record.collected_amount),
+    startDate: String(record.start_date),
+    endDate: record.end_date ? String(record.end_date) : undefined,
+    donationUrl: record.donation_url ? String(record.donation_url) : undefined,
+    isActive: Boolean(record.is_active),
+    isFeatured: Boolean(record.is_featured),
+    ...localizedFieldsFromDb(record, "title", "title"),
+    ...localizedFieldsFromDb(record, "description", "description"),
+  };
+}
+
 export async function getDonationCampaigns(includeInactive = false): Promise<DonationCampaign[]> {
   const client = createClient();
   if (!client) return [];
@@ -76,25 +98,10 @@ export async function getDonationCampaigns(includeInactive = false): Promise<Don
     const query = client
       .from("donation_campaigns")
       .select("*")
-      .order("end_date", { ascending: true });
+      .order("end_date", { ascending: true, nullsFirst: false });
     const { data, error } = await query;
     if (error || !data) throw new Error("Unable to load donation campaigns");
-    return data.map((row: unknown) => {
-      const record = row as Record<string, unknown>;
-      return {
-        id: String(record.id),
-        title: readDbString(record, "title"),
-        description: readDbString(record, "description"),
-        targetAmount: Number(record.target_amount),
-        collectedAmount: Number(record.collected_amount),
-        startDate: String(record.start_date),
-        endDate: String(record.end_date),
-        isActive: Boolean(record.is_active),
-        isFeatured: Boolean(record.is_featured),
-        ...localizedFieldsFromDb(record, "title", "title"),
-        ...localizedFieldsFromDb(record, "description", "description"),
-      };
-    });
+    return data.map((row: unknown) => mapCampaignRecord(row as Record<string, unknown>));
   }
   const key = `donation_campaigns_public`;
   return getCached(key, async () => {
@@ -102,26 +109,11 @@ export async function getDonationCampaigns(includeInactive = false): Promise<Don
       const query = client
         .from("donation_campaigns")
         .select("*")
-        .order("end_date", { ascending: true })
+        .order("end_date", { ascending: true, nullsFirst: false })
         .eq("is_active", true);
       const { data, error } = await query;
       if (error || !data) throw new Error("Unable to load donation campaigns");
-      const result = data.map((row: unknown) => {
-        const record = row as Record<string, unknown>;
-        return {
-          id: String(record.id),
-          title: readDbString(record, "title"),
-          description: readDbString(record, "description"),
-          targetAmount: Number(record.target_amount),
-          collectedAmount: Number(record.collected_amount),
-          startDate: String(record.start_date),
-          endDate: String(record.end_date),
-          isActive: Boolean(record.is_active),
-          isFeatured: Boolean(record.is_featured),
-          ...localizedFieldsFromDb(record, "title", "title"),
-          ...localizedFieldsFromDb(record, "description", "description"),
-        };
-      });
+      const result = data.map((row: unknown) => mapCampaignRecord(row as Record<string, unknown>));
       saveToPersistentCache(key, result, CACHE_TTL.donationCampaigns, 3 * 24 * 60 * 60 * 1000);
       return result;
     } catch (error) {
@@ -143,7 +135,8 @@ export async function createDonationCampaign(item: Omit<DonationCampaign, "id">)
     target_amount: item.targetAmount,
     collected_amount: item.collectedAmount,
     start_date: item.startDate,
-    end_date: item.endDate,
+    end_date: item.endDate ?? null,
+    donation_url: item.donationUrl ?? null,
     is_active: item.isActive,
     is_featured: item.isFeatured,
   };
@@ -165,7 +158,8 @@ export async function updateDonationCampaign(id: string, item: Partial<DonationC
   if (item.targetAmount !== undefined) db.target_amount = item.targetAmount;
   if (item.collectedAmount !== undefined) db.collected_amount = item.collectedAmount;
   if (item.startDate) db.start_date = item.startDate;
-  if (item.endDate) db.end_date = item.endDate;
+  if (item.endDate !== undefined) db.end_date = item.endDate || null;
+  if (item.donationUrl !== undefined) db.donation_url = item.donationUrl || null;
   if (item.isActive !== undefined) db.is_active = item.isActive;
   if (item.isFeatured !== undefined) db.is_featured = item.isFeatured;
   const { data, error } = await client.from("donation_campaigns").update(db as never).eq("id", id).select().single();

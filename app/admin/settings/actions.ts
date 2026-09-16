@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { invalidateMosqueSettingsCache } from "@/lib/data/mosque-settings";
 import { createServerClient } from "@/lib/supabase/server";
 import { validatePublicAppUrl } from "@/lib/masjid-display/public-app-url";
 import { adminActionError, beginAdminAudit, completeAdminAudit } from "@/lib/security/admin-audit";
@@ -59,6 +60,7 @@ export async function updateMosqueSettingsAction(token: string, data: Record<str
   };
   const { error } = await client.from("mosque_settings").upsert({ id: "1", ...db }, { onConflict: "id" });
   if (error) return fail("admin.errors.saveFailed");
+  invalidateMosqueSettingsCache();
 
   const result = await completeAdminAudit(audit, { success: true });
   revalidatePath("/admin/settings"); revalidatePath("/mosque"); revalidatePath("/donations"); revalidatePath("/");

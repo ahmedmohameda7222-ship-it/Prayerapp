@@ -1,119 +1,45 @@
-import { createClient } from "@/lib/supabase/client";
-import type { Announcement } from "@/lib/types";
-import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./localized-db";
-import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
-import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
+import { createClient } from "../supabase/client";
+import { getCached, setCached } from "./cache";
+import { persistentPublicCache, readPersistentPublicCache } from "./persistent-public-cache";
+import type { Announcement, AnnouncementType } from "../types";
 
-function mapFromDb(row: Record<string, unknown>): Announcement {
+const fallback: Announcement[] = [];
+
+function mapRow(row: Record<string, unknown>): Announcement {
   return {
     id: String(row.id),
-    title: readDbString(row, "title"),
-    message: readDbString(row, "message"),
-    ...localizedFieldsFromDb(row, "title", "title"),
-    ...localizedFieldsFromDb(row, "message", "message"),
-    type: String(row.type) as Announcement["type"],
+    title: String(row.title || ""),
+    titleAr: row.title_ar ? String(row.title_ar) : undefined,
+    titleEn: row.title_en ? String(row.title_en) : undefined,
+    titleDe: row.title_de ? String(row.title_de) : undefined,
+    titleTr: row.title_tr ? String(row.title_tr) : undefined,
+    message: String(row.message || ""),
+    messageAr: row.message_ar ? String(row.message_ar) : undefined,
+    messageEn: row.message_en ? String(row.message_en) : undefined,
+    messageDe: row.message_de ? String(row.message_de) : undefined,
+    messageTr: row.message_tr ? String(row.message_tr) : undefined,
+    type: row.type as AnnouncementType,
     isUrgent: Boolean(row.is_urgent),
+    displayStyle: row.display_style === "special" ? "special" : "normal",
+    displayFrom: row.display_from ? String(row.display_from) : undefined,
+    displayUntil: row.display_until ? String(row.display_until) : undefined,
     published: Boolean(row.published),
-    createdAt: String(row.created_at),
+    createdAt: String(row.created_at || ""),
   };
 }
 
-function mapToDb(item: Partial<Announcement>, includeCreatedAt = false): Record<string, unknown> {
-  const db: Record<string, unknown> = {};
-  if (item.id) db.id = item.id;
-  Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "title", "title", { includeLegacy: true }));
-  Object.assign(db, localizedFieldsToDb(item as unknown as Record<string, unknown>, "message", "message", { includeLegacy: true }));
-  if (!db.title && item.title) db.title = item.title;
-  if (!db.message && item.message) db.message = item.message;
-  if (item.type) db.type = item.type;
-  if (item.isUrgent !== undefined) db.is_urgent = item.isUrgent;
-  if (item.published !== undefined) db.published = item.published;
-  if (includeCreatedAt) db.created_at = new Date().toISOString();
-  return db;
-}
-
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {
+  const cacheKey = includeUnpublished ? "announcements_all" : "announcements_public";
+  const cached = getCached<Announcement[]>(cacheKey);
+  if (cached) return cached;
   const client = createClient();
-  if (!client) return [];
-  if (includeUnpublished) {
-    const query = client
-      .from("announcements")
-      .select("*")
-      .order("created_at", { ascending: false });
-    const { data, error } = await query;
-    if (error || !data) throw new Error("Unable to load announcements");
-    return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
-  }
-  const key = `announcements_public`;
-  return getCached(key, async () => {
-    try {
-      const query = client
-        .from("announcements")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .eq("published", true);
-      const { data, error } = await query;
-      if (error || !data) throw new Error("Unable to load announcements");
-      const result = data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
-      saveToPersistentCache(key, result, CACHE_TTL.announcements, 24 * 60 * 60 * 1000);
-      return result;
-    } catch (error) {
-      const stale = loadFromPersistentCacheStale<Announcement[]>(key);
-      if (stale) return stale;
-      throw error;
-    }
-  }, CACHE_TTL.announcements);
-}
-
-export async function getUrgentAnnouncements(): Promise<Announcement[]> {
-  const client = createClient();
-  if (!client) return [];
-  const key = `announcements_urgent`;
-  return getCached(key, async () => {
-    try {
-      const { data, error } = await client
-        .from("announcements")
-        .select("*")
-        .eq("published", true)
-        .eq("is_urgent", true)
-        .order("created_at", { ascending: false });
-      if (error || !data) throw new Error("Unable to load urgent announcements");
-      const result = data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
-      saveToPersistentCache(key, result, CACHE_TTL.urgentAnnouncements, 24 * 60 * 60 * 1000);
-      return result;
-    } catch (error) {
-      const stale = loadFromPersistentCacheStale<Announcement[]>(key);
-      if (stale) return stale;
-      throw error;
-    }
-  }, CACHE_TTL.urgentAnnouncements);
-}
-
-export async function createAnnouncement(item: Omit<Announcement, "id" | "createdAt">): Promise<Announcement> {
-  const client = createClient();
-  if (!client) throw new Error("Supabase is not configured");
-  const { data, error } = await client.from("announcements").insert(mapToDb(item, true) as never).select().single();
-  if (error || !data) throw new Error("Failed to create announcement");
-  invalidateCachePrefix("announcements");
-  clearPersistentCachePrefix("announcements");
-  return mapFromDb(data as Record<string, unknown>);
-}
-
-export async function updateAnnouncement(id: string, item: Partial<Announcement>): Promise<Announcement> {
-  const client = createClient();
-  if (!client) throw new Error("Supabase is not configured");
-  const { data, error } = await client.from("announcements").update(mapToDb(item) as never).eq("id", id).select().single();
-  if (error || !data) throw new Error("Failed to update announcement");
-  invalidateCachePrefix("announcements");
-  clearPersistentCachePrefix("announcements");
-  return mapFromDb(data as Record<string, unknown>);
-}
-
-export async function deleteAnnouncement(id: string): Promise<void> {
-  const client = createClient();
-  if (!client) throw new Error("Supabase is not configured");
-  const { error } = await client.from("announcements").delete().eq("id", id);
-  if (error) throw new Error("Failed to delete announcement");
-  invalidateCachePrefix("announcements");
-  clearPersistentCachePrefix("announcements");
+  if (!client) return fallback;
+  let query = client.from("announcements").select("*").order("created_at", { ascending: false });
+  if (!includeUnpublished) query = query.eq("published", true);
+  const { data, error } = await query;
+  if (error || !data) return includeUnpublished ? fallback : (await readPersistentPublicCache(cacheKey, fallback));
+  const result = data.map((row) => mapRow(row as Record<string, unknown>));
+  setCached(cacheKey, result);
+  if (!includeUnpublished) await persistentPublicCache(cacheKey, result);
+  return result;
 }

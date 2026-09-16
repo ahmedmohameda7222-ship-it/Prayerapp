@@ -21,11 +21,13 @@ export function PrayerRow({
   name,
   active = false,
   iqama,
+  showIqama = name !== "sunrise",
 }: {
   prayer: PrayerTime;
   name: PrayerName;
   active?: boolean;
   iqama?: string;
+  showIqama?: boolean;
 }) {
   const { t } = useTranslation();
   const { timeFormat } = useTimeFormat();
@@ -41,7 +43,7 @@ export function PrayerRow({
       </div>
       <div>
         <p className={`font-bold ${active ? "text-[var(--color-emerald)]" : "text-[var(--color-charcoal)]"}`}>{label}</p>
-        {name !== "sunrise" ? (
+        {showIqama ? (
           formattedIqama
             ? <p className="text-xs text-[var(--color-muted)]">{t("prayer.iqama")} {formattedIqama}</p>
             : <p className="text-xs text-[var(--color-muted)]">{t("prayer.noIqama")}</p>

@@ -156,6 +156,13 @@ describe("validateMasjidDisplayFeed", () => {
     expectInvalid((feed) => { feed.campaigns[0].titleDe = ""; }, "campaigns[0].titleDe");
   });
 
+  it("rejects event end times earlier than their start time", () => {
+    expectInvalid((feed) => {
+      feed.events[0].startTime = "18:00";
+      feed.events[0].endTime = "17:59";
+    }, "events[0].endTime");
+  });
+
   it("rejects invalid additional Jumuah data", () => {
     expectInvalid((feed) => { feed.prayers.additionalJumuah[0].prayerTime = "99:00"; }, "prayers.additionalJumuah[0].prayerTime");
   });

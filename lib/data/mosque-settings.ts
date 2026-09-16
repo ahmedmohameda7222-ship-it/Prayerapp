@@ -22,6 +22,11 @@ const DEFAULT_MOSQUE_SETTINGS: MosqueSettings = {
   publicAppUrl: "",
 };
 
+export function invalidateMosqueSettingsCache(): void {
+  invalidateCache("mosque_settings");
+  clearPersistentCache("mosque_settings");
+}
+
 export async function getMosqueSettings(): Promise<MosqueSettings> {
   const client = createClient();
   if (!client) return { ...DEFAULT_MOSQUE_SETTINGS };
@@ -73,7 +78,6 @@ export async function updateMosqueSettings(settings: Partial<MosqueSettings>): P
   if (settings.publicAppUrl !== undefined) db.public_app_url = settings.publicAppUrl || null;
   const { data, error } = await client.from("mosque_settings").upsert({ id: "1", ...db } as never, { onConflict: "id" }).select().single();
   if (error || !data) throw new Error("Unable to update mosque settings");
-  invalidateCache("mosque_settings");
-  clearPersistentCache("mosque_settings");
+  invalidateMosqueSettingsCache();
   return getMosqueSettings();
 }

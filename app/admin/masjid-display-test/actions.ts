@@ -52,6 +52,7 @@ export async function startTestScenario(token: string, scenario: unknown): Promi
     const expiresAt = new Date(new Date(startedAt).getTime() + FIFTEEN_MINUTES_MS).toISOString();
     const payload = buildTestFixture(scenario, startedAt);
     const client = createServerClient();
+    if (!client) throw new Error("Supabase is not configured");
     const { data, error } = await client.from("masjid_display_test_state").upsert({
       id: "1",
       enabled: true,
@@ -95,6 +96,7 @@ export async function extendTestScenario(token: string): Promise<ActionResult<Ma
     const expiresAt = new Date(new Date(current.expiresAt).getTime() + FIFTEEN_MINUTES_MS).toISOString();
     const updatedAt = new Date().toISOString();
     const client = createServerClient();
+    if (!client) throw new Error("Supabase is not configured");
     const { error } = await client.from("masjid_display_test_state").update({ expires_at: expiresAt, updated_at: updatedAt }).eq("id", "1");
     if (error) throw new Error("Unable to extend Test Mode");
     const state = { ...current, expiresAt, updatedAt };
@@ -118,6 +120,7 @@ export async function stopTestScenario(token: string): Promise<ActionResult<Masj
   try {
     const updatedAt = new Date().toISOString();
     const client = createServerClient();
+    if (!client) throw new Error("Supabase is not configured");
     const { error } = await client.from("masjid_display_test_state").upsert({
       id: "1",
       enabled: false,

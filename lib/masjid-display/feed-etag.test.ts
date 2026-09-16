@@ -54,8 +54,8 @@ describe("display feed canonical representation", () => {
         nameAr: "مسجد الدانوب",
       },
     });
-    const a = finalizeFeed(first as any);
-    const b = finalizeFeed(second as any);
+    const a = finalizeFeed(first as never);
+    const b = finalizeFeed(second as never);
     expect(a.snapshotRevision).toBe(b.snapshotRevision);
     expect(etagForFeed(a)).toBe(etagForFeed(b));
     expect(a.snapshotRevision).toMatch(/^[a-f0-9]{64}$/);
@@ -63,8 +63,8 @@ describe("display feed canonical representation", () => {
   });
 
   it("changes revision and ETag when content changes", () => {
-    const a = finalizeFeed(body() as any);
-    const b = finalizeFeed(body({ mosque: { ...body().mosque, nameDe: "Andere Moschee" } }) as any);
+    const a = finalizeFeed(body() as never);
+    const b = finalizeFeed(body({ mosque: { ...body().mosque, nameDe: "Andere Moschee" } }) as never);
     expect(a.snapshotRevision).not.toBe(b.snapshotRevision);
     expect(etagForFeed(a)).not.toBe(etagForFeed(b));
   });

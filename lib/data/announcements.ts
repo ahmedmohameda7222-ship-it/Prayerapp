@@ -4,6 +4,11 @@ import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./loca
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
+export function invalidateAnnouncementCaches() {
+  invalidateCachePrefix("announcements");
+  clearPersistentCachePrefix("announcements");
+}
+
 function mapFromDb(row: Record<string, unknown>): Announcement {
   return {
     id: String(row.id),
@@ -100,8 +105,7 @@ export async function createAnnouncement(item: Omit<Announcement, "id" | "create
   if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("announcements").insert(mapToDb(item, true) as never).select().single();
   if (error || !data) throw new Error("Failed to create announcement");
-  invalidateCachePrefix("announcements");
-  clearPersistentCachePrefix("announcements");
+  invalidateAnnouncementCaches();
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -110,8 +114,7 @@ export async function updateAnnouncement(id: string, item: Partial<Announcement>
   if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("announcements").update(mapToDb(item) as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update announcement");
-  invalidateCachePrefix("announcements");
-  clearPersistentCachePrefix("announcements");
+  invalidateAnnouncementCaches();
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -120,6 +123,5 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("announcements").delete().eq("id", id);
   if (error) throw new Error("Failed to delete announcement");
-  invalidateCachePrefix("announcements");
-  clearPersistentCachePrefix("announcements");
+  invalidateAnnouncementCaches();
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
+import { validateDisplayPublishableContent } from "@/lib/masjid-display/content-validation";
 import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import {
   parseAdminBoolean,
@@ -56,6 +57,19 @@ async function notifyActiveCampaign(row: CampaignPushRow) {
   }
 }
 
+function parseOptionalHttpUrl(value: string | undefined, field: string): string | null {
+  if (!value?.trim()) return null;
+  try {
+    const url = new URL(value.trim());
+    if ((url.protocol !== "http:" && url.protocol !== "https:") || !url.hostname || url.username || url.password) {
+      throw new Error("invalid");
+    }
+    return url.toString();
+  } catch {
+    throw new Error(`Invalid ${field}`);
+  }
+}
+
 function parseDonationSettings(data: Record<string, string>) {
   const accountHolder = parseAdminText(data.accountHolder, { field: "accountHolder", max: 200, required: true });
   const iban = parseAdminText(data.iban, { field: "iban", max: 64, required: true }).replace(/\s/g, "");
@@ -90,9 +104,14 @@ function parseCampaign(data: Record<string, string>) {
     collectedAmount: parseAdminNumber(data.collectedAmount || "0", { field: "collectedAmount", min: 0, max: 100_000_000 }),
     startDate,
     endDate,
+    donationUrl: parseOptionalHttpUrl(data.donationUrl, "donationUrl"),
     isActive: data.isActive ? parseAdminBoolean(data.isActive, "isActive") : false,
     isFeatured: data.isFeatured ? parseAdminBoolean(data.isFeatured, "isFeatured") : false,
   };
+}
+
+function campaignValidationError(parsed: ReturnType<typeof parseCampaign>): string | undefined {
+  return validateDisplayPublishableContent("campaign", parsed)[0];
 }
 
 export async function updateDonationSettingsAction(token: string, data: Record<string, string>): Promise<ActionResult> {
@@ -117,12 +136,15 @@ export async function createDonationCampaignAction(token: string, data: Record<s
   return runAuditedAction(token, { action: "donation.campaign.create", entityType: "donation_campaign" }, async () => {
     let parsed;
     try { parsed = parseCampaign(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    const validationError = campaignValidationError(parsed);
+    if (validationError) return { success: false, error: validationError };
     const client = createServerClient();
     if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const db = {
       title: parsed.titleAr, title_ar: parsed.titleAr, title_en: parsed.titleEn || null, title_de: parsed.titleDe || null, title_tr: parsed.titleTr || null,
       description: parsed.descriptionAr, description_ar: parsed.descriptionAr, description_en: parsed.descriptionEn || null, description_de: parsed.descriptionDe || null, description_tr: parsed.descriptionTr || null,
       target_amount: parsed.targetAmount, collected_amount: parsed.collectedAmount, start_date: parsed.startDate, end_date: parsed.endDate,
+      donation_url: parsed.donationUrl,
       is_active: parsed.isActive, is_featured: parsed.isFeatured,
     };
     const { data: result, error } = await client.from("donation_campaigns").insert(db).select().single();
@@ -138,12 +160,15 @@ export async function updateDonationCampaignAction(token: string, id: string, da
   return runAuditedAction(token, { action: "donation.campaign.update", entityType: "donation_campaign", entityId }, async () => {
     let parsed;
     try { parsed = parseCampaign(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    const validationError = campaignValidationError(parsed);
+    if (validationError) return { success: false, error: validationError };
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { data: previous } = await client.from("donation_campaigns").select("is_active").eq("id", entityId).maybeSingle();
     const db = {
       title: parsed.titleAr, title_ar: parsed.titleAr, title_en: parsed.titleEn || null, title_de: parsed.titleDe || null, title_tr: parsed.titleTr || null,
       description: parsed.descriptionAr, description_ar: parsed.descriptionAr, description_en: parsed.descriptionEn || null, description_de: parsed.descriptionDe || null, description_tr: parsed.descriptionTr || null,
       target_amount: parsed.targetAmount, collected_amount: parsed.collectedAmount, start_date: parsed.startDate, end_date: parsed.endDate,
+      donation_url: parsed.donationUrl,
       is_active: parsed.isActive, is_featured: parsed.isFeatured,
     };
     const { data: result, error } = await client.from("donation_campaigns").update(db).eq("id", entityId).select().single();
@@ -169,6 +194,22 @@ export async function toggleActiveCampaignAction(token: string, id: string, isAc
   catch { return { success: false, error: "admin.errors.invalidInput" }; }
   return runAuditedAction(token, { action: "donation.campaign.active", entityType: "donation_campaign", entityId, metadata: { isActive: nextActive } }, async () => {
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    if (nextActive) {
+      const { data: row, error: readError } = await client
+        .from("donation_campaigns")
+        .select("title_ar,title_de,description_ar,description_de")
+        .eq("id", entityId)
+        .maybeSingle();
+      if (readError || !row) return { success: false, error: "admin.errors.saveFailed" };
+      const validationError = validateDisplayPublishableContent("campaign", {
+        isActive: true,
+        titleAr: row.title_ar || undefined,
+        titleDe: row.title_de || undefined,
+        descriptionAr: row.description_ar || undefined,
+        descriptionDe: row.description_de || undefined,
+      })[0];
+      if (validationError) return { success: false, error: validationError };
+    }
     const { data: result, error } = await client.from("donation_campaigns").update({ is_active: nextActive }).eq("id", entityId).select().single();
     if (error) return { success: false, error: "admin.errors.toggleFailed" };
     if (nextActive) await notifyActiveCampaign(result as CampaignPushRow);

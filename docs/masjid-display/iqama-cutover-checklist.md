@@ -31,6 +31,10 @@ where id = '1';
 
 Deployment readiness is **BLOCKED** if that row is missing, if any delay is null, or if the target query cannot be executed and reviewed.
 
+### Current target evidence — 2026-09-16
+
+A read-only target query confirmed `public.prayer_times` exists but `public.prayer_settings` does not exist. A separate read of `public.mosque_settings` identified the target as the Deggendorf mosque project. Therefore the target deployment gate is **BLOCKED**. No destructive target migration was applied.
+
 Do not apply the destructive migration to the target environment while this gate is BLOCKED. Creating and validating the migration locally does not authorize a production database write.
 
 ## Data preserved by the migration

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { LocalizedContentFields } from "@/components/admin/LocalizedContentFields";
 import { AnnouncementsTable } from "@/components/admin/AnnouncementsTable";
 import { getAnnouncements } from "@/lib/data/announcements";
+import { formatDateTimeLocalInput } from "@/lib/date-utils";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -38,10 +39,6 @@ const emptyForm = {
   displayFrom: "",
   displayUntil: "",
 };
-
-function dateTimeInputValue(value?: string) {
-  return value ? value.slice(0, 16) : "";
-}
 
 export default function AdminAnnouncementsPage() {
   const { session } = useAdminAuth();
@@ -78,8 +75,8 @@ export default function AdminAnnouncementsPage() {
       isUrgent: String(item.isUrgent),
       published: String(item.published),
       displayStyle: item.displayStyle || "normal",
-      displayFrom: dateTimeInputValue(item.displayFrom),
-      displayUntil: dateTimeInputValue(item.displayUntil),
+      displayFrom: formatDateTimeLocalInput(item.displayFrom),
+      displayUntil: formatDateTimeLocalInput(item.displayUntil),
     });
     setEditingId(item.id);
     setError("");

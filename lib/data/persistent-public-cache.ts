@@ -57,19 +57,19 @@ export function loadFromPersistentCache<T>(key: string): T | undefined {
   }
 }
 
-export function loadFromPersistentCacheStale<T>(key: string): T | undefined {
-  if (typeof window === "undefined") return undefined;
+export function loadFromPersistentCacheStale<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
   const raw = safeGet(`${PREFIX}${key}`);
-  if (!raw) return undefined;
+  if (!raw) return null;
   try {
     const entry = JSON.parse(raw) as PersistentEntry;
     if (Date.now() <= entry.staleFallback) {
       const wrapper = entry.data as { value: T };
       return wrapper.value;
     }
-    return undefined;
+    return null;
   } catch {
-    return undefined;
+    return null;
   }
 }
 

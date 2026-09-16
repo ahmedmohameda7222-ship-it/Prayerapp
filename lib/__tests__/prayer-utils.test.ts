@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   deriveIqamaInstant,
+  derivePrayerIqamaTimes,
   getPrayerForDate,
-  getIqama,
   getNextPrayer,
   getNextPrayerFromSchedule,
   prayerOrder,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/prayer-utils";
 import { zonedDateTime } from "@/lib/date-utils";
 import type { PrayerTime } from "@/lib/types";
+import type { PrayerIqamaDelays } from "@/lib/prayer-engine/types";
 import { getSmartNextAction } from "@/lib/home-utils";
 
 const samplePrayer: PrayerTime = {
@@ -21,14 +22,17 @@ const samplePrayer: PrayerTime = {
   asr: "17:32",
   maghrib: "21:19",
   isha: "22:57",
-  fajrIqama: "04:00",
-  dhuhrIqama: "13:30",
-  asrIqama: "18:00",
-  maghribIqama: "21:25",
-  ishaIqama: "23:10",
   note: "Test",
   published: true,
   updatedAt: "2026-06-20T18:30:00+02:00",
+};
+
+const delays: PrayerIqamaDelays = {
+  fajr: 0,
+  dhuhr: 10,
+  asr: 10,
+  maghrib: 5,
+  isha: 10,
 };
 
 describe("prayer-utils", () => {
@@ -51,20 +55,6 @@ describe("prayer-utils", () => {
     expect(found).toBeUndefined();
   });
 
-  it("getIqama returns iqama for prayers with iqama", () => {
-    expect(getIqama(samplePrayer, "fajr")).toBe("04:00");
-    expect(getIqama(samplePrayer, "dhuhr")).toBe("13:30");
-  });
-
-  it("getIqama returns undefined for sunrise", () => {
-    expect(getIqama(samplePrayer, "sunrise")).toBeUndefined();
-  });
-
-  it("getIqama returns undefined when iqama is missing", () => {
-    const noIqama: PrayerTime = { ...samplePrayer, fajrIqama: undefined };
-    expect(getIqama(noIqama, "fajr")).toBeUndefined();
-  });
-
   it("derives Iqama from stored prayer start plus shared delay", () => {
     expect(deriveIqamaInstant("2026-09-15", "18:00", 0).getTime()).toBe(
       zonedDateTime("2026-09-15", "18:00").getTime(),
@@ -72,6 +62,21 @@ describe("prayer-utils", () => {
     expect(deriveIqamaInstant("2026-09-15", "23:58", 5).getTime()).toBe(
       zonedDateTime("2026-09-15", "23:58").getTime() + 5 * 60_000,
     );
+  });
+
+  it("derives shared Iqama display times, keeps zero delay, and never creates Sunrise Iqama", () => {
+    const iqama = derivePrayerIqamaTimes(samplePrayer, delays);
+    expect(iqama.fajr).toBe("03:19");
+    expect(iqama.dhuhr).toBe("13:23");
+    expect(iqama.asr).toBe("17:42");
+    expect(iqama.maghrib).toBe("21:24");
+    expect(iqama.isha).toBe("23:07");
+    expect("sunrise" in iqama).toBe(false);
+  });
+
+  it("does not expose normal Friday Dhuhr Iqama because Friday Dhuhr is primary Jumuah", () => {
+    const friday = { ...samplePrayer, id: "pt-friday", date: "2026-06-26" };
+    expect(derivePrayerIqamaTimes(friday, delays).dhuhr).toBeUndefined();
   });
 
   it("rejects invalid shared Iqama delays", () => {

@@ -3,6 +3,11 @@ import { createServerClient } from "@/lib/supabase/server";
 import type { PrayerCalculationSettings } from "@/lib/prayer-engine/types";
 import { validatePrayerCalculationSettings } from "@/lib/prayer-engine/validate-settings";
 
+type PrayerSettingsRow = {
+  settings: PrayerCalculationSettings;
+  rowRevision: number;
+};
+
 function mapFromDb(row: Record<string, unknown>): PrayerCalculationSettings {
   return validatePrayerCalculationSettings({
     latitude: Number(row.latitude),
@@ -107,7 +112,7 @@ export function nextCalculationRevision(
     : current.calculationRevision + 1;
 }
 
-export async function getPrayerSettings(): Promise<PrayerCalculationSettings | null> {
+async function loadPrayerSettingsRow(): Promise<PrayerSettingsRow | null> {
   const client = createServerClient();
   if (!client) throw new Error("Supabase is not configured");
 
@@ -118,7 +123,19 @@ export async function getPrayerSettings(): Promise<PrayerCalculationSettings | n
     .maybeSingle();
 
   if (error) throw new Error("Unable to load prayer settings");
-  return data ? mapFromDb(data as Record<string, unknown>) : null;
+  if (!data) return null;
+
+  const record = data as Record<string, unknown>;
+  const rowRevision = Number(record.row_revision);
+  if (!Number.isInteger(rowRevision) || rowRevision < 1) {
+    throw new Error("Invalid prayer settings row revision");
+  }
+
+  return { settings: mapFromDb(record), rowRevision };
+}
+
+export async function getPrayerSettings(): Promise<PrayerCalculationSettings | null> {
+  return (await loadPrayerSettingsRow())?.settings ?? null;
 }
 
 export async function savePrayerSettings(
@@ -128,14 +145,15 @@ export async function savePrayerSettings(
   const client = createServerClient();
   if (!client) throw new Error("Supabase is not configured");
 
-  const current = await getPrayerSettings();
+  const currentRow = await loadPrayerSettingsRow();
+  const current = currentRow?.settings ?? null;
   const stored: PrayerCalculationSettings = {
     ...validated,
     calculationRevision: nextCalculationRevision(current, validated),
     appliedCalculationRevision: current?.appliedCalculationRevision ?? 0,
   };
 
-  if (!current) {
+  if (!currentRow) {
     const { data, error } = await client
       .from("prayer_settings")
       .insert(prayerSettingsInsertValues(stored) as never)
@@ -147,9 +165,12 @@ export async function savePrayerSettings(
 
   const { data, error } = await client
     .from("prayer_settings")
-    .update(prayerSettingsUpdateValues(stored) as never)
+    .update({
+      ...prayerSettingsUpdateValues(stored),
+      row_revision: currentRow.rowRevision + 1,
+    } as never)
     .eq("id", "1")
-    .eq("calculation_revision", current.calculationRevision)
+    .eq("row_revision", currentRow.rowRevision)
     .select()
     .maybeSingle();
 

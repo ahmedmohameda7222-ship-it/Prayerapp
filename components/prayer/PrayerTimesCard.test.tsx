@@ -48,7 +48,7 @@ describe("PrayerTimesCard display settings", () => {
     expect(screen.getByText("Tafsir · 10 min")).toBeInTheDocument();
     expect(screen.getByText("Azan Isha")).toBeInTheDocument();
     expect(screen.getByText("22:57")).toBeInTheDocument();
-    expect(screen.getByText("23:07")).toBeInTheDocument();
+    expect(screen.getByText("Iqama 23:07")).toBeInTheDocument();
     expect(screen.getByText("21:35")).toBeInTheDocument();
   });
 

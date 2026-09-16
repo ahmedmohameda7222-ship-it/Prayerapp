@@ -21,7 +21,7 @@ function stateFor(
 ): CountdownState | null {
   const next = getNextPrayerFromSchedule(schedule, now);
   if (!next) return null;
-  const iqama = next.name === "sunrise" ? undefined : iqamaByDate[next.date]?.[next.name];
+  const iqama = iqamaByDate[next.date]?.[next.name];
   return {
     name: next.name,
     time: next.time,

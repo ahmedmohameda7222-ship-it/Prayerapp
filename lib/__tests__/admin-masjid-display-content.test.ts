@@ -18,6 +18,12 @@ describe("Masjid Display content Admin", () => {
     expect(actions).toContain('throw new Error("Invalid display window")');
   });
 
+  it("parses timezone-less announcement windows as mosque-local instants", () => {
+    const actions = source("app/admin/announcements/actions.ts");
+    expect(actions).not.toContain("const instant = new Date(value)");
+    expect(actions).toContain("zonedDateTime(date, time)");
+  });
+
   it("keeps Event display content explicitly Arabic and German", () => {
     const page = source("app/admin/events/page.tsx");
     const actions = source("app/admin/events/actions.ts");

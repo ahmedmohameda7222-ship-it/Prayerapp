@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
+import { validatePublicAppUrl } from "@/lib/masjid-display/public-app-url";
 import { adminActionError, beginAdminAudit, completeAdminAudit } from "@/lib/security/admin-audit";
 import { parseAdminEmail, parseAdminOptionalHttpsUrl, parseAdminText } from "@/lib/security/admin-input";
 
@@ -19,6 +20,7 @@ export async function updateMosqueSettingsAction(token: string, data: Record<str
     const bic = parseAdminText(data.bic ?? "", { field: "bic", max: 11 }).toUpperCase();
     if (iban && !/^[A-Z]{2}[0-9A-Z]{13,32}$/u.test(iban)) throw new Error("admin.errors.invalidInput");
     if (bic && !/^[A-Z0-9]{8}(?:[A-Z0-9]{3})?$/u.test(bic)) throw new Error("admin.errors.invalidInput");
+    const publicAppUrl = data.publicAppUrl?.trim() ? validatePublicAppUrl(data.publicAppUrl.trim()) : "";
     parsed = {
       mosqueNameAr: parseAdminText(data.mosqueNameAr, { field: "mosqueNameAr", max: 200, required: true }),
       mosqueNameEn: parseAdminText(data.mosqueNameEn ?? "", { field: "mosqueNameEn", max: 200 }),
@@ -32,6 +34,7 @@ export async function updateMosqueSettingsAction(token: string, data: Record<str
       accountHolder: parseAdminText(data.accountHolder ?? "", { field: "accountHolder", max: 200 }),
       iban,
       bic,
+      publicAppUrl,
     };
   } catch { return fail("admin.errors.invalidInput"); }
 
@@ -52,6 +55,7 @@ export async function updateMosqueSettingsAction(token: string, data: Record<str
     account_holder: parsed.accountHolder,
     iban: parsed.iban,
     bic: parsed.bic,
+    public_app_url: parsed.publicAppUrl || null,
   };
   const { error } = await client.from("mosque_settings").upsert({ id: "1", ...db }, { onConflict: "id" });
   if (error) return fail("admin.errors.saveFailed");

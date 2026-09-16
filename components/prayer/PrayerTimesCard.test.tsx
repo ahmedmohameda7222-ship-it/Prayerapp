@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { I18nProvider } from "@/lib/i18n/context";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 import type { PrayerIqamaTimes, PrayerTime } from "@/lib/types";
@@ -30,6 +30,10 @@ function renderCard(value: PrayerTime) {
 }
 
 describe("PrayerTimesCard display settings", () => {
+  beforeEach(() => {
+    document.cookie = "timeFormat=24-hour; path=/";
+  });
+
   it("shows shared-delay Iqama while preserving manual combined Isha as program metadata", () => {
     renderCard({
       ...prayer,

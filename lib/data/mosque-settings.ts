@@ -67,7 +67,7 @@ export async function updateMosqueSettings(settings: MosqueSettings) {
     iban: settings.iban,
     bic: settings.bic,
     public_app_url: settings.publicAppUrl || null,
-  }, { onConflict: "id" });
+  } as never, { onConflict: "id" });
   if (error) return fallback;
   saveToPersistentCache("mosque_settings", settings, CACHE_TTL.mosqueSettings, 7 * 24 * 60 * 60 * 1000);
   return settings;

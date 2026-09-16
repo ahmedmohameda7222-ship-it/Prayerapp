@@ -63,11 +63,6 @@ function requiredString(value: unknown, path: string, issues: DisplayFeedValidat
   return value;
 }
 
-function nullableString(value: unknown, path: string, issues: DisplayFeedValidationIssue[]): string | null {
-  if (value === null) return null;
-  return requiredString(value, path, issues);
-}
-
 function booleanValue(value: unknown, path: string, issues: DisplayFeedValidationIssue[]): boolean {
   if (typeof value !== "boolean") {
     issue(issues, path, "must be a boolean");
@@ -300,7 +295,9 @@ function validateEvent(value: unknown, index: number, issues: DisplayFeedValidat
   const path = `events[${index}]`;
   const source = record(value, path, issues);
   exactKeys(source, ["id", "titleAr", "titleDe", "descriptionAr", "descriptionDe", "locationAr", "locationDe", "date", "startTime", "endTime", "type"], path, issues);
+  const startTime = validTime(source.startTime, `${path}.startTime`, issues);
   const endTime = source.endTime === null ? null : validTime(source.endTime, `${path}.endTime`, issues);
+  if (startTime && endTime && endTime < startTime) issue(issues, `${path}.endTime`, "must be on or after startTime");
   return {
     id: requiredString(source.id, `${path}.id`, issues),
     titleAr: requiredString(source.titleAr, `${path}.titleAr`, issues),
@@ -310,7 +307,7 @@ function validateEvent(value: unknown, index: number, issues: DisplayFeedValidat
     locationAr: requiredString(source.locationAr, `${path}.locationAr`, issues),
     locationDe: requiredString(source.locationDe, `${path}.locationDe`, issues),
     date: validDate(source.date, `${path}.date`, issues),
-    startTime: validTime(source.startTime, `${path}.startTime`, issues),
+    startTime,
     endTime,
     type: requiredString(source.type, `${path}.type`, issues),
   };

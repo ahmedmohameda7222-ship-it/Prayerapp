@@ -168,7 +168,7 @@ function deps() {
 describe("buildMasjidDisplayFeed", () => {
   it("builds previous-day plus 35-day coverage and preserves future scheduled content", async () => {
     const source = deps();
-    const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as any);
+    const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
 
     expect(source.getPrayerTimes).toHaveBeenCalledWith(false, "2026-09-14", "2026-10-20");
     expect(feed.prayers.schedule[0].date).toBe("2026-09-14");
@@ -180,7 +180,7 @@ describe("buildMasjidDisplayFeed", () => {
   });
 
   it("keeps Friday Dhuhr as the primary service and exports only later additional services", async () => {
-    const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), deps() as any);
+    const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), deps() as never);
     const friday = feed.prayers.schedule.find((day) => day.date === "2026-09-18");
     expect(friday?.dhuhr).toBe("13:10");
     expect(feed.prayers.additionalJumuah.map((item) => item.prayerTime)).toEqual(["15:00"]);
@@ -188,8 +188,8 @@ describe("buildMasjidDisplayFeed", () => {
 
   it("uses source timestamps rather than request time for generatedAt", async () => {
     const source = deps();
-    const first = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as any);
-    const second = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:01.000Z"), source as any);
+    const first = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
+    const second = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:01.000Z"), source as never);
     expect(first.generatedAt).toBe("2026-09-12T10:00:00.000Z");
     expect(second.generatedAt).toBe(first.generatedAt);
   });
@@ -197,10 +197,10 @@ describe("buildMasjidDisplayFeed", () => {
   it("fails atomically when required prayer or display settings are missing", async () => {
     const missingPrayer = deps();
     missingPrayer.getPrayerSettings.mockResolvedValue(null as never);
-    await expect(buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), missingPrayer as any)).rejects.toBeInstanceOf(DisplayFeedBuildError);
+    await expect(buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), missingPrayer as never)).rejects.toBeInstanceOf(DisplayFeedBuildError);
 
     const missingDisplay = deps();
     missingDisplay.getMasjidDisplaySettings.mockResolvedValue(null as never);
-    await expect(buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), missingDisplay as any)).rejects.toBeInstanceOf(DisplayFeedBuildError);
+    await expect(buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), missingDisplay as never)).rejects.toBeInstanceOf(DisplayFeedBuildError);
   });
 });

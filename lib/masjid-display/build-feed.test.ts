@@ -296,6 +296,22 @@ describe("buildMasjidDisplayFeed", () => {
     expect(feed.campaigns).toEqual([]);
   });
 
+  it("rejects unknown canonical Azkar playlist IDs as invalid display settings", async () => {
+    const source = deps();
+    source.getMasjidDisplaySettings.mockResolvedValue({
+      fajrPrayerDurationMinutes: 10,
+      dhuhrPrayerDurationMinutes: 10,
+      asrPrayerDurationMinutes: 10,
+      maghribPrayerDurationMinutes: 10,
+      ishaPrayerDurationMinutes: 10,
+      azkarPlaylistIds: ["morning-1", "unknown-azkar"],
+    });
+
+    await expect(
+      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
+    ).rejects.toBeInstanceOf(DisplayFeedBuildError);
+  });
+
   it("fails atomically when required prayer or display settings are missing", async () => {
     const missingPrayer = deps();
     missingPrayer.getPrayerSettings.mockResolvedValue(null as never);

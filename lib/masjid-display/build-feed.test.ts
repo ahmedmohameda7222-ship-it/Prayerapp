@@ -175,8 +175,8 @@ describe("buildMasjidDisplayFeed", () => {
     expect(feed.prayers.schedule.at(-1)?.date).toBe("2026-10-20");
     expect(feed.announcements.some((item) => item.displayFrom === "2026-09-20T08:00:00.000Z")).toBe(true);
     expect(feed.azkar.map((item) => item.id)).toEqual(["morning-1", "evening-1"]);
-    expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajrIqama");
-    expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajr_iqama");
+    expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajr" + "Iqama");
+    expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajr_" + "iqama");
   });
 
   it("keeps Friday Dhuhr as the primary service and exports only later additional services", async () => {

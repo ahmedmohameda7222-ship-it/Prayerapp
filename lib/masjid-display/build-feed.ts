@@ -58,6 +58,9 @@ const defaultDependencies: FeedDependencies = {
   getAzkarItems,
 };
 
+const HH_MM = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
 function endOfLocalDate(date: string) {
   return new Date(zonedDateTime(addDaysIso(date, 1), "00:00").getTime() - 1);
 }
@@ -113,14 +116,51 @@ function validHttpUrl(value: string | undefined) {
   }
 }
 
+function validIsoDate(value: string | undefined) {
+  if (!value || !ISO_DATE.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  );
+}
+
+function validTime(value: string | undefined) {
+  return typeof value === "string" && HH_MM.test(value);
+}
+
+function validTimestamp(value: string | undefined) {
+  return !value || (/^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value)));
+}
+
+function validNonNegativeNumber(value: number) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
 function diagnostic(kind: "announcement" | "event" | "campaign", id: string, reasons: string[]) {
   console.warn("Masjid Display feed omitted invalid dynamic content", { kind, id, reasons });
 }
 
 function projectAnnouncement(item: Announcement): DisplayAnnouncementDto | null {
   const reasons = validateDisplayPublishableContent("announcement", item);
+  if (!item.id?.trim()) reasons.push("ID is required");
+  if (item.displayStyle !== "normal" && item.displayStyle !== "special") reasons.push("Display style is invalid");
+  if (typeof item.isUrgent !== "boolean") reasons.push("Urgent flag is invalid");
+  if (!validTimestamp(item.displayFrom)) reasons.push("Display start is invalid");
+  if (!validTimestamp(item.displayUntil)) reasons.push("Display end is invalid");
+  if (
+    item.displayFrom &&
+    item.displayUntil &&
+    Number.isFinite(Date.parse(item.displayFrom)) &&
+    Number.isFinite(Date.parse(item.displayUntil)) &&
+    Date.parse(item.displayUntil) < Date.parse(item.displayFrom)
+  ) {
+    reasons.push("Display end precedes display start");
+  }
   if (reasons.length > 0) {
-    diagnostic("announcement", item.id, reasons);
+    diagnostic("announcement", item.id || "<missing>", reasons);
     return null;
   }
   return {
@@ -138,8 +178,16 @@ function projectAnnouncement(item: Announcement): DisplayAnnouncementDto | null 
 
 function projectEvent(item: Event): DisplayEventDto | null {
   const reasons = validateDisplayPublishableContent("event", item);
+  if (!item.id?.trim()) reasons.push("ID is required");
+  if (!validIsoDate(item.date)) reasons.push("Event date is invalid");
+  if (!validTime(item.startTime)) reasons.push("Event start time is invalid");
+  if (item.endTime && !validTime(item.endTime)) reasons.push("Event end time is invalid");
+  if (item.endTime && validTime(item.startTime) && validTime(item.endTime) && item.endTime < item.startTime) {
+    reasons.push("Event end time precedes start time");
+  }
+  if (!item.type?.trim()) reasons.push("Event type is required");
   if (reasons.length > 0) {
-    diagnostic("event", item.id, reasons);
+    diagnostic("event", item.id || "<missing>", reasons);
     return null;
   }
   return {
@@ -159,9 +207,18 @@ function projectEvent(item: Event): DisplayEventDto | null {
 
 function projectCampaign(item: DonationCampaign): DisplayCampaignDto | null {
   const reasons = validateDisplayPublishableContent("campaign", item);
+  if (!item.id?.trim()) reasons.push("ID is required");
+  if (!validNonNegativeNumber(item.targetAmount)) reasons.push("Target amount is invalid");
+  if (!validNonNegativeNumber(item.collectedAmount)) reasons.push("Collected amount is invalid");
+  if (!validIsoDate(item.startDate)) reasons.push("Campaign start date is invalid");
+  if (item.endDate && !validIsoDate(item.endDate)) reasons.push("Campaign end date is invalid");
+  if (item.endDate && validIsoDate(item.startDate) && validIsoDate(item.endDate) && item.endDate < item.startDate) {
+    reasons.push("Campaign end date precedes start date");
+  }
   if (!validHttpUrl(item.donationUrl)) reasons.push("Donation URL is invalid");
+  if (typeof item.isFeatured !== "boolean") reasons.push("Featured flag is invalid");
   if (reasons.length > 0) {
-    diagnostic("campaign", item.id, reasons);
+    diagnostic("campaign", item.id || "<missing>", reasons);
     return null;
   }
   return {
@@ -187,6 +244,12 @@ function latestSourceTimestamp(prayers: PrayerTime[], announcements: Announcemen
     .map((value) => Date.parse(value))
     .filter(Number.isFinite);
   return new Date(timestamps.length > 0 ? Math.max(...timestamps) : fallback.getTime()).toISOString();
+}
+
+function expectedScheduleDates(startDate: string, endDate: string) {
+  const dates: string[] = [];
+  for (let date = startDate; date <= endDate; date = addDaysIso(date, 1)) dates.push(date);
+  return dates;
 }
 
 export async function buildMasjidDisplayFeed(
@@ -244,7 +307,13 @@ export async function buildMasjidDisplayFeed(
     .filter((item) => item.published && item.date >= startDate && item.date <= endDate)
     .sort((a, b) => a.date.localeCompare(b.date));
   const schedule = representedPrayers.map(prayerDay);
-  if (schedule.length === 0) throw new DisplayFeedBuildError("Published prayer schedule is unavailable for the display window");
+  const expectedDates = expectedScheduleDates(startDate, endDate);
+  if (
+    schedule.length !== expectedDates.length ||
+    schedule.some((day, index) => day.date !== expectedDates[index])
+  ) {
+    throw new DisplayFeedBuildError("Published prayer schedule is incomplete for the display window");
+  }
 
   const additionalJumuah = representedPrayers
     .filter((item) => isFridayIso(item.date))
@@ -252,29 +321,36 @@ export async function buildMasjidDisplayFeed(
     .map((item) => ({ id: item.id, date: item.date, prayerTime: item.prayerTime }))
     .sort((a, b) => a.date.localeCompare(b.date) || a.prayerTime.localeCompare(b.prayerTime) || a.id.localeCompare(b.id));
 
-  const includedAnnouncementSources = announcements
-    .filter((item) => includeAnnouncementInFeed(item, now, horizonEnd))
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   const representedAnnouncementSources: Announcement[] = [];
   const projectedAnnouncements: DisplayAnnouncementDto[] = [];
-  for (const item of includedAnnouncementSources) {
+  for (const item of announcements) {
     const projected = projectAnnouncement(item);
-    if (!projected) continue;
+    if (!projected || !includeAnnouncementInFeed(item, now, horizonEnd)) continue;
     representedAnnouncementSources.push(item);
     projectedAnnouncements.push(projected);
   }
+  projectedAnnouncements.sort((a, b) => {
+    const aSource = representedAnnouncementSources.find((item) => item.id === a.id);
+    const bSource = representedAnnouncementSources.find((item) => item.id === b.id);
+    return (aSource?.createdAt || "").localeCompare(bSource?.createdAt || "") || a.id.localeCompare(b.id);
+  });
+  representedAnnouncementSources.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
 
-  const projectedEvents = events
-    .filter((item) => includeEventInFeed(item, now, horizonEnd))
-    .sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`) || a.id.localeCompare(b.id))
-    .map(projectEvent)
-    .filter((item): item is DisplayEventDto => item !== null);
+  const projectedEvents: DisplayEventDto[] = [];
+  for (const item of events) {
+    const projected = projectEvent(item);
+    if (!projected || !includeEventInFeed(item, now, horizonEnd)) continue;
+    projectedEvents.push(projected);
+  }
+  projectedEvents.sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`) || a.id.localeCompare(b.id));
 
-  const projectedCampaigns = campaigns
-    .filter((item) => includeCampaignInFeed(item, now, horizonEnd))
-    .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id))
-    .map(projectCampaign)
-    .filter((item): item is DisplayCampaignDto => item !== null);
+  const projectedCampaigns: DisplayCampaignDto[] = [];
+  for (const item of campaigns) {
+    const projected = projectCampaign(item);
+    if (!projected || !includeCampaignInFeed(item, now, horizonEnd)) continue;
+    projectedCampaigns.push(projected);
+  }
+  projectedCampaigns.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
 
   const anchor = zonedDateTime(today, "00:00");
 

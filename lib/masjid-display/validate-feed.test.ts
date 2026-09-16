@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DisplayFeedValidationError, validateMasjidDisplayFeed } from "./validate-feed";
 
-function validFeed(): Record<string, unknown> {
+function validFeed() {
   return {
     schemaVersion: 1,
     snapshotRevision: "a".repeat(64),
@@ -23,7 +23,12 @@ function validFeed(): Record<string, unknown> {
           asr: "16:45",
           maghrib: "19:20",
           isha: "20:45",
-          maghribProgram: null,
+          maghribProgram: null as null | {
+            enabled: boolean;
+            lessonTitle: string;
+            lessonDurationMinutes: number;
+            combinedIshaTime: string;
+          },
         },
         {
           date: "2026-09-16",
@@ -65,8 +70,8 @@ function validFeed(): Record<string, unknown> {
       messageDe: "Nachricht",
       isUrgent: false,
       displayStyle: "normal",
-      displayFrom: null,
-      displayUntil: null,
+      displayFrom: null as string | null,
+      displayUntil: null as string | null,
     }],
     events: [{
       id: "event-1",
@@ -78,7 +83,7 @@ function validFeed(): Record<string, unknown> {
       locationDe: "Moschee",
       date: "2026-09-16",
       startTime: "18:00",
-      endTime: null,
+      endTime: null as string | null,
       type: "Community",
     }],
     campaigns: [{
@@ -90,14 +95,16 @@ function validFeed(): Record<string, unknown> {
       targetAmount: 1000,
       collectedAmount: 100,
       startDate: "2026-09-01",
-      endDate: null,
-      donationUrl: "https://donate.example.test",
+      endDate: null as string | null,
+      donationUrl: "https://donate.example.test" as string | null,
       isFeatured: true,
     }],
   };
 }
 
-function expectInvalid(mutator: (feed: any) => void, expectedPath: string) {
+type MutableFeed = ReturnType<typeof validFeed>;
+
+function expectInvalid(mutator: (feed: MutableFeed) => void, expectedPath: string) {
   const feed = validFeed();
   mutator(feed);
   try {
@@ -125,7 +132,7 @@ describe("validateMasjidDisplayFeed", () => {
   });
 
   it("rejects missing or negative Iqama delays", () => {
-    expectInvalid((feed) => { delete feed.prayers.iqamaDelays.fajr; }, "prayers.iqamaDelays.fajr");
+    expectInvalid((feed) => { delete (feed.prayers.iqamaDelays as Partial<typeof feed.prayers.iqamaDelays>).fajr; }, "prayers.iqamaDelays.fajr");
     expectInvalid((feed) => { feed.prayers.iqamaDelays.isha = -1; }, "prayers.iqamaDelays.isha");
   });
 
@@ -154,7 +161,7 @@ describe("validateMasjidDisplayFeed", () => {
   });
 
   it("rejects unknown fields at the public boundary", () => {
-    expectInvalid((feed) => { feed.admin_users = []; }, "admin_users");
-    expectInvalid((feed) => { feed.mosque.latitude = 48.8; }, "mosque.latitude");
+    expectInvalid((feed) => { (feed as MutableFeed & { admin_users?: unknown[] }).admin_users = []; }, "admin_users");
+    expectInvalid((feed) => { (feed.mosque as typeof feed.mosque & { latitude?: number }).latitude = 48.8; }, "mosque.latitude");
   });
 });

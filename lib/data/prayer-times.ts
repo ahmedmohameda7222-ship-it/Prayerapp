@@ -76,10 +76,7 @@ export async function getPrayerTimes(
   if (!client) return [];
 
   if (includeUnpublished) {
-    let query = client
-      .from("prayer_times")
-      .select("*")
-      .order("date", { ascending: true });
+    let query = client.from("prayer_times").select("*").order("date", { ascending: true });
     if (startDate) query = query.gte("date", startDate);
     if (endDate) query = query.lte("date", endDate);
     if (limit) query = query.limit(limit);
@@ -91,11 +88,7 @@ export async function getPrayerTimes(
   const key = `prayer_times_${startDate || "all"}_${endDate || "all"}_${limit || "all"}`;
   return getCached(key, async () => {
     try {
-      let query = client
-        .from("prayer_times")
-        .select("*")
-        .order("date", { ascending: true })
-        .eq("published", true);
+      let query = client.from("prayer_times").select("*").order("date", { ascending: true }).eq("published", true);
       if (startDate) query = query.gte("date", startDate);
       if (endDate) query = query.lte("date", endDate);
       if (limit) query = query.limit(limit);
@@ -105,10 +98,8 @@ export async function getPrayerTimes(
       saveToPersistentCache(key, result, CACHE_TTL.prayerTimes, PRAYER_STALE_FALLBACK_MS);
       return result;
     } catch (error) {
-      const stale = loadFromPersistentPublicCache<PrayerTime[]>;
-      void stale;
-      const cached = loadFromPersistentCacheStale<PrayerTime[]>(key);
-      if (cached) return cached;
+      const stale = loadFromPersistentCacheStale<PrayerTime[]>(key);
+      if (stale) return stale;
       throw error;
     }
   }, CACHE_TTL.prayerTimes);
@@ -120,12 +111,7 @@ export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | un
   const key = `prayer_time_${date}`;
   return getCached(key, async () => {
     try {
-      const { data, error } = await client
-        .from("prayer_times")
-        .select("*")
-        .eq("date", date)
-        .eq("published", true)
-        .single();
+      const { data, error } = await client.from("prayer_times").select("*").eq("date", date).eq("published", true).single();
       if (error || !data) {
         if (error?.code === "PGRST116") return undefined;
         throw new Error("Unable to load prayer time");

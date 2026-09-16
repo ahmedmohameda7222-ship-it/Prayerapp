@@ -27,6 +27,7 @@ create table public.prayer_settings (
   isha_iqama_delay_minutes integer not null check (isha_iqama_delay_minutes between 0 and 180),
   calculation_revision bigint not null default 1 check (calculation_revision >= 1),
   applied_calculation_revision bigint not null default 0 check (applied_calculation_revision >= 0),
+  row_revision bigint not null default 1 check (row_revision >= 1),
   updated_at timestamptz not null default now(),
   check (
     (isha_rule = 'angle' and isha_angle is not null and isha_minutes_after_maghrib is null)

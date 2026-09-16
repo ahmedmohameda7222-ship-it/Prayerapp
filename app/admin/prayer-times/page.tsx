@@ -60,11 +60,20 @@ export default function AdminPrayerTimesPage() {
   }, []);
 
   useEffect(() => {
-    refreshItems().catch(() => {
-      setItemsLoaded(true);
-      setError(t("common.dataLoadFailed"));
-    });
-  }, [refreshItems, t]);
+    let active = true;
+    getPrayerTimes(true)
+      .then((data) => {
+        if (!active) return;
+        setItems(data);
+        setItemsLoaded(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setItemsLoaded(true);
+        setError(t("common.dataLoadFailed"));
+      });
+    return () => { active = false; };
+  }, [t]);
 
   function resetForm() {
     setForm({ ...emptyForm });

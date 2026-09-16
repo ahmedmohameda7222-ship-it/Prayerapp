@@ -141,6 +141,7 @@ $$;
 
 create or replace function public.commit_prayer_schedule_recalculation(
   p_rows jsonb,
+  p_expected_rows jsonb,
   p_expected_revision bigint,
   p_today date,
   p_start_date date,
@@ -158,6 +159,10 @@ declare
   v_expected_count integer;
   v_min_date date;
   v_max_date date;
+  v_basis_count integer;
+  v_basis_distinct_count integer;
+  v_basis_min_date date;
+  v_basis_max_date date;
 begin
   if p_today is null
      or p_start_date is null
@@ -174,6 +179,9 @@ begin
   if p_rows is null or jsonb_typeof(p_rows) <> 'array' then
     raise exception 'recalculation payload must be a JSON array';
   end if;
+  if p_expected_rows is null or jsonb_typeof(p_expected_rows) <> 'array' then
+    raise exception 'recalculation basis must be a JSON array';
+  end if;
 
   select * into strict v_settings
   from public.prayer_settings
@@ -183,6 +191,8 @@ begin
   if v_settings.calculation_revision <> p_expected_revision then
     raise exception 'calculation revision mismatch';
   end if;
+
+  lock table public.prayer_times in share row exclusive mode;
 
   v_expected_count := (p_end_date - p_start_date) + 1;
 
@@ -246,6 +256,104 @@ begin
     raise exception 'invalid recalculation payload row';
   end if;
 
+  select count(*), count(distinct e.date), min(e.date), max(e.date)
+  into v_basis_count, v_basis_distinct_count, v_basis_min_date, v_basis_max_date
+  from jsonb_to_recordset(p_expected_rows) as e(
+    date date,
+    "exists" boolean,
+    fajr text,
+    sunrise text,
+    dhuhr text,
+    asr text,
+    maghrib text,
+    isha text
+  );
+
+  if v_basis_count <> v_expected_count
+     or v_basis_distinct_count <> v_expected_count
+     or v_basis_min_date is distinct from p_start_date
+     or v_basis_max_date is distinct from p_end_date
+     or exists (
+       select 1
+       from generate_series(p_start_date, p_end_date, interval '1 day') d
+       where not exists (
+         select 1
+         from jsonb_to_recordset(p_expected_rows) as e(
+           date date,
+           "exists" boolean,
+           fajr text,
+           sunrise text,
+           dhuhr text,
+           asr text,
+           maghrib text,
+           isha text
+         )
+         where e.date = d::date
+       )
+     ) then
+    raise exception 'recalculation basis must match approved continuous range';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_to_recordset(p_expected_rows) as e(
+      date date,
+      "exists" boolean,
+      fajr text,
+      sunrise text,
+      dhuhr text,
+      asr text,
+      maghrib text,
+      isha text
+    )
+    where e.date is null
+       or e."exists" is null
+       or (
+         e."exists"
+         and (
+           e.fajr is null
+           or e.sunrise is null
+           or e.dhuhr is null
+           or e.asr is null
+           or e.maghrib is null
+           or e.isha is null
+         )
+       )
+  ) then
+    raise exception 'invalid recalculation basis row';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_to_recordset(p_expected_rows) as e(
+      date date,
+      "exists" boolean,
+      fajr text,
+      sunrise text,
+      dhuhr text,
+      asr text,
+      maghrib text,
+      isha text
+    )
+    left join public.prayer_times p on p.date = e.date
+    where (e."exists" and p.date is null)
+       or (not e."exists" and p.date is not null)
+       or (
+         e."exists"
+         and p.date is not null
+         and (
+           p.fajr is distinct from e.fajr
+           or p.sunrise is distinct from e.sunrise
+           or p.dhuhr is distinct from e.dhuhr
+           or p.asr is distinct from e.asr
+           or p.maghrib is distinct from e.maghrib
+           or p.isha is distinct from e.isha
+         )
+       )
+  ) then
+    raise exception 'prayer schedule changed since preview';
+  end if;
+
   insert into public.prayer_times (
     date,
     fajr,
@@ -296,9 +404,9 @@ $$;
 
 revoke all on function public.commit_prayer_schedule_extension(jsonb, bigint, date, date)
   from public, anon, authenticated;
-revoke all on function public.commit_prayer_schedule_recalculation(jsonb, bigint, date, date, date)
+revoke all on function public.commit_prayer_schedule_recalculation(jsonb, jsonb, bigint, date, date, date)
   from public, anon, authenticated;
 grant execute on function public.commit_prayer_schedule_extension(jsonb, bigint, date, date)
   to service_role;
-grant execute on function public.commit_prayer_schedule_recalculation(jsonb, bigint, date, date, date)
+grant execute on function public.commit_prayer_schedule_recalculation(jsonb, jsonb, bigint, date, date, date)
   to service_role;

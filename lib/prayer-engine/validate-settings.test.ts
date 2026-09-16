@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { APP_TIME_ZONE } from "@/lib/date-utils";
 import { validSettings } from "./test-settings";
 import { validatePrayerCalculationSettings } from "./validate-settings";
 
@@ -20,6 +21,13 @@ describe("validatePrayerCalculationSettings", () => {
     expect(() =>
       validatePrayerCalculationSettings({ ...validSettings, timezone: "Berlin" }),
     ).toThrow();
+  });
+
+  it("restricts prayer calculation to the canonical mosque timezone", () => {
+    expect(validSettings.timezone).toBe(APP_TIME_ZONE);
+    expect(() =>
+      validatePrayerCalculationSettings({ ...validSettings, timezone: "UTC" }),
+    ).toThrow("Invalid timezone");
   });
 
   it("requires exactly the fields for the selected Isha rule", () => {

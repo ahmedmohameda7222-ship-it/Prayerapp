@@ -16,6 +16,11 @@ const DEFAULT_SETTINGS: DonationSettings = {
   defaultPurposeTr: "",
 };
 
+export function invalidateDonationCampaignCaches() {
+  invalidateCachePrefix("donation_campaigns");
+  clearPersistentCachePrefix("donation_campaigns");
+}
+
 function emptyDonationReport(): DonationReport {
   return {
     month: new Date().toISOString().slice(0, 7),
@@ -52,7 +57,6 @@ export async function getDonationSettings(): Promise<DonationSettings> {
   }, CACHE_TTL.donationSettings);
 }
 
-// Alias retained locally to keep the stale-read call explicit without changing cache semantics.
 function loadFromPersistentPublicCacheStale<T>(key: string): T | null {
   return loadFromPersistentCacheStale<T>(key);
 }
@@ -142,8 +146,7 @@ export async function createDonationCampaign(item: Omit<DonationCampaign, "id">)
   };
   const { data, error } = await client.from("donation_campaigns").insert(db as never).select().single();
   if (error || !data) throw new Error("Failed to create campaign");
-  invalidateCachePrefix("donation_campaigns");
-  clearPersistentCachePrefix("donation_campaigns");
+  invalidateDonationCampaignCaches();
   return { ...item, id: String((data as Record<string, unknown>).id) };
 }
 
@@ -164,8 +167,7 @@ export async function updateDonationCampaign(id: string, item: Partial<DonationC
   if (item.isFeatured !== undefined) db.is_featured = item.isFeatured;
   const { data, error } = await client.from("donation_campaigns").update(db as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update campaign");
-  invalidateCachePrefix("donation_campaigns");
-  clearPersistentCachePrefix("donation_campaigns");
+  invalidateDonationCampaignCaches();
   return { ...item, id: String((data as Record<string, unknown>).id) } as DonationCampaign;
 }
 
@@ -174,8 +176,7 @@ export async function deleteDonationCampaign(id: string): Promise<void> {
   if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("donation_campaigns").delete().eq("id", id);
   if (error) throw new Error("Failed to delete campaign");
-  invalidateCachePrefix("donation_campaigns");
-  clearPersistentCachePrefix("donation_campaigns");
+  invalidateDonationCampaignCaches();
 }
 
 export async function getDonations(): Promise<Donation[]> {

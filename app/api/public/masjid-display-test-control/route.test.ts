@@ -2,14 +2,16 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const getTestState = vi.fn();
-const getMosqueSettings = vi.fn();
+const mocks = vi.hoisted(() => ({
+  getTestState: vi.fn(),
+  getMosqueSettings: vi.fn(),
+}));
 
 vi.mock("@/lib/data/masjid-display-test-state", () => ({
-  getMasjidDisplayTestState: getTestState,
+  getMasjidDisplayTestState: mocks.getTestState,
 }));
 vi.mock("@/lib/data/mosque-settings", () => ({
-  getMosqueSettings,
+  getMosqueSettings: mocks.getMosqueSettings,
 }));
 
 import { GET } from "./route";
@@ -26,11 +28,11 @@ const activeState = {
 describe("public Masjid Display Test Control", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getMosqueSettings.mockResolvedValue({ publicAppUrl: "https://prayer.example/" });
+    mocks.getMosqueSettings.mockResolvedValue({ publicAppUrl: "https://prayer.example/" });
   });
 
   it("returns active synthetic state independently of production prayer/display settings", async () => {
-    getTestState.mockResolvedValue(activeState);
+    mocks.getTestState.mockResolvedValue(activeState);
     const response = await GET();
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
@@ -46,13 +48,13 @@ describe("public Masjid Display Test Control", () => {
   });
 
   it("returns inactive for missing, disabled, or expired state", async () => {
-    getTestState.mockResolvedValue(null);
+    mocks.getTestState.mockResolvedValue(null);
     await expect((await GET()).json()).resolves.toEqual({ active: false });
 
-    getTestState.mockResolvedValue({ ...activeState, enabled: false });
+    mocks.getTestState.mockResolvedValue({ ...activeState, enabled: false });
     await expect((await GET()).json()).resolves.toEqual({ active: false });
 
-    getTestState.mockResolvedValue({ ...activeState, expiresAt: "2000-01-01T00:00:00.000Z" });
+    mocks.getTestState.mockResolvedValue({ ...activeState, expiresAt: "2000-01-01T00:00:00.000Z" });
     await expect((await GET()).json()).resolves.toEqual({ active: false });
   });
 });

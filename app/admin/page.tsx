@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Clock, HandHeart, Monitor, ShieldCheck } from "lucide-react";
+import { Bell, Clock, FlaskConical, HandHeart, Monitor, ShieldCheck } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminWarningCard } from "@/components/admin/AdminWarningCard";
@@ -35,12 +35,20 @@ export default function AdminDashboardPage() {
           <AdminStatCard label={t("admin.activeCampaigns")} value={data.campaigns.filter((item) => item.isActive).length} note={t("admin.featuredCount", { count: data.campaigns.filter((item) => item.isFeatured).length })} icon={HandHeart} />
           <AdminStatCard label={t("admin.announcements")} value={t("admin.liveCount", { count: data.announcements.filter((item) => item.published).length })} note={t("admin.urgentCount", { count: data.announcements.filter((item) => item.isUrgent).length })} icon={Bell} />
         </div>
-        <Card className="p-0">
-          <Link href="/admin/masjid-display" className="flex items-center gap-4 p-5 font-bold text-[var(--color-emerald)]">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--color-emerald-soft)]"><Monitor className="h-5 w-5" aria-hidden="true" /></span>
-            <span><span className="block">Masjid Display</span><span className="block text-xs font-normal text-[var(--color-muted)]">Prayer-in-progress durations and Azkar playlist</span></span>
-          </Link>
-        </Card>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Card className="p-0">
+            <Link href="/admin/masjid-display" className="flex items-center gap-4 p-5 font-bold text-[var(--color-emerald)]">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--color-emerald-soft)]"><Monitor className="h-5 w-5" aria-hidden="true" /></span>
+              <span><span className="block">Masjid Display</span><span className="block text-xs font-normal text-[var(--color-muted)]">Prayer-in-progress durations and Azkar playlist</span></span>
+            </Link>
+          </Card>
+          <Card className="p-0">
+            <Link href="/admin/masjid-display-test" className="flex items-center gap-4 p-5 font-bold text-[var(--color-emerald)]">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--color-emerald-soft)]"><FlaskConical className="h-5 w-5" aria-hidden="true" /></span>
+              <span><span className="block">Masjid Display Test Control</span><span className="block text-xs font-normal text-[var(--color-muted)]">Run synthetic scenarios on the real TV</span></span>
+            </Link>
+          </Card>
+        </div>
       </div> : null}
     </AdminShell>
   );

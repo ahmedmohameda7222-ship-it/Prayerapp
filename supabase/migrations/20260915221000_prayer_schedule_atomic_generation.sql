@@ -388,13 +388,13 @@ begin
       dhuhr = excluded.dhuhr,
       asr = excluded.asr,
       maghrib = excluded.maghrib,
-      isha = excluded.isha,
-      published = true;
+      isha = excluded.isha;
 
   get diagnostics v_count = row_count;
 
   update public.prayer_settings
   set applied_calculation_revision = calculation_revision,
+      row_revision = row_revision + 1,
       updated_at = now()
   where id = '1';
 

@@ -23,8 +23,8 @@ describe("smartAzkarCategory", () => {
     expect(smartAzkarCategory(at("2026-09-17T19:59:00Z"))).toBe("Evening");
   });
 
-  it("uses Sleep from 22:00 through 03:59 mosque-local time", () => {
+  it("uses Sleep from 22:00 through 03:59 mosque-local time outside Friday", () => {
     expect(smartAzkarCategory(at("2026-09-17T20:00:00Z"))).toBe("Sleep");
-    expect(smartAzkarCategory(at("2026-09-18T01:59:00Z"))).toBe("Sleep");
+    expect(smartAzkarCategory(at("2026-09-17T01:59:00Z"))).toBe("Sleep");
   });
 });

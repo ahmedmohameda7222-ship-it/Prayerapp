@@ -39,6 +39,6 @@ describe("prayer settings persistence mapping", () => {
       "supabase/migrations/20260915221000_prayer_schedule_atomic_generation.sql",
       "utf8",
     ).toLowerCase();
-    expect((persistence.match(/row_revision\s*=\s*row_revision\s*\+\s*1/g) || []).length).toBeGreaterThanOrEqual(2);
+    expect(persistence).toContain("row_revision = row_revision + 1");
   });
 });

@@ -280,7 +280,7 @@ export async function buildMasjidDisplayFeed(
     dependencies.getDonationCampaigns(false),
     dependencies.getMosqueSettings(),
     dependencies.getMasjidDisplaySettings(),
-    dependencies.getAzkarItems(false),
+    dependencies.getAzkarItems(true),
   ]);
 
   if (!prayerSettings) throw new DisplayFeedBuildError("Prayer settings are required for the display feed");
@@ -302,6 +302,13 @@ export async function buildMasjidDisplayFeed(
     maghrib: requireInteger(displaySettings.maghribPrayerDurationMinutes, "maghrib prayer duration", 2, 120),
     isha: requireInteger(displaySettings.ishaPrayerDurationMinutes, "isha prayer duration", 2, 120),
   };
+
+  const canonicalAzkarIds = new Set(azkarItems.map((item) => item.id));
+  for (const id of displaySettings.azkarPlaylistIds) {
+    if (!canonicalAzkarIds.has(id)) {
+      throw new DisplayFeedBuildError(`Invalid Masjid Display settings: unknown Azkar playlist ID ${id}`);
+    }
+  }
 
   const representedPrayers = prayers
     .filter((item) => item.published && item.date >= startDate && item.date <= endDate)

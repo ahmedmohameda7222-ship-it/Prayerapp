@@ -63,6 +63,7 @@ export async function loadMasjidDisplaySettingsAction(token: string): Promise<Ma
   try {
     await requireAllowedAdminIdentity(token);
     const client = createServerClient();
+    if (!client) throw new Error("Supabase is not configured");
     const { data, error } = await client.from("masjid_display_settings").select("*").eq("id", "1").maybeSingle();
     if (error) throw error;
     return { success: true, data: data ? mapSettings(data as Record<string, unknown>) : DEFAULT_SETTINGS };
@@ -90,6 +91,7 @@ export async function saveMasjidDisplaySettingsAction(
   try {
     const settings = await validateSettings(input);
     const client = createServerClient();
+    if (!client) throw new Error("Supabase is not configured");
     const { data, error } = await client.from("masjid_display_settings").upsert({
       id: "1",
       fajr_prayer_duration_minutes: settings.fajrPrayerDurationMinutes,

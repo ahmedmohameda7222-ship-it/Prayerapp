@@ -20,7 +20,7 @@ describe("Prayer Engine Admin", () => {
     expect(screen.getByLabelText(/Fajr angle/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Fajr Iqama delay/i)).toHaveValue(0);
     expect(screen.getByText(/Needs Recalculation/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Extend Schedule \+1 Year/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Extend Schedule \+1 Year$/i })).toBeDisabled();
   });
 
   it("makes the unresolved production calibration gate explicit", () => {

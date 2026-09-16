@@ -1,6 +1,7 @@
 import type { MosqueSettings } from "../types";
 import { createClient } from "../supabase/client";
-import { persistentPublicCache, readPersistentPublicCache } from "./persistent-public-cache";
+import { CACHE_TTL } from "./cache";
+import { loadFromPersistentCacheStale, saveToPersistentCache } from "./persistent-public-cache";
 
 const fallback: MosqueSettings = {
   mosqueName: "Danube Mosque",
@@ -40,9 +41,9 @@ export async function getMosqueSettings(): Promise<MosqueSettings> {
   const client = createClient();
   if (!client) return fallback;
   const { data, error } = await client.from("mosque_settings").select("*").eq("id", "1").maybeSingle();
-  if (error || !data) return readPersistentPublicCache("mosque_settings", fallback);
+  if (error || !data) return loadFromPersistentCacheStale<MosqueSettings>("mosque_settings") ?? fallback;
   const settings = mapRow(data as Record<string, unknown>);
-  await persistentPublicCache("mosque_settings", settings);
+  saveToPersistentCache("mosque_settings", settings, CACHE_TTL.mosqueSettings, 7 * 24 * 60 * 60 * 1000);
   return settings;
 }
 
@@ -68,5 +69,6 @@ export async function updateMosqueSettings(settings: MosqueSettings) {
     public_app_url: settings.publicAppUrl || null,
   }, { onConflict: "id" });
   if (error) return fallback;
+  saveToPersistentCache("mosque_settings", settings, CACHE_TTL.mosqueSettings, 7 * 24 * 60 * 60 * 1000);
   return settings;
 }

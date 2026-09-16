@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PrayerEngineAdmin } from "../PrayerEngineAdmin";
-import { SYNTHETIC_TEST_PRAYER_SETTINGS } from "@/lib/prayer-engine/test-settings";
+import { validSettings as SYNTHETIC_TEST_PRAYER_SETTINGS } from "@/lib/prayer-engine/test-settings";
 
 describe("Prayer Engine Admin", () => {
   it("shows explicit settings and blocks extension while revisions differ", () => {

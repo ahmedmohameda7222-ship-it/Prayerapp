@@ -1,9 +1,11 @@
 "use client";
 
-import { Bell, Clock, HandHeart, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { Bell, Clock, HandHeart, Monitor, ShieldCheck } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminWarningCard } from "@/components/admin/AdminWarningCard";
+import { Card } from "@/components/ui/Card";
 import { DataError, DataLoading } from "@/components/ui/DataState";
 import { getAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns } from "@/lib/data/donations";
@@ -19,9 +21,7 @@ export default function AdminDashboardPage() {
   const { data, loading, error, reload } = useAsyncData(loadDashboard);
   const today = todayIso();
   const nextWeekStart = addDaysIso(today, 1);
-  const nextWeekMissing = data
-    ? getMissingPublishedPrayerDates(data.prayerTimes, nextWeekStart, 7).length > 0
-    : false;
+  const nextWeekMissing = data ? getMissingPublishedPrayerDates(data.prayerTimes, nextWeekStart, 7).length > 0 : false;
 
   return (
     <AdminShell titleKey="admin.dashboard">
@@ -35,6 +35,12 @@ export default function AdminDashboardPage() {
           <AdminStatCard label={t("admin.activeCampaigns")} value={data.campaigns.filter((item) => item.isActive).length} note={t("admin.featuredCount", { count: data.campaigns.filter((item) => item.isFeatured).length })} icon={HandHeart} />
           <AdminStatCard label={t("admin.announcements")} value={t("admin.liveCount", { count: data.announcements.filter((item) => item.published).length })} note={t("admin.urgentCount", { count: data.announcements.filter((item) => item.isUrgent).length })} icon={Bell} />
         </div>
+        <Card className="p-0">
+          <Link href="/admin/masjid-display" className="flex items-center gap-4 p-5 font-bold text-[var(--color-emerald)]">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--color-emerald-soft)]"><Monitor className="h-5 w-5" aria-hidden="true" /></span>
+            <span><span className="block">Masjid Display</span><span className="block text-xs font-normal text-[var(--color-muted)]">Prayer-in-progress durations and Azkar playlist</span></span>
+          </Link>
+        </Card>
       </div> : null}
     </AdminShell>
   );
@@ -42,8 +48,7 @@ export default function AdminDashboardPage() {
 
 async function loadDashboard() {
   const [prayerTimes, jumuah, campaigns, announcements] = await Promise.all([
-    getPrayerTimes(true), getJumuahTimes(true), getDonationCampaigns(true),
-    getAnnouncements(true),
+    getPrayerTimes(true), getJumuahTimes(true), getDonationCampaigns(true), getAnnouncements(true),
   ]);
   return { prayerTimes, jumuah, campaigns, announcements };
 }

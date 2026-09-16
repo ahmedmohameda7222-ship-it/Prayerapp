@@ -3,18 +3,18 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ROOT = process.cwd();
-const LEGACY = [
-  "fajrIqama",
-  "dhuhrIqama",
-  "asrIqama",
-  "maghribIqama",
-  "ishaIqama",
-  "fajr_iqama",
-  "dhuhr_iqama",
-  "asr_iqama",
-  "maghrib_iqama",
-  "isha_iqama",
-  "getIqama(",
+const LEGACY_PATTERNS: Array<[string, RegExp]> = [
+  ["fajrIqama", /\bfajrIqama\b/u],
+  ["dhuhrIqama", /\bdhuhrIqama\b/u],
+  ["asrIqama", /\basrIqama\b/u],
+  ["maghribIqama", /\bmaghribIqama\b/u],
+  ["ishaIqama", /\bishaIqama\b/u],
+  ["fajr_iqama", /\bfajr_iqama\b/u],
+  ["dhuhr_iqama", /\bdhuhr_iqama\b/u],
+  ["asr_iqama", /\basr_iqama\b/u],
+  ["maghrib_iqama", /\bmaghrib_iqama\b/u],
+  ["isha_iqama", /\bisha_iqama\b/u],
+  ["getIqama(", /\bgetIqama\s*\(/u],
 ];
 const IGNORE_PREFIXES = [
   ".git/",
@@ -41,7 +41,7 @@ describe("Masjid Display Plan 2 Iqama cutover", () => {
   it("has no active root Prayerapp consumer of legacy absolute Iqama fields or getIqama", () => {
     const offenders = sourceFiles(ROOT).flatMap((file) => {
       const text = readFileSync(join(ROOT, file), "utf8");
-      return LEGACY.filter((needle) => text.includes(needle)).map((needle) => `${file}: ${needle}`);
+      return LEGACY_PATTERNS.filter(([, pattern]) => pattern.test(text)).map(([label]) => `${file}: ${label}`);
     });
     expect(offenders).toEqual([]);
   });

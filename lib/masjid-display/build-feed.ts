@@ -240,15 +240,14 @@ export async function buildMasjidDisplayFeed(
     isha: requireInteger(displaySettings.ishaPrayerDurationMinutes, "isha prayer duration", 2, 120),
   };
 
-  const schedule = prayers
+  const representedPrayers = prayers
     .filter((item) => item.published && item.date >= startDate && item.date <= endDate)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map(prayerDay);
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const schedule = representedPrayers.map(prayerDay);
   if (schedule.length === 0) throw new DisplayFeedBuildError("Published prayer schedule is unavailable for the display window");
 
-  const additionalJumuah = prayers
-    .filter((item) => item.published && item.date >= startDate && item.date <= endDate && isFridayIso(item.date))
-    .sort((a, b) => a.date.localeCompare(b.date))
+  const additionalJumuah = representedPrayers
+    .filter((item) => isFridayIso(item.date))
     .flatMap((item) => getValidAdditionalFridayServices(item.date, item.dhuhr, jumuahTimes))
     .map((item) => ({ id: item.id, date: item.date, prayerTime: item.prayerTime }))
     .sort((a, b) => a.date.localeCompare(b.date) || a.prayerTime.localeCompare(b.prayerTime) || a.id.localeCompare(b.id));
@@ -256,9 +255,14 @@ export async function buildMasjidDisplayFeed(
   const includedAnnouncementSources = announcements
     .filter((item) => includeAnnouncementInFeed(item, now, horizonEnd))
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
-  const projectedAnnouncements = includedAnnouncementSources
-    .map(projectAnnouncement)
-    .filter((item): item is DisplayAnnouncementDto => item !== null);
+  const representedAnnouncementSources: Announcement[] = [];
+  const projectedAnnouncements: DisplayAnnouncementDto[] = [];
+  for (const item of includedAnnouncementSources) {
+    const projected = projectAnnouncement(item);
+    if (!projected) continue;
+    representedAnnouncementSources.push(item);
+    projectedAnnouncements.push(projected);
+  }
 
   const projectedEvents = events
     .filter((item) => includeEventInFeed(item, now, horizonEnd))
@@ -276,7 +280,7 @@ export async function buildMasjidDisplayFeed(
 
   return {
     schemaVersion: 1,
-    generatedAt: latestSourceTimestamp(prayers, includedAnnouncementSources, anchor),
+    generatedAt: latestSourceTimestamp(representedPrayers, representedAnnouncementSources, anchor),
     timezone: APP_TIME_ZONE,
     mosque: {
       nameAr: requiredText(mosqueSettings.mosqueNameAr, "mosqueNameAr"),

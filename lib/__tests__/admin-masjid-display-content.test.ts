@@ -24,6 +24,29 @@ describe("Masjid Display content Admin", () => {
     expect(actions).toContain("zonedDateTime(date, time)");
   });
 
+  it("formats stored announcement instants as mosque-local datetime-local values", () => {
+    const page = source("app/admin/announcements/page.tsx");
+    expect(page).toContain("formatDateTimeLocalInput");
+    expect(page).not.toContain("value.slice(0, 16)");
+  });
+
+  it("invalidates dynamic display-feed caches after admin mutations", () => {
+    const announcementActions = source("app/admin/announcements/actions.ts");
+    const eventActions = source("app/admin/events/actions.ts");
+    const donationActions = source("app/admin/donations/actions.ts");
+    const announcementData = source("lib/data/announcements.ts");
+    const eventData = source("lib/data/events.ts");
+    const donationData = source("lib/data/donations.ts");
+
+    expect(announcementData).toContain("export function invalidateAnnouncementCaches");
+    expect(eventData).toContain("export function invalidateEventCaches");
+    expect(donationData).toContain("export function invalidateDonationCampaignCaches");
+
+    expect((announcementActions.match(/invalidateAnnouncementCaches\(\)/g) || []).length).toBeGreaterThanOrEqual(5);
+    expect((eventActions.match(/invalidateEventCaches\(\)/g) || []).length).toBeGreaterThanOrEqual(3);
+    expect((donationActions.match(/invalidateDonationCampaignCaches\(\)/g) || []).length).toBeGreaterThanOrEqual(5);
+  });
+
   it("keeps Event display content explicitly Arabic and German", () => {
     const page = source("app/admin/events/page.tsx");
     const actions = source("app/admin/events/actions.ts");

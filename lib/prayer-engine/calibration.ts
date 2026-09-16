@@ -31,6 +31,8 @@ export interface CalibrationReport {
   startDate: string | null;
   endDate: string | null;
   settingsRevision: number;
+  comparedDays: number;
+  outOfToleranceCount: number;
   maximumAbsoluteDeltaMinutes: number;
   requiresInvestigation: boolean;
   days: PrayerDayComparison[];
@@ -79,15 +81,19 @@ export function calibrateSchedule(
   const deltas = days.flatMap((day) =>
     PRAYER_KEYS.map((key) => Math.abs(day[key].deltaMinutes)),
   );
+  const outOfToleranceCount = days.reduce(
+    (count, day) => count + PRAYER_KEYS.filter((key) => day[key].requiresInvestigation).length,
+    0,
+  );
 
   return {
     startDate: ordered[0]?.date ?? null,
     endDate: ordered.at(-1)?.date ?? null,
     settingsRevision: settings.calculationRevision,
+    comparedDays: days.length,
+    outOfToleranceCount,
     maximumAbsoluteDeltaMinutes: deltas.length ? Math.max(...deltas) : 0,
-    requiresInvestigation: days.some((day) =>
-      PRAYER_KEYS.some((key) => day[key].requiresInvestigation),
-    ),
+    requiresInvestigation: outOfToleranceCount > 0,
     days,
   };
 }

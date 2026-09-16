@@ -42,7 +42,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Masjid Display feed build failed", error);
+    const errorType = error instanceof Error ? error.name : "UnknownError";
+    console.error("Masjid Display feed build failed", { errorType });
     return new Response(JSON.stringify({ error: "masjid_display_feed_unavailable" }), {
       status: 503,
       headers: {

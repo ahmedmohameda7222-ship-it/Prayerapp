@@ -236,6 +236,66 @@ describe("buildMasjidDisplayFeed", () => {
     expect(feed.generatedAt).toBe("2026-09-12T10:00:00.000Z");
   });
 
+  it("rejects a religious snapshot with an internal prayer-date gap", async () => {
+    const source = deps();
+    source.getPrayerTimes.mockResolvedValue(prayerRows().filter((row) => row.date !== "2026-09-25"));
+
+    await expect(
+      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
+    ).rejects.toBeInstanceOf(DisplayFeedBuildError);
+  });
+
+  it("omits malformed legacy events instead of aborting the feed", async () => {
+    const source = deps();
+    source.getEvents.mockResolvedValue([
+      {
+        id: "bad-event",
+        title: "Bad event",
+        description: "Description",
+        location: "Mosque",
+        titleAr: "فعالية",
+        titleDe: "Veranstaltung",
+        descriptionAr: "وصف",
+        descriptionDe: "Beschreibung",
+        locationAr: "المسجد",
+        locationDe: "Moschee",
+        date: "not-a-date",
+        startTime: "18:00",
+        endTime: "19:00",
+        type: "Community",
+        published: true,
+      },
+    ] as never);
+
+    const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
+    expect(feed.events).toEqual([]);
+  });
+
+  it("omits malformed legacy campaigns before final feed validation", async () => {
+    const source = deps();
+    source.getDonationCampaigns.mockResolvedValue([
+      {
+        id: "bad-campaign",
+        title: "Campaign",
+        description: "Description",
+        titleAr: "تبرع",
+        titleDe: "Spende",
+        descriptionAr: "وصف",
+        descriptionDe: "Beschreibung",
+        targetAmount: -1,
+        collectedAmount: 100,
+        startDate: "2026-09-01",
+        endDate: undefined,
+        donationUrl: "https://donate.example.test",
+        isActive: true,
+        isFeatured: true,
+      },
+    ] as never);
+
+    const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
+    expect(feed.campaigns).toEqual([]);
+  });
+
   it("fails atomically when required prayer or display settings are missing", async () => {
     const missingPrayer = deps();
     missingPrayer.getPrayerSettings.mockResolvedValue(null as never);

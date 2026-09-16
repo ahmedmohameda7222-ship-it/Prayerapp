@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { APP_TIME_ZONE, zonedDateTime } from "@/lib/date-utils";
 import { createServerClient } from "@/lib/supabase/server";
 import type { AnnouncementDisplayStyle, AnnouncementType } from "@/lib/types";
 import { sendAdminContentPush } from "@/lib/push/web-push";
@@ -66,9 +67,46 @@ async function notifyUrgentAnnouncement(row: AnnouncementPushRow) {
 }
 
 function parseOptionalDisplayInstant(value: string | undefined, field: string): string | null {
-  if (!value?.trim()) return null;
-  const instant = new Date(value);
-  if (Number.isNaN(instant.getTime())) throw new Error(`Invalid ${field}`);
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/.exec(trimmed);
+  if (!match) throw new Error(`Invalid ${field}`);
+  const [, date, time] = match;
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  const calendarCheck = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  if (
+    calendarCheck.getUTCFullYear() !== year ||
+    calendarCheck.getUTCMonth() !== month - 1 ||
+    calendarCheck.getUTCDate() !== day ||
+    hour > 23 ||
+    minute > 59
+  ) {
+    throw new Error(`Invalid ${field}`);
+  }
+
+  const instant = zonedDateTime(date, time);
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: APP_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(instant)
+      .map((part) => [part.type, part.value]),
+  );
+  if (
+    `${parts.year}-${parts.month}-${parts.day}` !== date ||
+    `${parts.hour}:${parts.minute}` !== time
+  ) {
+    throw new Error(`Invalid ${field}`);
+  }
+
   return instant.toISOString();
 }
 

@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
+import { getPrayerSettings } from "@/lib/data/prayer-settings";
 import { getUrgentAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns, getDonationReport, getDonationSettings } from "@/lib/data/donations";
 import { getEvents } from "@/lib/data/events";
@@ -18,8 +19,9 @@ export default async function HomePage() {
   const today = todayIso(now);
   const startDate = addDaysIso(today, -1);
   const endDate = addDaysIso(today, 30);
-  const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
+  const [prayerTimesResult, prayerSettingsResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
     getPrayerTimes(false, startDate, endDate),
+    getPrayerSettings(),
     getUrgentAnnouncements(),
     getJumuahTimes(),
     getEvents(),
@@ -30,6 +32,7 @@ export default async function HomePage() {
   ]);
 
   const prayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
+  const prayerSettings = prayerSettingsResult.status === "fulfilled" ? prayerSettingsResult.value : null;
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
   const jumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
   const events = eventsResult.status === "fulfilled"
@@ -48,6 +51,7 @@ export default async function HomePage() {
       <AppHeader whatsappLink={mosqueSettings?.whatsappLink} googleMapsLink={mosqueSettings?.googleMapsLink} />
       <HomePageClient
         initialPrayerTimes={prayerTimes}
+        iqamaDelays={prayerSettings?.iqamaDelays ?? null}
         urgentAnnouncements={urgentAnnouncements}
         jumuahTimes={jumuahTimes}
         allowAnyFutureJumuah={allowAnyFutureJumuah}

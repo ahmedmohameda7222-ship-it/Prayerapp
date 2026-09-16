@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { refreshHomePrayerRuntime } from "@/app/home-prayer-runtime";
 import { HomeSectionTitle } from "@/components/home/HomeSectionTitle";
 import { HomeEmptyState } from "@/components/home/HomeEmptyState";
 import { HomeNextPrayerSurface } from "@/components/home/HomeNextPrayerSurface";
@@ -14,8 +15,7 @@ import { DonationCampaignCard } from "@/components/donations/DonationCampaignCar
 import { TransparencyCard } from "@/components/donations/TransparencyCard";
 import { PayPalCard } from "@/components/donations/PayPalCard";
 import { SmartNextActionCard } from "@/components/home/SmartNextActionCard";
-import { addDaysIso, todayIso } from "@/lib/date-utils";
-import { getPrayerTimes } from "@/lib/data/prayer-times";
+import { todayIso } from "@/lib/date-utils";
 import { getSmartNextAction } from "@/lib/home-utils";
 import { getHomeJumuahSchedule } from "@/lib/home-jumuah";
 import { derivePrayerIqamaTimes, getNextPrayer, getNextPrayerFromSchedule, getPrayerForDate } from "@/lib/prayer-utils";
@@ -74,10 +74,11 @@ export function HomePageClient({
   const { t, locale } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
   const [schedule, setSchedule] = useState<PrayerTime[]>(initialPrayerTimes || EMPTY_SCHEDULE);
+  const [liveIqamaDelays, setLiveIqamaDelays] = useState<PrayerIqamaDelays | null>(iqamaDelays);
   const today = getPrayerForDate(schedule, todayIso(now));
   const iqamaByDate = useMemo(() => Object.fromEntries(
-    schedule.map((item) => [item.date, iqamaDelays ? derivePrayerIqamaTimes(item, iqamaDelays) : {}]),
-  ), [schedule, iqamaDelays]);
+    schedule.map((item) => [item.date, liveIqamaDelays ? derivePrayerIqamaTimes(item, liveIqamaDelays) : {}]),
+  ), [schedule, liveIqamaDelays]);
   const activePrayer = useMemo(() => {
     const next = getNextPrayerFromSchedule(schedule, now);
     return next?.name || (today ? getNextPrayer(today, now)?.name : undefined);
@@ -96,12 +97,14 @@ export function HomePageClient({
   useEffect(() => {
     let active = true;
     const refreshPrayerSchedule = async () => {
-      const currentToday = todayIso(new Date());
       try {
-        const latest = await getPrayerTimes(false, addDaysIso(currentToday, -1), addDaysIso(currentToday, 30));
-        if (active) setSchedule(latest);
+        const latest = await refreshHomePrayerRuntime();
+        if (active) {
+          setSchedule(latest.schedule);
+          setLiveIqamaDelays(latest.iqamaDelays);
+        }
       } catch {
-        // Keep the last verified schedule. The data layer only permits a very short stale fallback.
+        // Keep the last verified schedule and Iqama-delay snapshot together.
       }
     };
     const onFocus = () => { void refreshPrayerSchedule(); };

@@ -4,7 +4,9 @@ import { nextCalculationRevision } from "@/lib/data/prayer-settings";
 import type { PrayerTime } from "@/lib/types";
 import { validSettings } from "./test-settings";
 import {
+  commitFutureRecalculation,
   commitScheduleExtension,
+  previewFutureRecalculation,
   previewScheduleExtension,
   type PrayerEngineServerDependencies,
 } from "./server";
@@ -88,6 +90,45 @@ describe("prayer engine server orchestration", () => {
 
     expect(preview.expectedFirstMissing).toBe(addDays(today, 500));
     expect(getPrayerTimes.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it("rejects a future recalculation when the approved prior-row basis changes", async () => {
+    const date = "2026-09-16";
+    let currentRows = [scheduleRow(date)];
+    const getPrayerTimes = vi.fn(async () => currentRows);
+    const rpc = vi.fn().mockResolvedValue({ data: 1, error: null });
+    const dependencies = deps({ getPrayerTimes, rpc });
+
+    const preview = await previewFutureRecalculation(date, date, dependencies);
+    currentRows = [{ ...scheduleRow(date), fajr: "05:01" }];
+
+    await expect(commitFutureRecalculation(preview, dependencies)).rejects.toThrow(
+      "Prayer schedule changed; preview again",
+    );
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("passes the approved prior-row basis into the atomic recalculation RPC", async () => {
+    const date = "2026-09-16";
+    const existing = [scheduleRow(date)];
+    const rpc = vi.fn().mockResolvedValue({ data: 1, error: null });
+    const dependencies = deps({ getPrayerTimes: vi.fn().mockResolvedValue(existing), rpc });
+    const preview = await previewFutureRecalculation(date, date, dependencies);
+
+    await commitFutureRecalculation(preview, dependencies);
+
+    expect(rpc).toHaveBeenCalledWith(
+      "commit_prayer_schedule_recalculation",
+      expect.objectContaining({
+        p_expected_rows: [
+          expect.objectContaining({
+            date,
+            exists: true,
+            fajr: "05:00",
+          }),
+        ],
+      }),
+    );
   });
 
   it("delay-only edits do not bump calculation revision", () => {

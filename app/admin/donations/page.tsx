@@ -35,6 +35,7 @@ const emptyCampaignForm = {
   collectedAmount: "0",
   startDate: "",
   endDate: "",
+  donationUrl: "",
   isActive: "true",
   isFeatured: "false",
 };
@@ -123,7 +124,8 @@ export default function AdminDonationsPage() {
       targetAmount: String(campaign.targetAmount),
       collectedAmount: String(campaign.collectedAmount),
       startDate: campaign.startDate,
-      endDate: campaign.endDate,
+      endDate: campaign.endDate || "",
+      donationUrl: campaign.donationUrl || "",
       isActive: String(campaign.isActive),
       isFeatured: String(campaign.isFeatured),
     });
@@ -209,17 +211,8 @@ export default function AdminDonationsPage() {
                 <input type="text" value={settingsForm[key] || ""} onChange={(event) => setSettingsForm((current) => ({ ...current, [key]: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
               </label>
             ))}
-            <LocalizedContentFields
-              fields={[
-                { base: "defaultPurpose", labelKey: "admin.defaultPurpose", requiredArabic: true },
-              ]}
-              form={settingsForm}
-              setForm={setSettingsForm}
-              disabled={!hasSupabase || isPending}
-            />
-            <div className="flex gap-3 md:col-span-2">
-              <Button type="submit" disabled={!hasSupabase || isPending}>{t("admin.saveSettings")}</Button>
-            </div>
+            <LocalizedContentFields fields={[{ base: "defaultPurpose", labelKey: "admin.defaultPurpose", requiredArabic: true }]} form={settingsForm} setForm={setSettingsForm} disabled={!hasSupabase || isPending} />
+            <div className="flex gap-3 md:col-span-2"><Button type="submit" disabled={!hasSupabase || isPending}>{t("admin.saveSettings")}</Button></div>
           </form>
         </Card>
 
@@ -248,19 +241,16 @@ export default function AdminDonationsPage() {
               { key: "collectedAmount", labelKey: "admin.collectedAmount", type: "number" },
               { key: "startDate", labelKey: "admin.startDate", type: "date" },
               { key: "endDate", labelKey: "admin.endDate", type: "date", optional: true },
+              { key: "donationUrl", labelKey: "Donation URL", type: "url", optional: true },
             ].map(({ key, labelKey, type, optional }) => (
               <label key={key} className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
-                {t(labelKey)}
+                {labelKey.startsWith("admin.") ? t(labelKey) : labelKey}
                 <input type={type} required={!optional} value={campaignForm[key]} onChange={(event) => setCampaignForm((current) => ({ ...current, [key]: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
               </label>
             ))}
             <div className="flex flex-wrap gap-4 md:col-span-2">
-              <label className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3 text-sm font-bold text-[var(--color-emerald)]">
-                <input type="checkbox" checked={campaignForm.isActive === "true"} onChange={(event) => setCampaignForm((current) => ({ ...current, isActive: String(event.target.checked) }))} disabled={!hasSupabase || isPending} className="h-5 w-5 accent-[var(--color-emerald)]" /> {t("admin.active")}
-              </label>
-              <label className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3 text-sm font-bold text-[var(--color-emerald)]">
-                <input type="checkbox" checked={campaignForm.isFeatured === "true"} onChange={(event) => setCampaignForm((current) => ({ ...current, isFeatured: String(event.target.checked) }))} disabled={!hasSupabase || isPending} className="h-5 w-5 accent-[var(--color-emerald)]" /> {t("admin.featured")}
-              </label>
+              <label className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3 text-sm font-bold text-[var(--color-emerald)]"><input type="checkbox" checked={campaignForm.isActive === "true"} onChange={(event) => setCampaignForm((current) => ({ ...current, isActive: String(event.target.checked) }))} disabled={!hasSupabase || isPending} className="h-5 w-5 accent-[var(--color-emerald)]" /> {t("admin.active")}</label>
+              <label className="flex items-center gap-3 rounded-2xl bg-[var(--color-cream)] p-3 text-sm font-bold text-[var(--color-emerald)]"><input type="checkbox" checked={campaignForm.isFeatured === "true"} onChange={(event) => setCampaignForm((current) => ({ ...current, isFeatured: String(event.target.checked) }))} disabled={!hasSupabase || isPending} className="h-5 w-5 accent-[var(--color-emerald)]" /> {t("admin.featured")}</label>
             </div>
             <div className="flex flex-wrap gap-3 md:col-span-2">
               <Button type="submit" disabled={!hasSupabase || isPending}><Plus className="h-4 w-4" aria-hidden="true" /> {editingCampaignId ? t("common.update") : t("common.create")}</Button>

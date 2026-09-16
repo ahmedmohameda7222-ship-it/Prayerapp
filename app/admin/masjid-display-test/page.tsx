@@ -33,6 +33,15 @@ export default function MasjidDisplayTestControlPage() {
     return () => { cancelled = true; };
   }, [session, isAdmin]);
 
+  useEffect(() => {
+    if (!state?.enabled || !state.expiresAt) return;
+    const delay = Math.max(0, new Date(state.expiresAt).getTime() - Date.now());
+    const timer = window.setTimeout(() => {
+      setState((current) => current ? { ...current, enabled: false } : current);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [state?.enabled, state?.expiresAt]);
+
   function run(scenario: MasjidDisplayTestScenario) {
     const token = session?.access_token;
     if (!token) return;
@@ -72,7 +81,7 @@ export default function MasjidDisplayTestControlPage() {
     });
   }
 
-  const active = Boolean(state?.enabled && state.expiresAt && new Date(state.expiresAt).getTime() > Date.now());
+  const active = Boolean(state?.enabled);
 
   return (
     <AdminShell title="Masjid Display Test Control">

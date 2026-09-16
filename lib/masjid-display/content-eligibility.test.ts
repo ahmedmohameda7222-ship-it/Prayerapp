@@ -9,59 +9,66 @@ import {
 } from "./content-eligibility";
 import type { Announcement, DonationCampaign, Event } from "@/lib/types";
 
-const announcement = (overrides: Partial<Announcement> = {}): Announcement => ({
-  id: "announcement-1",
-  title: "Announcement",
-  message: "Message",
-  titleAr: "إعلان",
-  titleDe: "Ankündigung",
-  messageAr: "رسالة",
-  messageDe: "Nachricht",
-  isUrgent: false,
-  displayStyle: "normal",
-  displayFrom: undefined,
-  displayUntil: undefined,
-  published: true,
-  createdAt: "2026-09-10T08:00:00.000Z",
-  ...overrides,
-});
+const announcement = (overrides: Partial<Announcement> = {}): Announcement => {
+  const base: Announcement = {
+    id: "announcement-1",
+    title: "Announcement",
+    message: "Message",
+    type: "General",
+    titleAr: "إعلان",
+    titleDe: "Ankündigung",
+    messageAr: "رسالة",
+    messageDe: "Nachricht",
+    isUrgent: false,
+    displayStyle: "normal",
+    displayFrom: undefined,
+    displayUntil: undefined,
+    published: true,
+    createdAt: "2026-09-10T08:00:00.000Z",
+  };
+  return { ...base, ...overrides } as Announcement;
+};
 
-const event = (overrides: Partial<Event> = {}): Event => ({
-  id: "event-1",
-  title: "Event",
-  description: "Description",
-  location: "Mosque",
-  titleAr: "فعالية",
-  titleDe: "Veranstaltung",
-  descriptionAr: "وصف",
-  descriptionDe: "Beschreibung",
-  locationAr: "المسجد",
-  locationDe: "Moschee",
-  date: "2026-09-15",
-  startTime: "18:00",
-  endTime: "20:00",
-  type: "Community",
-  published: true,
-  ...overrides,
-});
+const event = (overrides: Partial<Event> = {}): Event => {
+  const base: Event = {
+    id: "event-1",
+    title: "Event",
+    description: "Description",
+    location: "Mosque",
+    titleAr: "فعالية",
+    titleDe: "Veranstaltung",
+    descriptionAr: "وصف",
+    descriptionDe: "Beschreibung",
+    locationAr: "المسجد",
+    locationDe: "Moschee",
+    date: "2026-09-15",
+    startTime: "18:00",
+    endTime: "20:00",
+    type: "Community",
+    published: true,
+  };
+  return { ...base, ...overrides } as Event;
+};
 
-const campaign = (overrides: Partial<DonationCampaign> = {}): DonationCampaign => ({
-  id: "campaign-1",
-  title: "Campaign",
-  description: "Description",
-  titleAr: "تبرع",
-  titleDe: "Spende",
-  descriptionAr: "وصف",
-  descriptionDe: "Beschreibung",
-  targetAmount: 1000,
-  collectedAmount: 100,
-  startDate: "2026-09-01",
-  endDate: undefined,
-  donationUrl: undefined,
-  isActive: true,
-  isFeatured: false,
-  ...overrides,
-});
+const campaign = (overrides: Partial<DonationCampaign> = {}): DonationCampaign => {
+  const base: DonationCampaign = {
+    id: "campaign-1",
+    title: "Campaign",
+    description: "Description",
+    titleAr: "تبرع",
+    titleDe: "Spende",
+    descriptionAr: "وصف",
+    descriptionDe: "Beschreibung",
+    targetAmount: 1000,
+    collectedAmount: 100,
+    startDate: "2026-09-01",
+    endDate: undefined,
+    donationUrl: undefined,
+    isActive: true,
+    isFeatured: false,
+  };
+  return { ...base, ...overrides } as DonationCampaign;
+};
 
 const now = new Date("2026-09-15T08:00:00.000Z");
 const horizon = new Date("2026-10-20T21:59:59.999Z");

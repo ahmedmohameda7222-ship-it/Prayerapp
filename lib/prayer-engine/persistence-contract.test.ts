@@ -32,6 +32,13 @@ describe("prayer persistence migration", () => {
     expect(sql).toContain("on conflict (date) do update");
   });
 
+  it("atomically validates the approved prior-row basis before recalculation writes", () => {
+    const sql = persistenceSql();
+    expect(sql).toContain("p_expected_rows jsonb");
+    expect(sql).toContain("lock table public.prayer_times in share row exclusive mode");
+    expect(sql).toContain("prayer schedule changed since preview");
+  });
+
   it("keeps RPC execution service-role only", () => {
     const sql = persistenceSql();
     expect(sql).toContain("from public, anon, authenticated");

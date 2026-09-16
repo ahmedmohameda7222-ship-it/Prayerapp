@@ -194,6 +194,48 @@ describe("buildMasjidDisplayFeed", () => {
     expect(second.generatedAt).toBe(first.generatedAt);
   });
 
+  it("does not let omitted invalid legacy content perturb generatedAt", async () => {
+    const source = deps();
+    source.getAnnouncements.mockResolvedValue([
+      {
+        id: "future-special",
+        title: "Future",
+        message: "Future",
+        type: "General",
+        titleAr: "إعلان مستقبلي",
+        titleDe: "Zukünftige Ankündigung",
+        messageAr: "رسالة",
+        messageDe: "Nachricht",
+        isUrgent: false,
+        displayStyle: "special",
+        displayFrom: "2026-09-20T08:00:00.000Z",
+        displayUntil: "2026-09-21T08:00:00.000Z",
+        published: true,
+        createdAt: "2026-09-12T10:00:00.000Z",
+      },
+      {
+        id: "invalid-newer",
+        title: "Invalid",
+        message: "Invalid",
+        type: "General",
+        titleAr: "إعلان",
+        titleDe: "Ankündigung",
+        messageAr: "رسالة",
+        messageDe: "",
+        isUrgent: false,
+        displayStyle: "normal",
+        displayFrom: undefined,
+        displayUntil: undefined,
+        published: true,
+        createdAt: "2026-09-14T10:00:00.000Z",
+      },
+    ] as never);
+
+    const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
+    expect(feed.announcements.map((item) => item.id)).toEqual(["future-special"]);
+    expect(feed.generatedAt).toBe("2026-09-12T10:00:00.000Z");
+  });
+
   it("fails atomically when required prayer or display settings are missing", async () => {
     const missingPrayer = deps();
     missingPrayer.getPrayerSettings.mockResolvedValue(null as never);

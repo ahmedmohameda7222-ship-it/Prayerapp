@@ -39,6 +39,12 @@ describe("prayer persistence migration", () => {
     expect(sql).toContain("prayer schedule changed since preview");
   });
 
+  it("preserves an existing row publication state during recalculation", () => {
+    const sql = persistenceSql();
+    const conflictUpdate = sql.split("on conflict (date) do update").at(-1) ?? "";
+    expect(conflictUpdate).not.toMatch(/\bpublished\s*=\s*true\b/);
+  });
+
   it("keeps RPC execution service-role only", () => {
     const sql = persistenceSql();
     expect(sql).toContain("from public, anon, authenticated");

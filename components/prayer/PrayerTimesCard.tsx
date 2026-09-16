@@ -1,9 +1,10 @@
 "use client";
 
 import { Fragment } from "react";
-import type { PrayerName, PrayerTime } from "@/lib/types";
+import type { PrayerIqamaTimes, PrayerName, PrayerTime } from "@/lib/types";
 import { formatLongDate } from "@/lib/date-utils";
 import { prayerOrder } from "@/lib/prayer-utils";
+import { isFridayIso } from "@/lib/friday";
 import { Card } from "@/components/ui/Card";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { PrayerRow } from "./PrayerRow";
@@ -18,22 +19,23 @@ function SupplementalPrayerRow({ label, time, detail }: { label: string; time?: 
   );
 }
 
-export function PrayerTimesCard({ prayer, activePrayer }: { prayer?: PrayerTime; activePrayer?: PrayerName }) {
+export function PrayerTimesCard({
+  prayer,
+  activePrayer,
+  iqamaTimes = {},
+}: {
+  prayer?: PrayerTime;
+  activePrayer?: PrayerName;
+  iqamaTimes?: PrayerIqamaTimes;
+}) {
   const { t, locale } = useTranslation();
-  const salatFajrLabel = locale === "de" ? "Fajr-Gebet" : t("prayer.salatFajr");
-  const salatIshaLabel = locale === "de" ? "Ischa-Gebet" : t("prayer.salatIsha");
+  const salatIshaLabel = locale === "de" ? "Ischa-Gebet (Programm)" : t("prayer.salatIsha");
 
   if (!prayer) {
-    return (
-      <Card>
-        <p className="text-sm text-[var(--color-muted)]">{t("prayer.notPublished")}</p>
-      </Card>
-    );
+    return <Card><p className="text-sm text-[var(--color-muted)]">{t("prayer.notPublished")}</p></Card>;
   }
 
-  const salatFajr = prayer.fajrIqama;
   const maghribProgram = prayer.maghribProgram;
-  const salatMaghrib = maghribProgram?.maghribIqamaTime;
   const lessonDetail = [
     maghribProgram?.lessonTitle,
     maghribProgram?.lessonDurationMinutes
@@ -41,8 +43,7 @@ export function PrayerTimesCard({ prayer, activePrayer }: { prayer?: PrayerTime;
       : undefined,
   ].filter(Boolean).join(" · ");
   const hasMaghribProgram = Boolean(
-    maghribProgram?.enabled
-    && (salatMaghrib || lessonDetail || maghribProgram.combinedIshaTime),
+    maghribProgram?.enabled && (lessonDetail || maghribProgram.combinedIshaTime),
   );
 
   return (
@@ -52,24 +53,27 @@ export function PrayerTimesCard({ prayer, activePrayer }: { prayer?: PrayerTime;
         <span className="rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-bold text-[var(--color-muted)]">{formatLongDate(prayer.date, locale)}</span>
       </div>
       <div className="grid gap-1">
-        {prayerOrder.map((name) => (
-          <Fragment key={name}>
-            <PrayerRow
-              prayer={prayer}
-              name={name}
-              active={name === activePrayer}
-              showIqama={name !== "fajr" && name !== "maghrib"}
-            />
-            {name === "fajr" && salatFajr ? <SupplementalPrayerRow label={salatFajrLabel} time={salatFajr} /> : null}
-            {name === "maghrib" && hasMaghribProgram ? (
-              <div className="grid gap-1 border-s-2 border-[var(--color-gold)] ps-2">
-                {salatMaghrib ? <SupplementalPrayerRow label={t("prayer.salatMaghrib")} time={salatMaghrib} /> : null}
-                {lessonDetail ? <SupplementalPrayerRow label={t("prayer.khatira")} detail={lessonDetail} /> : null}
-                {maghribProgram?.combinedIshaTime ? <SupplementalPrayerRow label={salatIshaLabel} time={maghribProgram.combinedIshaTime} /> : null}
-              </div>
-            ) : null}
-          </Fragment>
-        ))}
+        {prayerOrder.map((name) => {
+          const showIqama = name !== "sunrise" && !(name === "dhuhr" && isFridayIso(prayer.date));
+          const iqama = name === "sunrise" ? undefined : iqamaTimes[name];
+          return (
+            <Fragment key={name}>
+              <PrayerRow
+                prayer={prayer}
+                name={name}
+                active={name === activePrayer}
+                iqama={iqama}
+                showIqama={showIqama}
+              />
+              {name === "maghrib" && hasMaghribProgram ? (
+                <div className="grid gap-1 border-s-2 border-[var(--color-gold)] ps-2">
+                  {lessonDetail ? <SupplementalPrayerRow label={t("prayer.khatira")} detail={lessonDetail} /> : null}
+                  {maghribProgram?.combinedIshaTime ? <SupplementalPrayerRow label={salatIshaLabel} time={maghribProgram.combinedIshaTime} /> : null}
+                </div>
+              ) : null}
+            </Fragment>
+          );
+        })}
       </div>
     </Card>
   );

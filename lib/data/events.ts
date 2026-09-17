@@ -4,6 +4,9 @@ import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./loca
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
+const DISPLAY_FEED_PAGE_SIZE = 1000;
+export type DisplayEventSource = Event & { sourceUpdatedAt: string };
+
 export function invalidateEventCaches() {
   invalidateCachePrefix("events");
   clearPersistentCachePrefix("events");
@@ -27,19 +30,32 @@ function mapEvent(row: unknown): Event {
   };
 }
 
-export async function getEventsForDisplayWindow(startDate: string, endDate: string): Promise<Event[]> {
+export async function getEventsForDisplayWindow(startDate: string, endDate: string): Promise<DisplayEventSource[]> {
   const client = createClient();
   if (!client) return [];
-  const { data, error } = await client
-    .from("events")
-    .select("*")
-    .eq("published", true)
-    .gte("date", startDate)
-    .lte("date", endDate)
-    .order("date", { ascending: true })
-    .order("start_time", { ascending: true });
-  if (error || !data) throw new Error("Unable to load events");
-  return data.map(mapEvent);
+
+  const allRows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += DISPLAY_FEED_PAGE_SIZE) {
+    const { data, error } = await client
+      .from("events")
+      .select("*")
+      .eq("published", true)
+      .gte("date", startDate)
+      .lte("date", endDate)
+      .order("date", { ascending: true })
+      .order("start_time", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + DISPLAY_FEED_PAGE_SIZE - 1);
+    if (error || !data) throw new Error("Unable to load events");
+    const rows = data as Record<string, unknown>[];
+    allRows.push(...rows);
+    if (rows.length < DISPLAY_FEED_PAGE_SIZE) break;
+  }
+
+  return allRows.map((row) => ({
+    ...mapEvent(row),
+    sourceUpdatedAt: String(row.updated_at),
+  }));
 }
 
 export async function getEvents(includeUnpublished = false): Promise<Event[]> {

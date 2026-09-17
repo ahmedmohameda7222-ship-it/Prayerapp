@@ -13,6 +13,8 @@ const iqamaRemovalSql = () =>
     "utf8",
   ).toLowerCase();
 
+const legacyIqamaColumn = (prayer: string) => [prayer, "iqama"].join("_");
+
 describe("prayer persistence migration", () => {
   it("requires caller-supplied mosque-local today and never database current_date", () => {
     const sql = persistenceSql();
@@ -81,10 +83,8 @@ describe("prayer persistence migration", () => {
     expect(sql).toContain("maghrib_iqama_delay_minutes");
     expect(sql).toContain("isha_iqama_delay_minutes");
     expect(sql).toContain("raise exception");
-    expect(sql).toContain("fajr_iqama");
-    expect(sql).toContain("dhuhr_iqama");
-    expect(sql).toContain("asr_iqama");
-    expect(sql).toContain("maghrib_iqama");
-    expect(sql).toContain("isha_iqama");
+    for (const prayer of ["fajr", "dhuhr", "asr", "maghrib", "isha"]) {
+      expect(sql).toContain(legacyIqamaColumn(prayer));
+    }
   });
 });

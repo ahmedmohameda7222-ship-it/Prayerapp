@@ -71,7 +71,8 @@ export async function getMasjidDisplayGeneratedAt(
 
   if (timestamps.length === 0) return fallback;
 
-  return timestamps.reduce((latest, timestamp) =>
-    Date.parse(timestamp) > Date.parse(latest) ? timestamp : latest,
-  fallback);
+  return timestamps.slice(1).reduce(
+    (latest, timestamp) => Date.parse(timestamp) > Date.parse(latest) ? timestamp : latest,
+    timestamps[0],
+  );
 }

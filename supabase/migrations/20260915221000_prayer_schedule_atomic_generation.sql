@@ -388,7 +388,8 @@ begin
       dhuhr = excluded.dhuhr,
       asr = excluded.asr,
       maghrib = excluded.maghrib,
-      isha = excluded.isha;
+      isha = excluded.isha,
+      updated_at = now();
 
   get diagnostics v_count = row_count;
 

@@ -7,7 +7,7 @@ import { getAzkarItems } from "@/lib/data/azkar";
 import { getDonationCampaignsForDisplayWindow } from "@/lib/data/donations";
 import { getEventsForDisplayWindow } from "@/lib/data/events";
 import { getJumuahTimesForDisplayWindow } from "@/lib/data/jumuah";
-import { getMasjidDisplayFeedRevision } from "@/lib/data/masjid-display-feed-revision";
+import { getMasjidDisplayGeneratedAt } from "@/lib/data/masjid-display-generated-at";
 import { getMasjidDisplaySettings } from "@/lib/data/masjid-display-settings";
 import { getMosqueSettings } from "@/lib/data/mosque-settings";
 import { getPrayerSettings } from "@/lib/data/prayer-settings";
@@ -45,7 +45,7 @@ type FeedDependencies = {
   getMosqueSettings: typeof getMosqueSettings;
   getMasjidDisplaySettings: typeof getMasjidDisplaySettings;
   getAzkarItems: typeof getAzkarItems;
-  getMasjidDisplayFeedRevision: typeof getMasjidDisplayFeedRevision;
+  getMasjidDisplayGeneratedAt: typeof getMasjidDisplayGeneratedAt;
 };
 
 const defaultDependencies: FeedDependencies = {
@@ -58,7 +58,7 @@ const defaultDependencies: FeedDependencies = {
   getMosqueSettings,
   getMasjidDisplaySettings,
   getAzkarItems,
-  getMasjidDisplayFeedRevision,
+  getMasjidDisplayGeneratedAt,
 };
 
 const HH_MM = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -264,7 +264,6 @@ export async function buildMasjidDisplayFeed(
     mosqueSettings,
     displaySettings,
     azkarItems,
-    feedRevision,
   ] = await Promise.all([
     dependencies.getPrayerTimes(true, startDate, endDate),
     dependencies.getPrayerSettings(),
@@ -275,7 +274,6 @@ export async function buildMasjidDisplayFeed(
     dependencies.getMosqueSettings(true),
     dependencies.getMasjidDisplaySettings(),
     dependencies.getAzkarItems(true),
-    dependencies.getMasjidDisplayFeedRevision(),
   ]);
 
   if (!prayerSettings) throw new DisplayFeedBuildError("Prayer settings are required for the display feed");
@@ -351,9 +349,20 @@ export async function buildMasjidDisplayFeed(
   }
   projectedCampaigns.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
 
+  const generatedAt = await dependencies.getMasjidDisplayGeneratedAt(
+    {
+      prayerIds: representedPrayers.map((item) => item.id),
+      jumuahIds: additionalJumuah.map((item) => item.id),
+      announcementIds: projectedAnnouncements.map((item) => item.id),
+      eventIds: projectedEvents.map((item) => item.id),
+      campaignIds: projectedCampaigns.map((item) => item.id),
+    },
+    zonedDateTime(today, "00:00").toISOString(),
+  );
+
   return {
     schemaVersion: 1,
-    generatedAt: feedRevision,
+    generatedAt,
     timezone: APP_TIME_ZONE,
     mosque: {
       nameAr: requiredText(mosqueSettings.mosqueNameAr, "mosqueNameAr"),

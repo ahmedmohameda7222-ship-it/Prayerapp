@@ -36,7 +36,7 @@ export async function getEventsForDisplayWindow(startDate: string, endDate: stri
   const { data, error } = await client.rpc("get_masjid_display_events_window", {
     p_start_date: startDate,
     p_end_date: endDate,
-  });
+  } as never);
   if (error || !Array.isArray(data)) throw new Error("Unable to load events");
 
   return (data as Record<string, unknown>[]).map((row) => ({

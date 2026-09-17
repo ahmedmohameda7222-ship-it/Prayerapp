@@ -4,7 +4,6 @@ import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./loca
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
-const DISPLAY_FEED_PAGE_SIZE = 1000;
 export type DisplayEventSource = Event & { sourceUpdatedAt: string };
 
 export function invalidateEventCaches() {
@@ -34,25 +33,13 @@ export async function getEventsForDisplayWindow(startDate: string, endDate: stri
   const client = createClient();
   if (!client) return [];
 
-  const allRows: Record<string, unknown>[] = [];
-  for (let from = 0; ; from += DISPLAY_FEED_PAGE_SIZE) {
-    const { data, error } = await client
-      .from("events")
-      .select("*")
-      .eq("published", true)
-      .gte("date", startDate)
-      .lte("date", endDate)
-      .order("date", { ascending: true })
-      .order("start_time", { ascending: true })
-      .order("id", { ascending: true })
-      .range(from, from + DISPLAY_FEED_PAGE_SIZE - 1);
-    if (error || !data) throw new Error("Unable to load events");
-    const rows = data as Record<string, unknown>[];
-    allRows.push(...rows);
-    if (rows.length < DISPLAY_FEED_PAGE_SIZE) break;
-  }
+  const { data, error } = await client.rpc("get_masjid_display_events_window", {
+    p_start_date: startDate,
+    p_end_date: endDate,
+  });
+  if (error || !Array.isArray(data)) throw new Error("Unable to load events");
 
-  return allRows.map((row) => ({
+  return (data as Record<string, unknown>[]).map((row) => ({
     ...mapEvent(row),
     sourceUpdatedAt: String(row.updated_at),
   }));

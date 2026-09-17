@@ -272,13 +272,13 @@ export async function buildMasjidDisplayFeed(
     displaySettings,
     azkarItems,
   ] = await Promise.all([
-    dependencies.getPrayerTimes(false, startDate, endDate),
+    dependencies.getPrayerTimes(true, startDate, endDate),
     dependencies.getPrayerSettings(),
-    dependencies.getJumuahTimes(false),
-    dependencies.getAnnouncements(false),
-    dependencies.getEvents(false),
-    dependencies.getDonationCampaigns(false),
-    dependencies.getMosqueSettings(),
+    dependencies.getJumuahTimes(true),
+    dependencies.getAnnouncements(true),
+    dependencies.getEvents(true),
+    dependencies.getDonationCampaigns(true),
+    dependencies.getMosqueSettings(true),
     dependencies.getMasjidDisplaySettings(),
     dependencies.getAzkarItems(true),
   ]);
@@ -304,11 +304,9 @@ export async function buildMasjidDisplayFeed(
   };
 
   const canonicalAzkarIds = new Set(azkarItems.map((item) => item.id));
-  for (const id of displaySettings.azkarPlaylistIds) {
-    if (!canonicalAzkarIds.has(id)) {
-      throw new DisplayFeedBuildError(`Invalid Masjid Display settings: unknown Azkar playlist ID ${id}`);
-    }
-  }
+  const validAzkarPlaylistIds = [
+    ...new Set(displaySettings.azkarPlaylistIds.filter((id) => canonicalAzkarIds.has(id))),
+  ];
 
   const representedPrayers = prayers
     .filter((item) => item.published && item.date >= startDate && item.date <= endDate)
@@ -378,9 +376,9 @@ export async function buildMasjidDisplayFeed(
     },
     displaySettings: {
       prayerDurations,
-      azkarPlaylistIds: [...new Set(displaySettings.azkarPlaylistIds)],
+      azkarPlaylistIds: validAzkarPlaylistIds,
     },
-    azkar: selectDisplayAzkar(azkarItems, displaySettings.azkarPlaylistIds),
+    azkar: selectDisplayAzkar(azkarItems, validAzkarPlaylistIds),
     announcements: projectedAnnouncements,
     events: projectedEvents,
     campaigns: projectedCampaigns,

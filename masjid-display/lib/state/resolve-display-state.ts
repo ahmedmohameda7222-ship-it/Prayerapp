@@ -1,4 +1,7 @@
 import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "../feed-types";
+import { localDateIso } from "../time";
+import { resolveFridayState } from "./friday-state";
+import { resolvePrayerState } from "./prayer-state";
 
 export type DisplayStateKind =
   | "NORMAL"
@@ -20,8 +23,34 @@ export interface DisplayStateResolution {
 }
 
 export function resolveDisplayState(
-  _feed: MasjidDisplayFeedV1,
-  _logicalNow: Date,
+  feed: MasjidDisplayFeedV1,
+  logicalNow: Date,
 ): DisplayStateResolution {
-  return { kind: "NORMAL", prayer: null, degraded: false, degradedReason: null };
+  const currentDate = localDateIso(logicalNow, feed.timezone);
+  if (!feed.prayers.schedule.some((day) => day.date === currentDate)) {
+    return {
+      kind: "NORMAL",
+      prayer: null,
+      degraded: true,
+      degradedReason: "SCHEDULE_COVERAGE_MISSING",
+    };
+  }
+
+  const friday = resolveFridayState(feed, logicalNow);
+  if (friday) {
+    return {
+      ...friday,
+      prayer: null,
+      degraded: false,
+      degradedReason: null,
+    };
+  }
+
+  const prayer = resolvePrayerState(feed, logicalNow);
+  return {
+    kind: prayer.kind,
+    prayer: prayer.prayer,
+    degraded: prayer.degradedReason !== null,
+    degradedReason: prayer.degradedReason,
+  };
 }

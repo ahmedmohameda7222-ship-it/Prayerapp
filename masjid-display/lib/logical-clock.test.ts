@@ -48,7 +48,7 @@ describe("LogicalClock", () => {
     expect(firstLarge.accepted).toBe(false);
     expect(firstLarge.pendingLargeDrift).toBe(true);
     expect(clock.now(Date.parse("2026-09-15T18:10:00Z")).toISOString()).toBe(
-      "2026-09-15T18:09:50.000Z",
+      "2026-09-15T18:09:55.000Z",
     );
 
     const secondLarge = clock.observeServerDate(

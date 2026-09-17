@@ -1,8 +1,6 @@
 import "server-only";
 
 import { createServerClient } from "@/lib/supabase/server";
-import type { DisplayAzkarDto } from "@/lib/masjid-display/feed-contract";
-import { canonicalJson, sha256 } from "@/lib/masjid-display/feed-etag";
 
 export type MasjidDisplayGeneratedAtSources = {
   prayerIds: string[];
@@ -10,7 +8,7 @@ export type MasjidDisplayGeneratedAtSources = {
   announcementIds: string[];
   eventIds: string[];
   campaignIds: string[];
-  azkar: DisplayAzkarDto[];
+  azkarRevisionTimestamps: string[];
 };
 
 type TimestampTable =
@@ -25,40 +23,16 @@ type TimestampTable =
 
 type ServerClient = NonNullable<ReturnType<typeof createServerClient>>;
 
-const SHA256_DECIMAL_WIDTH = 78;
-
 function uniqueIds(ids: string[]) {
   return [...new Set(ids.filter((id) => typeof id === "string" && id.trim().length > 0))];
 }
 
-function normalizeTimestamp(value: unknown, table: TimestampTable) {
+function normalizeTimestamp(value: unknown, source: TimestampTable | "hardcoded_azkar") {
   const parsed = Date.parse(String(value ?? ""));
   if (!Number.isFinite(parsed)) {
-    throw new Error(`Invalid Masjid Display source timestamp: ${table}`);
+    throw new Error(`Invalid Masjid Display source timestamp: ${source}`);
   }
   return new Date(parsed).toISOString();
-}
-
-/**
- * Keep generatedAt anchored to the latest represented database source second while
- * encoding the complete SHA-256 revision of that source timestamp plus the actual
- * represented Azkar DTOs in the ISO fractional-second component. The long decimal
- * fraction is deterministic version metadata, not wall-clock precision.
- *
- * This preserves an ISO/RFC3339 timestamp without request/build/deploy entropy:
- * unchanged represented Azkar is byte-stable, selected Azkar changes alter the
- * value, and catalog items omitted from this snapshot have no effect.
- */
-export function withAzkarContentRevision(baseIso: string, azkar: DisplayAzkarDto[]): string {
-  const parsed = Date.parse(baseIso);
-  if (!Number.isFinite(parsed)) throw new Error("Invalid Masjid Display generatedAt base timestamp");
-
-  const base = new Date(parsed).toISOString();
-  if (azkar.length === 0) return base;
-
-  const digest = sha256(canonicalJson({ base, azkar }));
-  const decimalRevision = BigInt(`0x${digest}`).toString(10).padStart(SHA256_DECIMAL_WIDTH, "0");
-  return `${base.slice(0, 19)}.${decimalRevision}Z`;
 }
 
 async function loadSourceTimestamps(
@@ -89,7 +63,7 @@ export async function getMasjidDisplayGeneratedAt(
   const client = createServerClient();
   if (!client) throw new Error("Supabase is not configured");
 
-  const timestamps = (
+  const databaseTimestamps = (
     await Promise.all([
       loadSourceTimestamps(client, "prayer_times", sources.prayerIds),
       loadSourceTimestamps(client, "prayer_settings", ["1"]),
@@ -102,12 +76,15 @@ export async function getMasjidDisplayGeneratedAt(
     ])
   ).flat();
 
-  const baseGeneratedAt = timestamps.length === 0
-    ? fallback
-    : timestamps.slice(1).reduce(
-      (latest, timestamp) => Date.parse(timestamp) > Date.parse(latest) ? timestamp : latest,
-      timestamps[0],
-    );
+  const azkarTimestamps = sources.azkarRevisionTimestamps.map((timestamp) =>
+    normalizeTimestamp(timestamp, "hardcoded_azkar")
+  );
+  const timestamps = [...databaseTimestamps, ...azkarTimestamps];
 
-  return withAzkarContentRevision(baseGeneratedAt, sources.azkar);
+  if (timestamps.length === 0) return fallback;
+
+  return timestamps.slice(1).reduce(
+    (latest, timestamp) => Date.parse(timestamp) > Date.parse(latest) ? timestamp : latest,
+    timestamps[0],
+  );
 }

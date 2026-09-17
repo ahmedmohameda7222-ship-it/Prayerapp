@@ -3,7 +3,7 @@ import "server-only";
 import { addDaysIso, APP_TIME_ZONE, todayIso, zonedDateTime } from "@/lib/date-utils";
 import { getValidAdditionalFridayServices, isFridayIso } from "@/lib/friday";
 import { getAnnouncementsForDisplayWindow } from "@/lib/data/announcements";
-import { getAzkarItems } from "@/lib/data/azkar";
+import { getAzkarItems, getAzkarSourceRevisionTimestamps } from "@/lib/data/azkar";
 import { getDonationCampaignsForDisplayWindow } from "@/lib/data/donations";
 import { getEventsForDisplayWindow } from "@/lib/data/events";
 import { getJumuahTimesForDisplayWindow } from "@/lib/data/jumuah";
@@ -350,6 +350,9 @@ export async function buildMasjidDisplayFeed(
   projectedCampaigns.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
 
   const projectedAzkar = selectDisplayAzkar(azkarItems, validAzkarPlaylistIds);
+  const azkarRevisionTimestamps = getAzkarSourceRevisionTimestamps(
+    projectedAzkar.map((item) => item.id),
+  );
 
   const generatedAt = await dependencies.getMasjidDisplayGeneratedAt(
     {
@@ -358,7 +361,7 @@ export async function buildMasjidDisplayFeed(
       announcementIds: projectedAnnouncements.map((item) => item.id),
       eventIds: projectedEvents.map((item) => item.id),
       campaignIds: projectedCampaigns.map((item) => item.id),
-      azkar: projectedAzkar,
+      azkarRevisionTimestamps,
     },
     zonedDateTime(today, "00:00").toISOString(),
   );

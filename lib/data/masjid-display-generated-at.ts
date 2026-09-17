@@ -37,14 +37,14 @@ export async function getMasjidDisplayGeneratedAt(
   fallbackIso: string,
 ): Promise<string> {
   const fallback = normalizeTimestamp(fallbackIso, "prayer_times");
-  const client = createServerClient();
-  if (!client) throw new Error("Supabase is not configured");
+  const supabase = createServerClient();
+  if (!supabase) throw new Error("Supabase is not configured");
 
   async function load(table: TimestampTable, ids: string[]) {
     const representedIds = uniqueIds(ids);
     if (representedIds.length === 0) return [] as string[];
 
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from(table)
       .select("updated_at")
       .in("id", representedIds);

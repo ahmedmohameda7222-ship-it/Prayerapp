@@ -27,11 +27,7 @@ export function invalidateMosqueSettingsCache(): void {
   clearPersistentCache("mosque_settings");
 }
 
-async function loadMosqueSettings(client: NonNullable<ReturnType<typeof createClient>>): Promise<MosqueSettings> {
-  const { data, error } = await client.from("mosque_settings").select("*").single();
-  if (error?.code === "PGRST116") return { ...DEFAULT_MOSQUE_SETTINGS };
-  if (error || !data) throw new Error("Unable to load mosque settings");
-  const record = data as Record<string, unknown>;
+function mapMosqueSettingsRecord(record: Record<string, unknown>): MosqueSettings {
   return {
     mosqueName: readDbString(record, "mosque_name"),
     ...localizedFieldsFromDb(record, "mosqueName", "mosque_name"),
@@ -45,6 +41,28 @@ async function loadMosqueSettings(client: NonNullable<ReturnType<typeof createCl
     iban: String(record.iban),
     bic: String(record.bic),
     publicAppUrl: record.public_app_url ? String(record.public_app_url) : "",
+  };
+}
+
+async function loadMosqueSettings(client: NonNullable<ReturnType<typeof createClient>>): Promise<MosqueSettings> {
+  const { data, error } = await client.from("mosque_settings").select("*").single();
+  if (error?.code === "PGRST116") return { ...DEFAULT_MOSQUE_SETTINGS };
+  if (error || !data) throw new Error("Unable to load mosque settings");
+  return mapMosqueSettingsRecord(data as Record<string, unknown>);
+}
+
+export async function getMosqueSettingsForDisplay(): Promise<{
+  value: MosqueSettings;
+  sourceUpdatedAt: string;
+}> {
+  const client = createClient();
+  if (!client) throw new Error("Supabase is not configured");
+  const { data, error } = await client.from("mosque_settings").select("*").eq("id", "1").single();
+  if (error || !data) throw new Error("Unable to load mosque settings");
+  const record = data as Record<string, unknown>;
+  return {
+    value: mapMosqueSettingsRecord(record),
+    sourceUpdatedAt: String(record.updated_at),
   };
 }
 

@@ -4,6 +4,9 @@ import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./loca
 import { CACHE_TTL, getCached, invalidateCache, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCache, clearPersistentCachePrefix } from "./persistent-public-cache";
 
+const DISPLAY_FEED_PAGE_SIZE = 1000;
+export type DisplayDonationCampaignSource = DonationCampaign & { sourceUpdatedAt: string };
+
 const DEFAULT_SETTINGS: DonationSettings = {
   accountHolder: "",
   iban: "",
@@ -95,18 +98,31 @@ function mapCampaignRecord(record: Record<string, unknown>): DonationCampaign {
   };
 }
 
-export async function getDonationCampaignsForDisplayWindow(startDate: string, endDate: string): Promise<DonationCampaign[]> {
+export async function getDonationCampaignsForDisplayWindow(startDate: string, endDate: string): Promise<DisplayDonationCampaignSource[]> {
   const client = createClient();
   if (!client) return [];
-  const { data, error } = await client
-    .from("donation_campaigns")
-    .select("*")
-    .eq("is_active", true)
-    .lte("start_date", endDate)
-    .or(`end_date.is.null,end_date.gte.${startDate}`)
-    .order("start_date", { ascending: true });
-  if (error || !data) throw new Error("Unable to load donation campaigns");
-  return data.map((row: unknown) => mapCampaignRecord(row as Record<string, unknown>));
+
+  const allRows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += DISPLAY_FEED_PAGE_SIZE) {
+    const { data, error } = await client
+      .from("donation_campaigns")
+      .select("*")
+      .eq("is_active", true)
+      .lte("start_date", endDate)
+      .or(`end_date.is.null,end_date.gte.${startDate}`)
+      .order("start_date", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + DISPLAY_FEED_PAGE_SIZE - 1);
+    if (error || !data) throw new Error("Unable to load donation campaigns");
+    const rows = data as Record<string, unknown>[];
+    allRows.push(...rows);
+    if (rows.length < DISPLAY_FEED_PAGE_SIZE) break;
+  }
+
+  return allRows.map((row) => ({
+    ...mapCampaignRecord(row),
+    sourceUpdatedAt: String(row.updated_at),
+  }));
 }
 
 export async function getDonationCampaigns(includeInactive = false): Promise<DonationCampaign[]> {

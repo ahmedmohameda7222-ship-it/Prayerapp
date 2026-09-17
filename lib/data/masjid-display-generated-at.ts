@@ -20,6 +20,8 @@ type TimestampTable =
   | "mosque_settings"
   | "masjid_display_settings";
 
+type ServerClient = NonNullable<ReturnType<typeof createServerClient>>;
+
 function uniqueIds(ids: string[]) {
   return [...new Set(ids.filter((id) => typeof id === "string" && id.trim().length > 0))];
 }
@@ -32,40 +34,44 @@ function normalizeTimestamp(value: unknown, table: TimestampTable) {
   return new Date(parsed).toISOString();
 }
 
+async function loadSourceTimestamps(
+  client: ServerClient,
+  table: TimestampTable,
+  ids: string[],
+) {
+  const representedIds = uniqueIds(ids);
+  if (representedIds.length === 0) return [] as string[];
+
+  const { data, error } = await client
+    .from(table)
+    .select("updated_at")
+    .in("id", representedIds);
+
+  if (error) {
+    throw new Error(`Unable to load Masjid Display source timestamps: ${table}`);
+  }
+
+  return (data ?? []).map((row) => normalizeTimestamp(row.updated_at, table));
+}
+
 export async function getMasjidDisplayGeneratedAt(
   sources: MasjidDisplayGeneratedAtSources,
   fallbackIso: string,
 ): Promise<string> {
   const fallback = normalizeTimestamp(fallbackIso, "prayer_times");
-  const supabase = createServerClient();
-  if (!supabase) throw new Error("Supabase is not configured");
-
-  async function load(table: TimestampTable, ids: string[]) {
-    const representedIds = uniqueIds(ids);
-    if (representedIds.length === 0) return [] as string[];
-
-    const { data, error } = await supabase
-      .from(table)
-      .select("updated_at")
-      .in("id", representedIds);
-
-    if (error) {
-      throw new Error(`Unable to load Masjid Display source timestamps: ${table}`);
-    }
-
-    return (data ?? []).map((row) => normalizeTimestamp(row.updated_at, table));
-  }
+  const client = createServerClient();
+  if (!client) throw new Error("Supabase is not configured");
 
   const timestamps = (
     await Promise.all([
-      load("prayer_times", sources.prayerIds),
-      load("prayer_settings", ["1"]),
-      load("jumuah_times", sources.jumuahIds),
-      load("announcements", sources.announcementIds),
-      load("events", sources.eventIds),
-      load("donation_campaigns", sources.campaignIds),
-      load("mosque_settings", ["1"]),
-      load("masjid_display_settings", ["1"]),
+      loadSourceTimestamps(client, "prayer_times", sources.prayerIds),
+      loadSourceTimestamps(client, "prayer_settings", ["1"]),
+      loadSourceTimestamps(client, "jumuah_times", sources.jumuahIds),
+      loadSourceTimestamps(client, "announcements", sources.announcementIds),
+      loadSourceTimestamps(client, "events", sources.eventIds),
+      loadSourceTimestamps(client, "donation_campaigns", sources.campaignIds),
+      loadSourceTimestamps(client, "mosque_settings", ["1"]),
+      loadSourceTimestamps(client, "masjid_display_settings", ["1"]),
     ])
   ).flat();
 

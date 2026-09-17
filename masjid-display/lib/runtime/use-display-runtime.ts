@@ -68,19 +68,22 @@ function syntheticState(payload: TestControlPayload): DisplayStateResolution {
 
 export function useDisplayRuntime(): DisplayRuntimeViewModel {
   const initialLkg = useMemo(() => loadLkg(), []);
-  const clockRef = useRef(createLogicalClock());
+  const clock = useMemo(() => createLogicalClock(), []);
   const etagRef = useRef<string | null>(initialLkg?.etag ?? null);
   const feedRef = useRef<MasjidDisplayFeedV1 | null>(initialLkg?.snapshot ?? null);
 
   const [feed, setFeed] = useState<MasjidDisplayFeedV1 | null>(initialLkg?.snapshot ?? null);
-  const [logicalNow, setLogicalNow] = useState(() => clockRef.current.now(Date.now()));
+  const [logicalNow, setLogicalNow] = useState(() => clock.now(Date.now()));
   const [networkAvailable, setNetworkAvailable] = useState(false);
   const [usingLkg, setUsingLkg] = useState(Boolean(initialLkg));
 
-  const observeServerDate = useCallback((deviceNowMs: number, serverDateHeader: string) => {
-    clockRef.current.observeServerDate(deviceNowMs, serverDateHeader);
-    setLogicalNow(clockRef.current.now(deviceNowMs));
-  }, []);
+  const observeServerDate = useCallback(
+    (deviceNowMs: number, serverDateHeader: string) => {
+      clock.observeServerDate(deviceNowMs, serverDateHeader);
+      setLogicalNow(clock.now(deviceNowMs));
+    },
+    [clock],
+  );
 
   const refreshProduction = useCallback(async () => {
     const deviceNowMs = Date.now();
@@ -114,7 +117,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
       }
 
       const nextEtag = response.headers.get("etag");
-      const receivedAt = clockRef.current.now(deviceNowMs).toISOString();
+      const receivedAt = clock.now(deviceNowMs).toISOString();
       replaceLkg(nextFeed, nextEtag, receivedAt);
       etagRef.current = nextEtag;
       feedRef.current = nextFeed;
@@ -124,17 +127,21 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
       setNetworkAvailable(false);
       if (feedRef.current) setUsingLkg(true);
     }
-  }, [observeServerDate]);
+  }, [clock, observeServerDate]);
 
   useEffect(() => {
-    void refreshProduction();
+    let disposed = false;
+    queueMicrotask(() => {
+      if (!disposed) void refreshProduction();
+    });
+
     const poll = window.setInterval(() => void refreshProduction(), 60_000);
     const tick = window.setInterval(() => {
-      setLogicalNow(clockRef.current.now(Date.now()));
+      setLogicalNow(clock.now(Date.now()));
     }, 1_000);
 
     const wake = () => {
-      setLogicalNow(clockRef.current.now(Date.now()));
+      setLogicalNow(clock.now(Date.now()));
       void refreshProduction();
     };
     const visible = () => {
@@ -144,12 +151,13 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
     window.addEventListener("online", wake);
     document.addEventListener("visibilitychange", visible);
     return () => {
+      disposed = true;
       window.clearInterval(poll);
       window.clearInterval(tick);
       window.removeEventListener("online", wake);
       document.removeEventListener("visibilitychange", visible);
     };
-  }, [refreshProduction]);
+  }, [clock, refreshProduction]);
 
   const testControl = useTestControl(logicalNow, observeServerDate);
 

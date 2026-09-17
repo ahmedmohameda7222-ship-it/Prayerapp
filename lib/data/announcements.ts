@@ -4,7 +4,6 @@ import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./loca
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
-const DISPLAY_FEED_PAGE_SIZE = 1000;
 export type DisplayAnnouncementSource = Announcement & { sourceUpdatedAt: string };
 
 export function invalidateAnnouncementCaches() {
@@ -57,24 +56,13 @@ export async function getAnnouncementsForDisplayWindow(nowIso: string, horizonEn
   const client = createClient();
   if (!client) return [];
 
-  const allRows: Record<string, unknown>[] = [];
-  for (let from = 0; ; from += DISPLAY_FEED_PAGE_SIZE) {
-    const { data, error } = await client
-      .from("announcements")
-      .select("*")
-      .eq("published", true)
-      .or(`display_until.is.null,display_until.gte.${nowIso}`)
-      .or(`display_from.is.null,display_from.lte.${horizonEndIso}`)
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: true })
-      .range(from, from + DISPLAY_FEED_PAGE_SIZE - 1);
-    if (error || !data) throw new Error("Unable to load announcements");
-    const rows = data as Record<string, unknown>[];
-    allRows.push(...rows);
-    if (rows.length < DISPLAY_FEED_PAGE_SIZE) break;
-  }
+  const { data, error } = await client.rpc("get_masjid_display_announcements_window", {
+    p_now: nowIso,
+    p_horizon_end: horizonEndIso,
+  });
+  if (error || !Array.isArray(data)) throw new Error("Unable to load announcements");
 
-  return allRows.map(mapDisplayFromDb);
+  return (data as Record<string, unknown>[]).map(mapDisplayFromDb);
 }
 
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {

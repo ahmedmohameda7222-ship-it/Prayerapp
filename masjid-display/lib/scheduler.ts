@@ -41,8 +41,7 @@ function prayerSlide(active: ActiveContent): NormalSlide | null {
 
 function azkarSlide(active: ActiveContent, slot: number): NormalSlide | null {
   if (active.azkar.length === 0) return null;
-  const generalAvailable = generalFamilies(active).length > 0;
-  const occurrence = generalAvailable ? Math.floor(slot / 4) : Math.floor((slot - 1) / 2);
+  const occurrence = Math.floor(slot / 4);
   const item = active.azkar[positiveMod(occurrence, active.azkar.length)];
   return { kind: "AZKAR", itemId: item.id };
 }
@@ -74,8 +73,7 @@ function generalSlide(active: ActiveContent, slot: number): NormalSlide | null {
   const families = generalFamilies(active);
   if (families.length === 0) return null;
 
-  const azkarAvailable = active.azkar.length > 0;
-  const occurrence = azkarAvailable ? Math.floor(slot / 4) : Math.floor((slot - 1) / 2);
+  const occurrence = Math.floor(slot / 4);
   const familyIndex = positiveMod(occurrence, families.length);
   const family = families[familyIndex];
   const familyOccurrence = Math.floor(occurrence / families.length);

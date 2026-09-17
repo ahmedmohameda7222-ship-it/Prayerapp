@@ -9,6 +9,7 @@ interface MasjidDisplaySettingsRow {
   maghrib_prayer_duration_minutes: number;
   isha_prayer_duration_minutes: number;
   azkar_playlist_ids: string[] | null;
+  updated_at: string;
 }
 
 export function mapMasjidDisplaySettingsRow(row: MasjidDisplaySettingsRow): MasjidDisplaySettings {
@@ -41,6 +42,22 @@ export async function getMasjidDisplaySettings(): Promise<MasjidDisplaySettings 
   const { data, error } = await client.from("masjid_display_settings").select("*").eq("id", "1").maybeSingle();
   if (error) throw new Error("Unable to load Masjid Display settings");
   return data ? mapMasjidDisplaySettingsRow(data as unknown as MasjidDisplaySettingsRow) : null;
+}
+
+export async function getMasjidDisplaySettingsForDisplay(): Promise<{
+  value: MasjidDisplaySettings;
+  sourceUpdatedAt: string;
+} | null> {
+  const client = createServerClient();
+  if (!client) throw new Error("Supabase is not configured");
+  const { data, error } = await client.from("masjid_display_settings").select("*").eq("id", "1").maybeSingle();
+  if (error) throw new Error("Unable to load Masjid Display settings");
+  if (!data) return null;
+  const row = data as unknown as MasjidDisplaySettingsRow;
+  return {
+    value: mapMasjidDisplaySettingsRow(row),
+    sourceUpdatedAt: String(row.updated_at),
+  };
 }
 
 export async function saveMasjidDisplaySettings(settings: MasjidDisplaySettings): Promise<MasjidDisplaySettings> {

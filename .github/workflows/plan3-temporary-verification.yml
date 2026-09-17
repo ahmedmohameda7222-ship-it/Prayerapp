@@ -52,7 +52,7 @@ jobs:
 
           DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
           test -n "$DB_CONTAINER"
-          docker exec "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
           insert into public.prayer_settings (
             id, latitude, longitude, timezone, fajr_angle, isha_rule, isha_angle,
             isha_minutes_after_maghrib, asr_shadow_factor, high_latitude_rule,

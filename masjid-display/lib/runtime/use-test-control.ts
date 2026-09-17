@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export type TestControlScenario =
   | "normal"
@@ -112,8 +112,6 @@ export function useTestControl(
   observeServerDate?: (deviceNowMs: number, serverDateHeader: string) => void,
 ): TestControlState {
   const [remoteState, setRemoteState] = useState<TestControlState>({ active: false });
-  const observeRef = useRef(observeServerDate);
-  observeRef.current = observeServerDate;
 
   useEffect(() => {
     let cancelled = false;
@@ -124,7 +122,7 @@ export function useTestControl(
         const response = await fetch("/api/test-control", { cache: "no-store" });
         const serverDate = response.headers.get("date");
         if (serverDate && (response.ok || response.status === 304)) {
-          observeRef.current?.(deviceNowMs, serverDate);
+          observeServerDate?.(deviceNowMs, serverDate);
         }
         if (!response.ok) return;
 
@@ -142,7 +140,7 @@ export function useTestControl(
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, []);
+  }, [observeServerDate]);
 
   if (
     remoteState.active &&

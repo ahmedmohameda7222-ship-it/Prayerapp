@@ -38,7 +38,7 @@ function deps() {
     getPrayerSettings: vi.fn(async () => ({
       iqamaDelays: { fajr: 20, dhuhr: 15, asr: 15, maghrib: 10, isha: 15 },
     })),
-    getJumuahTimes: vi.fn(async () => [
+    getJumuahTimesForDisplayWindow: vi.fn(async () => [
       {
         id: "jumuah-primary",
         date: "2026-09-18",
@@ -58,7 +58,7 @@ function deps() {
         published: true,
       },
     ]),
-    getAnnouncements: vi.fn(async () => [
+    getAnnouncementsForDisplayWindow: vi.fn(async () => [
       {
         id: "future-special",
         title: "Future",
@@ -76,7 +76,7 @@ function deps() {
         createdAt: "2026-09-12T10:00:00.000Z",
       },
     ]),
-    getEvents: vi.fn(async () => [
+    getEventsForDisplayWindow: vi.fn(async () => [
       {
         id: "event-1",
         title: "Event",
@@ -95,7 +95,7 @@ function deps() {
         published: true,
       },
     ]),
-    getDonationCampaigns: vi.fn(async () => [
+    getDonationCampaignsForDisplayWindow: vi.fn(async () => [
       {
         id: "campaign-1",
         title: "Campaign",
@@ -162,6 +162,7 @@ function deps() {
         isPublished: true,
       },
     ]),
+    getMasjidDisplayFeedRevision: vi.fn(async () => "2026-09-12T10:00:00.000Z"),
   };
 }
 
@@ -179,16 +180,20 @@ describe("buildMasjidDisplayFeed", () => {
     expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajr_" + "iqama");
   });
 
-  it("bypasses process-local public caches for feed source reads", async () => {
+  it("uses fresh database-bounded readers for feed source reads", async () => {
     const source = deps();
     await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
 
     expect(source.getPrayerTimes).toHaveBeenCalledWith(true, "2026-09-14", "2026-10-20");
-    expect(source.getJumuahTimes).toHaveBeenCalledWith(true);
-    expect(source.getAnnouncements).toHaveBeenCalledWith(true);
-    expect(source.getEvents).toHaveBeenCalledWith(true);
-    expect(source.getDonationCampaigns).toHaveBeenCalledWith(true);
+    expect(source.getJumuahTimesForDisplayWindow).toHaveBeenCalledWith("2026-09-14", "2026-10-20");
+    expect(source.getAnnouncementsForDisplayWindow).toHaveBeenCalledWith(
+      "2026-09-15T10:00:00.000Z",
+      expect.any(String),
+    );
+    expect(source.getEventsForDisplayWindow).toHaveBeenCalledWith("2026-09-15", "2026-10-20");
+    expect(source.getDonationCampaignsForDisplayWindow).toHaveBeenCalledWith("2026-09-15", "2026-10-20");
     expect(source.getMosqueSettings).toHaveBeenCalledWith(true);
+    expect(source.getMasjidDisplayFeedRevision).toHaveBeenCalledWith();
   });
 
   it("keeps Friday Dhuhr as the primary service and exports only later additional services", async () => {
@@ -198,7 +203,7 @@ describe("buildMasjidDisplayFeed", () => {
     expect(feed.prayers.additionalJumuah.map((item) => item.prayerTime)).toEqual(["15:00"]);
   });
 
-  it("uses source timestamps rather than request time for generatedAt", async () => {
+  it("uses the source revision rather than request time for generatedAt", async () => {
     const source = deps();
     const first = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
     const second = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:01.000Z"), source as never);
@@ -206,9 +211,22 @@ describe("buildMasjidDisplayFeed", () => {
     expect(second.generatedAt).toBe(first.generatedAt);
   });
 
-  it("does not let omitted invalid legacy content perturb generatedAt", async () => {
+  it("changes generatedAt when the authoritative source revision changes", async () => {
     const source = deps();
-    source.getAnnouncements.mockResolvedValue([
+    source.getMasjidDisplayFeedRevision
+      .mockResolvedValueOnce("2026-09-12T10:00:00.000Z")
+      .mockResolvedValueOnce("2026-09-12T10:01:00.000Z");
+
+    const first = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
+    const second = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
+
+    expect(first.generatedAt).toBe("2026-09-12T10:00:00.000Z");
+    expect(second.generatedAt).toBe("2026-09-12T10:01:00.000Z");
+  });
+
+  it("does not let omitted invalid legacy content change the supplied source revision", async () => {
+    const source = deps();
+    source.getAnnouncementsForDisplayWindow.mockResolvedValue([
       {
         id: "future-special",
         title: "Future",
@@ -259,7 +277,7 @@ describe("buildMasjidDisplayFeed", () => {
 
   it("omits malformed legacy events instead of aborting the feed", async () => {
     const source = deps();
-    source.getEvents.mockResolvedValue([
+    source.getEventsForDisplayWindow.mockResolvedValue([
       {
         id: "bad-event",
         title: "Bad event",
@@ -285,7 +303,7 @@ describe("buildMasjidDisplayFeed", () => {
 
   it("omits malformed legacy campaigns before final feed validation", async () => {
     const source = deps();
-    source.getDonationCampaigns.mockResolvedValue([
+    source.getDonationCampaignsForDisplayWindow.mockResolvedValue([
       {
         id: "bad-campaign",
         title: "Campaign",

@@ -15,11 +15,163 @@ body {
   min-height: 100vh;
 }
 
-.tv-shell {
+.display-shell {
   min-height: 100vh;
+  min-height: 100dvh;
+  padding: clamp(1rem, 3vmin, 3.5rem);
   display: grid;
-  place-content: center;
-  gap: 1rem;
-  padding: clamp(1.5rem, 4vw, 5rem);
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  gap: clamp(.75rem, 1.5vmin, 2rem);
+  container-type: size;
+  overflow: hidden;
+}
+
+.display-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(.75rem, 2vmin, 2rem);
+}
+
+.mosque-identity,
+.header-dates,
+.persistent-app-qr {
+  display: grid;
+  gap: clamp(.2rem, .6vmin, .65rem);
+}
+
+.mosque-identity {
+  font-size: clamp(1.1rem, 2.2vmin, 2rem);
+}
+
+.header-dates {
+  justify-items: center;
+  font-size: clamp(.9rem, 1.55vmin, 1.45rem);
+}
+
+.header-clock {
+  justify-self: end;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(2.25rem, 5.5vmin, 5.5rem);
+  line-height: 1;
+}
+
+.display-main {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.test-mode-badge {
+  padding: clamp(.45rem, 1vmin, .9rem) clamp(.75rem, 1.5vmin, 1.4rem);
+  border: .14rem solid currentColor;
+  border-radius: 999px;
+  font-size: clamp(1rem, 1.8vmin, 1.6rem);
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.urgent-bar {
+  display: grid;
+  gap: clamp(.35rem, .7vmin, .75rem);
+  padding: clamp(.65rem, 1.2vmin, 1.25rem);
+  border: .12rem solid rgba(246, 242, 231, .5);
+  border-radius: clamp(.65rem, 1vmin, 1rem);
+}
+
+.urgent-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(.5rem, 1.2vmin, 1.25rem);
+  font-size: clamp(1rem, 2vmin, 1.8rem);
+}
+
+.prayer-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(.4rem, 1vmin, 1rem);
+}
+
+.prayer-cell {
+  min-width: 0;
+  padding: clamp(.55rem, 1.15vmin, 1.15rem);
+  border: .08rem solid rgba(246, 242, 231, .28);
+  border-radius: clamp(.55rem, 1vmin, 1rem);
+  display: grid;
+  justify-items: center;
+  gap: clamp(.25rem, .55vmin, .6rem);
   text-align: center;
+}
+
+.prayer-labels {
+  display: grid;
+  gap: .15rem;
+  font-size: clamp(.9rem, 1.65vmin, 1.5rem);
+}
+
+.prayer-cell time {
+  font-size: clamp(1.35rem, 2.8vmin, 2.65rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.prayer-cell small {
+  font-size: clamp(.72rem, 1.1vmin, 1rem);
+  opacity: .82;
+}
+
+.display-footer {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 0;
+}
+
+.persistent-app-qr {
+  justify-items: center;
+  width: clamp(7rem, 12vmin, 13rem);
+  font-size: clamp(.72rem, 1.05vmin, 1rem);
+  text-align: center;
+}
+
+.persistent-app-qr svg {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  background: #fff;
+  border-radius: clamp(.35rem, .7vmin, .7rem);
+}
+
+@container (max-width: 70rem) {
+  .display-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .header-dates {
+    order: 3;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+    justify-items: stretch;
+    text-align: center;
+  }
+
+  .prayer-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 44rem) {
+  .display-shell {
+    overflow: auto;
+  }
+
+  .prayer-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .display-footer {
+    justify-content: center;
+  }
 }

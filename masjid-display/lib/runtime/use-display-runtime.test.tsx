@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import fixture from "../__fixtures__/feed-v1.json";
@@ -52,6 +52,7 @@ describe("useDisplayRuntime", () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();

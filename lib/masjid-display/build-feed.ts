@@ -349,6 +349,8 @@ export async function buildMasjidDisplayFeed(
   }
   projectedCampaigns.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
 
+  const projectedAzkar = selectDisplayAzkar(azkarItems, validAzkarPlaylistIds);
+
   const generatedAt = await dependencies.getMasjidDisplayGeneratedAt(
     {
       prayerIds: representedPrayers.map((item) => item.id),
@@ -356,6 +358,7 @@ export async function buildMasjidDisplayFeed(
       announcementIds: projectedAnnouncements.map((item) => item.id),
       eventIds: projectedEvents.map((item) => item.id),
       campaignIds: projectedCampaigns.map((item) => item.id),
+      azkar: projectedAzkar,
     },
     zonedDateTime(today, "00:00").toISOString(),
   );
@@ -379,7 +382,7 @@ export async function buildMasjidDisplayFeed(
       prayerDurations,
       azkarPlaylistIds: validAzkarPlaylistIds,
     },
-    azkar: selectDisplayAzkar(azkarItems, validAzkarPlaylistIds),
+    azkar: projectedAzkar,
     announcements: projectedAnnouncements,
     events: projectedEvents,
     campaigns: projectedCampaigns,

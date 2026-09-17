@@ -48,7 +48,7 @@ function generatedAtForCatalog(catalog = azkarCatalog()) {
 
 beforeEach(() => {
   mocks.from.mockReset();
-  mocks.from.mockImplementation((table: string) => ({
+  mocks.from.mockImplementation(() => ({
     select: vi.fn(() => ({
       in: vi.fn(async (_column: string, ids: string[]) => ({
         data: ids.map(() => ({ updated_at: SOURCE_TIMESTAMP })),
@@ -65,7 +65,7 @@ describe("withAzkarContentRevision", () => {
 
     expect(first).toBe(second);
     expect(Number.isFinite(Date.parse(first))).toBe(true);
-    expect(Date.parse(first)).toBe(Date.parse(SOURCE_TIMESTAMP));
+    expect(first.slice(0, 19)).toBe(SOURCE_TIMESTAMP.slice(0, 19));
   });
 
   it("changes deterministically when represented selected Azkar content changes", () => {

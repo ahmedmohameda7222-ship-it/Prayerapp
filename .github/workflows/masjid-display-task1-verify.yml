@@ -20,8 +20,6 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "20.20.2"
-          cache: npm
-          cache-dependency-path: masjid-display/package-lock.json
       - name: Install independent TV dependencies
         working-directory: masjid-display
         run: npm install --ignore-scripts

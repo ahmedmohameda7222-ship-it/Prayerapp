@@ -52,7 +52,7 @@ export async function getJumuahTimesForDisplayWindow(startDate: string, endDate:
   const { data, error } = await client.rpc("get_masjid_display_jumuah_window", {
     p_start_date: startDate,
     p_end_date: endDate,
-  });
+  } as never);
   if (error || !Array.isArray(data)) throw new Error("Unable to load Jumu'ah times");
 
   return (data as Record<string, unknown>[]).map((row) => ({

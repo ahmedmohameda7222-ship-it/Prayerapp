@@ -1,0 +1,45 @@
+name: Plan 3 Display Feed Verification
+
+on:
+  push:
+    branches:
+      - feat/masjid-display
+    paths:
+      - "app/api/public/masjid-display/**"
+      - "lib/data/masjid-display-generated-at.ts"
+      - "lib/data/masjid-display-generated-at.test.ts"
+      - "lib/masjid-display/**"
+      - ".github/workflows/plan3-display-feed-verify.yml"
+  pull_request:
+    paths:
+      - "app/api/public/masjid-display/**"
+      - "lib/data/masjid-display-generated-at.ts"
+      - "lib/data/masjid-display-generated-at.test.ts"
+      - "lib/masjid-display/**"
+      - ".github/workflows/plan3-display-feed-verify.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-plan3:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run focused Plan 3 tests
+        run: >-
+          npx vitest run
+          lib/data/masjid-display-generated-at.test.ts
+          lib/masjid-display/*.test.ts
+          app/api/public/masjid-display/route.test.ts
+      - name: Typecheck root application
+        run: npx tsc --noEmit

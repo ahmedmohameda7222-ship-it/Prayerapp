@@ -2,11 +2,12 @@ import "server-only";
 
 import { addDaysIso, APP_TIME_ZONE, todayIso, zonedDateTime } from "@/lib/date-utils";
 import { getValidAdditionalFridayServices, isFridayIso } from "@/lib/friday";
-import { getAnnouncements } from "@/lib/data/announcements";
+import { getAnnouncementsForDisplayWindow } from "@/lib/data/announcements";
 import { getAzkarItems } from "@/lib/data/azkar";
-import { getDonationCampaigns } from "@/lib/data/donations";
-import { getEvents } from "@/lib/data/events";
-import { getJumuahTimes } from "@/lib/data/jumuah";
+import { getDonationCampaignsForDisplayWindow } from "@/lib/data/donations";
+import { getEventsForDisplayWindow } from "@/lib/data/events";
+import { getJumuahTimesForDisplayWindow } from "@/lib/data/jumuah";
+import { getMasjidDisplayFeedRevision } from "@/lib/data/masjid-display-feed-revision";
 import { getMasjidDisplaySettings } from "@/lib/data/masjid-display-settings";
 import { getMosqueSettings } from "@/lib/data/mosque-settings";
 import { getPrayerSettings } from "@/lib/data/prayer-settings";
@@ -37,25 +38,27 @@ export class DisplayFeedBuildError extends Error {
 type FeedDependencies = {
   getPrayerTimes: typeof getPrayerTimes;
   getPrayerSettings: typeof getPrayerSettings;
-  getJumuahTimes: typeof getJumuahTimes;
-  getAnnouncements: typeof getAnnouncements;
-  getEvents: typeof getEvents;
-  getDonationCampaigns: typeof getDonationCampaigns;
+  getJumuahTimesForDisplayWindow: typeof getJumuahTimesForDisplayWindow;
+  getAnnouncementsForDisplayWindow: typeof getAnnouncementsForDisplayWindow;
+  getEventsForDisplayWindow: typeof getEventsForDisplayWindow;
+  getDonationCampaignsForDisplayWindow: typeof getDonationCampaignsForDisplayWindow;
   getMosqueSettings: typeof getMosqueSettings;
   getMasjidDisplaySettings: typeof getMasjidDisplaySettings;
   getAzkarItems: typeof getAzkarItems;
+  getMasjidDisplayFeedRevision: typeof getMasjidDisplayFeedRevision;
 };
 
 const defaultDependencies: FeedDependencies = {
   getPrayerTimes,
   getPrayerSettings,
-  getJumuahTimes,
-  getAnnouncements,
-  getEvents,
-  getDonationCampaigns,
+  getJumuahTimesForDisplayWindow,
+  getAnnouncementsForDisplayWindow,
+  getEventsForDisplayWindow,
+  getDonationCampaignsForDisplayWindow,
   getMosqueSettings,
   getMasjidDisplaySettings,
   getAzkarItems,
+  getMasjidDisplayFeedRevision,
 };
 
 const HH_MM = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -236,16 +239,6 @@ function projectCampaign(item: DonationCampaign): DisplayCampaignDto | null {
   };
 }
 
-function latestSourceTimestamp(prayers: PrayerTime[], announcements: Announcement[], fallback: Date) {
-  const timestamps = [
-    ...prayers.map((item) => item.updatedAt),
-    ...announcements.map((item) => item.createdAt),
-  ]
-    .map((value) => Date.parse(value))
-    .filter(Number.isFinite);
-  return new Date(timestamps.length > 0 ? Math.max(...timestamps) : fallback.getTime()).toISOString();
-}
-
 function expectedScheduleDates(startDate: string, endDate: string) {
   const dates: string[] = [];
   for (let date = startDate; date <= endDate; date = addDaysIso(date, 1)) dates.push(date);
@@ -271,16 +264,18 @@ export async function buildMasjidDisplayFeed(
     mosqueSettings,
     displaySettings,
     azkarItems,
+    feedRevision,
   ] = await Promise.all([
     dependencies.getPrayerTimes(true, startDate, endDate),
     dependencies.getPrayerSettings(),
-    dependencies.getJumuahTimes(true),
-    dependencies.getAnnouncements(true),
-    dependencies.getEvents(true),
-    dependencies.getDonationCampaigns(true),
+    dependencies.getJumuahTimesForDisplayWindow(startDate, endDate),
+    dependencies.getAnnouncementsForDisplayWindow(now.toISOString(), horizonEnd.toISOString()),
+    dependencies.getEventsForDisplayWindow(today, endDate),
+    dependencies.getDonationCampaignsForDisplayWindow(today, endDate),
     dependencies.getMosqueSettings(true),
     dependencies.getMasjidDisplaySettings(),
     dependencies.getAzkarItems(true),
+    dependencies.getMasjidDisplayFeedRevision(),
   ]);
 
   if (!prayerSettings) throw new DisplayFeedBuildError("Prayer settings are required for the display feed");
@@ -339,7 +334,6 @@ export async function buildMasjidDisplayFeed(
     const bSource = representedAnnouncementSources.find((item) => item.id === b.id);
     return (aSource?.createdAt || "").localeCompare(bSource?.createdAt || "") || a.id.localeCompare(b.id);
   });
-  representedAnnouncementSources.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
 
   const projectedEvents: DisplayEventDto[] = [];
   for (const item of events) {
@@ -357,11 +351,9 @@ export async function buildMasjidDisplayFeed(
   }
   projectedCampaigns.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
 
-  const anchor = zonedDateTime(today, "00:00");
-
   return {
     schemaVersion: 1,
-    generatedAt: latestSourceTimestamp(representedPrayers, representedAnnouncementSources, anchor),
+    generatedAt: feedRevision,
     timezone: APP_TIME_ZONE,
     mosque: {
       nameAr: requiredText(mosqueSettings.mosqueNameAr, "mosqueNameAr"),

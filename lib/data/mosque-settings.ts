@@ -27,29 +27,35 @@ export function invalidateMosqueSettingsCache(): void {
   clearPersistentCache("mosque_settings");
 }
 
-export async function getMosqueSettings(): Promise<MosqueSettings> {
+async function loadMosqueSettings(client: NonNullable<ReturnType<typeof createClient>>): Promise<MosqueSettings> {
+  const { data, error } = await client.from("mosque_settings").select("*").single();
+  if (error?.code === "PGRST116") return { ...DEFAULT_MOSQUE_SETTINGS };
+  if (error || !data) throw new Error("Unable to load mosque settings");
+  const record = data as Record<string, unknown>;
+  return {
+    mosqueName: readDbString(record, "mosque_name"),
+    ...localizedFieldsFromDb(record, "mosqueName", "mosque_name"),
+    address: String(record.address),
+    phone: String(record.phone),
+    email: String(record.email),
+    googleMapsLink: String(record.google_maps_link),
+    whatsappLink: String(record.whatsapp_link),
+    telegramLink: String(record.telegram_link),
+    accountHolder: String(record.account_holder),
+    iban: String(record.iban),
+    bic: String(record.bic),
+    publicAppUrl: record.public_app_url ? String(record.public_app_url) : "",
+  };
+}
+
+export async function getMosqueSettings(bypassCache = false): Promise<MosqueSettings> {
   const client = createClient();
   if (!client) return { ...DEFAULT_MOSQUE_SETTINGS };
+  if (bypassCache) return loadMosqueSettings(client);
+
   return getCached("mosque_settings", async () => {
     try {
-      const { data, error } = await client.from("mosque_settings").select("*").single();
-      if (error?.code === "PGRST116") return { ...DEFAULT_MOSQUE_SETTINGS };
-      if (error || !data) throw new Error("Unable to load mosque settings");
-      const record = data as Record<string, unknown>;
-      const result = {
-        mosqueName: readDbString(record, "mosque_name"),
-        ...localizedFieldsFromDb(record, "mosqueName", "mosque_name"),
-        address: String(record.address),
-        phone: String(record.phone),
-        email: String(record.email),
-        googleMapsLink: String(record.google_maps_link),
-        whatsappLink: String(record.whatsapp_link),
-        telegramLink: String(record.telegram_link),
-        accountHolder: String(record.account_holder),
-        iban: String(record.iban),
-        bic: String(record.bic),
-        publicAppUrl: record.public_app_url ? String(record.public_app_url) : "",
-      };
+      const result = await loadMosqueSettings(client);
       saveToPersistentCache("mosque_settings", result, CACHE_TTL.mosqueSettings, 7 * 24 * 60 * 60 * 1000);
       return result;
     } catch (error) {

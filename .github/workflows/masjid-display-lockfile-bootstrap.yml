@@ -5,6 +5,7 @@ on:
     branches:
       - feat/masjid-display
     paths:
+      - "masjid-display/**"
       - ".github/workflows/masjid-display-lockfile-bootstrap.yml"
 
 permissions:

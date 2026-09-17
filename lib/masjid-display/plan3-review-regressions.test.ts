@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(path, "utf8");
 
-const REVISION_MIGRATION =
-  "supabase/migrations/20260917041000_masjid_display_feed_revision.sql";
+const BOUNDED_GENERATED_AT_MIGRATION =
+  "supabase/migrations/20260917233500_masjid_display_bounded_generated_at.sql";
 
 describe("Plan 3 Codex review regressions", () => {
   it("uses database-bounded readers for every windowed optional feed source", () => {
@@ -37,18 +37,30 @@ describe("Plan 3 Codex review regressions", () => {
     expect(campaigns).toContain("end_date.is.null,end_date.gte.");
   });
 
-  it("derives generatedAt from a monotonic database source revision covering feed authorities", () => {
+  it("derives generatedAt only from represented source rows and singleton authorities", () => {
     const buildFeed = read("lib/masjid-display/build-feed.ts");
+    const generatedAt = read("lib/data/masjid-display-generated-at.ts");
 
-    expect(buildFeed).toContain("getMasjidDisplayFeedRevision");
-    expect(buildFeed).not.toContain("latestSourceTimestamp(");
-    expect(existsSync(REVISION_MIGRATION)).toBe(true);
+    expect(buildFeed).toContain("getMasjidDisplayGeneratedAt");
+    expect(buildFeed).toContain("prayerIds: representedPrayers.map");
+    expect(buildFeed).toContain("jumuahIds: additionalJumuah.map");
+    expect(buildFeed).toContain("announcementIds: projectedAnnouncements.map");
+    expect(buildFeed).toContain("eventIds: projectedEvents.map");
+    expect(buildFeed).toContain("campaignIds: projectedCampaigns.map");
+    expect(generatedAt).toContain('.in("id", representedIds)');
+    expect(generatedAt).toContain('load("prayer_settings", ["1"])');
+    expect(generatedAt).toContain('load("mosque_settings", ["1"])');
+    expect(generatedAt).toContain('load("masjid_display_settings", ["1"])');
 
-    if (!existsSync(REVISION_MIGRATION)) return;
-    const sql = read(REVISION_MIGRATION).toLowerCase();
-    expect(sql).toContain("create table public.masjid_display_feed_revision");
-    expect(sql).toContain("greatest(clock_timestamp(), updated_at + interval '1 microsecond')");
-    expect(sql).toContain("for each statement execute function public.touch_masjid_display_feed_revision()");
+    expect(existsSync(BOUNDED_GENERATED_AT_MIGRATION)).toBe(true);
+    if (!existsSync(BOUNDED_GENERATED_AT_MIGRATION)) return;
+
+    const sql = read(BOUNDED_GENERATED_AT_MIGRATION).toLowerCase();
+    expect(sql).toContain("alter table public.announcements");
+    expect(sql).toContain("add column if not exists updated_at timestamptz");
+    expect(sql).toContain("create or replace function public.touch_masjid_display_source_updated_at()");
+    expect(sql).toContain("to_jsonb(new) - 'updated_at'");
+    expect(sql).toContain("greatest(clock_timestamp(), old.updated_at + interval '1 microsecond')");
 
     for (const table of [
       "prayer_times",
@@ -60,7 +72,10 @@ describe("Plan 3 Codex review regressions", () => {
       "mosque_settings",
       "masjid_display_settings",
     ]) {
-      expect(sql).toContain(`on public.${table}`);
+      expect(sql).toContain(`before update on public.${table}`);
+      expect(sql).toContain(`drop trigger if exists masjid_display_feed_revision_${table} on public.${table}`);
     }
+
+    expect(sql).toContain("drop table if exists public.masjid_display_feed_revision");
   });
 });

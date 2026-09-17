@@ -7,6 +7,12 @@ const persistenceSql = () =>
     "utf8",
   ).toLowerCase();
 
+const iqamaRemovalSql = () =>
+  readFileSync(
+    "supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql",
+    "utf8",
+  ).toLowerCase();
+
 describe("prayer persistence migration", () => {
   it("requires caller-supplied mosque-local today and never database current_date", () => {
     const sql = persistenceSql();
@@ -45,6 +51,15 @@ describe("prayer persistence migration", () => {
     expect(conflictUpdate).not.toMatch(/\bpublished\s*=\s*true\b/);
   });
 
+  it("keeps a changed calculation revision pending after partial future recalculation", () => {
+    const sql = persistenceSql();
+    expect(sql).toContain("where date >= p_today");
+    expect(sql).toContain("and (date < p_start_date or date > p_end_date)");
+    expect(sql).toMatch(
+      /if not exists\s*\([\s\S]*?where date >= p_today[\s\S]*?date < p_start_date or date > p_end_date[\s\S]*?\) then[\s\S]*?set applied_calculation_revision = calculation_revision/,
+    );
+  });
+
   it("keeps RPC execution service-role only", () => {
     const sql = persistenceSql();
     expect(sql).toContain("from public, anon, authenticated");
@@ -53,5 +68,23 @@ describe("prayer persistence migration", () => {
 
   it("does not write legacy absolute Iqama fields", () => {
     expect(persistenceSql()).not.toMatch(/\b(?:fajr|dhuhr|asr|maghrib|isha)_iqama\b/);
+  });
+
+  it("fails closed before dropping populated legacy Iqama values without validated shared delays", () => {
+    const sql = iqamaRemovalSql();
+    expect(sql).toContain("do $$");
+    expect(sql).toContain("from public.prayer_settings");
+    expect(sql).toContain("where id = '1'");
+    expect(sql).toContain("fajr_iqama_delay_minutes");
+    expect(sql).toContain("dhuhr_iqama_delay_minutes");
+    expect(sql).toContain("asr_iqama_delay_minutes");
+    expect(sql).toContain("maghrib_iqama_delay_minutes");
+    expect(sql).toContain("isha_iqama_delay_minutes");
+    expect(sql).toContain("raise exception");
+    expect(sql).toContain("fajr_iqama");
+    expect(sql).toContain("dhuhr_iqama");
+    expect(sql).toContain("asr_iqama");
+    expect(sql).toContain("maghrib_iqama");
+    expect(sql).toContain("isha_iqama");
   });
 });

@@ -412,7 +412,7 @@ export async function buildMasjidDisplayFeed(
       announcementIds,
       eventIds,
       campaignIds,
-      sourceTimestamps,
+      sourceTimestamps: sourceTimestamps,
       azkarRevisionTimestamps,
     },
     zonedDateTime(today, "00:00").toISOString(),

@@ -53,6 +53,13 @@ describe("prayer persistence migration", () => {
     expect(conflictUpdate).not.toMatch(/\bpublished\s*=\s*true\b/);
   });
 
+  it("refreshes prayer-row updated_at whenever recalculation replaces prayer values", () => {
+    const sql = persistenceSql();
+    const conflictUpdate = sql.split("on conflict (date) do update").at(-1) ?? "";
+    const recalculationUpdate = conflictUpdate.split("get diagnostics").at(0) ?? "";
+    expect(recalculationUpdate).toContain("updated_at = now()");
+  });
+
   it("keeps a changed calculation revision pending after partial future recalculation", () => {
     const sql = persistenceSql();
     expect(sql).toContain("where date >= p_today");

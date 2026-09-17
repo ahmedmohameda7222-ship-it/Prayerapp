@@ -6,6 +6,7 @@ import { validatePrayerCalculationSettings } from "@/lib/prayer-engine/validate-
 type PrayerSettingsRow = {
   settings: PrayerCalculationSettings;
   rowRevision: number;
+  sourceUpdatedAt: string;
 };
 
 function mapFromDb(row: Record<string, unknown>): PrayerCalculationSettings {
@@ -131,11 +132,23 @@ async function loadPrayerSettingsRow(): Promise<PrayerSettingsRow | null> {
     throw new Error("Invalid prayer settings row revision");
   }
 
-  return { settings: mapFromDb(record), rowRevision };
+  return {
+    settings: mapFromDb(record),
+    rowRevision,
+    sourceUpdatedAt: String(record.updated_at),
+  };
 }
 
 export async function getPrayerSettings(): Promise<PrayerCalculationSettings | null> {
   return (await loadPrayerSettingsRow())?.settings ?? null;
+}
+
+export async function getPrayerSettingsForDisplay(): Promise<{
+  value: PrayerCalculationSettings;
+  sourceUpdatedAt: string;
+} | null> {
+  const row = await loadPrayerSettingsRow();
+  return row ? { value: row.settings, sourceUpdatedAt: row.sourceUpdatedAt } : null;
 }
 
 export async function savePrayerSettings(

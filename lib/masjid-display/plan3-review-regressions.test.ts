@@ -39,22 +39,20 @@ describe("Plan 3 Codex review regressions", () => {
     expect(campaigns).toContain("end_date.is.null,end_date.gte.");
   });
 
-  it("derives generatedAt only from represented source rows and singleton authorities", () => {
+  it("derives generatedAt only from timestamps captured with represented source reads", () => {
     const buildFeed = read("lib/masjid-display/build-feed.ts");
     const generatedAt = read("lib/data/masjid-display-generated-at.ts");
 
     expect(buildFeed).toContain("getMasjidDisplayGeneratedAt");
-    expect(buildFeed).toContain("prayerIds: representedPrayers.map");
-    expect(buildFeed).toContain("jumuahIds: additionalJumuah.map");
-    expect(buildFeed).toContain("announcementIds: projectedAnnouncements.map");
-    expect(buildFeed).toContain("eventIds: projectedEvents.map");
-    expect(buildFeed).toContain("campaignIds: projectedCampaigns.map");
+    expect(buildFeed).toContain("getPrayerSettingsForDisplay");
+    expect(buildFeed).toContain("getMosqueSettingsForDisplay");
+    expect(buildFeed).toContain("getMasjidDisplaySettingsForDisplay");
+    expect(buildFeed).toContain("sourceTimestamps");
     expect(buildFeed).toContain("getAzkarSourceRevisionTimestamps");
     expect(buildFeed).toContain("azkarRevisionTimestamps,");
-    expect(generatedAt).toContain('.in("id", representedIds)');
-    expect(generatedAt).toContain('loadSourceTimestamps(client, "prayer_settings", ["1"])');
-    expect(generatedAt).toContain('loadSourceTimestamps(client, "mosque_settings", ["1"])');
-    expect(generatedAt).toContain('loadSourceTimestamps(client, "masjid_display_settings", ["1"])');
+    expect(generatedAt).toContain("sourceTimestamps");
+    expect(generatedAt).not.toContain("createServerClient");
+    expect(generatedAt).not.toContain("loadSourceTimestamps");
     expect(generatedAt).not.toContain("SHA256_DECIMAL_WIDTH");
     expect(generatedAt).not.toContain("withAzkarContentRevision");
 

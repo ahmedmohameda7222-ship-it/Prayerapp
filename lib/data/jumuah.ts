@@ -43,6 +43,21 @@ export function invalidateJumuahPublicCache() {
   clearPersistentCachePrefix("jumuah_times");
 }
 
+export async function getJumuahTimesForDisplayWindow(startDate: string, endDate: string): Promise<JumuahTime[]> {
+  const client = createClient();
+  if (!client) return [];
+  const { data, error } = await client
+    .from("jumuah_times")
+    .select("*")
+    .eq("published", true)
+    .gte("date", startDate)
+    .lte("date", endDate)
+    .order("date", { ascending: true })
+    .order("prayer_time", { ascending: true });
+  if (error || !data) throw new Error("Unable to load Jumu'ah times");
+  return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+}
+
 export async function getJumuahTimes(includeUnpublished = false): Promise<JumuahTime[]> {
   const client = createClient();
   if (!client) return [];

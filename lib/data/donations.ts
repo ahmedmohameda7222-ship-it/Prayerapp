@@ -104,7 +104,7 @@ export async function getDonationCampaignsForDisplayWindow(startDate: string, en
   const { data, error } = await client.rpc("get_masjid_display_campaigns_window", {
     p_start_date: startDate,
     p_end_date: endDate,
-  });
+  } as never);
   if (error || !Array.isArray(data)) throw new Error("Unable to load donation campaigns");
 
   return (data as Record<string, unknown>[]).map((row) => ({

@@ -1,0 +1,49 @@
+name: Masjid Display Lockfile Bootstrap
+
+on:
+  push:
+    branches:
+      - feat/masjid-display
+    paths:
+      - ".github/workflows/masjid-display-lockfile-bootstrap.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap-lockfile:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "20.20.2"
+      - name: Generate independent TV lockfile
+        working-directory: masjid-display
+        run: npm install --ignore-scripts
+      - name: Run TV tests
+        working-directory: masjid-display
+        run: npm test
+      - name: Typecheck TV package
+        working-directory: masjid-display
+        run: npm run typecheck
+      - name: Build TV package
+        working-directory: masjid-display
+        env:
+          PRAYERAPP_ORIGIN: https://prayerapp.example.test
+        run: npm run build
+      - name: Commit generated lockfile only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$(git status --porcelain --untracked-files=all -- masjid-display/package-lock.json)" ]]; then
+            echo "package-lock.json already matches"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add masjid-display/package-lock.json
+          git diff --cached --name-only | grep -Fx "masjid-display/package-lock.json"
+          test "$(git diff --cached --name-only | wc -l)" -eq 1
+          git commit -m "chore(plan4): lock masjid display dependencies"
+          git push origin HEAD:feat/masjid-display

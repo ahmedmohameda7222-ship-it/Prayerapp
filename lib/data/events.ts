@@ -27,6 +27,21 @@ function mapEvent(row: unknown): Event {
   };
 }
 
+export async function getEventsForDisplayWindow(startDate: string, endDate: string): Promise<Event[]> {
+  const client = createClient();
+  if (!client) return [];
+  const { data, error } = await client
+    .from("events")
+    .select("*")
+    .eq("published", true)
+    .gte("date", startDate)
+    .lte("date", endDate)
+    .order("date", { ascending: true })
+    .order("start_time", { ascending: true });
+  if (error || !data) throw new Error("Unable to load events");
+  return data.map(mapEvent);
+}
+
 export async function getEvents(includeUnpublished = false): Promise<Event[]> {
   const client = createClient();
   if (!client) return [];

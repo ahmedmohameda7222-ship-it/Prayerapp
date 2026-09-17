@@ -49,7 +49,8 @@ describe("Plan 3 Codex review regressions", () => {
     expect(buildFeed).toContain("announcementIds: projectedAnnouncements.map");
     expect(buildFeed).toContain("eventIds: projectedEvents.map");
     expect(buildFeed).toContain("campaignIds: projectedCampaigns.map");
-    expect(buildFeed).toContain("azkarRevisionTimestamps:");
+    expect(buildFeed).toContain("getAzkarSourceRevisionTimestamps");
+    expect(buildFeed).toContain("azkarRevisionTimestamps,");
     expect(generatedAt).toContain('.in("id", representedIds)');
     expect(generatedAt).toContain('loadSourceTimestamps(client, "prayer_settings", ["1"])');
     expect(generatedAt).toContain('loadSourceTimestamps(client, "mosque_settings", ["1"])');

@@ -162,7 +162,7 @@ function deps() {
         isPublished: true,
       },
     ]),
-    getMasjidDisplayFeedRevision: vi.fn(async () => "2026-09-12T10:00:00.000Z"),
+    getMasjidDisplayGeneratedAt: vi.fn(async () => "2026-09-12T10:00:00.000Z"),
   };
 }
 
@@ -193,7 +193,16 @@ describe("buildMasjidDisplayFeed", () => {
     expect(source.getEventsForDisplayWindow).toHaveBeenCalledWith("2026-09-15", "2026-10-20");
     expect(source.getDonationCampaignsForDisplayWindow).toHaveBeenCalledWith("2026-09-15", "2026-10-20");
     expect(source.getMosqueSettings).toHaveBeenCalledWith(true);
-    expect(source.getMasjidDisplayFeedRevision).toHaveBeenCalledWith();
+    expect(source.getMasjidDisplayGeneratedAt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prayerIds: expect.arrayContaining(["prayer-2026-09-14", "prayer-2026-10-20"]),
+        jumuahIds: ["jumuah-second"],
+        announcementIds: ["future-special"],
+        eventIds: ["event-1"],
+        campaignIds: ["campaign-1"],
+      }),
+      expect.any(String),
+    );
   });
 
   it("keeps Friday Dhuhr as the primary service and exports only later additional services", async () => {
@@ -203,7 +212,7 @@ describe("buildMasjidDisplayFeed", () => {
     expect(feed.prayers.additionalJumuah.map((item) => item.prayerTime)).toEqual(["15:00"]);
   });
 
-  it("uses the source revision rather than request time for generatedAt", async () => {
+  it("uses represented source timestamps rather than request time for generatedAt", async () => {
     const source = deps();
     const first = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
     const second = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:01.000Z"), source as never);
@@ -211,9 +220,9 @@ describe("buildMasjidDisplayFeed", () => {
     expect(second.generatedAt).toBe(first.generatedAt);
   });
 
-  it("changes generatedAt when the authoritative source revision changes", async () => {
+  it("changes generatedAt when the represented source timestamp changes", async () => {
     const source = deps();
-    source.getMasjidDisplayFeedRevision
+    source.getMasjidDisplayGeneratedAt
       .mockResolvedValueOnce("2026-09-12T10:00:00.000Z")
       .mockResolvedValueOnce("2026-09-12T10:01:00.000Z");
 
@@ -224,7 +233,7 @@ describe("buildMasjidDisplayFeed", () => {
     expect(second.generatedAt).toBe("2026-09-12T10:01:00.000Z");
   });
 
-  it("does not let omitted invalid legacy content change the supplied source revision", async () => {
+  it("does not let omitted invalid legacy content change the supplied represented-source timestamp", async () => {
     const source = deps();
     source.getAnnouncementsForDisplayWindow.mockResolvedValue([
       {
@@ -263,6 +272,10 @@ describe("buildMasjidDisplayFeed", () => {
 
     const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
     expect(feed.announcements.map((item) => item.id)).toEqual(["future-special"]);
+    expect(source.getMasjidDisplayGeneratedAt).toHaveBeenCalledWith(
+      expect.objectContaining({ announcementIds: ["future-special"] }),
+      expect.any(String),
+    );
     expect(feed.generatedAt).toBe("2026-09-12T10:00:00.000Z");
   });
 

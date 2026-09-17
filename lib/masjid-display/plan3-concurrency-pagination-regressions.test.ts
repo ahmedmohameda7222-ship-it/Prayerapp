@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(path, "utf8");
@@ -43,18 +43,37 @@ describe("Plan 3 concurrent snapshot regression", () => {
   });
 });
 
-describe("Plan 3 bounded-query pagination regression", () => {
-  it("paginates every bounded display-window reader instead of trusting max_rows", () => {
-    for (const path of [
-      "lib/data/jumuah.ts",
-      "lib/data/announcements.ts",
-      "lib/data/events.ts",
-      "lib/data/donations.ts",
+describe("Plan 3 bounded-query snapshot regression", () => {
+  it("reads every >1000-row display window through one snapshot-safe database statement", () => {
+    const migrationPath =
+      "supabase/migrations/20260918015000_masjid_display_snapshot_window_readers.sql";
+    expect(existsSync(migrationPath)).toBe(true);
+
+    const migration = read(migrationPath);
+    expect(migration).toContain("returns jsonb");
+    expect(migration).toContain("jsonb_agg");
+    expect(migration).toContain("security invoker");
+
+    for (const functionName of [
+      "get_masjid_display_jumuah_window",
+      "get_masjid_display_announcements_window",
+      "get_masjid_display_events_window",
+      "get_masjid_display_campaigns_window",
     ]) {
+      expect(migration).toContain(`function public.${functionName}`);
+      expect(migration).toContain(`grant execute on function public.${functionName}`);
+    }
+
+    for (const [path, rpcName] of [
+      ["lib/data/jumuah.ts", "get_masjid_display_jumuah_window"],
+      ["lib/data/announcements.ts", "get_masjid_display_announcements_window"],
+      ["lib/data/events.ts", "get_masjid_display_events_window"],
+      ["lib/data/donations.ts", "get_masjid_display_campaigns_window"],
+    ] as const) {
       const source = read(path);
-      expect(source).toContain("DISPLAY_FEED_PAGE_SIZE");
-      expect(source).toContain(".range(");
-      expect(source).toContain("rows.length < DISPLAY_FEED_PAGE_SIZE");
+      expect(source).toContain(`.rpc("${rpcName}"`);
+      expect(source).not.toContain("DISPLAY_FEED_PAGE_SIZE");
+      expect(source).not.toContain(".range(");
     }
   });
 });

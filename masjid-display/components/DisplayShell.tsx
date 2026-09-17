@@ -1,4 +1,5 @@
 import type { DisplayRuntimeViewModel } from "../lib/runtime/use-display-runtime";
+import { DisplayMain } from "./DisplayMain";
 import { Header } from "./Header";
 import { PersistentAppQr } from "./PersistentAppQr";
 import { PrayerStrip } from "./PrayerStrip";
@@ -19,6 +20,7 @@ export function DisplayShell({ vm }: DisplayShellProps) {
             TEST MODE / وضع الاختبار
           </div>
         ) : null}
+        <DisplayMain vm={vm} />
       </main>
 
       <UrgentBar items={vm.urgent} />

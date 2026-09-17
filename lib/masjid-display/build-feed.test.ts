@@ -170,13 +170,25 @@ describe("buildMasjidDisplayFeed", () => {
     const source = deps();
     const feed = await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
 
-    expect(source.getPrayerTimes).toHaveBeenCalledWith(false, "2026-09-14", "2026-10-20");
+    expect(source.getPrayerTimes).toHaveBeenCalledWith(true, "2026-09-14", "2026-10-20");
     expect(feed.prayers.schedule[0].date).toBe("2026-09-14");
     expect(feed.prayers.schedule.at(-1)?.date).toBe("2026-10-20");
     expect(feed.announcements.some((item) => item.displayFrom === "2026-09-20T08:00:00.000Z")).toBe(true);
     expect(feed.azkar.map((item) => item.id)).toEqual(["morning-1", "evening-1"]);
     expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajr" + "Iqama");
     expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajr_" + "iqama");
+  });
+
+  it("bypasses process-local public caches for feed source reads", async () => {
+    const source = deps();
+    await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);
+
+    expect(source.getPrayerTimes).toHaveBeenCalledWith(true, "2026-09-14", "2026-10-20");
+    expect(source.getJumuahTimes).toHaveBeenCalledWith(true);
+    expect(source.getAnnouncements).toHaveBeenCalledWith(true);
+    expect(source.getEvents).toHaveBeenCalledWith(true);
+    expect(source.getDonationCampaigns).toHaveBeenCalledWith(true);
+    expect(source.getMosqueSettings).toHaveBeenCalledWith(true);
   });
 
   it("keeps Friday Dhuhr as the primary service and exports only later additional services", async () => {
@@ -296,7 +308,7 @@ describe("buildMasjidDisplayFeed", () => {
     expect(feed.campaigns).toEqual([]);
   });
 
-  it("rejects unknown canonical Azkar playlist IDs as invalid display settings", async () => {
+  it("filters unknown canonical Azkar playlist IDs defensively", async () => {
     const source = deps();
     source.getMasjidDisplaySettings.mockResolvedValue({
       fajrPrayerDurationMinutes: 10,
@@ -307,9 +319,13 @@ describe("buildMasjidDisplayFeed", () => {
       azkarPlaylistIds: ["morning-1", "unknown-azkar"],
     });
 
-    await expect(
-      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
-    ).rejects.toBeInstanceOf(DisplayFeedBuildError);
+    const feed = await buildMasjidDisplayFeed(
+      new Date("2026-09-15T10:00:00.000Z"),
+      source as never,
+    );
+
+    expect(feed.displaySettings.azkarPlaylistIds).toEqual(["morning-1"]);
+    expect(feed.azkar.map((item) => item.id)).toEqual(["morning-1"]);
   });
 
   it("fails atomically when required prayer or display settings are missing", async () => {

@@ -16,7 +16,7 @@ const HARDCODED_AZKAR_BASE_SOURCE_REVISION = "2026-08-22T21:46:19.000Z";
 const hardcodedAzkarSourceRevisionOverrides: Readonly<Record<string, string>> = Object.freeze({});
 
 export function getAzkarSourceRevisionTimestamps(ids: string[]): string[] {
-  const knownIds = new Set(hardcodedAzkarItems.map((item) => item.id));
+  const knownIds = new Set<string>(hardcodedAzkarItems.map((item) => item.id));
   const representedIds = [...new Set(ids.filter((id) => typeof id === "string" && id.trim().length > 0))];
 
   return representedIds

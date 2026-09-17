@@ -1,0 +1,38 @@
+name: Masjid Display Verification
+
+on:
+  push:
+    branches:
+      - feat/masjid-display
+    paths:
+      - "masjid-display/**"
+      - ".github/workflows/masjid-display-verify.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-tv-package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "20.20.2"
+          cache: npm
+          cache-dependency-path: masjid-display/package-lock.json
+      - name: Install locked TV dependencies
+        working-directory: masjid-display
+        run: npm ci --ignore-scripts
+      - name: Run TV tests
+        working-directory: masjid-display
+        run: npm test
+      - name: Typecheck TV package
+        working-directory: masjid-display
+        run: npm run typecheck
+      - name: Build TV package
+        working-directory: masjid-display
+        env:
+          PRAYERAPP_ORIGIN: https://prayerapp.example.test
+        run: npm run build

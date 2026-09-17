@@ -392,11 +392,18 @@ begin
 
   get diagnostics v_count = row_count;
 
-  update public.prayer_settings
-  set applied_calculation_revision = calculation_revision,
-      row_revision = row_revision + 1,
-      updated_at = now()
-  where id = '1';
+  if not exists (
+    select 1
+    from public.prayer_times
+    where date >= p_today
+      and (date < p_start_date or date > p_end_date)
+  ) then
+    update public.prayer_settings
+    set applied_calculation_revision = calculation_revision,
+        row_revision = row_revision + 1,
+        updated_at = now()
+    where id = '1';
+  end if;
 
   return v_count;
 end;

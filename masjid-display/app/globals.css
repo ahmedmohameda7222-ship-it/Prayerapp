@@ -1,0 +1,25 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #07140f;
+  color: #f6f2e7;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.tv-shell {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+  padding: clamp(1.5rem, 4vw, 5rem);
+  text-align: center;
+}

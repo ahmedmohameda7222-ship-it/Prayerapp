@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-12T10:00:00.000Z",
+  "timezone": "Europe/Berlin",
+  "mosque": {
+    "nameAr": "مسجد الاختبار",
+    "nameDe": "Testmoschee",
+    "address": "Teststraße 1, 94469 Deggendorf",
+    "publicAppUrl": "https://prayerapp.example.test"
+  },
+  "prayers": {
+    "schedule": [
+      {"date":"2026-09-14","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-15","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":{"enabled":true,"lessonTitle":"درس المغرب","lessonDurationMinutes":10,"combinedIshaTime":"20:15"}},
+      {"date":"2026-09-16","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-17","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-18","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-19","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-20","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-21","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-22","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-23","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-24","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-25","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-26","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-27","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-28","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-29","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-09-30","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-01","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-02","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-03","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-04","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-05","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-06","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-07","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-08","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-09","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-10","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-11","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-12","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-13","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-14","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-15","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-16","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-17","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-18","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-19","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null},
+      {"date":"2026-10-20","fajr":"05:00","sunrise":"06:30","dhuhr":"13:10","asr":"16:45","maghrib":"19:20","isha":"20:45","maghribProgram":null}
+    ],
+    "iqamaDelays": {"fajr":20,"dhuhr":15,"asr":15,"maghrib":10,"isha":15},
+    "additionalJumuah": [
+      {"id":"test-jumuah-2-2026-09-18","date":"2026-09-18","prayerTime":"15:00"},
+      {"id":"test-jumuah-2-2026-10-16","date":"2026-10-16","prayerTime":"15:00"}
+    ]
+  },
+  "displaySettings": {
+    "prayerDurations": {"fajr":10,"dhuhr":10,"asr":10,"maghrib":10,"isha":10},
+    "azkarPlaylistIds": ["test-azkar-morning","test-azkar-evening"]
+  },
+  "azkar": [
+    {"id":"test-azkar-morning","category":"Morning","arabicText":"سبحان الله","translationDe":"Gepriesen sei Allah","source":"Synthetic fixture","repeatCount":3,"sortOrder":1},
+    {"id":"test-azkar-evening","category":"Evening","arabicText":"الحمد لله","translationDe":"Alles Lob gebührt Allah","source":"Synthetic fixture","repeatCount":3,"sortOrder":2}
+  ],
+  "announcements": [
+    {"id":"test-announcement-urgent","titleAr":"تنبيه","titleDe":"Hinweis","messageAr":"رسالة عاجلة تجريبية","messageDe":"Synthetische dringende Meldung","isUrgent":true,"displayStyle":"normal","displayFrom":null,"displayUntil":"2026-09-20T20:00:00.000Z"},
+    {"id":"test-announcement-special-future","titleAr":"إعلان خاص","titleDe":"Besondere Ankündigung","messageAr":"رسالة مجدولة","messageDe":"Geplante Nachricht","isUrgent":false,"displayStyle":"special","displayFrom":"2026-09-20T08:00:00.000Z","displayUntil":"2026-09-21T08:00:00.000Z"}
+  ],
+  "events": [
+    {"id":"test-event-current","titleAr":"فعالية حالية","titleDe":"Aktuelle Veranstaltung","descriptionAr":"وصف تجريبي","descriptionDe":"Synthetische Beschreibung","locationAr":"المسجد","locationDe":"Moschee","date":"2026-09-15","startTime":"09:00","endTime":"20:00","type":"Community"},
+    {"id":"test-event-upcoming","titleAr":"فعالية قادمة","titleDe":"Kommende Veranstaltung","descriptionAr":"وصف قادم","descriptionDe":"Kommende Beschreibung","locationAr":"قاعة المسجد","locationDe":"Moscheesaal","date":"2026-09-20","startTime":"18:00","endTime":null,"type":"Education"}
+  ],
+  "campaigns": [
+    {"id":"test-campaign-active-url","titleAr":"حملة تبرع","titleDe":"Spendenkampagne","descriptionAr":"حملة تجريبية","descriptionDe":"Synthetische Kampagne","targetAmount":5000,"collectedAmount":1200,"startDate":"2026-09-01","endDate":null,"donationUrl":"https://donate.example.test/campaign","isFeatured":true},
+    {"id":"test-campaign-future-no-url","titleAr":"حملة مستقبلية","titleDe":"Zukünftige Kampagne","descriptionAr":"حملة مجدولة","descriptionDe":"Geplante Kampagne","targetAmount":3000,"collectedAmount":0,"startDate":"2026-09-20","endDate":"2026-10-20","donationUrl":null,"isFeatured":false}
+  ],
+  "snapshotRevision": "58e6613ecf72586c0cedb41ecd121adba2f06f50128e40a4aadd6afb2b105369"
+}

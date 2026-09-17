@@ -7,14 +7,20 @@ const BOUNDED_GENERATED_AT_MIGRATION =
   "supabase/migrations/20260917233500_masjid_display_bounded_generated_at.sql";
 const SEMANTIC_SOURCE_TIMESTAMP_MIGRATION =
   "supabase/migrations/20260918001500_masjid_display_semantic_source_timestamps.sql";
+const SNAPSHOT_WINDOW_READERS_MIGRATION =
+  "supabase/migrations/20260918015000_masjid_display_snapshot_window_readers.sql";
 
 describe("Plan 3 Codex review regressions", () => {
-  it("uses database-bounded readers for every windowed optional feed source", () => {
+  it("uses database-bounded snapshot readers for every windowed optional feed source", () => {
     const buildFeed = read("lib/masjid-display/build-feed.ts");
     const jumuah = read("lib/data/jumuah.ts");
     const announcements = read("lib/data/announcements.ts");
     const events = read("lib/data/events.ts");
     const campaigns = read("lib/data/donations.ts");
+
+    expect(existsSync(SNAPSHOT_WINDOW_READERS_MIGRATION)).toBe(true);
+    if (!existsSync(SNAPSHOT_WINDOW_READERS_MIGRATION)) return;
+    const snapshotSql = read(SNAPSHOT_WINDOW_READERS_MIGRATION).toLowerCase();
 
     expect(buildFeed).toContain("getJumuahTimesForDisplayWindow");
     expect(buildFeed).toContain("getAnnouncementsForDisplayWindow");
@@ -22,21 +28,32 @@ describe("Plan 3 Codex review regressions", () => {
     expect(buildFeed).toContain("getDonationCampaignsForDisplayWindow");
 
     expect(jumuah).toContain("export async function getJumuahTimesForDisplayWindow");
-    expect(jumuah).toContain('.gte("date", startDate)');
-    expect(jumuah).toContain('.lte("date", endDate)');
+    expect(jumuah).toContain('.rpc("get_masjid_display_jumuah_window"');
+    expect(snapshotSql).toContain("from public.jumuah_times as j");
+    expect(snapshotSql).toContain("j.published is true");
+    expect(snapshotSql).toContain("j.date >= p_start_date");
+    expect(snapshotSql).toContain("j.date <= p_end_date");
 
     expect(announcements).toContain("export async function getAnnouncementsForDisplayWindow");
-    expect(announcements).toContain('.eq("published", true)');
-    expect(announcements).toContain("display_until.is.null,display_until.gte.");
-    expect(announcements).toContain("display_from.is.null,display_from.lte.");
+    expect(announcements).toContain('.rpc("get_masjid_display_announcements_window"');
+    expect(snapshotSql).toContain("from public.announcements as a");
+    expect(snapshotSql).toContain("a.published is true");
+    expect(snapshotSql).toContain("a.display_until is null or a.display_until >= p_now");
+    expect(snapshotSql).toContain("a.display_from is null or a.display_from <= p_horizon_end");
 
     expect(events).toContain("export async function getEventsForDisplayWindow");
-    expect(events).toContain('.gte("date", startDate)');
-    expect(events).toContain('.lte("date", endDate)');
+    expect(events).toContain('.rpc("get_masjid_display_events_window"');
+    expect(snapshotSql).toContain("from public.events as e");
+    expect(snapshotSql).toContain("e.published is true");
+    expect(snapshotSql).toContain("e.date >= p_start_date");
+    expect(snapshotSql).toContain("e.date <= p_end_date");
 
     expect(campaigns).toContain("export async function getDonationCampaignsForDisplayWindow");
-    expect(campaigns).toContain('.lte("start_date", endDate)');
-    expect(campaigns).toContain("end_date.is.null,end_date.gte.");
+    expect(campaigns).toContain('.rpc("get_masjid_display_campaigns_window"');
+    expect(snapshotSql).toContain("from public.donation_campaigns as c");
+    expect(snapshotSql).toContain("c.is_active is true");
+    expect(snapshotSql).toContain("c.start_date <= p_end_date");
+    expect(snapshotSql).toContain("c.end_date is null or c.end_date >= p_start_date");
   });
 
   it("derives generatedAt only from timestamps captured with represented source reads", () => {

@@ -59,7 +59,7 @@ export async function getAnnouncementsForDisplayWindow(nowIso: string, horizonEn
   const { data, error } = await client.rpc("get_masjid_display_announcements_window", {
     p_now: nowIso,
     p_horizon_end: horizonEndIso,
-  });
+  } as never);
   if (error || !Array.isArray(data)) throw new Error("Unable to load announcements");
 
   return (data as Record<string, unknown>[]).map(mapDisplayFromDb);

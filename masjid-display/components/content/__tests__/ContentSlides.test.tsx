@@ -171,8 +171,8 @@ describe("normal rotating content renderers", () => {
     );
 
     let main = screen.getByRole("main");
-    expect(within(main).getByText(announcement.messageAr)).toBeInTheDocument();
-    expect(within(main).queryByText(announcement.messageDe)).not.toBeInTheDocument();
+    expect(main).toHaveTextContent(announcement.messageAr.trim());
+    expect(main).not.toHaveTextContent(announcement.messageDe.trim());
 
     const deNow = new Date("2026-09-15T10:00:08.000Z");
     rerender(
@@ -182,8 +182,8 @@ describe("normal rotating content renderers", () => {
     );
 
     main = screen.getByRole("main");
-    expect(within(main).getByText(announcement.messageDe)).toBeInTheDocument();
-    expect(within(main).queryByText(announcement.messageAr)).not.toBeInTheDocument();
+    expect(main).toHaveTextContent(announcement.messageDe.trim());
+    expect(main).not.toHaveTextContent(announcement.messageAr.trim());
   });
 
   it("renders Special Display bilingually", () => {

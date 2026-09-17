@@ -47,18 +47,21 @@ export function PrayerStrip({ vm }: { vm: DisplayRuntimeViewModel }) {
         <article
           className="prayer-cell"
           data-testid={`prayer-cell-${cell.key}`}
-          data-informational={cell.informational ? "true" : undefined}
           key={cell.key}
-          id={`prayer-${cell.key}`}
         >
-          <div className="prayer-labels">
-            <strong>{cell.labelDe}</strong>
-            <span dir="rtl">{cell.labelAr}</span>
+          <div
+            data-testid={`prayer-${cell.key}`}
+            data-informational={cell.informational ? "true" : undefined}
+          >
+            <div className="prayer-labels">
+              <strong>{cell.labelDe}</strong>
+              <span dir="rtl">{cell.labelAr}</span>
+            </div>
+            <time>{cell.time}</time>
+            {cell.iqamaDelay === undefined ? null : (
+              <small>Iqama +{cell.iqamaDelay} min</small>
+            )}
           </div>
-          <time>{cell.time}</time>
-          {cell.iqamaDelay === undefined ? null : (
-            <small>Iqama +{cell.iqamaDelay} min</small>
-          )}
         </article>
       ))}
     </section>

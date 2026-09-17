@@ -48,9 +48,9 @@ describe("Plan 3 Codex review regressions", () => {
     expect(buildFeed).toContain("eventIds: projectedEvents.map");
     expect(buildFeed).toContain("campaignIds: projectedCampaigns.map");
     expect(generatedAt).toContain('.in("id", representedIds)');
-    expect(generatedAt).toContain('load("prayer_settings", ["1"])');
-    expect(generatedAt).toContain('load("mosque_settings", ["1"])');
-    expect(generatedAt).toContain('load("masjid_display_settings", ["1"])');
+    expect(generatedAt).toContain('loadSourceTimestamps(client, "prayer_settings", ["1"])');
+    expect(generatedAt).toContain('loadSourceTimestamps(client, "mosque_settings", ["1"])');
+    expect(generatedAt).toContain('loadSourceTimestamps(client, "masjid_display_settings", ["1"])');
 
     expect(existsSync(BOUNDED_GENERATED_AT_MIGRATION)).toBe(true);
     if (!existsSync(BOUNDED_GENERATED_AT_MIGRATION)) return;

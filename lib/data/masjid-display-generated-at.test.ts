@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { selectDisplayAzkar } from "@/lib/masjid-display/azkar-selection";
-import { getMasjidDisplayGeneratedAt, withAzkarContentRevision } from "./masjid-display-generated-at";
+import { getAzkarSourceRevisionTimestamps } from "./azkar";
+import { getMasjidDisplayGeneratedAt } from "./masjid-display-generated-at";
 
 vi.mock("server-only", () => ({}));
 
@@ -12,39 +12,9 @@ vi.mock("@/lib/supabase/server", () => ({
   createServerClient: () => ({ from: mocks.from }),
 }));
 
-const SOURCE_TIMESTAMP = "2026-09-10T10:00:00.000Z";
-
-const azkarCatalog = () => [
-  {
-    id: "selected-azkar",
-    category: "Morning" as const,
-    arabicText: "سبحان الله",
-    transliteration: "Subhan Allah",
-    translationEn: "Glory be to Allah",
-    translationDe: "Gepriesen sei Allah",
-    source: "Synthetic",
-    repeatCount: 3,
-    sortOrder: 1,
-    isPublished: true,
-  },
-  {
-    id: "unselected-azkar",
-    category: "Evening" as const,
-    arabicText: "الحمد لله",
-    transliteration: "Alhamdulillah",
-    translationEn: "Praise be to Allah",
-    translationDe: "Alles Lob gebührt Allah",
-    source: "Synthetic",
-    repeatCount: 3,
-    sortOrder: 2,
-    isPublished: true,
-  },
-];
-
-function generatedAtForCatalog(catalog = azkarCatalog()) {
-  const represented = selectDisplayAzkar(catalog, ["selected-azkar"]);
-  return withAzkarContentRevision(SOURCE_TIMESTAMP, represented);
-}
+const SOURCE_TIMESTAMP = "2026-06-01T10:00:00.000Z";
+const CURRENT_AZKAR_ITEM_ID = "morning-praise-allah-alone";
+const CURRENT_AZKAR_SOURCE_REVISION = "2026-08-22T21:46:19.000Z";
 
 beforeEach(() => {
   mocks.from.mockReset();
@@ -58,38 +28,54 @@ beforeEach(() => {
   }));
 });
 
-describe("withAzkarContentRevision", () => {
-  it("is stable for unchanged represented Azkar without request-time entropy", () => {
-    const first = generatedAtForCatalog();
-    const second = generatedAtForCatalog();
-
-    expect(first).toBe(second);
-    expect(Number.isFinite(Date.parse(first))).toBe(true);
-    expect(first.slice(0, 19)).toBe(SOURCE_TIMESTAMP.slice(0, 19));
+describe("Azkar generatedAt source revisions", () => {
+  it("uses an explicit deterministic source timestamp for represented hardcoded Azkar", () => {
+    expect(getAzkarSourceRevisionTimestamps([CURRENT_AZKAR_ITEM_ID])).toEqual([
+      CURRENT_AZKAR_SOURCE_REVISION,
+    ]);
   });
 
-  it("changes deterministically when represented selected Azkar content changes", () => {
-    const changed = azkarCatalog();
-    changed[0] = { ...changed[0], arabicText: "سبحان الله وبحمده" };
-
-    const original = generatedAtForCatalog();
-    const firstChanged = generatedAtForCatalog(changed);
-    const secondChanged = generatedAtForCatalog(changed);
-
-    expect(firstChanged).not.toBe(original);
-    expect(firstChanged).toBe(secondChanged);
-  });
-
-  it("ignores changes to Azkar that are not represented by this Feed snapshot", () => {
-    const changed = azkarCatalog();
-    changed[1] = {
-      ...changed[1],
-      arabicText: "غير معروض",
-      translationDe: "Nicht dargestellt",
-      sortOrder: 99,
+  it("is stable for unchanged represented Azkar source revisions", async () => {
+    const revisions = getAzkarSourceRevisionTimestamps([CURRENT_AZKAR_ITEM_ID]);
+    const sources = {
+      prayerIds: ["prayer-1"],
+      jumuahIds: [],
+      announcementIds: [],
+      eventIds: [],
+      campaignIds: [],
+      azkarRevisionTimestamps: revisions,
     };
 
-    expect(generatedAtForCatalog(changed)).toBe(generatedAtForCatalog());
+    const first = await getMasjidDisplayGeneratedAt(sources, "2026-05-31T22:00:00.000Z");
+    const second = await getMasjidDisplayGeneratedAt(sources, "2026-05-31T22:00:00.000Z");
+
+    expect(first).toBe(CURRENT_AZKAR_SOURCE_REVISION);
+    expect(second).toBe(first);
+  });
+
+  it("changes deterministically when the represented selected Azkar source revision changes", async () => {
+    const baseSources = {
+      prayerIds: ["prayer-1"],
+      jumuahIds: [],
+      announcementIds: [],
+      eventIds: [],
+      campaignIds: [],
+      azkarRevisionTimestamps: [CURRENT_AZKAR_SOURCE_REVISION],
+    };
+    const changedRevision = "2026-09-18T08:15:00.000Z";
+
+    const original = await getMasjidDisplayGeneratedAt(baseSources, "2026-05-31T22:00:00.000Z");
+    const changed = await getMasjidDisplayGeneratedAt(
+      { ...baseSources, azkarRevisionTimestamps: [changedRevision] },
+      "2026-05-31T22:00:00.000Z",
+    );
+
+    expect(original).toBe(CURRENT_AZKAR_SOURCE_REVISION);
+    expect(changed).toBe(changedRevision);
+  });
+
+  it("does not include an unrelated unselected Azkar item revision", () => {
+    expect(getAzkarSourceRevisionTimestamps([CURRENT_AZKAR_ITEM_ID])).toHaveLength(1);
   });
 });
 
@@ -102,7 +88,7 @@ describe("getMasjidDisplayGeneratedAt", () => {
         announcementIds: [],
         eventIds: [],
         campaignIds: [],
-        azkar: [],
+        azkarRevisionTimestamps: [],
       },
       "2026-09-15T00:00:00.000Z",
     );
@@ -118,7 +104,7 @@ describe("getMasjidDisplayGeneratedAt", () => {
         announcementIds: ["announcement-represented"],
         eventIds: [],
         campaignIds: ["campaign-represented"],
-        azkar: [],
+        azkarRevisionTimestamps: [],
       },
       "2026-09-15T00:00:00.000Z",
     );

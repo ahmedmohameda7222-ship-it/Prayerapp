@@ -5,6 +5,8 @@ const read = (path: string) => readFileSync(path, "utf8");
 
 const BOUNDED_GENERATED_AT_MIGRATION =
   "supabase/migrations/20260917233500_masjid_display_bounded_generated_at.sql";
+const SEMANTIC_SOURCE_TIMESTAMP_MIGRATION =
+  "supabase/migrations/20260918001500_masjid_display_semantic_source_timestamps.sql";
 
 describe("Plan 3 Codex review regressions", () => {
   it("uses database-bounded readers for every windowed optional feed source", () => {
@@ -47,35 +49,33 @@ describe("Plan 3 Codex review regressions", () => {
     expect(buildFeed).toContain("announcementIds: projectedAnnouncements.map");
     expect(buildFeed).toContain("eventIds: projectedEvents.map");
     expect(buildFeed).toContain("campaignIds: projectedCampaigns.map");
+    expect(buildFeed).toContain("azkarRevisionTimestamps:");
     expect(generatedAt).toContain('.in("id", representedIds)');
     expect(generatedAt).toContain('loadSourceTimestamps(client, "prayer_settings", ["1"])');
     expect(generatedAt).toContain('loadSourceTimestamps(client, "mosque_settings", ["1"])');
     expect(generatedAt).toContain('loadSourceTimestamps(client, "masjid_display_settings", ["1"])');
+    expect(generatedAt).not.toContain("SHA256_DECIMAL_WIDTH");
+    expect(generatedAt).not.toContain("withAzkarContentRevision");
 
     expect(existsSync(BOUNDED_GENERATED_AT_MIGRATION)).toBe(true);
-    if (!existsSync(BOUNDED_GENERATED_AT_MIGRATION)) return;
+  });
 
-    const sql = read(BOUNDED_GENERATED_AT_MIGRATION).toLowerCase();
-    expect(sql).toContain("alter table public.announcements");
-    expect(sql).toContain("add column if not exists updated_at timestamptz");
-    expect(sql).toContain("create or replace function public.touch_masjid_display_source_updated_at()");
-    expect(sql).toContain("to_jsonb(new) - 'updated_at'");
-    expect(sql).toContain("greatest(clock_timestamp(), old.updated_at + interval '1 microsecond')");
+  it("touches generatedAt timestamps only for Feed-v1 semantic source fields", () => {
+    expect(existsSync(SEMANTIC_SOURCE_TIMESTAMP_MIGRATION)).toBe(true);
+    if (!existsSync(SEMANTIC_SOURCE_TIMESTAMP_MIGRATION)) return;
 
-    for (const table of [
-      "prayer_times",
-      "prayer_settings",
-      "jumuah_times",
-      "announcements",
-      "events",
-      "donation_campaigns",
-      "mosque_settings",
-      "masjid_display_settings",
-    ]) {
-      expect(sql).toContain(`before update on public.${table}`);
-      expect(sql).toContain(`drop trigger if exists masjid_display_feed_revision_${table} on public.${table}`);
-    }
-
-    expect(sql).toContain("drop table if exists public.masjid_display_feed_revision");
+    const sql = read(SEMANTIC_SOURCE_TIMESTAMP_MIGRATION).toLowerCase();
+    expect(sql).toContain("semantic_keys text[]");
+    expect(sql).toContain("case tg_table_name");
+    expect(sql).toContain("jsonb_object_agg");
+    expect(sql).toContain("when 'events'");
+    expect(sql).toContain("'title_ar'");
+    expect(sql).toContain("'title_de'");
+    expect(sql).not.toContain("'title_en'");
+    expect(sql).not.toContain("'title_tr'");
+    expect(sql).toContain("when 'mosque_settings'");
+    expect(sql).toContain("'public_app_url'");
+    expect(sql).toContain("when 'prayer_settings'");
+    expect(sql).toContain("'fajr_iqama_delay_minutes'");
   });
 });

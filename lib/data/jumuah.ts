@@ -4,7 +4,6 @@ import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./loca
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
-const DISPLAY_FEED_PAGE_SIZE = 1000;
 export type DisplayJumuahSource = JumuahTime & { sourceUpdatedAt: string };
 
 function mapFromDb(row: Record<string, unknown>): JumuahTime {
@@ -50,25 +49,13 @@ export async function getJumuahTimesForDisplayWindow(startDate: string, endDate:
   const client = createClient();
   if (!client) return [];
 
-  const allRows: Record<string, unknown>[] = [];
-  for (let from = 0; ; from += DISPLAY_FEED_PAGE_SIZE) {
-    const { data, error } = await client
-      .from("jumuah_times")
-      .select("*")
-      .eq("published", true)
-      .gte("date", startDate)
-      .lte("date", endDate)
-      .order("date", { ascending: true })
-      .order("prayer_time", { ascending: true })
-      .order("id", { ascending: true })
-      .range(from, from + DISPLAY_FEED_PAGE_SIZE - 1);
-    if (error || !data) throw new Error("Unable to load Jumu'ah times");
-    const rows = data as Record<string, unknown>[];
-    allRows.push(...rows);
-    if (rows.length < DISPLAY_FEED_PAGE_SIZE) break;
-  }
+  const { data, error } = await client.rpc("get_masjid_display_jumuah_window", {
+    p_start_date: startDate,
+    p_end_date: endDate,
+  });
+  if (error || !Array.isArray(data)) throw new Error("Unable to load Jumu'ah times");
 
-  return allRows.map((row) => ({
+  return (data as Record<string, unknown>[]).map((row) => ({
     ...mapFromDb(row),
     sourceUpdatedAt: String(row.updated_at),
   }));

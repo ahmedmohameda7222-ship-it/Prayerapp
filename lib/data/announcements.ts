@@ -43,6 +43,20 @@ function mapToDb(item: Partial<Announcement>, includeCreatedAt = false): Record<
   return db;
 }
 
+export async function getAnnouncementsForDisplayWindow(nowIso: string, horizonEndIso: string): Promise<Announcement[]> {
+  const client = createClient();
+  if (!client) return [];
+  const { data, error } = await client
+    .from("announcements")
+    .select("*")
+    .eq("published", true)
+    .or(`display_until.is.null,display_until.gte.${nowIso}`)
+    .or(`display_from.is.null,display_from.lte.${horizonEndIso}`)
+    .order("created_at", { ascending: false });
+  if (error || !data) throw new Error("Unable to load announcements");
+  return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+}
+
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {
   const client = createClient();
   if (!client) return [];

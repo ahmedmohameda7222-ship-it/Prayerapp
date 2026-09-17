@@ -4,6 +4,9 @@ import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./loca
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
+const DISPLAY_FEED_PAGE_SIZE = 1000;
+export type DisplayAnnouncementSource = Announcement & { sourceUpdatedAt: string };
+
 export function invalidateAnnouncementCaches() {
   invalidateCachePrefix("announcements");
   clearPersistentCachePrefix("announcements");
@@ -26,6 +29,13 @@ function mapFromDb(row: Record<string, unknown>): Announcement {
   };
 }
 
+function mapDisplayFromDb(row: Record<string, unknown>): DisplayAnnouncementSource {
+  return {
+    ...mapFromDb(row),
+    sourceUpdatedAt: String(row.updated_at),
+  };
+}
+
 function mapToDb(item: Partial<Announcement>, includeCreatedAt = false): Record<string, unknown> {
   const db: Record<string, unknown> = {};
   if (item.id) db.id = item.id;
@@ -43,18 +53,28 @@ function mapToDb(item: Partial<Announcement>, includeCreatedAt = false): Record<
   return db;
 }
 
-export async function getAnnouncementsForDisplayWindow(nowIso: string, horizonEndIso: string): Promise<Announcement[]> {
+export async function getAnnouncementsForDisplayWindow(nowIso: string, horizonEndIso: string): Promise<DisplayAnnouncementSource[]> {
   const client = createClient();
   if (!client) return [];
-  const { data, error } = await client
-    .from("announcements")
-    .select("*")
-    .eq("published", true)
-    .or(`display_until.is.null,display_until.gte.${nowIso}`)
-    .or(`display_from.is.null,display_from.lte.${horizonEndIso}`)
-    .order("created_at", { ascending: false });
-  if (error || !data) throw new Error("Unable to load announcements");
-  return data.map((row: unknown) => mapFromDb(row as Record<string, unknown>));
+
+  const allRows: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += DISPLAY_FEED_PAGE_SIZE) {
+    const { data, error } = await client
+      .from("announcements")
+      .select("*")
+      .eq("published", true)
+      .or(`display_until.is.null,display_until.gte.${nowIso}`)
+      .or(`display_from.is.null,display_from.lte.${horizonEndIso}`)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, from + DISPLAY_FEED_PAGE_SIZE - 1);
+    if (error || !data) throw new Error("Unable to load announcements");
+    const rows = data as Record<string, unknown>[];
+    allRows.push(...rows);
+    if (rows.length < DISPLAY_FEED_PAGE_SIZE) break;
+  }
+
+  return allRows.map(mapDisplayFromDb);
 }
 
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {

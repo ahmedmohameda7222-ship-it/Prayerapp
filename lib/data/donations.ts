@@ -95,6 +95,20 @@ function mapCampaignRecord(record: Record<string, unknown>): DonationCampaign {
   };
 }
 
+export async function getDonationCampaignsForDisplayWindow(startDate: string, endDate: string): Promise<DonationCampaign[]> {
+  const client = createClient();
+  if (!client) return [];
+  const { data, error } = await client
+    .from("donation_campaigns")
+    .select("*")
+    .eq("is_active", true)
+    .lte("start_date", endDate)
+    .or(`end_date.is.null,end_date.gte.${startDate}`)
+    .order("start_date", { ascending: true });
+  if (error || !data) throw new Error("Unable to load donation campaigns");
+  return data.map((row: unknown) => mapCampaignRecord(row as Record<string, unknown>));
+}
+
 export async function getDonationCampaigns(includeInactive = false): Promise<DonationCampaign[]> {
   const client = createClient();
   if (!client) return [];

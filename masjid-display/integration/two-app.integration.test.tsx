@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import path from "node:path";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DisplayShell } from "../components/DisplayShell";
@@ -8,7 +9,6 @@ import { useDisplayRuntime } from "../lib/runtime/use-display-runtime";
 const integrationDescribe =
   process.env.TWO_APP_INTEGRATION === "1" ? describe : describe.skip;
 const TV_BASE_URL = process.env.TV_BASE_URL ?? "http://127.0.0.1:3001";
-const DB_CONTAINER = process.env.SUPABASE_DB_CONTAINER ?? "";
 const nativeFetch = globalThis.fetch.bind(globalThis);
 
 let dropDisplayFeed = false;
@@ -22,64 +22,26 @@ function setVisibility(value: "hidden" | "visible") {
 }
 
 function setTestMode(active: boolean) {
-  if (!DB_CONTAINER) {
-    throw new Error("SUPABASE_DB_CONTAINER is required for two-app integration");
-  }
-
-  const sql = active
-    ? `
-      insert into public.masjid_display_test_state (
-        id, enabled, scenario, payload, started_at, expires_at, updated_at
-      ) values (
-        '1',
-        true,
-        'prayer_approaching',
-        jsonb_build_object(
-          'scenario', 'prayer_approaching',
-          'id', 'integration-prayer-approaching',
-          'prayer', 'isha',
-          'targetAt', now() + interval '10 minutes'
-        ),
-        now(),
-        now() + interval '15 minutes',
-        now()
-      )
-      on conflict (id) do update set
-        enabled = excluded.enabled,
-        scenario = excluded.scenario,
-        payload = excluded.payload,
-        started_at = excluded.started_at,
-        expires_at = excluded.expires_at,
-        updated_at = excluded.updated_at;
-    `
-    : `
-      insert into public.masjid_display_test_state (
-        id, enabled, scenario, payload, started_at, expires_at, updated_at
-      ) values ('1', false, null, null, null, null, now())
-      on conflict (id) do update set
-        enabled = false,
-        scenario = null,
-        payload = null,
-        started_at = null,
-        expires_at = null,
-        updated_at = excluded.updated_at;
-    `;
+  const repoRoot = path.resolve(process.cwd(), "..");
+  const action = active ? "start" : "stop";
 
   execFileSync(
-    "docker",
+    "npx",
     [
-      "exec",
-      "-i",
-      DB_CONTAINER,
-      "psql",
-      "-U",
-      "postgres",
-      "-d",
-      "postgres",
-      "-v",
-      "ON_ERROR_STOP=1",
+      "vitest",
+      "run",
+      "app/admin/masjid-display-test/live-action.integration.test.tsx",
+      "--reporter=verbose",
     ],
-    { input: sql, encoding: "utf8" },
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        PLAN4_ADMIN_ACTION: action,
+      },
+      encoding: "utf8",
+      stdio: "pipe",
+    },
   );
 }
 

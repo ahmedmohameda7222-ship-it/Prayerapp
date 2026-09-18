@@ -8,9 +8,16 @@ import type { DisplayRuntimeViewModel } from "../../lib/runtime/use-display-runt
 import { DisplayShell } from "../DisplayShell";
 
 vi.mock("qrcode.react", () => ({
-  QRCodeSVG: ({ value, ...props }: { value: string; [key: string]: unknown }) => (
-    <svg {...props} data-qr-value={value} />
-  ),
+  QRCodeSVG: ({
+    value,
+    title,
+    "data-testid": testId,
+  }: {
+    value: string;
+    title?: string;
+    "data-testid"?: string;
+    [key: string]: unknown;
+  }) => <svg data-testid={testId} aria-label={title ?? value} data-qr-value={value} />,
 }));
 
 const feed = structuredClone(fixture) as MasjidDisplayFeedV1;

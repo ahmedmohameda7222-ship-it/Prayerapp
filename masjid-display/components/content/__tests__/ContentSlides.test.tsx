@@ -11,13 +11,14 @@ vi.mock("qrcode.react", () => ({
   QRCodeSVG: ({
     value,
     title,
-    ...props
+    "data-testid": testId,
   }: {
     value: string;
     title?: string;
+    "data-testid"?: string;
     [key: string]: unknown;
   }) => (
-    <svg {...props} aria-label={title ?? value} data-qr-value={value} />
+    <svg data-testid={testId} aria-label={title ?? value} data-qr-value={value} />
   ),
 }));
 

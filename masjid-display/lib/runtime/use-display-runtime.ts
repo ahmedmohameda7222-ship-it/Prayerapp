@@ -248,19 +248,18 @@ function syntheticTestView(
 }
 
 export function useDisplayRuntime(): DisplayRuntimeViewModel {
-  const initialLkg = useMemo(() => loadLkg(), []);
   const clock = useMemo(() => createLogicalClock(), []);
-  const etagRef = useRef<string | null>(initialLkg?.etag ?? null);
-  const feedRef = useRef<MasjidDisplayFeedV1 | null>(initialLkg?.snapshot ?? null);
+  const etagRef = useRef<string | null>(null);
+  const feedRef = useRef<MasjidDisplayFeedV1 | null>(null);
   const refreshGenerationRef = useRef(0);
 
-  const [feed, setFeed] = useState<MasjidDisplayFeedV1 | null>(initialLkg?.snapshot ?? null);
+  const [feed, setFeed] = useState<MasjidDisplayFeedV1 | null>(null);
   const [logicalNow, setLogicalNow] = useState(() => clock.now(Date.now()));
   const [networkAvailable, setNetworkAvailable] = useState(false);
-  const [usingLkg, setUsingLkg] = useState(Boolean(initialLkg));
+  const [usingLkg, setUsingLkg] = useState(false);
   const [diagnostics, setDiagnostics] = useState<DisplayRuntimeDiagnostics>({
     lastAttemptAt: null,
-    lastSyncAt: initialLkg?.receivedAt ?? null,
+    lastSyncAt: null,
     clockOffsetMs: 0,
     validationError: null,
   });
@@ -349,7 +348,21 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
   useEffect(() => {
     let disposed = false;
     queueMicrotask(() => {
-      if (!disposed) void refreshProduction();
+      if (disposed) return;
+
+      const cached = loadLkg();
+      if (cached) {
+        etagRef.current = cached.etag;
+        feedRef.current = cached.snapshot;
+        setFeed(cached.snapshot);
+        setUsingLkg(true);
+        setDiagnostics((current) => ({
+          ...current,
+          lastSyncAt: cached.receivedAt,
+        }));
+      }
+
+      void refreshProduction();
     });
 
     const poll = window.setInterval(() => void refreshProduction(), 60_000);

@@ -112,6 +112,18 @@ describe("DisplayShell", () => {
     expect(screen.queryByTestId("prayerapp-qr")).not.toBeInTheDocument();
   });
 
+  it("gives primary state and rotating content renderers fluid TV-readable hierarchy", () => {
+    const css = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
+
+    expect(css).toMatch(/\.state-panel\s*\{[^}]*display:\s*grid;/s);
+    expect(css).toMatch(/\.state-prayer-name\s*\{[^}]*font-size:\s*clamp\(/s);
+    expect(css).toMatch(/\.state-countdown\s*\{[^}]*font-size:\s*clamp\(/s);
+    expect(css).toMatch(/\.content-slide\s*\{[^}]*font-size:\s*clamp\(/s);
+    expect(css).toMatch(/\.content-slide\s+h2\s*\{[^}]*font-size:\s*clamp\(/s);
+    expect(css).toMatch(/\.content-card-grid\s*\{[^}]*display:\s*grid;/s);
+    expect(css).toMatch(/\.content-card\s*\{[^}]*font-size:\s*clamp\(/s);
+  });
+
   it("uses fluid/container layout rules without physical-device media queries", () => {
     const css = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
     expect(css).toMatch(/\.display-shell\s*\{/);

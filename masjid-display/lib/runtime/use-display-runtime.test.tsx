@@ -252,6 +252,105 @@ describe("useDisplayRuntime", () => {
     expect(loadLkg()?.etag).toBe('"fresh"');
   });
 
+  it.each([
+    ["normal", { titleAr: "الوضع الطبيعي", titleDe: "Normalbetrieb", messageAr: "اختبار", messageDe: "Test" }, "ANNOUNCEMENT"],
+    ["special_display", { titleAr: "عرض خاص", titleDe: "Sonderanzeige", messageAr: "خاص", messageDe: "Spezial" }, "SPECIAL"],
+    ["event", { titleAr: "فعالية", titleDe: "Veranstaltung", descriptionAr: "وصف", descriptionDe: "Beschreibung", locationAr: "قاعة", locationDe: "Saal", startsAt: "2026-09-15T18:30:00.000Z" }, "EVENT"],
+    ["campaign", { titleAr: "حملة", titleDe: "Kampagne", descriptionAr: "تبرع", descriptionDe: "Spende", donationUrl: "https://example.invalid/test-donation" }, "CAMPAIGN"],
+    ["azkar", { azkarId: "test-azkar", arabicText: "سُبْحَانَ اللَّهِ", germanText: "Gepriesen sei Allah" }, "AZKAR"],
+    ["long_bilingual", { titleAr: "عنوان", titleDe: "Titel", messageAr: "نص عربي طويل", messageDe: "Langer deutscher Text" }, "ANNOUNCEMENT"],
+  ] as const)(
+    "builds a synthetic renderer view for %s Test Mode",
+    async (scenario, payloadFields, expectedKind) => {
+      const realFeed = cloneFeed();
+      seedLkg(realFeed);
+      vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
+      testControl.current = {
+        active: true,
+        scenario,
+        startedAt: "2026-09-15T18:00:00.000Z",
+        expiresAt: "2026-09-15T18:15:00.000Z",
+        publicAppUrl: "https://prayer.example/",
+        payload: {
+          scenario,
+          id: `test-${scenario}`,
+          ...payloadFields,
+        },
+      };
+
+      const { result } = renderHook(() => useDisplayRuntime());
+
+      expect(result.current.testMode).toBe(true);
+      expect(result.current.state?.kind).toBe("NORMAL");
+      expect(result.current.content).not.toBeNull();
+      expect(result.current.normalSlide?.kind).toBe(expectedKind);
+      expect(loadLkg()?.snapshot.snapshotRevision).toBe(realFeed.snapshotRevision);
+    },
+  );
+
+  it("builds synthetic urgent content and suppresses production urgent items", () => {
+    const realFeed = cloneFeed();
+    seedLkg(realFeed);
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
+    testControl.current = {
+      active: true,
+      scenario: "urgent",
+      startedAt: "2026-09-15T18:00:00.000Z",
+      expiresAt: "2026-09-15T18:15:00.000Z",
+      publicAppUrl: "https://prayer.example/",
+      payload: {
+        scenario: "urgent",
+        id: "test-urgent",
+        titleAr: "تنبيه تجريبي",
+        titleDe: "Testwarnung",
+        messageAr: "رسالة تجريبية",
+        messageDe: "Testmeldung",
+      },
+    };
+
+    const { result } = renderHook(() => useDisplayRuntime());
+
+    expect(result.current.urgent).toHaveLength(1);
+    expect(result.current.urgent[0]?.id).toBe("test-urgent");
+    expect(result.current.urgent.some((item) => item.id === realFeed.announcements[0]?.id)).toBe(false);
+  });
+
+  it("forces synthetic offline operational flags without changing the real LKG", async () => {
+    const realFeed = cloneFeed();
+    seedLkg(realFeed);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(null, { status: 304, headers: { date: SERVER_DATE } }),
+      ),
+    );
+    testControl.current = {
+      active: true,
+      scenario: "offline",
+      startedAt: "2026-09-15T18:00:00.000Z",
+      expiresAt: "2026-09-15T18:15:00.000Z",
+      publicAppUrl: "https://prayer.example/",
+      payload: {
+        scenario: "offline",
+        id: "test-offline",
+        titleAr: "وضع عدم الاتصال",
+        titleDe: "Offlinemodus",
+        messageAr: "اختبار",
+        messageDe: "Test",
+      },
+    };
+
+    const { result } = renderHook(() => useDisplayRuntime());
+    await flushEffects();
+
+    expect(result.current.testMode).toBe(true);
+    expect(result.current.networkAvailable).toBe(false);
+    expect(result.current.usingLkg).toBe(true);
+    expect(result.current.content).not.toBeNull();
+    expect(result.current.normalSlide?.kind).toBe("ANNOUNCEMENT");
+    expect(loadLkg()?.snapshot.snapshotRevision).toBe(realFeed.snapshotRevision);
+  });
+
   it("applies test override without persisting it and returns to fresh real state", async () => {
     const realFeed = cloneFeed();
     seedLkg(realFeed);

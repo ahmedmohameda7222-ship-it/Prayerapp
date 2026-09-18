@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { activeDisplayContent, type ActiveContent } from "../content-eligibility";
-import type { MasjidDisplayFeedV1 } from "../feed-types";
+import type {
+  DisplayAnnouncementDto,
+  DisplayAzkarDto,
+  DisplayCampaignDto,
+  DisplayEventDto,
+  MasjidDisplayFeedV1,
+} from "../feed-types";
 import { loadLkg, replaceLkg } from "../lkg";
 import { createLogicalClock } from "../logical-clock";
 import { resolveNormalSlide, type NormalSlide } from "../scheduler";
@@ -72,6 +78,173 @@ function syntheticState(payload: TestControlPayload): DisplayStateResolution {
         ? "MISSING_IQAMA_DELAY"
         : null,
   };
+}
+
+function payloadText(payload: TestControlPayload, key: string, fallback: string) {
+  const value = payload[key];
+  return typeof value === "string" && value.trim() ? value : fallback;
+}
+
+function syntheticAnnouncement(
+  payload: TestControlPayload,
+  options: { urgent?: boolean; style?: "normal" | "special" } = {},
+): DisplayAnnouncementDto {
+  return {
+    id: payload.id,
+    titleAr: payloadText(payload, "titleAr", "اختبار شاشة المسجد"),
+    titleDe: payloadText(payload, "titleDe", "Moschee-Display-Test"),
+    messageAr: payloadText(payload, "messageAr", "محتوى تجريبي فقط"),
+    messageDe: payloadText(payload, "messageDe", "Nur synthetischer Testinhalt"),
+    isUrgent: Boolean(options.urgent),
+    displayStyle: options.style ?? "normal",
+    displayFrom: null,
+    displayUntil: null,
+  };
+}
+
+function emptySyntheticContent(prayerScheduleStale = false): ActiveContent {
+  return {
+    prayerDay: null,
+    prayerScheduleStale,
+    azkar: [],
+    announcements: [],
+    specialAnnouncements: [],
+    urgentAnnouncements: [],
+    events: [],
+    campaigns: [],
+    maghribPrograms: [],
+  };
+}
+
+type SyntheticTestView = {
+  content: ActiveContent | null;
+  normalSlide: NormalSlide | null;
+  urgent: MasjidDisplayFeedV1["announcements"];
+  networkAvailable?: boolean;
+  usingLkg?: boolean;
+};
+
+function syntheticTestView(
+  payload: TestControlPayload,
+  logicalNow: Date,
+): SyntheticTestView {
+  const content = emptySyntheticContent(payload.scenario === "stale_prayer_data");
+
+  switch (payload.scenario) {
+    case "normal":
+    case "long_bilingual":
+    case "stale_prayer_data":
+    case "missing_settings": {
+      const item = syntheticAnnouncement(payload);
+      content.announcements = [item];
+      return {
+        content,
+        normalSlide: { kind: "ANNOUNCEMENT", itemId: item.id },
+        urgent: [],
+      };
+    }
+    case "offline": {
+      const item = syntheticAnnouncement(payload);
+      content.announcements = [item];
+      return {
+        content,
+        normalSlide: { kind: "ANNOUNCEMENT", itemId: item.id },
+        urgent: [],
+        networkAvailable: false,
+        usingLkg: true,
+      };
+    }
+    case "urgent": {
+      const item = syntheticAnnouncement(payload, { urgent: true });
+      content.announcements = [item];
+      content.urgentAnnouncements = [item];
+      return {
+        content,
+        normalSlide: { kind: "ANNOUNCEMENT", itemId: item.id },
+        urgent: [item],
+      };
+    }
+    case "special_display": {
+      const item = syntheticAnnouncement(payload, { style: "special" });
+      content.specialAnnouncements = [item];
+      return {
+        content,
+        normalSlide: { kind: "SPECIAL", itemId: item.id },
+        urgent: [],
+      };
+    }
+    case "event": {
+      const startsAtValue = payloadText(payload, "startsAt", logicalNow.toISOString());
+      const startsAt = new Date(startsAtValue);
+      const safeStartsAt = Number.isFinite(startsAt.getTime()) ? startsAt : logicalNow;
+      const item: DisplayEventDto = {
+        id: payload.id,
+        titleAr: payloadText(payload, "titleAr", "فعالية تجريبية"),
+        titleDe: payloadText(payload, "titleDe", "Testveranstaltung"),
+        descriptionAr: payloadText(payload, "descriptionAr", "محتوى تجريبي فقط"),
+        descriptionDe: payloadText(payload, "descriptionDe", "Nur synthetischer Testinhalt"),
+        locationAr: payloadText(payload, "locationAr", "قاعة الاختبار"),
+        locationDe: payloadText(payload, "locationDe", "Testraum"),
+        date: safeStartsAt.toISOString().slice(0, 10),
+        startTime: safeStartsAt.toISOString().slice(11, 16),
+        endTime: null,
+        type: "test",
+      };
+      content.events = [item];
+      return {
+        content,
+        normalSlide: { kind: "EVENT", itemId: item.id },
+        urgent: [],
+      };
+    }
+    case "campaign": {
+      const item: DisplayCampaignDto = {
+        id: payload.id,
+        titleAr: payloadText(payload, "titleAr", "حملة تجريبية"),
+        titleDe: payloadText(payload, "titleDe", "Testkampagne"),
+        descriptionAr: payloadText(payload, "descriptionAr", "محتوى تجريبي فقط"),
+        descriptionDe: payloadText(payload, "descriptionDe", "Nur synthetischer Testinhalt"),
+        targetAmount: 100,
+        collectedAmount: 25,
+        startDate: logicalNow.toISOString().slice(0, 10),
+        endDate: null,
+        donationUrl:
+          typeof payload.donationUrl === "string" && payload.donationUrl.trim()
+            ? payload.donationUrl
+            : null,
+        isFeatured: true,
+      };
+      content.campaigns = [item];
+      return {
+        content,
+        normalSlide: { kind: "CAMPAIGN", itemId: item.id },
+        urgent: [],
+      };
+    }
+    case "azkar": {
+      const item: DisplayAzkarDto = {
+        id: payloadText(payload, "azkarId", payload.id),
+        category: "Morning",
+        arabicText: payloadText(payload, "arabicText", "سُبْحَانَ اللَّهِ"),
+        translationDe: payloadText(payload, "germanText", "Gepriesen sei Allah"),
+        source: "Test Mode",
+        repeatCount: 1,
+        sortOrder: 0,
+      };
+      content.azkar = [item];
+      return {
+        content,
+        normalSlide: { kind: "AZKAR", itemId: item.id },
+        urgent: [],
+      };
+    }
+    default:
+      return {
+        content: null,
+        normalSlide: null,
+        urgent: [],
+      };
+  }
 }
 
 export function useDisplayRuntime(): DisplayRuntimeViewModel {
@@ -222,15 +395,16 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
   }, [feed, logicalNow, productionContent, productionState?.kind]);
 
   if (testControl.active) {
+    const synthetic = syntheticTestView(testControl.payload, logicalNow);
     return {
       feed,
       logicalNow,
       state: syntheticState(testControl.payload),
-      content: null,
-      normalSlide: null,
-      urgent: [],
-      networkAvailable,
-      usingLkg,
+      content: synthetic.content,
+      normalSlide: synthetic.normalSlide,
+      urgent: synthetic.urgent,
+      networkAvailable: synthetic.networkAvailable ?? networkAvailable,
+      usingLkg: synthetic.usingLkg ?? usingLkg,
       prayerScheduleStale: testControl.payload.scenario === "stale_prayer_data",
       testMode: true,
       testPayload: testControl.payload,

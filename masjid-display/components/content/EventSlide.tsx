@@ -39,6 +39,7 @@ export function EventSlide({
             <>
               <p>{item.descriptionAr}</p>
               <p>{item.locationAr}</p>
+              <p>{item.date}</p>
               <p>{item.startTime}{item.endTime ? `–${item.endTime}` : ""}</p>
             </>
           }
@@ -46,6 +47,7 @@ export function EventSlide({
             <>
               <p>{item.descriptionDe}</p>
               <p>{item.locationDe}</p>
+              <p>{item.date}</p>
               <p>{item.startTime}{item.endTime ? `–${item.endTime}` : ""}</p>
             </>
           }

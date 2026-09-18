@@ -3,9 +3,34 @@ name: Masjid Display Verification
 on:
   push:
     branches:
+      - main
       - feat/masjid-display
     paths:
       - "masjid-display/**"
+      - "app/api/public/masjid-display/**"
+      - "app/api/public/masjid-display-test-control/**"
+      - "app/admin/masjid-display-test/**"
+      - "lib/masjid-display/**"
+      - "lib/data/**"
+      - "lib/supabase/**"
+      - "lib/types.ts"
+      - "supabase/migrations/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/masjid-display-verify.yml"
+  pull_request:
+    paths:
+      - "masjid-display/**"
+      - "app/api/public/masjid-display/**"
+      - "app/api/public/masjid-display-test-control/**"
+      - "app/admin/masjid-display-test/**"
+      - "lib/masjid-display/**"
+      - "lib/data/**"
+      - "lib/supabase/**"
+      - "lib/types.ts"
+      - "supabase/migrations/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/masjid-display-verify.yml"
   workflow_dispatch:
 

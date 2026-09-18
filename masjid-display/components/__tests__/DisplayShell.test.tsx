@@ -112,4 +112,3 @@ describe("DisplayShell", () => {
     expect(css).not.toMatch(/@media[^\{]*(?:\d+(?:\.\d+)?)(?:in|cm|mm|pt|pc)/i);
   });
 });
-

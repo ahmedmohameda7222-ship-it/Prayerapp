@@ -14,6 +14,13 @@ import {
 import { validateFeedV1 } from "../validate-feed";
 import { useTestControl, type TestControlPayload, type TestControlScenario } from "./use-test-control";
 
+export interface DisplayRuntimeDiagnostics {
+  lastAttemptAt: string | null;
+  lastSyncAt: string | null;
+  clockOffsetMs: number;
+  validationError: string | null;
+}
+
 export interface DisplayRuntimeViewModel {
   feed: MasjidDisplayFeedV1 | null;
   logicalNow: Date;
@@ -27,6 +34,7 @@ export interface DisplayRuntimeViewModel {
   testMode: boolean;
   testPayload: TestControlPayload | null;
   publicAppUrl: string | null;
+  diagnostics?: DisplayRuntimeDiagnostics;
 }
 
 function testStateKind(scenario: TestControlScenario): DisplayStateKind {
@@ -76,17 +84,32 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
   const [logicalNow, setLogicalNow] = useState(() => clock.now(Date.now()));
   const [networkAvailable, setNetworkAvailable] = useState(false);
   const [usingLkg, setUsingLkg] = useState(Boolean(initialLkg));
+  const [diagnostics, setDiagnostics] = useState<DisplayRuntimeDiagnostics>({
+    lastAttemptAt: null,
+    lastSyncAt: initialLkg?.receivedAt ?? null,
+    clockOffsetMs: 0,
+    validationError: null,
+  });
 
   const observeServerDate = useCallback(
     (deviceNowMs: number, serverDateHeader: string) => {
-      clock.observeServerDate(deviceNowMs, serverDateHeader);
+      const observation = clock.observeServerDate(deviceNowMs, serverDateHeader);
       setLogicalNow(clock.now(deviceNowMs));
+      setDiagnostics((current) => ({
+        ...current,
+        clockOffsetMs: observation.offsetMs,
+      }));
+      return observation;
     },
     [clock],
   );
 
   const refreshProduction = useCallback(async () => {
     const deviceNowMs = Date.now();
+    setDiagnostics((current) => ({
+      ...current,
+      lastAttemptAt: new Date(deviceNowMs).toISOString(),
+    }));
     const headers = new Headers();
     if (etagRef.current) headers.set("if-none-match", etagRef.current);
 
@@ -98,8 +121,14 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
       }
 
       if (response.status === 304) {
+        const syncedAt = clock.now(deviceNowMs).toISOString();
         setNetworkAvailable(true);
         setUsingLkg(false);
+        setDiagnostics((current) => ({
+          ...current,
+          lastSyncAt: syncedAt,
+          validationError: null,
+        }));
         return;
       }
       if (!response.ok) {
@@ -113,6 +142,10 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
       try {
         nextFeed = validateFeedV1(await response.json());
       } catch {
+        setDiagnostics((current) => ({
+          ...current,
+          validationError: "Feed validation failed",
+        }));
         return;
       }
 
@@ -123,6 +156,11 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
       feedRef.current = nextFeed;
       setFeed(nextFeed);
       setUsingLkg(false);
+      setDiagnostics((current) => ({
+        ...current,
+        lastSyncAt: receivedAt,
+        validationError: null,
+      }));
     } catch {
       setNetworkAvailable(false);
       if (feedRef.current) setUsingLkg(true);
@@ -191,6 +229,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
       testMode: true,
       testPayload: testControl.payload,
       publicAppUrl: testControl.publicAppUrl,
+      diagnostics,
     };
   }
 
@@ -207,5 +246,6 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
     testMode: false,
     testPayload: null,
     publicAppUrl: feed?.mosque.publicAppUrl ?? null,
+    diagnostics,
   };
 }

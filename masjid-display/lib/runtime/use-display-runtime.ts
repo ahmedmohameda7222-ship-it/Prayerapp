@@ -79,6 +79,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
   const clock = useMemo(() => createLogicalClock(), []);
   const etagRef = useRef<string | null>(initialLkg?.etag ?? null);
   const feedRef = useRef<MasjidDisplayFeedV1 | null>(initialLkg?.snapshot ?? null);
+  const refreshGenerationRef = useRef(0);
 
   const [feed, setFeed] = useState<MasjidDisplayFeedV1 | null>(initialLkg?.snapshot ?? null);
   const [logicalNow, setLogicalNow] = useState(() => clock.now(Date.now()));
@@ -105,6 +106,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
   );
 
   const refreshProduction = useCallback(async () => {
+    const generation = ++refreshGenerationRef.current;
     const deviceNowMs = Date.now();
     setDiagnostics((current) => ({
       ...current,
@@ -115,6 +117,8 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
 
     try {
       const response = await fetch("/api/display-feed", { headers, cache: "no-store" });
+      if (generation !== refreshGenerationRef.current) return;
+
       const serverDate = response.headers.get("date");
       if (serverDate && (response.ok || response.status === 304)) {
         observeServerDate(deviceNowMs, serverDate);
@@ -141,6 +145,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
       let nextFeed: MasjidDisplayFeedV1;
       try {
         nextFeed = validateFeedV1(await response.json());
+        if (generation !== refreshGenerationRef.current) return;
       } catch {
         setDiagnostics((current) => ({
           ...current,
@@ -162,6 +167,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
         validationError: null,
       }));
     } catch {
+      if (generation !== refreshGenerationRef.current) return;
       setNetworkAvailable(false);
       if (feedRef.current) setUsingLkg(true);
     }

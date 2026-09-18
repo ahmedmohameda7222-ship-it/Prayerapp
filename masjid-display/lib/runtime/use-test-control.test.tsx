@@ -26,6 +26,16 @@ async function flushEffects() {
   });
 }
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 describe("useTestControl", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -65,6 +75,50 @@ describe("useTestControl", () => {
     });
     expect(result.current).toEqual({ active: false });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores a stale active poll that resolves after a newer inactive response", async () => {
+    const older = deferred<Response>();
+    const newer = deferred<Response>();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(() => older.promise)
+      .mockImplementationOnce(() => newer.promise);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => useTestControl(new Date(Date.now())));
+    await flushEffects();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      newer.resolve(
+        new Response(JSON.stringify({ active: false }), {
+          status: 200,
+          headers: { "content-type": "application/json", date: "Tue, 15 Sep 2026 18:00:02 GMT" },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current).toEqual({ active: false });
+
+    await act(async () => {
+      older.resolve(
+        new Response(JSON.stringify(ACTIVE), {
+          status: 200,
+          headers: { "content-type": "application/json", date: "Tue, 15 Sep 2026 18:00:00 GMT" },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current).toEqual({ active: false });
   });
 
   it("expires an active override locally even when the next poll fails", async () => {

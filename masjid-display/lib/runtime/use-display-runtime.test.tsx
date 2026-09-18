@@ -76,6 +76,7 @@ describe("useDisplayRuntime", () => {
     expect(result.current.feed?.snapshotRevision).toBe(validFeed.snapshotRevision);
     await flushEffects();
     expect(result.current.feed?.snapshotRevision).toBe(validFeed.snapshotRevision);
+    expect(result.current.diagnostics?.validationError).toMatch(/validation/i);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(60_000);
@@ -166,6 +167,10 @@ describe("useDisplayRuntime", () => {
     expect(loadLkg()?.snapshot.snapshotRevision).toBe(freshFeed.snapshotRevision);
     expect(loadLkg()?.etag).toBe('"fresh"');
     expect(result.current.usingLkg).toBe(false);
+    expect(result.current.diagnostics?.lastAttemptAt).toBeTruthy();
+    expect(result.current.diagnostics?.lastSyncAt).toBeTruthy();
+    expect(result.current.diagnostics?.clockOffsetMs).toBe(-5_000);
+    expect(result.current.diagnostics?.validationError).toBeNull();
   });
 
   it("applies test override without persisting it and returns to fresh real state", async () => {

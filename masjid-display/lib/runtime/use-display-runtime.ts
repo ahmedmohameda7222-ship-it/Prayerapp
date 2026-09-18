@@ -319,6 +319,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
         nextFeed = validateFeedV1(await response.json());
         if (generation !== refreshGenerationRef.current) return;
       } catch {
+        if (feedRef.current) setUsingLkg(true);
         setDiagnostics((current) => ({
           ...current,
           validationError: "Feed validation failed",

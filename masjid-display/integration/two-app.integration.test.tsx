@@ -63,7 +63,7 @@ function expireTestModeInDatabase() {
       "-v",
       "ON_ERROR_STOP=1",
       "-c",
-      "update public.masjid_display_test_state set expires_at = now() - interval '1 second', updated_at = now() where id = '1';",
+      "update public.masjid_display_test_state set started_at = now() - interval '2 minutes', expires_at = now() - interval '1 minute', updated_at = now() where id = '1';",
     ],
     {
       encoding: "utf8",

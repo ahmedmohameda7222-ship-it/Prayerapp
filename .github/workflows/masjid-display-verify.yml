@@ -30,6 +30,9 @@ jobs:
       - name: Run TV tests
         working-directory: masjid-display
         run: npm test
+      - name: Lint TV package
+        working-directory: masjid-display
+        run: npm run lint
       - name: Typecheck TV package
         working-directory: masjid-display
         run: npm run typecheck
@@ -38,3 +41,9 @@ jobs:
         env:
           PRAYERAPP_ORIGIN: https://prayerapp.example.test
         run: npm run build
+      - name: Verify forbidden TV runtime dependencies and audio usage
+        run: |
+          if git grep -nE '@supabase/supabase-js|adhan-audio|new Audio\(|<audio' -- masjid-display; then
+            echo 'Forbidden Supabase/audio runtime dependency or usage found in masjid-display'
+            exit 1
+          fi

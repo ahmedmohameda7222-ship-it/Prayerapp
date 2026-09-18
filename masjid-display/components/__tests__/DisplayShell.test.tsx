@@ -1,7 +1,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import fixture from "../../lib/__fixtures__/feed-v1.json";
 import type { MasjidDisplayFeedV1 } from "../../lib/feed-types";
@@ -114,4 +113,3 @@ describe("DisplayShell", () => {
   });
 });
 
-type _DisplayShellProps = ComponentProps<typeof DisplayShell>;

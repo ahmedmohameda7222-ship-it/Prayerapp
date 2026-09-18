@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import path from "node:path";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,6 +11,7 @@ const integrationDescribe =
   process.env.TWO_APP_INTEGRATION === "1" ? describe : describe.skip;
 const TV_BASE_URL = process.env.TV_BASE_URL ?? "http://127.0.0.1:3001";
 const nativeFetch = globalThis.fetch.bind(globalThis);
+const execFileAsync = promisify(execFile);
 const PRODUCTION_PUBLIC_APP_URL = "https://prayer.example.test/";
 
 let dropDisplayFeed = false;

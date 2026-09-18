@@ -49,6 +49,7 @@ export function BilingualBlock({
   bodyDe,
   now,
   className,
+  copyLength,
 }: {
   titleAr: string;
   titleDe: string;
@@ -56,8 +57,12 @@ export function BilingualBlock({
   bodyDe: ReactNode;
   now: Date;
   className?: string;
+  copyLength?: number;
 }) {
-  const long = isLongBilingual(String(bodyAr), String(bodyDe));
+  const long =
+    copyLength === undefined
+      ? isLongBilingual(String(bodyAr), String(bodyDe))
+      : copyLength > LONG_COPY_THRESHOLD;
   const language = languageForInstant(now);
 
   if (long && language === "ar") {

@@ -334,4 +334,3 @@ jobs:
           if [ -f /tmp/masjid-display.pid ]; then kill "$(cat /tmp/masjid-display.pid)" || true; fi
           if [ -f /tmp/prayerapp.pid ]; then kill "$(cat /tmp/prayerapp.pid)" || true; fi
           supabase stop --no-backup || true
-

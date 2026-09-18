@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { DisplayShell } from "../components/DisplayShell";
 import { pixelShiftForEpoch } from "../lib/pixel-shift";
 import { useDisplayRuntime } from "../lib/runtime/use-display-runtime";
@@ -10,19 +10,30 @@ const PIXEL_SHIFT_EPOCH_MS = 10 * 60_000;
 const WATCHDOG_CHECK_MS = 30_000;
 const WATCHDOG_HARD_FAILURE_MS = 120_000;
 
+function subscribeToLocation(onStoreChange: () => void) {
+  window.addEventListener("popstate", onStoreChange);
+  return () => window.removeEventListener("popstate", onStoreChange);
+}
+
+function diagnosticsFromLocation() {
+  return new URLSearchParams(window.location.search).get("diagnostics") === "1";
+}
+
+function diagnosticsOnServer() {
+  return false;
+}
+
 export default function Home() {
   const vm = useDisplayRuntime();
   const watchdog = useMemo(
     () => createWatchdog({ hardFailureMs: WATCHDOG_HARD_FAILURE_MS }),
     [],
   );
-  const [diagnosticsEnabled, setDiagnosticsEnabled] = useState(false);
-
-  useEffect(() => {
-    setDiagnosticsEnabled(
-      new URLSearchParams(window.location.search).get("diagnostics") === "1",
-    );
-  }, []);
+  const diagnosticsEnabled = useSyncExternalStore(
+    subscribeToLocation,
+    diagnosticsFromLocation,
+    diagnosticsOnServer,
+  );
 
   useEffect(() => {
     watchdog.heartbeat(Date.now());

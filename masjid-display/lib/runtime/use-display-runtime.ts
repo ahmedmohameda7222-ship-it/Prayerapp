@@ -65,11 +65,24 @@ function testStateKind(scenario: TestControlScenario): DisplayStateKind {
   }
 }
 
+function syntheticJumuahServiceIndex(payload: TestControlPayload): number | undefined {
+  const explicit = payload.serviceIndex;
+  if (typeof explicit === "number" && Number.isInteger(explicit) && explicit >= 0) {
+    return explicit;
+  }
+  if (payload.scenario === "friday_first_countdown") return 0;
+  if (payload.scenario === "friday_next_countdown") return 1;
+  if (payload.scenario === "jumuah_now") return 0;
+  return undefined;
+}
+
 function syntheticState(payload: TestControlPayload): DisplayStateResolution {
+  const kind = testStateKind(payload.scenario);
   const stale = payload.scenario === "stale_prayer_data";
   const missing = payload.scenario === "missing_settings";
+  const serviceIndex = syntheticJumuahServiceIndex(payload);
   return {
-    kind: testStateKind(payload.scenario),
+    kind,
     prayer: payload.prayer ?? null,
     degraded: stale || missing,
     degradedReason: stale
@@ -77,6 +90,12 @@ function syntheticState(payload: TestControlPayload): DisplayStateResolution {
       : missing
         ? "MISSING_IQAMA_DELAY"
         : null,
+    ...(serviceIndex === undefined
+      ? {}
+      : {
+          serviceIndex,
+          serviceId: `synthetic:jumuah:${serviceIndex}`,
+        }),
   };
 }
 
@@ -266,9 +285,17 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
   });
 
   const observeServerDate = useCallback(
-    (deviceNowMs: number, serverDateHeader: string) => {
-      const observation = clock.observeServerDate(deviceNowMs, serverDateHeader);
-      setLogicalNow(clock.now(deviceNowMs));
+    (
+      requestStartedAtMs: number,
+      responseReceivedAtMs: number,
+      serverDateHeader: string,
+    ) => {
+      const observation = clock.observeServerDate(
+        requestStartedAtMs,
+        responseReceivedAtMs,
+        serverDateHeader,
+      );
+      setLogicalNow(clock.now(responseReceivedAtMs));
       setDiagnostics((current) => ({
         ...current,
         clockOffsetMs: observation.offsetMs,
@@ -280,25 +307,30 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
 
   const refreshProduction = useCallback(async () => {
     const generation = ++refreshGenerationRef.current;
-    const deviceNowMs = Date.now();
+    const requestStartedAtMs = Date.now();
     setDiagnostics((current) => ({
       ...current,
-      lastAttemptAt: new Date(deviceNowMs).toISOString(),
+      lastAttemptAt: new Date(requestStartedAtMs).toISOString(),
     }));
     const headers = new Headers();
     if (etagRef.current) headers.set("if-none-match", etagRef.current);
 
     try {
       const response = await fetch("/api/display-feed", { headers, cache: "no-store" });
+      const responseReceivedAtMs = Date.now();
       if (generation !== refreshGenerationRef.current) return;
 
       const serverDate = response.headers.get("date");
       if (serverDate && (response.ok || response.status === 304)) {
-        observeServerDate(deviceNowMs, serverDate);
+        observeServerDate(
+          requestStartedAtMs,
+          responseReceivedAtMs,
+          serverDate,
+        );
       }
 
       if (response.status === 304) {
-        const syncedAt = clock.now(deviceNowMs).toISOString();
+        const syncedAt = clock.now(responseReceivedAtMs).toISOString();
         setNetworkAvailable(true);
         setUsingLkg(false);
         setDiagnostics((current) => ({
@@ -329,7 +361,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
       }
 
       const nextEtag = response.headers.get("etag");
-      const receivedAt = clock.now(deviceNowMs).toISOString();
+      const receivedAt = clock.now(responseReceivedAtMs).toISOString();
       replaceLkg(nextFeed, nextEtag, receivedAt);
       etagRef.current = nextEtag;
       feedRef.current = nextFeed;

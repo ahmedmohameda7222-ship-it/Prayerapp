@@ -8,8 +8,16 @@ export interface ClockObservation {
 }
 
 export interface LogicalClock {
-  observeServerDate(deviceNowMs: number, serverDateHeader: string): ClockObservation;
+  observeServerDate(
+    requestStartedAtMs: number,
+    responseReceivedAtMs: number,
+    serverDateHeader: string,
+  ): ClockObservation;
   now(deviceNowMs: number): Date;
+}
+
+function requestMidpointMs(requestStartedAtMs: number, responseReceivedAtMs: number): number {
+  return requestStartedAtMs + (responseReceivedAtMs - requestStartedAtMs) / 2;
 }
 
 export function createLogicalClock(): LogicalClock {
@@ -24,13 +32,22 @@ export function createLogicalClock(): LogicalClock {
   });
 
   return {
-    observeServerDate(deviceNowMs, serverDateHeader) {
+    observeServerDate(requestStartedAtMs, responseReceivedAtMs, serverDateHeader) {
       const serverNowMs = Date.parse(serverDateHeader);
-      if (!Number.isFinite(deviceNowMs) || !Number.isFinite(serverNowMs)) {
+      if (
+        !Number.isFinite(requestStartedAtMs) ||
+        !Number.isFinite(responseReceivedAtMs) ||
+        responseReceivedAtMs < requestStartedAtMs ||
+        !Number.isFinite(serverNowMs)
+      ) {
         return observation(false);
       }
 
-      const candidateOffsetMs = serverNowMs - deviceNowMs;
+      const observedDeviceNowMs = requestMidpointMs(
+        requestStartedAtMs,
+        responseReceivedAtMs,
+      );
+      const candidateOffsetMs = serverNowMs - observedDeviceNowMs;
       if (!hasValidatedOffset) {
         offsetMs = candidateOffsetMs;
         hasValidatedOffset = true;

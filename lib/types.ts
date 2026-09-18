@@ -282,8 +282,10 @@ type TestCopy = { titleAr: string; titleDe: string; messageAr: string; messageDe
 
 export type MasjidDisplayTestPayload =
   | (TestBase<"normal" | "urgent" | "special_display" | "offline" | "stale_prayer_data" | "missing_settings" | "long_bilingual"> & TestCopy)
-  | (TestBase<"prayer_approaching" | "waiting_for_iqama" | "friday_first_countdown" | "friday_next_countdown"> & TestCopy & { targetAt: string; prayer?: ObligatoryPrayerName })
-  | (TestBase<"prayer_time_now" | "iqama_now" | "prayer_in_progress" | "jumuah_now"> & TestCopy & { prayer?: ObligatoryPrayerName })
+  | (TestBase<"prayer_approaching" | "waiting_for_iqama"> & TestCopy & { targetAt: string; prayer?: ObligatoryPrayerName })
+  | (TestBase<"friday_first_countdown" | "friday_next_countdown"> & TestCopy & { targetAt: string; prayer?: ObligatoryPrayerName; serviceIndex: number })
+  | (TestBase<"prayer_time_now" | "iqama_now" | "prayer_in_progress"> & TestCopy & { prayer?: ObligatoryPrayerName })
+  | (TestBase<"jumuah_now"> & TestCopy & { prayer?: ObligatoryPrayerName; serviceIndex: number })
   | (TestBase<"event"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string; locationAr: string; locationDe: string; startsAt: string })
   | (TestBase<"campaign"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string; donationUrl: string })
   | (TestBase<"campaign_without_qr"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string })

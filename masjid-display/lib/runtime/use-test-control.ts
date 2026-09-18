@@ -111,35 +111,46 @@ function parseTestControl(value: unknown): TestControlState | null {
 
 export function useTestControl(
   logicalNow: Date,
-  observeServerDate?: (deviceNowMs: number, serverDateHeader: string) => void,
+  observeServerDate?: (
+    requestStartedAtMs: number,
+    responseReceivedAtMs: number,
+    serverDateHeader: string,
+  ) => void,
 ): TestControlState {
   const [remoteState, setRemoteState] = useState<TestControlState>({ active: false });
-  const pollGenerationRef = useRef(0);
+  const requestGenerationRef = useRef(0);
+  const latestAcceptedGenerationRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const poll = async () => {
-      const generation = ++pollGenerationRef.current;
-      const deviceNowMs = Date.now();
+      const generation = ++requestGenerationRef.current;
+      const requestStartedAtMs = Date.now();
       try {
         const response = await fetch("/api/test-control", { cache: "no-store" });
-        if (cancelled || generation !== pollGenerationRef.current) return;
-
-        const serverDate = response.headers.get("date");
-        if (serverDate && (response.ok || response.status === 304)) {
-          observeServerDate?.(deviceNowMs, serverDate);
-        }
-        if (!response.ok) return;
+        const responseReceivedAtMs = Date.now();
+        if (cancelled || !response.ok) return;
 
         const parsed = parseTestControl(await response.json());
         if (
-          !cancelled &&
-          generation === pollGenerationRef.current &&
-          parsed
+          cancelled ||
+          !parsed ||
+          generation < latestAcceptedGenerationRef.current
         ) {
-          setRemoteState(parsed);
+          return;
         }
+
+        latestAcceptedGenerationRef.current = generation;
+        const serverDate = response.headers.get("date");
+        if (serverDate) {
+          observeServerDate?.(
+            requestStartedAtMs,
+            responseReceivedAtMs,
+            serverDate,
+          );
+        }
+        setRemoteState(parsed);
       } catch {
         // A transient Test Control failure does not discard an active override;
         // local expiry below still prevents stale test state from persisting.

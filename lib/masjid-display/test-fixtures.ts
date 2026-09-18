@@ -35,11 +35,11 @@ export function buildTestFixture(
     case "prayer_in_progress":
       return { ...copy(scenario, "الصلاة قائمة", "Gebet läuft"), prayer: "isha" };
     case "friday_first_countdown":
-      return { ...copy(scenario, "الجمعة الأولى", "Erstes Freitagsgebet"), prayer: "dhuhr", targetAt: addMinutes(startedAt, 60) };
+      return { ...copy(scenario, "الجمعة الأولى", "Erstes Freitagsgebet"), prayer: "dhuhr", targetAt: addMinutes(startedAt, 60), serviceIndex: 0 };
     case "friday_next_countdown":
-      return { ...copy(scenario, "الجمعة التالية", "Nächstes Freitagsgebet"), prayer: "dhuhr", targetAt: addMinutes(startedAt, 10) };
+      return { ...copy(scenario, "الجمعة التالية", "Nächstes Freitagsgebet"), prayer: "dhuhr", targetAt: addMinutes(startedAt, 10), serviceIndex: 1 };
     case "jumuah_now":
-      return { ...copy(scenario, "صلاة الجمعة الآن", "Freitagsgebet ist jetzt"), prayer: "dhuhr" };
+      return { ...copy(scenario, "صلاة الجمعة الآن", "Freitagsgebet ist jetzt"), prayer: "dhuhr", serviceIndex: 1 };
     case "urgent":
       return { ...copy(scenario, "تنبيه عاجل تجريبي", "Test-Dringlichkeitsmeldung") };
     case "special_display":

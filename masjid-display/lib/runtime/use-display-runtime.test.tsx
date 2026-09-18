@@ -172,6 +172,32 @@ describe("useDisplayRuntime", () => {
     expect(result.current.networkAvailable).toBe(false);
   });
 
+  it("uses request/response midpoint timing for a slow production Feed response", async () => {
+    const validFeed = cloneFeed();
+    seedLkg(validFeed);
+    const response = deferred<Response>();
+    vi.setSystemTime(new Date("2026-09-15T18:00:00.000Z"));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockImplementation(() => response.promise));
+
+    const { result } = renderHook(() => useDisplayRuntime());
+    await flushEffects();
+
+    vi.setSystemTime(new Date("2026-09-15T18:00:04.000Z"));
+    await act(async () => {
+      response.resolve(
+        new Response(null, {
+          status: 304,
+          headers: { date: "Tue, 15 Sep 2026 18:00:02 GMT" },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.diagnostics?.clockOffsetMs).toBe(0);
+    expect(result.current.logicalNow.toISOString()).toBe("2026-09-15T18:00:04.000Z");
+  });
+
   it("atomically replaces production state and LKG after a valid 200", async () => {
     const oldFeed = cloneFeed();
     seedLkg(oldFeed);
@@ -384,6 +410,41 @@ describe("useDisplayRuntime", () => {
     expect(result.current.content?.campaigns).toHaveLength(1);
     expect(result.current.content?.campaigns[0]?.donationUrl).toBeNull();
   });
+
+  it.each([
+    ["friday_first_countdown", 0, "FRIDAY_MODE"],
+    ["friday_next_countdown", 1, "FRIDAY_MODE"],
+    ["jumuah_now", 1, "JUMUAH_NOW"],
+  ] as const)(
+    "preserves the %s synthetic Jumuah service identity",
+    (scenario, serviceIndex, expectedKind) => {
+      const realFeed = cloneFeed();
+      seedLkg(realFeed);
+      vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
+      testControl.current = {
+        active: true,
+        scenario,
+        startedAt: "2026-09-15T18:00:00.000Z",
+        expiresAt: "2026-09-15T18:15:00.000Z",
+        publicAppUrl: "https://prayer.example/",
+        payload: {
+          scenario,
+          id: `test-${scenario}`,
+          prayer: "dhuhr",
+          targetAt:
+            scenario === "jumuah_now" ? undefined : "2026-09-15T18:10:00.000Z",
+          serviceIndex,
+        },
+      };
+
+      const { result } = renderHook(() => useDisplayRuntime());
+
+      expect(result.current.state).toMatchObject({
+        kind: expectedKind,
+        serviceIndex,
+      });
+    },
+  );
 
   it("builds synthetic urgent content and suppresses production urgent items", () => {
     const realFeed = cloneFeed();

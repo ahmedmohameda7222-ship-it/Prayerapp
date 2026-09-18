@@ -31,6 +31,18 @@ describe("Masjid Display synthetic fixtures", () => {
     expect(withoutQr).not.toHaveProperty("donationUrl");
   });
 
+  it("preserves primary and additional Jumuah service identity in synthetic fixtures", () => {
+    expect(buildTestFixture("friday_first_countdown", STARTED_AT)).toMatchObject({
+      serviceIndex: 0,
+    });
+    expect(buildTestFixture("friday_next_countdown", STARTED_AT)).toMatchObject({
+      serviceIndex: 1,
+    });
+    expect(buildTestFixture("jumuah_now", STARTED_AT)).toMatchObject({
+      serviceIndex: 1,
+    });
+  });
+
   it("uses the approved deterministic countdown offsets", () => {
     expect(buildTestFixture("prayer_approaching", STARTED_AT)).toMatchObject({ targetAt: "2026-09-16T18:10:00.000Z" });
     expect(buildTestFixture("waiting_for_iqama", STARTED_AT)).toMatchObject({ targetAt: "2026-09-16T18:05:00.000Z" });

@@ -132,6 +132,83 @@ describe("useTestControl", () => {
     });
   });
 
+  it("accepts slow successful activation, scenario switch, and stop responses even after newer polls start", async () => {
+    const activation = deferred<Response>();
+    const scenarioSwitch = deferred<Response>();
+    const stop = deferred<Response>();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(() => activation.promise)
+      .mockImplementationOnce(() => scenarioSwitch.promise)
+      .mockImplementationOnce(() => stop.promise);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => useTestControl(new Date(Date.now())));
+    await flushEffects();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_500);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      activation.resolve(
+        new Response(JSON.stringify(ACTIVE), {
+          status: 200,
+          headers: { "content-type": "application/json", date: "Tue, 15 Sep 2026 18:00:01 GMT" },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current).toMatchObject({ active: true, scenario: "iqama_now" });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    const switched = {
+      ...ACTIVE,
+      scenario: "friday_next_countdown",
+      payload: {
+        scenario: "friday_next_countdown",
+        id: "test-friday-next",
+        prayer: "dhuhr",
+        targetAt: "2026-09-15T18:10:00.000Z",
+        serviceIndex: 1,
+      },
+    } as const;
+
+    await act(async () => {
+      scenarioSwitch.resolve(
+        new Response(JSON.stringify(switched), {
+          status: 200,
+          headers: { "content-type": "application/json", date: "Tue, 15 Sep 2026 18:00:03 GMT" },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current).toMatchObject({
+      active: true,
+      scenario: "friday_next_countdown",
+    });
+
+    await act(async () => {
+      stop.resolve(
+        new Response(JSON.stringify({ active: false }), {
+          status: 200,
+          headers: { "content-type": "application/json", date: "Tue, 15 Sep 2026 18:00:05 GMT" },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current).toEqual({ active: false });
+  });
+
   it("ignores a stale active poll that resolves after a newer inactive response", async () => {
     const older = deferred<Response>();
     const newer = deferred<Response>();
@@ -201,23 +278,31 @@ describe("useTestControl", () => {
     expect(result.current).toEqual({ active: false });
   });
 
-  it("reports a valid server Date signal to the logical clock callback", async () => {
+  it("reports request start and response receipt to the logical clock callback", async () => {
     const observe = vi.fn();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn<typeof fetch>().mockResolvedValue(
-        new Response(JSON.stringify({ active: false }), {
-          status: 200,
-          headers: { "content-type": "application/json", date: "Tue, 15 Sep 2026 18:00:00 GMT" },
-        }),
-      ),
-    );
+    const response = deferred<Response>();
+    vi.setSystemTime(new Date("2026-09-15T18:00:00.000Z"));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockImplementation(() => response.promise));
 
     renderHook(() => useTestControl(new Date(Date.now()), observe));
     await flushEffects();
+
+    vi.setSystemTime(new Date("2026-09-15T18:00:04.000Z"));
+    await act(async () => {
+      response.resolve(
+        new Response(JSON.stringify({ active: false }), {
+          status: 200,
+          headers: { "content-type": "application/json", date: "Tue, 15 Sep 2026 18:00:02 GMT" },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
     expect(observe).toHaveBeenCalledWith(
-      Date.parse("2026-09-15T18:00:05.000Z"),
-      "Tue, 15 Sep 2026 18:00:00 GMT",
+      Date.parse("2026-09-15T18:00:00.000Z"),
+      Date.parse("2026-09-15T18:00:04.000Z"),
+      "Tue, 15 Sep 2026 18:00:02 GMT",
     );
   });
 });

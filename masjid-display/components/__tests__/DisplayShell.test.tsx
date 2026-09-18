@@ -74,6 +74,14 @@ describe("DisplayShell", () => {
     expect(screen.getByText(/TEST MODE/i)).toBeInTheDocument();
   });
 
+  it("uses the approved Prayerapp Umm al-Qura Hijri calendar semantics", () => {
+    const headerSource = readFileSync(
+      path.join(process.cwd(), "components/Header.tsx"),
+      "utf8",
+    );
+    expect(headerSource).toContain("islamic-umalqura");
+  });
+
   it("renders corrected clock plus Gregorian and Hijri date regions", () => {
     render(<DisplayShell vm={vm()} />);
     expect(screen.getByTestId("header-clock")).toHaveTextContent("12:34:56");

@@ -65,9 +65,15 @@ describe("Plan 3 Codex review regressions", () => {
     expect(buildFeed).toContain("getMosqueSettingsForDisplay");
     expect(buildFeed).toContain("getMasjidDisplaySettingsForDisplay");
     expect(buildFeed).toContain("sourceTimestamps");
-    expect(buildFeed).toContain("getAzkarSourceRevisionTimestamps");
-    expect(buildFeed).toContain("azkarRevisionTimestamps,");
+    expect(buildFeed).not.toContain("getAzkarSourceRevisionTimestamps");
+    expect(buildFeed).not.toContain("azkarRevisionTimestamps");
+    expect(buildFeed).toContain("azkar: projectedAzkar");
     expect(generatedAt).toContain("sourceTimestamps");
+    expect(generatedAt).toContain("sources.azkar");
+    expect(generatedAt).toContain('createHash("sha256")');
+    expect(generatedAt).toContain("MAX_LOGICAL_ISO_MS");
+    expect(generatedAt).not.toContain("Date.now(");
+    expect(generatedAt).not.toContain("new Date()");
     expect(generatedAt).not.toContain("createServerClient");
     expect(generatedAt).not.toContain("loadSourceTimestamps");
     expect(generatedAt).not.toContain("SHA256_DECIMAL_WIDTH");

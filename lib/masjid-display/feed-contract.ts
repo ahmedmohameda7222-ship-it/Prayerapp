@@ -93,6 +93,11 @@ export interface DisplayCampaignDto {
 export interface MasjidDisplayFeedV1 {
   schemaVersion: 1;
   snapshotRevision: string;
+  /**
+   * Deterministic snapshot source-version timestamp, not request/current time.
+   * Hardcoded represented Azkar are content-versioned into this ISO-compatible
+   * value; consumers use the HTTP Date header for the current server clock.
+   */
   generatedAt: string;
   timezone: string;
 

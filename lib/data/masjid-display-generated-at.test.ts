@@ -44,7 +44,7 @@ async function generatedAtFor(azkar: DisplayAzkarDto[], fallbackIso = FALLBACK_T
     {
       sourceTimestamps: [SOURCE_TIMESTAMP],
       azkar,
-    } as never,
+    },
     fallbackIso,
   );
 }
@@ -58,6 +58,7 @@ describe("Azkar generatedAt content revision", () => {
 
     expect(second).toBe(first);
     expect(Number.isFinite(Date.parse(first))).toBe(true);
+    expect(Date.parse(first)).toBeGreaterThan(Date.parse(SOURCE_TIMESTAMP));
   });
 
   it("changes generatedAt deterministically when represented selected Azkar content changes", async () => {
@@ -83,9 +84,9 @@ describe("Azkar generatedAt content revision", () => {
     ]);
 
     expect(catalogWithUnselectedChange).toEqual(original);
-    await expect(generatedAtFor(catalogWithUnselectedChange)).resolves.toBe(
-      await generatedAtFor(original),
-    );
+    const originalGeneratedAt = await generatedAtFor(original);
+    const unrelatedChangeGeneratedAt = await generatedAtFor(catalogWithUnselectedChange);
+    expect(unrelatedChangeGeneratedAt).toBe(originalGeneratedAt);
   });
 
   it("does not depend on the request clock", async () => {
@@ -112,7 +113,7 @@ describe("getMasjidDisplayGeneratedAt", () => {
       {
         sourceTimestamps: [SOURCE_TIMESTAMP],
         azkar: [],
-      } as never,
+      },
       "2026-09-15T00:00:00.000Z",
     );
 
@@ -128,7 +129,7 @@ describe("getMasjidDisplayGeneratedAt", () => {
           "2026-06-15T08:00:00.000Z",
         ],
         azkar: [],
-      } as never,
+      },
       "2026-09-15T00:00:00.000Z",
     );
 

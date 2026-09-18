@@ -3,7 +3,7 @@ import "server-only";
 import { addDaysIso, APP_TIME_ZONE, todayIso, zonedDateTime } from "@/lib/date-utils";
 import { getValidAdditionalFridayServices, isFridayIso } from "@/lib/friday";
 import { getAnnouncementsForDisplayWindow } from "@/lib/data/announcements";
-import { getAzkarItems, getAzkarSourceRevisionTimestamps } from "@/lib/data/azkar";
+import { getAzkarItems } from "@/lib/data/azkar";
 import { getDonationCampaignsForDisplayWindow } from "@/lib/data/donations";
 import { getEventsForDisplayWindow } from "@/lib/data/events";
 import { getJumuahTimesForDisplayWindow } from "@/lib/data/jumuah";
@@ -381,9 +381,6 @@ export async function buildMasjidDisplayFeed(
   projectedCampaigns.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
 
   const projectedAzkar = selectDisplayAzkar(azkarItems, validAzkarPlaylistIds);
-  const azkarRevisionTimestamps = getAzkarSourceRevisionTimestamps(
-    projectedAzkar.map((item) => item.id),
-  );
 
   const prayerIds = representedPrayers.map((item) => item.id);
   const jumuahIds = additionalJumuah.map((item) => item.id);
@@ -412,8 +409,8 @@ export async function buildMasjidDisplayFeed(
       announcementIds,
       eventIds,
       campaignIds,
-      sourceTimestamps: sourceTimestamps,
-      azkarRevisionTimestamps,
+      sourceTimestamps,
+      azkar: projectedAzkar,
     },
     zonedDateTime(today, "00:00").toISOString(),
   );

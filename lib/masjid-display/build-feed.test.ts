@@ -200,6 +200,10 @@ describe("buildMasjidDisplayFeed", () => {
         announcementIds: ["future-special"],
         eventIds: ["event-1"],
         campaignIds: ["campaign-1"],
+        azkar: [
+          expect.objectContaining({ id: "morning-1", arabicText: "سبحان الله" }),
+          expect.objectContaining({ id: "evening-1", arabicText: "الحمد لله" }),
+        ],
       }),
       expect.any(String),
     );

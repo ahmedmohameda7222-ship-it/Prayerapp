@@ -16,6 +16,7 @@ export type TestControlScenario =
   | "special_display"
   | "event"
   | "campaign"
+  | "campaign_without_qr"
   | "azkar"
   | "offline"
   | "stale_prayer_data"
@@ -59,6 +60,7 @@ const SCENARIOS = new Set<TestControlScenario>([
   "special_display",
   "event",
   "campaign",
+  "campaign_without_qr",
   "azkar",
   "offline",
   "stale_prayer_data",

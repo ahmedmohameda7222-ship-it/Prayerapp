@@ -197,7 +197,8 @@ function syntheticTestView(
         urgent: [],
       };
     }
-    case "campaign": {
+    case "campaign":
+    case "campaign_without_qr": {
       const item: DisplayCampaignDto = {
         id: payload.id,
         titleAr: payloadText(payload, "titleAr", "حملة تجريبية"),

@@ -9,6 +9,8 @@ import { MASJID_DISPLAY_TEST_SCENARIOS, type MasjidDisplayTestScenario, type Mas
 import { extendTestScenario, loadTestControlStateAction, startTestScenario, stopTestScenario } from "./actions";
 
 function label(scenario: MasjidDisplayTestScenario) {
+  if (scenario === "campaign") return "Donation Campaign with QR";
+  if (scenario === "campaign_without_qr") return "Donation Campaign without QR";
   return scenario.split("_").map((part) => part[0]?.toUpperCase() + part.slice(1)).join(" ");
 }
 

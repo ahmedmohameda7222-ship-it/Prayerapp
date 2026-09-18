@@ -66,6 +66,15 @@ export function buildTestFixture(
         descriptionDe: "Synthetischer Inhalt nur für Tests",
         donationUrl: "https://example.invalid/test-donation",
       };
+    case "campaign_without_qr":
+      return {
+        scenario,
+        id: `test-${scenario}`,
+        titleAr: "حملة تبرع تجريبية بلا رمز",
+        titleDe: "Test-Spendenkampagne ohne QR",
+        descriptionAr: "محتوى اصطناعي للاختبار فقط",
+        descriptionDe: "Synthetischer Inhalt nur für Tests",
+      };
     case "azkar":
       return {
         scenario,

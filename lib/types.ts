@@ -267,6 +267,7 @@ export const MASJID_DISPLAY_TEST_SCENARIOS = [
   "special_display",
   "event",
   "campaign",
+  "campaign_without_qr",
   "azkar",
   "offline",
   "stale_prayer_data",
@@ -285,6 +286,7 @@ export type MasjidDisplayTestPayload =
   | (TestBase<"prayer_time_now" | "iqama_now" | "prayer_in_progress" | "jumuah_now"> & TestCopy & { prayer?: ObligatoryPrayerName })
   | (TestBase<"event"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string; locationAr: string; locationDe: string; startsAt: string })
   | (TestBase<"campaign"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string; donationUrl: string })
+  | (TestBase<"campaign_without_qr"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string })
   | (TestBase<"azkar"> & { azkarId: string; arabicText: string; germanText: string });
 
 export interface MasjidDisplayTestState {

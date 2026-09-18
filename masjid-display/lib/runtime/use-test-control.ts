@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type TestControlScenario =
   | "normal"
@@ -112,14 +112,18 @@ export function useTestControl(
   observeServerDate?: (deviceNowMs: number, serverDateHeader: string) => void,
 ): TestControlState {
   const [remoteState, setRemoteState] = useState<TestControlState>({ active: false });
+  const pollGenerationRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const poll = async () => {
+      const generation = ++pollGenerationRef.current;
       const deviceNowMs = Date.now();
       try {
         const response = await fetch("/api/test-control", { cache: "no-store" });
+        if (cancelled || generation !== pollGenerationRef.current) return;
+
         const serverDate = response.headers.get("date");
         if (serverDate && (response.ok || response.status === 304)) {
           observeServerDate?.(deviceNowMs, serverDate);
@@ -127,7 +131,13 @@ export function useTestControl(
         if (!response.ok) return;
 
         const parsed = parseTestControl(await response.json());
-        if (!cancelled && parsed) setRemoteState(parsed);
+        if (
+          !cancelled &&
+          generation === pollGenerationRef.current &&
+          parsed
+        ) {
+          setRemoteState(parsed);
+        }
       } catch {
         // A transient Test Control failure does not discard an active override;
         // local expiry below still prevents stale test state from persisting.

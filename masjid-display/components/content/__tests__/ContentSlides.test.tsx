@@ -99,6 +99,35 @@ describe("normal rotating content renderers", () => {
     expect(within(main).queryByText("Kommende Veranstaltung")).not.toBeInTheDocument();
   });
 
+  it("rotates a long event between Arabic and German instead of rendering both fragments", () => {
+    const feed = cloneFeed();
+    const event = feed.events[0];
+    event.descriptionAr = "وصف عربي طويل للاختبار ".repeat(30);
+    event.descriptionDe = "Sehr lange deutsche Testbeschreibung ".repeat(30);
+
+    const arNow = new Date("2026-09-15T10:00:00.000Z");
+    const { rerender } = render(
+      <DisplayShell
+        vm={normalVm(feed, arNow, { kind: "EVENT", itemId: event.id })}
+      />,
+    );
+
+    let main = screen.getByRole("main");
+    expect(main).toHaveTextContent(event.descriptionAr.trim());
+    expect(main).not.toHaveTextContent(event.descriptionDe.trim());
+
+    const deNow = new Date("2026-09-15T10:00:08.000Z");
+    rerender(
+      <DisplayShell
+        vm={normalVm(feed, deNow, { kind: "EVENT", itemId: event.id })}
+      />,
+    );
+
+    main = screen.getByRole("main");
+    expect(main).toHaveTextContent(event.descriptionDe.trim());
+    expect(main).not.toHaveTextContent(event.descriptionAr.trim());
+  });
+
   it("groups two short campaigns when readable", () => {
     const feed = cloneFeed();
     feed.campaigns[1].startDate = "2026-09-01";

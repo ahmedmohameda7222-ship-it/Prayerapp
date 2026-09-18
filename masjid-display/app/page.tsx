@@ -40,6 +40,21 @@ export default function Home() {
   }, [watchdog, vm.logicalNow]);
 
   useEffect(() => {
+    const resetAfterWake = () => {
+      if (document.visibilityState === "visible") {
+        watchdog.heartbeat(Date.now());
+      }
+    };
+
+    document.addEventListener("visibilitychange", resetAfterWake);
+    window.addEventListener("pageshow", resetAfterWake);
+    return () => {
+      document.removeEventListener("visibilitychange", resetAfterWake);
+      window.removeEventListener("pageshow", resetAfterWake);
+    };
+  }, [watchdog]);
+
+  useEffect(() => {
     const interval = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;
       if (watchdog.shouldReload(Date.now())) {

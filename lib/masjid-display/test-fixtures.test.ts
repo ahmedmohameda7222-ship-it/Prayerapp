@@ -5,13 +5,30 @@ import { buildTestFixture } from "./test-fixtures";
 const STARTED_AT = "2026-09-16T18:00:00.000Z";
 
 describe("Masjid Display synthetic fixtures", () => {
-  it("builds all 18 scenarios without production data", () => {
-    expect(MASJID_DISPLAY_TEST_SCENARIOS).toHaveLength(18);
+  it("builds all 19 scenarios without production data", () => {
+    expect(MASJID_DISPLAY_TEST_SCENARIOS).toHaveLength(19);
+    expect(MASJID_DISPLAY_TEST_SCENARIOS).toContain("campaign_without_qr");
     for (const scenario of MASJID_DISPLAY_TEST_SCENARIOS) {
       const payload = buildTestFixture(scenario, STARTED_AT);
       expect(payload.scenario).toBe(scenario);
       expect(payload.id.startsWith("test-")).toBe(true);
     }
+  });
+
+  it("provides separate campaign fixtures with and without a donation QR", () => {
+    expect(buildTestFixture("campaign", STARTED_AT)).toMatchObject({
+      donationUrl: "https://example.invalid/test-donation",
+    });
+
+    const withoutQr = buildTestFixture(
+      "campaign_without_qr" as (typeof MASJID_DISPLAY_TEST_SCENARIOS)[number],
+      STARTED_AT,
+    );
+    expect(withoutQr).toMatchObject({
+      scenario: "campaign_without_qr",
+      id: "test-campaign_without_qr",
+    });
+    expect(withoutQr).not.toHaveProperty("donationUrl");
   });
 
   it("uses the approved deterministic countdown offsets", () => {

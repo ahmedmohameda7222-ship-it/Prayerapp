@@ -354,6 +354,37 @@ describe("useDisplayRuntime", () => {
     },
   );
 
+  it("builds a campaign-without-QR synthetic renderer view", () => {
+    const realFeed = cloneFeed();
+    seedLkg(realFeed);
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
+    testControl.current = {
+      active: true,
+      scenario: "campaign_without_qr",
+      startedAt: "2026-09-15T18:00:00.000Z",
+      expiresAt: "2026-09-15T18:15:00.000Z",
+      publicAppUrl: null,
+      payload: {
+        scenario: "campaign_without_qr",
+        id: "test-campaign-without-qr",
+        titleAr: "حملة بلا رمز",
+        titleDe: "Kampagne ohne QR",
+        descriptionAr: "تبرع تجريبي",
+        descriptionDe: "Testspende",
+      },
+    };
+
+    const { result } = renderHook(() => useDisplayRuntime());
+
+    expect(result.current.testMode).toBe(true);
+    expect(result.current.normalSlide).toEqual({
+      kind: "CAMPAIGN",
+      itemId: "test-campaign-without-qr",
+    });
+    expect(result.current.content?.campaigns).toHaveLength(1);
+    expect(result.current.content?.campaigns[0]?.donationUrl).toBeNull();
+  });
+
   it("builds synthetic urgent content and suppresses production urgent items", () => {
     const realFeed = cloneFeed();
     seedLkg(realFeed);

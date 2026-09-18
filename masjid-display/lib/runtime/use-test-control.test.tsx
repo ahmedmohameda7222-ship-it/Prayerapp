@@ -98,6 +98,40 @@ describe("useTestControl", () => {
     });
   });
 
+  it("accepts the campaign-without-QR Test Control scenario", async () => {
+    const directive = {
+      ...ACTIVE,
+      scenario: "campaign_without_qr",
+      payload: {
+        scenario: "campaign_without_qr",
+        id: "test-campaign-without-qr",
+        titleAr: "حملة بلا رمز",
+        titleDe: "Kampagne ohne QR",
+        descriptionAr: "اختبار",
+        descriptionDe: "Test",
+      },
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(JSON.stringify(directive), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+
+    const { result } = renderHook(() => useTestControl(new Date(Date.now())));
+    await flushEffects();
+
+    expect(result.current).toMatchObject({
+      active: true,
+      scenario: "campaign_without_qr",
+      payload: { id: "test-campaign-without-qr" },
+    });
+  });
+
   it("ignores a stale active poll that resolves after a newer inactive response", async () => {
     const older = deferred<Response>();
     const newer = deferred<Response>();

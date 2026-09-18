@@ -16,6 +16,13 @@ describe("Masjid Display Test Control Admin", () => {
     expect(page).not.toMatch(/<iframe|buildMasjidDisplayFeed|getPrayerSettings/);
   });
 
+  it("exposes a distinct Donation Campaign without QR control", () => {
+    const page = source("app/admin/masjid-display-test/page.tsx");
+    const types = source("lib/types.ts");
+    expect(types).toContain('"campaign_without_qr"');
+    expect(page).toContain("Donation Campaign without QR");
+  });
+
   it("uses exactly 15 minutes for start and extension and writes only test state", () => {
     const actions = source("app/admin/masjid-display-test/actions.ts");
     expect(actions).toContain("15 * 60 * 1000");

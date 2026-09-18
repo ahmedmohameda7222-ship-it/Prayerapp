@@ -455,7 +455,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
       prayerScheduleStale: testControl.payload.scenario === "stale_prayer_data",
       testMode: true,
       testPayload: testControl.payload,
-      publicAppUrl: testControl.publicAppUrl,
+      publicAppUrl: testControl.publicAppUrl ?? feed?.mosque.publicAppUrl ?? null,
       diagnostics,
     };
   }

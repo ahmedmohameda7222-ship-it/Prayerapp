@@ -101,8 +101,10 @@ describe("DisplayShell", () => {
 
     rerender(<DisplayShell vm={vm({ urgent: [urgent] })} />);
     expect(screen.getByTestId("urgent-bar")).toBeInTheDocument();
-    expect(screen.getByText(urgent.titleAr)).toBeInTheDocument();
-    expect(screen.getByText(urgent.titleDe)).toBeInTheDocument();
+    const visibleTitles = [urgent.titleAr, urgent.titleDe].filter((title) =>
+      Boolean(screen.queryByText(title)),
+    );
+    expect(visibleTitles).toHaveLength(1);
   });
 
   it("hides the QR instead of inventing one when the canonical URL is unavailable", () => {

@@ -43,6 +43,16 @@ async function flushEffects() {
   });
 }
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 describe("useDisplayRuntime", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -171,6 +181,75 @@ describe("useDisplayRuntime", () => {
     expect(result.current.diagnostics?.lastSyncAt).toBeTruthy();
     expect(result.current.diagnostics?.clockOffsetMs).toBe(-5_000);
     expect(result.current.diagnostics?.validationError).toBeNull();
+  });
+
+  it("ignores an older production refresh that completes after a newer accepted snapshot", async () => {
+    const initialFeed = cloneFeed();
+    seedLkg(initialFeed, '"initial"');
+
+    const staleFeed = cloneFeed();
+    staleFeed.snapshotRevision = "b".repeat(64);
+    staleFeed.generatedAt = "2026-09-15T18:00:01.000Z";
+
+    const freshFeed = cloneFeed();
+    freshFeed.snapshotRevision = "c".repeat(64);
+    freshFeed.generatedAt = "2026-09-15T18:00:02.000Z";
+
+    const olderRequest = deferred<Response>();
+    const newerRequest = deferred<Response>();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(() => olderRequest.promise)
+      .mockImplementationOnce(() => newerRequest.promise);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => useDisplayRuntime());
+    await flushEffects();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("online"));
+      await Promise.resolve();
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      newerRequest.resolve(
+        new Response(JSON.stringify(freshFeed), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            etag: '"fresh"',
+            date: SERVER_DATE,
+          },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.feed?.snapshotRevision).toBe(freshFeed.snapshotRevision);
+    expect(loadLkg()?.snapshot.snapshotRevision).toBe(freshFeed.snapshotRevision);
+    expect(loadLkg()?.etag).toBe('"fresh"');
+
+    await act(async () => {
+      olderRequest.resolve(
+        new Response(JSON.stringify(staleFeed), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            etag: '"stale"',
+            date: SERVER_DATE,
+          },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.feed?.snapshotRevision).toBe(freshFeed.snapshotRevision);
+    expect(loadLkg()?.snapshot.snapshotRevision).toBe(freshFeed.snapshotRevision);
+    expect(loadLkg()?.etag).toBe('"fresh"');
   });
 
   it("applies test override without persisting it and returns to fresh real state", async () => {

@@ -37,7 +37,7 @@ export function DisplayShell({
         />
       </main>
 
-      <UrgentBar items={vm.urgent} />
+      <UrgentBar items={vm.urgent} logicalNow={vm.logicalNow} />
       <PrayerStrip vm={vm} />
 
       <footer className="display-footer">

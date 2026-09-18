@@ -1,0 +1,223 @@
+import { execFileSync } from "node:child_process";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DisplayShell } from "../components/DisplayShell";
+import { loadLkg } from "../lib/lkg";
+import {
+  useDisplayRuntime,
+  type DisplayRuntimeViewModel,
+} from "../lib/runtime/use-display-runtime";
+
+const integrationDescribe =
+  process.env.TWO_APP_INTEGRATION === "1" ? describe : describe.skip;
+const TV_BASE_URL = process.env.TV_BASE_URL ?? "http://127.0.0.1:3001";
+const DB_CONTAINER = process.env.SUPABASE_DB_CONTAINER ?? "";
+const nativeFetch = globalThis.fetch.bind(globalThis);
+
+let latestVm: DisplayRuntimeViewModel | null = null;
+let dropDisplayFeed = false;
+let displayFeedRequests = 0;
+
+function setVisibility(value: "hidden" | "visible") {
+  Object.defineProperty(document, "visibilityState", {
+    configurable: true,
+    value,
+  });
+}
+
+function setTestMode(active: boolean) {
+  if (!DB_CONTAINER) {
+    throw new Error("SUPABASE_DB_CONTAINER is required for two-app integration");
+  }
+
+  const sql = active
+    ? `
+      insert into public.masjid_display_test_state (
+        id, enabled, scenario, payload, started_at, expires_at, updated_at
+      ) values (
+        '1',
+        true,
+        'prayer_approaching',
+        jsonb_build_object(
+          'scenario', 'prayer_approaching',
+          'id', 'integration-prayer-approaching',
+          'prayer', 'isha',
+          'targetAt', now() + interval '10 minutes'
+        ),
+        now(),
+        now() + interval '15 minutes',
+        now()
+      )
+      on conflict (id) do update set
+        enabled = excluded.enabled,
+        scenario = excluded.scenario,
+        payload = excluded.payload,
+        started_at = excluded.started_at,
+        expires_at = excluded.expires_at,
+        updated_at = excluded.updated_at;
+    `
+    : `
+      insert into public.masjid_display_test_state (
+        id, enabled, scenario, payload, started_at, expires_at, updated_at
+      ) values ('1', false, null, null, null, null, now())
+      on conflict (id) do update set
+        enabled = false,
+        scenario = null,
+        payload = null,
+        started_at = null,
+        expires_at = null,
+        updated_at = excluded.updated_at;
+    `;
+
+  execFileSync(
+    "docker",
+    [
+      "exec",
+      "-i",
+      DB_CONTAINER,
+      "psql",
+      "-U",
+      "postgres",
+      "-d",
+      "postgres",
+      "-v",
+      "ON_ERROR_STOP=1",
+    ],
+    { input: sql, encoding: "utf8" },
+  );
+}
+
+function RuntimeHarness() {
+  const vm = useDisplayRuntime();
+  latestVm = vm;
+  return <DisplayShell vm={vm} />;
+}
+
+integrationDescribe("live Prayerapp + Masjid Display integration", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    latestVm = null;
+    dropDisplayFeed = false;
+    displayFeedRequests = 0;
+    setVisibility("visible");
+    setTestMode(false);
+
+    vi.stubGlobal(
+      "fetch",
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const raw =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url;
+        const url = new URL(raw, TV_BASE_URL);
+
+        if (url.pathname === "/api/display-feed") {
+          displayFeedRequests += 1;
+          if (dropDisplayFeed) {
+            throw new TypeError("simulated display-feed disconnect");
+          }
+        }
+
+        return nativeFetch(url, init);
+      },
+    );
+  });
+
+  afterEach(() => {
+    try {
+      setTestMode(false);
+    } finally {
+      cleanup();
+      vi.unstubAllGlobals();
+      setVisibility("visible");
+    }
+  });
+
+  it("preserves Feed ETag semantics through the live TV proxy", async () => {
+    const first = await nativeFetch(`${TV_BASE_URL}/api/display-feed`);
+    expect(first.status).toBe(200);
+
+    const etag = first.headers.get("etag");
+    expect(etag).toBeTruthy();
+    await expect(first.json()).resolves.toMatchObject({ schemaVersion: 1 });
+
+    const conditional = await nativeFetch(`${TV_BASE_URL}/api/display-feed`, {
+      headers: { "if-none-match": etag! },
+    });
+
+    expect(conditional.status).toBe(304);
+    expect(conditional.headers.get("etag")).toBe(etag);
+    expect(await conditional.text()).toBe("");
+  });
+
+  it("keeps LKG across disconnects and applies live Test Mode without polluting it", async () => {
+    render(<RuntimeHarness />);
+
+    await waitFor(() => expect(latestVm?.feed?.schemaVersion).toBe(1), {
+      timeout: 15_000,
+    });
+    await waitFor(() => expect(latestVm?.networkAvailable).toBe(true), {
+      timeout: 15_000,
+    });
+
+    const initialLkg = loadLkg();
+    expect(initialLkg).not.toBeNull();
+    const revision = initialLkg!.snapshot.snapshotRevision;
+    expect(latestVm?.usingLkg).toBe(false);
+    expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
+
+    dropDisplayFeed = true;
+    window.dispatchEvent(new Event("online"));
+
+    await waitFor(() => expect(latestVm?.networkAvailable).toBe(false), {
+      timeout: 5_000,
+    });
+    expect(latestVm?.usingLkg).toBe(true);
+    expect(latestVm?.feed?.snapshotRevision).toBe(revision);
+    expect(loadLkg()?.snapshot.snapshotRevision).toBe(revision);
+
+    dropDisplayFeed = false;
+    window.dispatchEvent(new Event("online"));
+
+    await waitFor(() => expect(latestVm?.networkAvailable).toBe(true), {
+      timeout: 5_000,
+    });
+    expect(latestVm?.usingLkg).toBe(false);
+    expect(loadLkg()?.snapshot.snapshotRevision).toBe(revision);
+
+    setVisibility("hidden");
+    document.dispatchEvent(new Event("visibilitychange"));
+    const requestsBeforeVisibleWake = displayFeedRequests;
+
+    setVisibility("visible");
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    await waitFor(
+      () => expect(displayFeedRequests).toBeGreaterThan(requestsBeforeVisibleWake),
+      { timeout: 5_000 },
+    );
+
+    setTestMode(true);
+
+    await waitFor(() => expect(latestVm?.testMode).toBe(true), {
+      timeout: 6_000,
+    });
+    expect(latestVm?.state?.kind).toBe("PRAYER_APPROACHING");
+    expect(screen.getByTestId("test-mode-badge")).toHaveTextContent(
+      "TEST MODE / وضع الاختبار",
+    );
+    expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
+    expect(loadLkg()?.snapshot.snapshotRevision).toBe(revision);
+
+    setTestMode(false);
+
+    await waitFor(() => expect(latestVm?.testMode).toBe(false), {
+      timeout: 6_000,
+    });
+    expect(screen.queryByTestId("test-mode-badge")).not.toBeInTheDocument();
+    expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
+    expect(loadLkg()?.snapshot.snapshotRevision).toBe(revision);
+  });
+});

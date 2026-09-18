@@ -47,3 +47,291 @@ jobs:
             echo 'Forbidden Supabase/audio runtime dependency or usage found in masjid-display'
             exit 1
           fi
+
+  verify-two-app-integration:
+    needs: verify-tv-package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "20.20.2"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            masjid-display/package-lock.json
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.116.0
+          github-token: ${{ github.token }}
+      - name: Install root dependencies
+        run: npm ci
+      - name: Install locked TV dependencies
+        working-directory: masjid-display
+        run: npm ci --ignore-scripts
+      - name: Start and reset local Supabase
+        run: |
+          supabase start
+          supabase db reset --local --no-seed
+      - name: Export local Supabase environment
+        run: |
+          supabase status -o env > /tmp/supabase.env
+          set -a
+          . /tmp/supabase.env
+          set +a
+
+          public_key="${PUBLISHABLE_KEY:-${ANON_KEY:-}}"
+          server_key="${SECRET_KEY:-${SERVICE_ROLE_KEY:-}}"
+          db_container="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
+
+          test -n "$API_URL"
+          test -n "$public_key"
+          test -n "$server_key"
+          test -n "$db_container"
+
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$public_key"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$public_key"
+            echo "SUPABASE_SECRET_KEY=$server_key"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$server_key"
+            echo "SUPABASE_DB_CONTAINER=$db_container"
+          } >> "$GITHUB_ENV"
+      - name: Seed deterministic Masjid Display integration data
+        run: |
+          docker exec -i "$SUPABASE_DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          delete from public.prayer_times;
+
+          insert into public.prayer_settings (
+            id,
+            latitude,
+            longitude,
+            timezone,
+            fajr_angle,
+            isha_rule,
+            isha_angle,
+            isha_minutes_after_maghrib,
+            asr_shadow_factor,
+            high_latitude_rule,
+            fajr_offset_minutes,
+            sunrise_offset_minutes,
+            dhuhr_offset_minutes,
+            asr_offset_minutes,
+            maghrib_offset_minutes,
+            isha_offset_minutes,
+            fajr_iqama_delay_minutes,
+            dhuhr_iqama_delay_minutes,
+            asr_iqama_delay_minutes,
+            maghrib_iqama_delay_minutes,
+            isha_iqama_delay_minutes,
+            calculation_revision,
+            applied_calculation_revision,
+            row_revision,
+            updated_at
+          ) values (
+            '1',
+            48.8405,
+            12.9575,
+            'Europe/Berlin',
+            18,
+            'fixed_minutes',
+            null,
+            90,
+            1,
+            'middle_of_night',
+            0, 0, 0, 0, 0, 0,
+            10, 10, 10, 10, 10,
+            1,
+            1,
+            1,
+            now()
+          )
+          on conflict (id) do update set
+            latitude = excluded.latitude,
+            longitude = excluded.longitude,
+            timezone = excluded.timezone,
+            fajr_angle = excluded.fajr_angle,
+            isha_rule = excluded.isha_rule,
+            isha_angle = excluded.isha_angle,
+            isha_minutes_after_maghrib = excluded.isha_minutes_after_maghrib,
+            asr_shadow_factor = excluded.asr_shadow_factor,
+            high_latitude_rule = excluded.high_latitude_rule,
+            fajr_offset_minutes = excluded.fajr_offset_minutes,
+            sunrise_offset_minutes = excluded.sunrise_offset_minutes,
+            dhuhr_offset_minutes = excluded.dhuhr_offset_minutes,
+            asr_offset_minutes = excluded.asr_offset_minutes,
+            maghrib_offset_minutes = excluded.maghrib_offset_minutes,
+            isha_offset_minutes = excluded.isha_offset_minutes,
+            fajr_iqama_delay_minutes = excluded.fajr_iqama_delay_minutes,
+            dhuhr_iqama_delay_minutes = excluded.dhuhr_iqama_delay_minutes,
+            asr_iqama_delay_minutes = excluded.asr_iqama_delay_minutes,
+            maghrib_iqama_delay_minutes = excluded.maghrib_iqama_delay_minutes,
+            isha_iqama_delay_minutes = excluded.isha_iqama_delay_minutes,
+            calculation_revision = excluded.calculation_revision,
+            applied_calculation_revision = excluded.applied_calculation_revision,
+            row_revision = excluded.row_revision,
+            updated_at = excluded.updated_at;
+
+          insert into public.mosque_settings (
+            id,
+            mosque_name,
+            mosque_name_ar,
+            mosque_name_de,
+            address,
+            phone,
+            email,
+            google_maps_link,
+            whatsapp_link,
+            telegram_link,
+            account_holder,
+            iban,
+            bic,
+            public_app_url,
+            updated_at
+          ) values (
+            '1',
+            'Integration Mosque',
+            'مسجد الاختبار',
+            'Integrationsmoschee',
+            'Integrationstraße 1',
+            '+4900000000',
+            'integration@example.invalid',
+            'https://maps.example.invalid/',
+            'https://wa.me/4900000000',
+            'https://t.me/integration',
+            'Integration Mosque',
+            'DE00000000000000000000',
+            'TESTDEFFXXX',
+            'https://prayer.example.test/',
+            now()
+          )
+          on conflict (id) do update set
+            mosque_name = excluded.mosque_name,
+            mosque_name_ar = excluded.mosque_name_ar,
+            mosque_name_de = excluded.mosque_name_de,
+            address = excluded.address,
+            phone = excluded.phone,
+            email = excluded.email,
+            google_maps_link = excluded.google_maps_link,
+            whatsapp_link = excluded.whatsapp_link,
+            telegram_link = excluded.telegram_link,
+            account_holder = excluded.account_holder,
+            iban = excluded.iban,
+            bic = excluded.bic,
+            public_app_url = excluded.public_app_url,
+            updated_at = excluded.updated_at;
+
+          insert into public.masjid_display_settings (
+            id,
+            fajr_prayer_duration_minutes,
+            dhuhr_prayer_duration_minutes,
+            asr_prayer_duration_minutes,
+            maghrib_prayer_duration_minutes,
+            isha_prayer_duration_minutes,
+            azkar_playlist_ids,
+            updated_at
+          ) values ('1', 10, 10, 10, 10, 10, '{}', now())
+          on conflict (id) do update set
+            fajr_prayer_duration_minutes = excluded.fajr_prayer_duration_minutes,
+            dhuhr_prayer_duration_minutes = excluded.dhuhr_prayer_duration_minutes,
+            asr_prayer_duration_minutes = excluded.asr_prayer_duration_minutes,
+            maghrib_prayer_duration_minutes = excluded.maghrib_prayer_duration_minutes,
+            isha_prayer_duration_minutes = excluded.isha_prayer_duration_minutes,
+            azkar_playlist_ids = excluded.azkar_playlist_ids,
+            updated_at = excluded.updated_at;
+
+          insert into public.masjid_display_test_state (
+            id, enabled, scenario, payload, started_at, expires_at, updated_at
+          ) values ('1', false, null, null, null, null, now())
+          on conflict (id) do update set
+            enabled = false,
+            scenario = null,
+            payload = null,
+            started_at = null,
+            expires_at = null,
+            updated_at = excluded.updated_at;
+
+          with bounds as (
+            select (now() at time zone 'Europe/Berlin')::date as today
+          )
+          insert into public.prayer_times (
+            date, fajr, sunrise, dhuhr, asr, maghrib, isha, note, published, updated_at
+          )
+          select
+            day::date,
+            '05:00',
+            '06:30',
+            '13:00',
+            '16:30',
+            '19:00',
+            '20:30',
+            'PLAN4_INTEGRATION',
+            true,
+            now()
+          from bounds,
+            generate_series(today - 1, today + 35, interval '1 day') as day;
+          SQL
+      - name: Start Prayerapp and Masjid Display
+        run: |
+          nohup npm run dev -- --hostname 127.0.0.1 --port 3000 > /tmp/prayerapp.log 2>&1 &
+          echo $! > /tmp/prayerapp.pid
+
+          (
+            cd masjid-display
+            PRAYERAPP_ORIGIN=http://127.0.0.1:3000               nohup npm run dev -- --hostname 127.0.0.1 --port 3001 > /tmp/masjid-display.log 2>&1 &
+            echo $! > /tmp/masjid-display.pid
+          )
+
+          root_ready=0
+          for _ in $(seq 1 90); do
+            code="$(curl -sS -o /tmp/root-feed.json -w '%{http_code}'               http://127.0.0.1:3000/api/public/masjid-display || true)"
+            if [ "$code" = "200" ]; then
+              root_ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$root_ready" -ne 1 ]; then
+            cat /tmp/prayerapp.log
+            cat /tmp/root-feed.json || true
+            exit 1
+          fi
+
+          tv_ready=0
+          for _ in $(seq 1 90); do
+            code="$(curl -sS -o /tmp/tv-feed.json -w '%{http_code}'               http://127.0.0.1:3001/api/display-feed || true)"
+            if [ "$code" = "200" ]; then
+              tv_ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$tv_ready" -ne 1 ]; then
+            cat /tmp/masjid-display.log
+            cat /tmp/tv-feed.json || true
+            exit 1
+          fi
+      - name: Run live two-app runtime integration
+        working-directory: masjid-display
+        env:
+          TWO_APP_INTEGRATION: "1"
+          TV_BASE_URL: http://127.0.0.1:3001
+        run: npx vitest run integration/two-app.integration.test.tsx --reporter=verbose
+      - name: Print integration server logs on failure
+        if: failure()
+        run: |
+          echo '--- Prayerapp ---'
+          cat /tmp/prayerapp.log || true
+          echo '--- Masjid Display ---'
+          cat /tmp/masjid-display.log || true
+      - name: Stop integration services
+        if: always()
+        run: |
+          if [ -f /tmp/masjid-display.pid ]; then kill "$(cat /tmp/masjid-display.pid)" || true; fi
+          if [ -f /tmp/prayerapp.pid ]; then kill "$(cat /tmp/prayerapp.pid)" || true; fi
+          supabase stop --no-backup || true
+

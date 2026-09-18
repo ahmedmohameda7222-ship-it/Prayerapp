@@ -128,6 +128,21 @@ describe("normal rotating content renderers", () => {
     expect(main).not.toHaveTextContent(event.descriptionAr.trim());
   });
 
+  it("shows the event date in both language views for upcoming events", () => {
+    const feed = cloneFeed();
+    const event = feed.events.find((item) => item.id === "test-event-upcoming")!;
+    const now = new Date("2026-09-15T10:00:00.000Z");
+
+    render(
+      <DisplayShell
+        vm={normalVm(feed, now, { kind: "EVENT", itemId: event.id })}
+      />,
+    );
+
+    const main = screen.getByRole("main");
+    expect(within(main).getAllByText(event.date)).toHaveLength(2);
+  });
+
   it("groups two short campaigns when readable", () => {
     const feed = cloneFeed();
     feed.campaigns[1].startDate = "2026-09-01";

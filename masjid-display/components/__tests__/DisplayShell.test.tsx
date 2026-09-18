@@ -115,13 +115,13 @@ describe("DisplayShell", () => {
   it("gives primary state and rotating content renderers fluid TV-readable hierarchy", () => {
     const css = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
 
-    expect(css).toMatch(/\.state-panel\s*\{[\\s\\S]*?display:\s*grid;/);
-    expect(css).toMatch(/\.state-prayer-name\s*\{[\\s\\S]*?font-size:\s*clamp\(/);
-    expect(css).toMatch(/\.state-countdown\s*\{[\\s\\S]*?font-size:\s*clamp\(/);
-    expect(css).toMatch(/\.content-slide\s*\{[\\s\\S]*?font-size:\s*clamp\(/);
-    expect(css).toMatch(/\.content-slide\s+h2\s*\{[\\s\\S]*?font-size:\s*clamp\(/);
-    expect(css).toMatch(/\.content-card-grid\s*\{[\\s\\S]*?display:\s*grid;/);
-    expect(css).toMatch(/\.content-card\s*\{[\\s\\S]*?font-size:\s*clamp\(/);
+    expect(css).toMatch(/\.state-panel\s*\{[\s\S]*?display:\s*grid;/);
+    expect(css).toMatch(/\.state-prayer-name\s*\{[\s\S]*?font-size:\s*clamp\(/);
+    expect(css).toMatch(/\.state-countdown\s*\{[\s\S]*?font-size:\s*clamp\(/);
+    expect(css).toMatch(/\.content-slide\s*\{[\s\S]*?font-size:\s*clamp\(/);
+    expect(css).toMatch(/\.content-slide\s+h2\s*\{[\s\S]*?font-size:\s*clamp\(/);
+    expect(css).toMatch(/\.content-card-grid\s*\{[\s\S]*?display:\s*grid;/);
+    expect(css).toMatch(/\.content-card\s*\{[\s\S]*?font-size:\s*clamp\(/);
   });
 
   it("uses fluid/container layout rules without physical-device media queries", () => {

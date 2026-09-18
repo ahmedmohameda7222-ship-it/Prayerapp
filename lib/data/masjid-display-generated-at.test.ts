@@ -1,53 +1,108 @@
 import { describe, expect, it, vi } from "vitest";
-import { getAzkarSourceRevisionTimestamps } from "./azkar";
+import type { AzkarItem } from "@/lib/types";
+import { selectDisplayAzkar } from "@/lib/masjid-display/azkar-selection";
+import type { DisplayAzkarDto } from "@/lib/masjid-display/feed-contract";
 import { getMasjidDisplayGeneratedAt } from "./masjid-display-generated-at";
 
 vi.mock("server-only", () => ({}));
 
 const SOURCE_TIMESTAMP = "2026-06-01T10:00:00.000Z";
-const CURRENT_AZKAR_ITEM_ID = "morning-praise-allah-alone";
-const CURRENT_AZKAR_SOURCE_REVISION = "2026-08-22T21:46:19.000Z";
+const FALLBACK_TIMESTAMP = "2026-05-31T22:00:00.000Z";
 
-describe("Azkar generatedAt source revisions", () => {
-  it("uses an explicit deterministic source timestamp for represented hardcoded Azkar", () => {
-    expect(getAzkarSourceRevisionTimestamps([CURRENT_AZKAR_ITEM_ID])).toEqual([
-      CURRENT_AZKAR_SOURCE_REVISION,
-    ]);
-  });
+const SELECTED_AZKAR: AzkarItem = {
+  id: "selected-morning",
+  category: "Morning",
+  arabicText: "سبحان الله",
+  transliteration: "Subhan Allah",
+  translationEn: "Glory be to Allah",
+  translationDe: "Gepriesen sei Allah",
+  source: "Synthetic",
+  repeatCount: 3,
+  sortOrder: 1,
+  isPublished: true,
+};
 
-  it("is stable for unchanged represented Azkar source revisions", async () => {
-    const revisions = getAzkarSourceRevisionTimestamps([CURRENT_AZKAR_ITEM_ID]);
-    const sources = {
+const UNSELECTED_AZKAR: AzkarItem = {
+  id: "unselected-evening",
+  category: "Evening",
+  arabicText: "الحمد لله",
+  transliteration: "Alhamdulillah",
+  translationEn: "Praise be to Allah",
+  translationDe: "Alles Lob gebührt Allah",
+  source: "Synthetic",
+  repeatCount: 3,
+  sortOrder: 2,
+  isPublished: true,
+};
+
+function projectSelected(catalog: AzkarItem[]): DisplayAzkarDto[] {
+  return selectDisplayAzkar(catalog, [SELECTED_AZKAR.id]);
+}
+
+async function generatedAtFor(azkar: DisplayAzkarDto[], fallbackIso = FALLBACK_TIMESTAMP) {
+  return getMasjidDisplayGeneratedAt(
+    {
       sourceTimestamps: [SOURCE_TIMESTAMP],
-      azkarRevisionTimestamps: revisions,
-    };
+      azkar,
+    } as never,
+    fallbackIso,
+  );
+}
 
-    const first = await getMasjidDisplayGeneratedAt(sources, "2026-05-31T22:00:00.000Z");
-    const second = await getMasjidDisplayGeneratedAt(sources, "2026-05-31T22:00:00.000Z");
+describe("Azkar generatedAt content revision", () => {
+  it("keeps generatedAt stable for unchanged represented Azkar content", async () => {
+    const represented = projectSelected([SELECTED_AZKAR, UNSELECTED_AZKAR]);
 
-    expect(first).toBe(CURRENT_AZKAR_SOURCE_REVISION);
+    const first = await generatedAtFor(represented);
+    const second = await generatedAtFor(represented);
+
     expect(second).toBe(first);
+    expect(Number.isFinite(Date.parse(first))).toBe(true);
   });
 
-  it("changes deterministically when the represented selected Azkar source revision changes", async () => {
-    const baseSources = {
-      sourceTimestamps: [SOURCE_TIMESTAMP],
-      azkarRevisionTimestamps: [CURRENT_AZKAR_SOURCE_REVISION],
-    };
-    const changedRevision = "2026-09-18T08:15:00.000Z";
+  it("changes generatedAt deterministically when represented selected Azkar content changes", async () => {
+    const original = projectSelected([SELECTED_AZKAR, UNSELECTED_AZKAR]);
+    const changed = projectSelected([
+      { ...SELECTED_AZKAR, arabicText: "سبحان الله وبحمده" },
+      UNSELECTED_AZKAR,
+    ]);
 
-    const original = await getMasjidDisplayGeneratedAt(baseSources, "2026-05-31T22:00:00.000Z");
-    const changed = await getMasjidDisplayGeneratedAt(
-      { ...baseSources, azkarRevisionTimestamps: [changedRevision] },
-      "2026-05-31T22:00:00.000Z",
+    const originalGeneratedAt = await generatedAtFor(original);
+    const changedGeneratedAt = await generatedAtFor(changed);
+    const changedGeneratedAtAgain = await generatedAtFor(changed);
+
+    expect(changedGeneratedAt).not.toBe(originalGeneratedAt);
+    expect(changedGeneratedAtAgain).toBe(changedGeneratedAt);
+  });
+
+  it("does not change generatedAt when only an unselected catalog item changes", async () => {
+    const original = projectSelected([SELECTED_AZKAR, UNSELECTED_AZKAR]);
+    const catalogWithUnselectedChange = projectSelected([
+      SELECTED_AZKAR,
+      { ...UNSELECTED_AZKAR, translationDe: "Unrelated catalog edit" },
+    ]);
+
+    expect(catalogWithUnselectedChange).toEqual(original);
+    await expect(generatedAtFor(catalogWithUnselectedChange)).resolves.toBe(
+      await generatedAtFor(original),
     );
-
-    expect(original).toBe(CURRENT_AZKAR_SOURCE_REVISION);
-    expect(changed).toBe(changedRevision);
   });
 
-  it("does not include an unrelated unselected Azkar item revision", () => {
-    expect(getAzkarSourceRevisionTimestamps([CURRENT_AZKAR_ITEM_ID])).toHaveLength(1);
+  it("does not depend on the request clock", async () => {
+    const represented = projectSelected([SELECTED_AZKAR]);
+    vi.useFakeTimers();
+
+    try {
+      vi.setSystemTime(new Date("2026-09-18T08:00:00.000Z"));
+      const first = await generatedAtFor(represented);
+
+      vi.setSystemTime(new Date("2026-09-18T21:00:00.000Z"));
+      const second = await generatedAtFor(represented);
+
+      expect(second).toBe(first);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -56,15 +111,15 @@ describe("getMasjidDisplayGeneratedAt", () => {
     const generatedAt = await getMasjidDisplayGeneratedAt(
       {
         sourceTimestamps: [SOURCE_TIMESTAMP],
-        azkarRevisionTimestamps: [],
-      },
+        azkar: [],
+      } as never,
       "2026-09-15T00:00:00.000Z",
     );
 
     expect(Date.parse(generatedAt)).toBe(Date.parse(SOURCE_TIMESTAMP));
   });
 
-  it("takes the maximum only across timestamps supplied by represented source reads", async () => {
+  it("takes the maximum only across timestamps supplied by represented source reads when no Azkar is represented", async () => {
     const generatedAt = await getMasjidDisplayGeneratedAt(
       {
         sourceTimestamps: [
@@ -72,8 +127,8 @@ describe("getMasjidDisplayGeneratedAt", () => {
           "2026-07-02T11:30:00.000Z",
           "2026-06-15T08:00:00.000Z",
         ],
-        azkarRevisionTimestamps: [],
-      },
+        azkar: [],
+      } as never,
       "2026-09-15T00:00:00.000Z",
     );
 

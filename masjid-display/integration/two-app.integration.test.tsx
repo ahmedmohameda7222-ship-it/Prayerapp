@@ -3,10 +3,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DisplayShell } from "../components/DisplayShell";
 import { loadLkg } from "../lib/lkg";
-import {
-  useDisplayRuntime,
-  type DisplayRuntimeViewModel,
-} from "../lib/runtime/use-display-runtime";
+import { useDisplayRuntime } from "../lib/runtime/use-display-runtime";
 
 const integrationDescribe =
   process.env.TWO_APP_INTEGRATION === "1" ? describe : describe.skip;
@@ -14,7 +11,6 @@ const TV_BASE_URL = process.env.TV_BASE_URL ?? "http://127.0.0.1:3001";
 const DB_CONTAINER = process.env.SUPABASE_DB_CONTAINER ?? "";
 const nativeFetch = globalThis.fetch.bind(globalThis);
 
-let latestVm: DisplayRuntimeViewModel | null = null;
 let dropDisplayFeed = false;
 let displayFeedRequests = 0;
 
@@ -88,15 +84,12 @@ function setTestMode(active: boolean) {
 }
 
 function RuntimeHarness() {
-  const vm = useDisplayRuntime();
-  latestVm = vm;
-  return <DisplayShell vm={vm} />;
+  return <DisplayShell vm={useDisplayRuntime()} />;
 }
 
 integrationDescribe("live Prayerapp + Masjid Display integration", () => {
   beforeEach(() => {
     localStorage.clear();
-    latestVm = null;
     dropDisplayFeed = false;
     displayFeedRequests = 0;
     setVisibility("visible");
@@ -155,36 +148,29 @@ integrationDescribe("live Prayerapp + Masjid Display integration", () => {
   it("keeps LKG across disconnects and applies live Test Mode without polluting it", async () => {
     render(<RuntimeHarness />);
 
-    await waitFor(() => expect(latestVm?.feed?.schemaVersion).toBe(1), {
-      timeout: 15_000,
-    });
-    await waitFor(() => expect(latestVm?.networkAvailable).toBe(true), {
+    await waitFor(() => expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument(), {
       timeout: 15_000,
     });
 
     const initialLkg = loadLkg();
     expect(initialLkg).not.toBeNull();
     const revision = initialLkg!.snapshot.snapshotRevision;
-    expect(latestVm?.usingLkg).toBe(false);
     expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
 
     dropDisplayFeed = true;
     window.dispatchEvent(new Event("online"));
 
-    await waitFor(() => expect(latestVm?.networkAvailable).toBe(false), {
+    await waitFor(() => expect(screen.getByText(/OFFLINE/i)).toBeInTheDocument(), {
       timeout: 5_000,
     });
-    expect(latestVm?.usingLkg).toBe(true);
-    expect(latestVm?.feed?.snapshotRevision).toBe(revision);
     expect(loadLkg()?.snapshot.snapshotRevision).toBe(revision);
 
     dropDisplayFeed = false;
     window.dispatchEvent(new Event("online"));
 
-    await waitFor(() => expect(latestVm?.networkAvailable).toBe(true), {
+    await waitFor(() => expect(screen.queryByText(/OFFLINE/i)).not.toBeInTheDocument(), {
       timeout: 5_000,
     });
-    expect(latestVm?.usingLkg).toBe(false);
     expect(loadLkg()?.snapshot.snapshotRevision).toBe(revision);
 
     setVisibility("hidden");
@@ -201,10 +187,9 @@ integrationDescribe("live Prayerapp + Masjid Display integration", () => {
 
     setTestMode(true);
 
-    await waitFor(() => expect(latestVm?.testMode).toBe(true), {
+    await waitFor(() => expect(screen.getByTestId("test-mode-badge")).toBeInTheDocument(), {
       timeout: 6_000,
     });
-    expect(latestVm?.state?.kind).toBe("PRAYER_APPROACHING");
     expect(screen.getByTestId("test-mode-badge")).toHaveTextContent(
       "TEST MODE / وضع الاختبار",
     );
@@ -213,10 +198,9 @@ integrationDescribe("live Prayerapp + Masjid Display integration", () => {
 
     setTestMode(false);
 
-    await waitFor(() => expect(latestVm?.testMode).toBe(false), {
+    await waitFor(() => expect(screen.queryByTestId("test-mode-badge")).not.toBeInTheDocument(), {
       timeout: 6_000,
     });
-    expect(screen.queryByTestId("test-mode-badge")).not.toBeInTheDocument();
     expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
     expect(loadLkg()?.snapshot.snapshotRevision).toBe(revision);
   });

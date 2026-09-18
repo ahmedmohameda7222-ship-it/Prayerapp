@@ -68,6 +68,22 @@ describe("useDisplayRuntime", () => {
     vi.restoreAllMocks();
   });
 
+  it("keeps the first client render hydration-stable and loads LKG after mount", async () => {
+    const validFeed = cloneFeed();
+    seedLkg(validFeed);
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
+
+    const { result } = renderHook(() => useDisplayRuntime());
+
+    expect(result.current.feed).toBeNull();
+    expect(result.current.usingLkg).toBe(false);
+
+    await flushEffects();
+
+    expect(result.current.feed?.snapshotRevision).toBe(validFeed.snapshotRevision);
+    expect(result.current.usingLkg).toBe(true);
+  });
+
   it("renders LKG first, polls every 60s, and keeps LKG after invalid 200", async () => {
     const validFeed = cloneFeed();
     seedLkg(validFeed);

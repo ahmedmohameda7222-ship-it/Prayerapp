@@ -16,8 +16,11 @@ body {
 }
 
 .display-shell {
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: calc(100vh - 8px);
+  min-height: calc(100dvh - 8px);
+  width: calc(100% - 8px);
+  margin: 4px;
+  transform-origin: center;
   padding: clamp(1rem, 3vmin, 3.5rem);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto auto;
@@ -174,4 +177,78 @@ body {
   .display-footer {
     justify-content: center;
   }
+}
+
+
+.status-overlay {
+  position: absolute;
+  inset-inline: clamp(.5rem, 1vmin, 1rem);
+  bottom: clamp(.5rem, 1vmin, 1rem);
+  display: grid;
+  justify-items: center;
+  gap: .2rem;
+  padding: clamp(.5rem, 1vmin, .9rem) clamp(.75rem, 1.4vmin, 1.25rem);
+  border: .1rem solid rgba(246, 242, 231, .5);
+  border-radius: clamp(.5rem, .8vmin, .8rem);
+  background: rgba(7, 20, 15, .92);
+  font-size: clamp(.8rem, 1.25vmin, 1.1rem);
+  text-align: center;
+}
+
+.status-overlay-alert {
+  border-width: .16rem;
+  font-size: clamp(1rem, 1.8vmin, 1.6rem);
+}
+
+.diagnostics-panel {
+  position: fixed;
+  inset-inline-start: clamp(.5rem, 1vmin, 1rem);
+  bottom: clamp(.5rem, 1vmin, 1rem);
+  z-index: 20;
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: 70dvh;
+  overflow: auto;
+  padding: clamp(.75rem, 1.2vmin, 1.2rem);
+  background: rgba(0, 0, 0, .9);
+  border: .08rem solid rgba(246, 242, 231, .45);
+  border-radius: .7rem;
+  font-family: monospace;
+  font-size: clamp(.7rem, 1vmin, .95rem);
+}
+
+.diagnostics-panel h2 {
+  margin-block: 0 .65rem;
+  font: inherit;
+  font-weight: 700;
+}
+
+.diagnostics-panel dl {
+  display: grid;
+  grid-template-columns: minmax(8rem, auto) minmax(0, 1fr);
+  gap: .25rem .75rem;
+  margin: 0;
+}
+
+.diagnostics-panel dt {
+  opacity: .72;
+}
+
+.diagnostics-panel dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.display-error-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  padding: clamp(1rem, 3vmin, 3rem);
+  text-align: center;
+}
+
+.display-error-shell button {
+  font: inherit;
+  padding: .7rem 1.1rem;
 }

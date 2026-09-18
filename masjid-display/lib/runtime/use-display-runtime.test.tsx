@@ -99,7 +99,7 @@ describe("useDisplayRuntime", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const { result } = renderHook(() => useDisplayRuntime());
-    expect(result.current.feed?.snapshotRevision).toBe(validFeed.snapshotRevision);
+    expect(result.current.feed).toBeNull();
     await flushEffects();
     expect(result.current.feed?.snapshotRevision).toBe(validFeed.snapshotRevision);
     expect(result.current.diagnostics?.validationError).toMatch(/validation/i);
@@ -143,6 +143,7 @@ describe("useDisplayRuntime", () => {
     vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
 
     const { result } = renderHook(() => useDisplayRuntime());
+    await flushEffects();
     expect(result.current.state?.kind).toBe("NORMAL");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1_000);
@@ -381,6 +382,7 @@ describe("useDisplayRuntime", () => {
     };
 
     const { result, rerender } = renderHook(() => useDisplayRuntime());
+    await flushEffects();
     expect(result.current.testMode).toBe(true);
     expect(result.current.state?.kind).toBe("IQAMA_NOW");
     expect(result.current.urgent).toEqual([]);

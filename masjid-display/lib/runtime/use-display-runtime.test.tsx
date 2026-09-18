@@ -509,6 +509,34 @@ describe("useDisplayRuntime", () => {
     expect(loadLkg()?.snapshot.snapshotRevision).toBe(realFeed.snapshotRevision);
   });
 
+  it("keeps the validated production Prayerapp URL when active Test Control omits it", async () => {
+    const realFeed = cloneFeed();
+    seedLkg(realFeed);
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
+    testControl.current = {
+      active: true,
+      scenario: "campaign_without_qr",
+      startedAt: "2026-09-15T18:00:00.000Z",
+      expiresAt: "2026-09-15T18:15:00.000Z",
+      publicAppUrl: null,
+      payload: {
+        scenario: "campaign_without_qr",
+        id: "test-no-control-url",
+        titleAr: "حملة بلا رمز",
+        titleDe: "Kampagne ohne QR",
+        descriptionAr: "تبرع تجريبي",
+        descriptionDe: "Testspende",
+      },
+    };
+
+    const { result } = renderHook(() => useDisplayRuntime());
+    await flushEffects();
+
+    expect(result.current.testMode).toBe(true);
+    expect(result.current.publicAppUrl).toBe(realFeed.mosque.publicAppUrl);
+    expect(loadLkg()?.snapshot.snapshotRevision).toBe(realFeed.snapshotRevision);
+  });
+
   it("applies test override without persisting it and returns to fresh real state", async () => {
     const realFeed = cloneFeed();
     seedLkg(realFeed);

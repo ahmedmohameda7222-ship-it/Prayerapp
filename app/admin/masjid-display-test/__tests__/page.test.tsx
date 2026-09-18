@@ -21,7 +21,8 @@ describe("Masjid Display Test Control Admin", () => {
     expect(actions).toContain("15 * 60 * 1000");
     expect(actions).toContain('from("masjid_display_test_state")');
     expect(actions).toContain("buildTestFixture");
-    expect(actions).toContain("publicAppUrl");
+    expect(actions).not.toContain("getMosqueSettings");
+    expect(actions).not.toContain("validatePublicAppUrl");
     expect(actions).not.toMatch(/from\(["'](?:prayer_times|announcements|events|donation_campaigns)["']\)/);
   });
 });

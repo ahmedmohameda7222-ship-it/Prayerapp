@@ -79,6 +79,18 @@ describe("Masjid Display Test Mode mutation isolation", () => {
     ]);
   });
 
+  it("starts Test Mode even when the Prayerapp public URL is not configured", async () => {
+    mocks.getMosqueSettings.mockResolvedValue({ publicAppUrl: "" });
+
+    await expect(startTestScenario("token", "normal")).resolves.toMatchObject({
+      success: true,
+      data: {
+        enabled: true,
+        scenario: "normal",
+      },
+    });
+  });
+
   it("has no production prayer/feed or content-table dependency", () => {
     const source = readFileSync(path.join(process.cwd(), "app/admin/masjid-display-test/actions.ts"), "utf8");
     expect(source).not.toMatch(/getPrayerSettings|buildMasjidDisplayFeed|getPrayerTimes/);

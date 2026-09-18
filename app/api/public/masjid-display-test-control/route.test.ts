@@ -47,6 +47,20 @@ describe("public Masjid Display Test Control", () => {
     expect(route).not.toMatch(/buildMasjidDisplayFeed|getPrayerSettings|getMasjidDisplaySettings/);
   });
 
+  it("keeps Test Mode active without a configured Prayerapp QR URL", async () => {
+    mocks.getTestState.mockResolvedValue(activeState);
+    mocks.getMosqueSettings.mockResolvedValue({ publicAppUrl: "" });
+
+    const response = await GET();
+
+    await expect(response.json()).resolves.toMatchObject({
+      active: true,
+      scenario: "normal",
+      publicAppUrl: null,
+      payload: { id: "test-normal" },
+    });
+  });
+
   it("returns inactive for missing, disabled, or expired state", async () => {
     mocks.getTestState.mockResolvedValue(null);
     await expect((await GET()).json()).resolves.toEqual({ active: false });

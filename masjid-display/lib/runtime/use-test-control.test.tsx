@@ -77,6 +77,27 @@ describe("useTestControl", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("accepts an active Test Mode directive when the Prayerapp QR URL is unavailable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(JSON.stringify({ ...ACTIVE, publicAppUrl: null }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+
+    const { result } = renderHook(() => useTestControl(new Date(Date.now())));
+    await flushEffects();
+
+    expect(result.current).toMatchObject({
+      active: true,
+      scenario: "iqama_now",
+      publicAppUrl: null,
+    });
+  });
+
   it("ignores a stale active poll that resolves after a newer inactive response", async () => {
     const older = deferred<Response>();
     const newer = deferred<Response>();

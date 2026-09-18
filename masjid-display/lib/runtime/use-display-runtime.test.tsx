@@ -200,6 +200,55 @@ describe("useDisplayRuntime", () => {
     expect(result.current.diagnostics?.validationError).toBeNull();
   });
 
+  it("marks a retained valid snapshot as LKG when a later HTTP 200 feed is invalid", async () => {
+    const initialFeed = cloneFeed();
+    seedLkg(initialFeed);
+
+    const freshFeed = cloneFeed();
+    freshFeed.snapshotRevision = "d".repeat(64);
+    freshFeed.generatedAt = "2026-09-15T18:00:00.000Z";
+
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(freshFeed), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            etag: '"fresh-before-invalid"',
+            date: SERVER_DATE,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ schemaVersion: 2 }), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            date: SERVER_DATE,
+          },
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => useDisplayRuntime());
+    await flushEffects();
+
+    expect(result.current.feed?.snapshotRevision).toBe(freshFeed.snapshotRevision);
+    expect(result.current.usingLkg).toBe(false);
+    const syncedAt = result.current.diagnostics?.lastSyncAt;
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+
+    expect(result.current.feed?.snapshotRevision).toBe(freshFeed.snapshotRevision);
+    expect(loadLkg()?.snapshot.snapshotRevision).toBe(freshFeed.snapshotRevision);
+    expect(result.current.usingLkg).toBe(true);
+    expect(result.current.diagnostics?.lastSyncAt).toBe(syncedAt);
+    expect(result.current.diagnostics?.validationError).toMatch(/validation/i);
+  });
+
   it("ignores an older production refresh that completes after a newer accepted snapshot", async () => {
     const initialFeed = cloneFeed();
     seedLkg(initialFeed, '"initial"');

@@ -35,7 +35,7 @@ export interface ActiveTestControl {
   scenario: TestControlScenario;
   startedAt: string;
   expiresAt: string;
-  publicAppUrl: string;
+  publicAppUrl: string | null;
   payload: TestControlPayload;
 }
 
@@ -87,7 +87,7 @@ function parseTestControl(value: unknown): TestControlState | null {
     !SCENARIOS.has(record.scenario as TestControlScenario) ||
     !isTimestamp(record.startedAt) ||
     !isTimestamp(record.expiresAt) ||
-    typeof record.publicAppUrl !== "string" ||
+    (record.publicAppUrl !== null && typeof record.publicAppUrl !== "string") ||
     !payload ||
     typeof payload.id !== "string" ||
     typeof payload.scenario !== "string" ||
@@ -102,7 +102,7 @@ function parseTestControl(value: unknown): TestControlState | null {
     scenario: record.scenario as TestControlScenario,
     startedAt: record.startedAt,
     expiresAt: record.expiresAt,
-    publicAppUrl: record.publicAppUrl,
+    publicAppUrl: record.publicAppUrl as string | null,
     payload: payload as TestControlPayload,
   };
 }

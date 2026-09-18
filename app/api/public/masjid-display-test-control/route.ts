@@ -22,11 +22,12 @@ export async function GET() {
   }
 
   const mosque = await getMosqueSettings();
-  let publicAppUrl: string;
+  let publicAppUrl: string | null = null;
   try {
     publicAppUrl = validatePublicAppUrl(mosque.publicAppUrl);
   } catch {
-    return json({ active: false });
+    // Test Mode is independent of QR configuration. Omit the QR when
+    // the canonical Prayerapp URL is missing or invalid.
   }
 
   return json({

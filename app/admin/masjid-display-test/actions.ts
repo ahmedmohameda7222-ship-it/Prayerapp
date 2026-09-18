@@ -3,9 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAllowedAdminIdentity } from "@/lib/auth/admin-server";
 import { getMasjidDisplayTestState } from "@/lib/data/masjid-display-test-state";
-import { getMosqueSettings } from "@/lib/data/mosque-settings";
 import { buildTestFixture } from "@/lib/masjid-display/test-fixtures";
-import { validatePublicAppUrl } from "@/lib/masjid-display/public-app-url";
 import { createServerClient } from "@/lib/supabase/server";
 import { MASJID_DISPLAY_TEST_SCENARIOS, type MasjidDisplayTestScenario, type MasjidDisplayTestState } from "@/lib/types";
 import { adminActionError, beginAdminAudit, completeAdminAudit } from "@/lib/security/admin-audit";
@@ -43,11 +41,6 @@ export async function startTestScenario(token: string, scenario: unknown): Promi
   let result: ActionResult<MasjidDisplayTestState>;
   try {
     if (!isScenario(scenario)) throw new Error("Unknown Test Control scenario");
-    const mosque = await getMosqueSettings();
-    const publicAppUrl = mosque.publicAppUrl.trim();
-    if (!publicAppUrl) throw new Error("Prayerapp public URL is required before Test Mode can start");
-    validatePublicAppUrl(publicAppUrl);
-
     const startedAt = new Date().toISOString();
     const expiresAt = new Date(new Date(startedAt).getTime() + FIFTEEN_MINUTES_MS).toISOString();
     const payload = buildTestFixture(scenario, startedAt);

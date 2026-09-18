@@ -34,6 +34,7 @@ export function EventSlide({
           className="content-card event-card"
           titleAr={item.titleAr}
           titleDe={item.titleDe}
+          copyLength={textLength(item)}
           bodyAr={
             <>
               <p>{item.descriptionAr}</p>

@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
@@ -24,10 +24,10 @@ function setVisibility(value: "hidden" | "visible") {
   });
 }
 
-function runAdminTestAction(action: "start" | "stop") {
+async function runAdminTestAction(action: "start" | "stop") {
   const repoRoot = path.resolve(process.cwd(), "..");
 
-  execFileSync(
+  await execFileAsync(
     "npx",
     [
       "vitest",
@@ -42,7 +42,6 @@ function runAdminTestAction(action: "start" | "stop") {
         PLAN4_ADMIN_ACTION: action,
       },
       encoding: "utf8",
-      stdio: "pipe",
     },
   );
 }
@@ -127,9 +126,9 @@ integrationDescribe("live Prayerapp + Masjid Display integration", () => {
     );
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     try {
-      runAdminTestAction("stop");
+      await runAdminTestAction("stop");
     } finally {
       cleanup();
       vi.unstubAllGlobals();
@@ -206,7 +205,7 @@ integrationDescribe("live Prayerapp + Masjid Display integration", () => {
       const initialLkg = await waitForProductionRuntime();
       const revision = initialLkg.snapshot.snapshotRevision;
 
-      runAdminTestAction("start");
+      await runAdminTestAction("start");
 
       await waitFor(
         () => expect(screen.getByTestId("test-mode-badge")).toBeInTheDocument(),
@@ -234,7 +233,7 @@ integrationDescribe("live Prayerapp + Masjid Display integration", () => {
       );
       expect(loadLkg()?.snapshot.snapshotRevision).toBe(revision);
 
-      runAdminTestAction("stop");
+      await runAdminTestAction("stop");
 
       await waitFor(
         () => expect(screen.queryByTestId("test-mode-badge")).not.toBeInTheDocument(),
@@ -258,7 +257,7 @@ integrationDescribe("live Prayerapp + Masjid Display integration", () => {
       const initialLkg = await waitForProductionRuntime();
       const revision = initialLkg.snapshot.snapshotRevision;
 
-      runAdminTestAction("start");
+      await runAdminTestAction("start");
       await waitFor(
         () => expect(screen.getByTestId("test-mode-badge")).toBeInTheDocument(),
         { timeout: 7_000 },

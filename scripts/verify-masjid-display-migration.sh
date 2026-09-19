@@ -160,17 +160,21 @@ begin
   if exists (
     select 1
     from plan5_before_prayer b
-    join public.prayer_times p using (date)
-    where b.schedule_hash <> md5(concat_ws('|',
-      p.date::text, p.fajr, p.sunrise, p.dhuhr, p.asr, p.maghrib, p.isha,
-      p.published::text,
-      p.maghrib_program_enabled::text,
-      coalesce(p.maghrib_lesson_title, ''),
-      coalesce(p.maghrib_lesson_duration_minutes::text, ''),
-      coalesce(p.maghrib_combined_isha_time, '')
-    ))
+    where not exists (
+      select 1
+      from public.prayer_times p
+      where p.date = b.date
+        and b.schedule_hash = md5(concat_ws('|',
+          p.date::text, p.fajr, p.sunrise, p.dhuhr, p.asr, p.maghrib, p.isha,
+          p.published::text,
+          p.maghrib_program_enabled::text,
+          coalesce(p.maghrib_lesson_title, ''),
+          coalesce(p.maghrib_lesson_duration_minutes::text, ''),
+          coalesce(p.maghrib_combined_isha_time, '')
+        ))
+    )
   ) then
-    raise exception 'six daily prayer values or Maghrib Program changed';
+    raise exception 'representative prayer row changed or missing';
   end if;
 
   if not exists (

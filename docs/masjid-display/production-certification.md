@@ -13,12 +13,12 @@ Plan 5 is a production-readiness evidence gate. Software/certification-framework
 | DB migration local/staging dry run | Yes | PASS | Root CI `35441435280`; reviewed 81/3 fixture + full nine-migration pending-chain certification, unchanged hashes/counts, Maghrib Program 8→8, shared delays `20,15,15,5,10`, legacy Iqama columns 0 |
 | Real-target legacy-Iqama cutover prerequisite | Yes | BLOCKED | Read-only target evidence: 81 prayer rows, 3 Jumuah rows, 5 legacy Iqama columns, no `prayer_settings` table |
 | Root tests/lint/typecheck/build | Yes | PASS | Root CI `35441435280`: install/audit/lint/tests/typecheck/Supabase gates/build all success |
-| TV tests/lint/typecheck/build | Yes | PASS | Masjid Display Verification `35441435271` and root CI `35439858258` |
+| TV tests/lint/typecheck/build | Yes | PASS | Masjid Display Verification `35441435271` and root CI `35441435280` |
 | Producer/consumer Feed-v1 contract | Yes | PASS | Root CI `35441435280`: semantic fixture verifier success |
-| Feed/security boundary | Yes | PASS | Security Scanners `35441435290` + TV forbidden-runtime/live verification `35439858288`; bounded public RPC projections and fail-closed source/output limits |
-| Offline/LKG certification | Yes | PASS | Dedicated forward-wake/offline certification passed in `35439858288` |
-| Test Mode certification | Yes | PASS | Dedicated TV certification tests + live two-app verification passed in `35439858288` |
-| Display-state certification | Yes | PASS | Dedicated five-prayer/Friday certification suite passed in `35439858288` |
+| Feed/security boundary | Yes | PASS | Security Scanners `35441435290` + TV forbidden-runtime/live verification `35441435271`; bounded public RPC projections and fail-closed source/output limits |
+| Offline/LKG certification | Yes | PASS | Dedicated forward-wake/offline certification passed in `35441435271` |
+| Test Mode certification | Yes | PASS | Dedicated TV certification tests + live two-app verification passed in `35441435271` |
+| Display-state certification | Yes | PASS | Dedicated five-prayer/Friday certification suite passed in `35441435271` |
 | 32-inch 1080p physical QA | Yes | BLOCKED | Physical execution not performed |
 | Larger / 1440p / 4K adaptive QA | Yes | BLOCKED | Required physical/adaptive execution not performed |
 | Persistent Prayerapp QR physical scan | Yes | BLOCKED | Real phone/camera scan not performed |

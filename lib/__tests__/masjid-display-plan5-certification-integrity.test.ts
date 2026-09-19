@@ -6,8 +6,9 @@ describe("Plan 5 certification integrity", () => {
     const source = readFileSync("scripts/verify-masjid-display-migration.sh", "utf8");
 
     expect(source).toContain("representative prayer row changed or missing");
+    expect(source).toMatch(/create temporary table plan5_before_prayer as[\s\S]+select[\s\S]+id,[\s\S]+date,/);
     expect(source).toMatch(
-      /from plan5_before_prayer b[\s\S]+where not exists \([\s\S]+select 1[\s\S]+from public\.prayer_times p/,
+      /from plan5_before_prayer b[\s\S]+where not exists \([\s\S]+select 1[\s\S]+from public\.prayer_times p[\s\S]+p\.id = b\.id/,
     );
   });
 

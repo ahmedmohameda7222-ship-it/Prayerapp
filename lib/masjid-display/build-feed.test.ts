@@ -363,6 +363,33 @@ describe("buildMasjidDisplayFeed", () => {
     expect(feed.azkar.map((item) => item.id)).toEqual(["morning-1"]);
   });
 
+  it("rejects an oversized generated public Feed instead of emitting an unbounded payload", async () => {
+    const source = deps();
+    const huge = "x".repeat(80 * 1024);
+    source.getAnnouncementsForDisplayWindow.mockResolvedValue([
+      {
+        id: "oversized-announcement",
+        title: "Oversized",
+        message: "Oversized",
+        type: "General",
+        titleAr: "إعلان",
+        titleDe: "Ankündigung",
+        messageAr: huge,
+        messageDe: huge,
+        isUrgent: false,
+        displayStyle: "normal",
+        displayFrom: undefined,
+        displayUntil: undefined,
+        published: true,
+        createdAt: "2026-09-12T10:00:00.000Z",
+      },
+    ] as never);
+
+    await expect(
+      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
+    ).rejects.toThrow(/maximum size|too large|payload/i);
+  });
+
   it("fails atomically when required prayer or display settings are missing", async () => {
     const missingPrayer = deps();
     missingPrayer.getPrayerSettings.mockResolvedValue(null as never);

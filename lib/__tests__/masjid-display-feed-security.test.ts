@@ -78,12 +78,17 @@ describe("Masjid Display Plan 5 attacker-perspective boundary", () => {
     );
   });
 
-  it("keeps the public Feed horizon and fixture bounded", () => {
+  it("keeps the public Feed horizon and production source/output bounds explicit", () => {
     const builder = readFileSync(BUILDER_PATH, "utf8");
-    const fixture = readFileSync(FIXTURE_PATH, "utf8");
+    const boundsMigration = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
     expect(builder).toContain("const startDate = addDaysIso(today, -1)");
     expect(builder).toContain("const endDate = addDaysIso(today, 35)");
-    expect(Buffer.byteLength(fixture, "utf8")).toBeLessThan(128 * 1024);
+    expect(builder).toContain("MAX_MASJID_DISPLAY_FEED_BYTES");
+    expect(boundsMigration).toMatch(/limit\s+\d+/i);
+    expect(boundsMigration).toContain("pg_column_size");
   });
 
   it("does not expose secret-bearing keys or internal error details in public payloads", () => {

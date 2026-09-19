@@ -11,7 +11,37 @@ type PublishableDisplayContent = {
   descriptionDe?: string;
   locationAr?: string;
   locationDe?: string;
+  donationUrl?: string | null;
 };
+
+const MAX_DISPLAY_PUBLISHABLE_VARIABLE_UTF8_BYTES = 10 * 1024;
+
+function variableUtf8Bytes(values: Array<string | null | undefined>): number {
+  return new TextEncoder().encode(
+    values.filter((value): value is string => typeof value === "string").join("\u0000"),
+  ).byteLength;
+}
+
+function exceedsDisplayProjectionBudget(
+  kind: DisplayContentKind,
+  item: PublishableDisplayContent,
+): boolean {
+  const values =
+    kind === "announcement"
+      ? [item.titleAr, item.titleDe, item.messageAr, item.messageDe]
+      : kind === "event"
+        ? [
+            item.titleAr,
+            item.titleDe,
+            item.descriptionAr,
+            item.descriptionDe,
+            item.locationAr,
+            item.locationDe,
+          ]
+        : [item.titleAr, item.titleDe, item.descriptionAr, item.descriptionDe, item.donationUrl];
+
+  return variableUtf8Bytes(values) > MAX_DISPLAY_PUBLISHABLE_VARIABLE_UTF8_BYTES;
+}
 
 function missing(value: string | undefined): boolean {
   return !value?.trim();
@@ -33,17 +63,21 @@ export function validateDisplayPublishableContent(
 ): string[] {
   if (kind === "announcement") {
     if (!item.published) return [];
-    return requireFields(item, [
+    const errors = requireFields(item, [
       ["titleAr", "Arabic title"],
       ["messageAr", "Arabic message"],
       ["titleDe", "German title"],
       ["messageDe", "German message"],
     ], "published display content");
+    if (exceedsDisplayProjectionBudget(kind, item)) {
+      errors.push("Published display content exceeds maximum display size");
+    }
+    return errors;
   }
 
   if (kind === "event") {
     if (!item.published) return [];
-    return requireFields(item, [
+    const errors = requireFields(item, [
       ["titleAr", "Arabic title"],
       ["descriptionAr", "Arabic description"],
       ["locationAr", "Arabic location"],
@@ -51,13 +85,21 @@ export function validateDisplayPublishableContent(
       ["descriptionDe", "German description"],
       ["locationDe", "German location"],
     ], "published display content");
+    if (exceedsDisplayProjectionBudget(kind, item)) {
+      errors.push("Published display content exceeds maximum display size");
+    }
+    return errors;
   }
 
   if (!item.isActive) return [];
-  return requireFields(item, [
+  const errors = requireFields(item, [
     ["titleAr", "Arabic title"],
     ["descriptionAr", "Arabic description"],
     ["titleDe", "German title"],
     ["descriptionDe", "German description"],
   ], "active display campaign");
+  if (exceedsDisplayProjectionBudget(kind, item)) {
+    errors.push("Active display campaign exceeds maximum display size");
+  }
+  return errors;
 }

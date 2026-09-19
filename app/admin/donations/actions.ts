@@ -171,11 +171,12 @@ export async function toggleActiveCampaignAction(token: string, id: string, isAc
   return runAuditedAction(token, { action: "donation.campaign.active", entityType: "donation_campaign", entityId, metadata: { isActive: nextActive } }, async () => {
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     if (nextActive) {
-      const { data: row, error: readError } = await client.from("donation_campaigns").select("title_ar,title_de,description_ar,description_de").eq("id", entityId).maybeSingle();
+      const { data: row, error: readError } = await client.from("donation_campaigns").select("title_ar,title_de,description_ar,description_de,donation_url").eq("id", entityId).maybeSingle();
       if (readError || !row) return { success: false, error: "admin.errors.saveFailed" };
       const validationError = validateDisplayPublishableContent("campaign", {
         isActive: true, titleAr: row.title_ar || undefined, titleDe: row.title_de || undefined,
         descriptionAr: row.description_ar || undefined, descriptionDe: row.description_de || undefined,
+        donationUrl: row.donation_url || undefined,
       })[0];
       if (validationError) return { success: false, error: validationError };
     }

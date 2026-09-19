@@ -12,7 +12,7 @@ describe("Plan 5 final Codex regression guards", () => {
     expect(sql).toContain("p_horizon_end > p_now + interval '37 days'");
     expect(sql).not.toMatch(/if exists \([\s\S]*?pg_column_size\(to_jsonb\(/i);
     expect((sql.match(/with bounded as \(/gi) ?? []).length).toBe(4);
-    expect((sql.match(/max\(pg_column_size\(public_row_json\)\)/gi) ?? []).length).toBe(4);
+    expect((sql.match(/max\\(pg_column_size\\(row_json\\)\\)/gi) ?? []).length).toBe(4);
 
     const boundedBlocks = Array.from(
       sql.matchAll(/with bounded as \(([\s\S]*?)\n\s*\)/gi),
@@ -43,7 +43,7 @@ describe("Plan 5 final Codex regression guards", () => {
     for (const alias of ["j", "a", "e", "c"]) {
       expect(sql).not.toContain(`to_jsonb(${alias}) as row_json`);
     }
-    expect(sql).not.toContain("as public_row_json");
+    expect(sql).not.toContain("as row_json");
     expect((sql.match(/jsonb_build_object\([\s\S]*?\) as row_json/gi) ?? []).length).toBe(4);
     expect((sql.match(/max\(pg_column_size\(row_json\)\)/gi) ?? []).length).toBe(4);
 
@@ -93,8 +93,8 @@ describe("Plan 5 final Codex regression guards", () => {
       "utf8",
     );
 
-    expect((sql.match(/as public_row_json/gi) ?? []).length).toBeGreaterThanOrEqual(3);
-    expect((sql.match(/max\(pg_column_size\(public_row_json\)\)/gi) ?? []).length)
+    expect((sql.match(/as row_json/gi) ?? []).length).toBeGreaterThanOrEqual(3);
+    expect((sql.match(/max\\(pg_column_size\\(row_json\\)\\)/gi) ?? []).length)
       .toBeGreaterThanOrEqual(3);
     expect(sql).not.toMatch(/max\(pg_column_size\(row_json\)\)/i);
   });

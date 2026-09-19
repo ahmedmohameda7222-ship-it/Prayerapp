@@ -65,12 +65,21 @@ begin
 
   with selected as (
     select
-      to_jsonb(j) as row_json,
       jsonb_build_object(
         'id', j.id,
         'date', j.date,
-        'prayerTime', j.prayer_time
-      ) as public_row_json,
+        'khutbah_time', j.khutbah_time,
+        'prayer_time', j.prayer_time,
+        'location_name', j.location_name,
+        'location_address', j.location_address,
+        'khateeb_name', j.khateeb_name,
+        'language_ar', j.language_ar,
+        'language_de', j.language_de,
+        'notes_ar', j.notes_ar,
+        'notes_de', j.notes_de,
+        'published', j.published,
+        'updated_at', j.updated_at
+      ) as row_json,
       j.date,
       j.prayer_time,
       j.id
@@ -78,7 +87,7 @@ begin
     where j.id = any(source_ids)
   )
   select
-    coalesce(max(pg_column_size(public_row_json)), 0)::integer,
+    coalesce(max(pg_column_size(row_json)), 0)::integer,
     coalesce(jsonb_agg(row_json order by date asc, prayer_time asc, id asc), '[]'::jsonb)
   into max_source_bytes, result
   from selected;
@@ -132,25 +141,28 @@ begin
 
   with selected as (
     select
-      to_jsonb(a) as row_json,
       jsonb_build_object(
         'id', a.id,
-        'titleAr', a.title_ar,
-        'titleDe', a.title_de,
-        'messageAr', a.message_ar,
-        'messageDe', a.message_de,
-        'isUrgent', a.is_urgent,
-        'displayStyle', a.display_style,
-        'displayFrom', a.display_from,
-        'displayUntil', a.display_until
-      ) as public_row_json,
+        'title_ar', a.title_ar,
+        'title_de', a.title_de,
+        'message_ar', a.message_ar,
+        'message_de', a.message_de,
+        'type', a.type,
+        'is_urgent', a.is_urgent,
+        'display_style', a.display_style,
+        'display_from', a.display_from,
+        'display_until', a.display_until,
+        'published', a.published,
+        'created_at', a.created_at,
+        'updated_at', a.updated_at
+      ) as row_json,
       a.created_at,
       a.id
     from public.announcements as a
     where a.id = any(source_ids)
   )
   select
-    coalesce(max(pg_column_size(public_row_json)), 0)::integer,
+    coalesce(max(pg_column_size(row_json)), 0)::integer,
     coalesce(jsonb_agg(row_json order by created_at desc, id asc), '[]'::jsonb)
   into max_source_bytes, result
   from selected;
@@ -204,20 +216,21 @@ begin
 
   with selected as (
     select
-      to_jsonb(e) as row_json,
       jsonb_build_object(
         'id', e.id,
-        'titleAr', e.title_ar,
-        'titleDe', e.title_de,
-        'descriptionAr', e.description_ar,
-        'descriptionDe', e.description_de,
-        'locationAr', e.location_ar,
-        'locationDe', e.location_de,
+        'title_ar', e.title_ar,
+        'title_de', e.title_de,
+        'description_ar', e.description_ar,
+        'description_de', e.description_de,
+        'location_ar', e.location_ar,
+        'location_de', e.location_de,
         'date', e.date,
-        'startTime', e.start_time,
-        'endTime', e.end_time,
-        'type', e.type
-      ) as public_row_json,
+        'start_time', e.start_time,
+        'end_time', e.end_time,
+        'type', e.type,
+        'published', e.published,
+        'updated_at', e.updated_at
+      ) as row_json,
       e.date,
       e.start_time,
       e.id
@@ -225,7 +238,7 @@ begin
     where e.id = any(source_ids)
   )
   select
-    coalesce(max(pg_column_size(public_row_json)), 0)::integer,
+    coalesce(max(pg_column_size(row_json)), 0)::integer,
     coalesce(jsonb_agg(row_json order by date asc, start_time asc, id asc), '[]'::jsonb)
   into max_source_bytes, result
   from selected;
@@ -279,27 +292,28 @@ begin
 
   with selected as (
     select
-      to_jsonb(c) as row_json,
       jsonb_build_object(
         'id', c.id,
-        'titleAr', c.title_ar,
-        'titleDe', c.title_de,
-        'descriptionAr', c.description_ar,
-        'descriptionDe', c.description_de,
-        'targetAmount', c.target_amount,
-        'collectedAmount', c.collected_amount,
-        'startDate', c.start_date,
-        'endDate', c.end_date,
-        'donationUrl', c.donation_url,
-        'isFeatured', c.is_featured
-      ) as public_row_json,
+        'title_ar', c.title_ar,
+        'title_de', c.title_de,
+        'description_ar', c.description_ar,
+        'description_de', c.description_de,
+        'target_amount', c.target_amount,
+        'collected_amount', c.collected_amount,
+        'start_date', c.start_date,
+        'end_date', c.end_date,
+        'donation_url', c.donation_url,
+        'is_active', c.is_active,
+        'is_featured', c.is_featured,
+        'updated_at', c.updated_at
+      ) as row_json,
       c.start_date,
       c.id
     from public.donation_campaigns as c
     where c.id = any(source_ids)
   )
   select
-    coalesce(max(pg_column_size(public_row_json)), 0)::integer,
+    coalesce(max(pg_column_size(row_json)), 0)::integer,
     coalesce(jsonb_agg(row_json order by start_date asc, id asc), '[]'::jsonb)
   into max_source_bytes, result
   from selected;

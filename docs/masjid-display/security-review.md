@@ -54,9 +54,9 @@ Synthetic Test payloads are rendered as typed data. They do not become productio
 
 No significant unresolved Plan 5 security defect was identified.
 
-Actual implementation evidence on HEAD `c8036b75ef340f31048137d89fa351700ceb8005`:
+Actual implementation evidence on HEAD `8017b179c8aabe84ef4002c0f200c89a820144b3`:
 
-- Security Scanners run `35425882196`: SUCCESS.
+- Security Scanners run `35427781316`: SUCCESS.
 - CodeQL JavaScript/TypeScript: SUCCESS.
 - Gitleaks full-history scan: SUCCESS.
 - OSV dependency scan: SUCCESS.
@@ -64,10 +64,12 @@ Actual implementation evidence on HEAD `c8036b75ef340f31048137d89fa351700ceb8005
 - deployed-production non-destructive public/unauthorized DAST: SUCCESS.
 - authenticated local DAST: SUCCESS.
 - SBOM/dependency evidence generation: SUCCESS.
-- Masjid Display Verification run `35425882213`: SUCCESS, including the forbidden Supabase/audio runtime gate and live two-app integration.
-- Root CI run `35425882225`: SUCCESS.
+- Masjid Display Verification run `35427781275`: SUCCESS, including the forbidden Supabase/audio runtime gate and live two-app integration.
+- Root CI run `35427781285`: SUCCESS.
 
-GitHub Codex identified five successive payload/source-work issues. First, the original Plan 5 payload-exhaustion test measured only the golden fixture and did not bound the production path. Second, the first database row cap could silently truncate an older still-active urgent announcement while returning a healthy-looking Feed. Third, the oversize-row check still serialized every matching row before the later LIMIT and the public RPC parameters accepted arbitrarily broad horizons. Fourth, the max+1 readers still ordered the full qualifying source set before LIMIT and lacked supporting predicate indexes. Fifth, the active campaign reader still used a leading `start_date <= p_end_date` B-tree range that could scan an arbitrarily large expired-history prefix when overlap matches were sparse. The final implementation fails closed at every layer: public RPCs reject null/reversed/broad horizons; bounded max+1 candidate sets are selected before serialization; >16 KiB source rows and source-count overflow raise errors; the campaign reader uses a partial GiST index on `daterange(start_date, end_date, '[]')` with the `&&` overlap operator; the server builder independently enforces row/source-size limits; and both builder and finalized route enforce the 128 KiB serialized Feed ceiling. The campaign-overlap finding was RED in Plan 3 `35425752539` (1 failed / 70 passed) and is GREEN in Plan 3 `35425882221`, root CI `35425882225` including clean Supabase bootstrap, Masjid Display Verification `35425882213`, and Security Scanners `35425882196`.
+GitHub Codex identified seven successive payload/source-work issues. First, the original Plan 5 payload-exhaustion test measured only the golden fixture and did not bound the production path. Second, the first database row cap could silently truncate an older still-active urgent announcement while returning a healthy-looking Feed. Third, the oversize-row check still serialized every matching row before the later LIMIT and the public RPC parameters accepted arbitrarily broad horizons. Fourth, the max+1 readers still ordered the full qualifying source set before LIMIT and lacked supporting predicate indexes. Fifth, the active campaign reader still used a leading B-tree range that could scan an arbitrarily large expired-history prefix when overlap matches were sparse. Sixth, the announcement reader still used two one-sided timestamp inequalities that could scan a large non-overlapping suffix. Seventh, the source-row ceiling originally measured raw storage rows, so duplicated/non-displayed localized campaign columns could make an otherwise valid public projection fail.
+
+The final implementation fails closed without silently discarding valid content: public RPCs reject null/reversed/broad horizons; bounded max+1 candidate IDs are selected before serialization; event/Jumuah date indexes and partial GiST overlap indexes for announcements/campaigns bound candidate discovery; source-count overflow raises instead of truncating; row-size checks measure the bounded public projection rather than duplicated/non-displayed storage columns; the server builder independently enforces source-count/projection-size limits; and both builder and finalized route enforce the 128 KiB serialized Feed ceiling. Final exact-head verification on `8017b179c8aabe84ef4002c0f200c89a820144b3`: Plan 3 `35427781283`, root CI `35427781285`, Masjid Display Verification `35427781275`, and Security Scanners `35427781316` are all SUCCESS.
 
 **SECURITY REVIEW: PASS.**
 

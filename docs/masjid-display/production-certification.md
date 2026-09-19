@@ -38,7 +38,7 @@ The PASS rows above are backed by strengthened implementation HEAD `8017b179c8aa
 - Security Scanners `35427781316`: SUCCESS.
 - Android TWA `35427781292`: FAILURE at SDK setup only, before project execution.
 
-GitHub Codex Plan 5 review found eleven legitimate certification-integrity/security findings during the review loop:
+GitHub Codex Plan 5 review found thirteen legitimate certification-integrity/security findings during the review loop:
 1. deleted Jumuah rows were not explicitly rejected by the local migration exercise;
 2. the wake certification moved the device clock backward rather than proving a forward wake across expired transient states;
 3. prayer-row preservation used an inner join by date and could miss deletion/date mutation;
@@ -49,9 +49,11 @@ GitHub Codex Plan 5 review found eleven legitimate certification-integrity/secur
 8. the migration preservation hash omitted `note` plus `note_ar`/`note_en`/`note_de`/`note_tr`, so all retained prayer note fields are now part of the certified BEFORE/AFTER identity/value hash;
 9. public max+1 RPCs still sorted the full qualifying set before LIMIT and lacked supporting predicate indexes, so candidate IDs are now bounded unsorted first and only the bounded set is sorted/serialized;
 10. the Jumuah migration hash omitted `language_ar/en/de/tr` and `notes_ar/en/de/tr`, so all localized Jumuah language/notes fields are now certified;
-11. the active campaign candidate search could still scan a large expired-history prefix when overlap matches were sparse, so it now uses a partial GiST `daterange` overlap index and `&&` predicate.
+11. the active campaign candidate search could still scan a large expired-history prefix when overlap matches were sparse, so it now uses a partial GiST `daterange` overlap index and `&&` predicate;
+12. announcement candidate discovery still used one-sided timestamp ranges that could scan a large non-overlapping suffix, so it now uses a partial GiST `tstzrange` overlap index and `&&` predicate;
+13. the 16 KiB source-row ceiling initially measured raw storage rows, so valid campaigns with duplicated/non-displayed localized columns could fail the Feed even when their public projection was bounded; sizing now uses the bounded public projection.
 
-Each finding received a failing regression/integrity guard before the fix. Finding 11 was RED in Plan 3 `35425752539` (1 failed / 70 passed) and is GREEN in Plan 3 `35427781283`, root CI `35427781285` including clean Supabase migration bootstrap, Masjid Display `35427781275`, and Security `35427781316`. The final implementation is green on `c8036b75ef340f31048137d89fa351700ceb8005` in the runs above.
+Each legitimate finding received regression/integrity coverage before closure. The final implementation is green on `8017b179c8aabe84ef4002c0f200c89a820144b3`: Plan 3 `35427781283`, root CI `35427781285`, Masjid Display `35427781275`, and Security `35427781316`.
 
 Committing certification evidence necessarily creates a newer evidence-only HEAD. Exact final-HEAD verification for that commit is recorded in PR #108 metadata/final Plan 5 report rather than creating an infinite self-referential documentation-commit loop.
 

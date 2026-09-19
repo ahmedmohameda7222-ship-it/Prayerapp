@@ -28,7 +28,7 @@ describe("Plan 5 final Codex regression guards", () => {
       "idx_masjid_display_jumuah_published_date",
       "idx_masjid_display_announcements_published_window",
       "idx_masjid_display_events_published_date",
-      "idx_masjid_display_campaigns_active_window",
+      "idx_masjid_display_campaigns_active_overlap",
     ]) {
       expect(sql).toContain(`create index if not exists ${indexName}`);
     }

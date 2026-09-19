@@ -1,4 +1,7 @@
-import { buildMasjidDisplayFeed } from "@/lib/masjid-display/build-feed";
+import {
+  assertMasjidDisplayFeedPayloadSize,
+  buildMasjidDisplayFeed,
+} from "@/lib/masjid-display/build-feed";
 import { canonicalJson, etagForFeed, finalizeFeed } from "@/lib/masjid-display/feed-etag";
 
 const CACHE_CONTROL = "public, max-age=0, must-revalidate";
@@ -28,13 +31,15 @@ export async function GET(request: Request) {
     const body = await buildMasjidDisplayFeed();
     const feed = finalizeFeed(body);
     const etag = etagForFeed(feed);
+    const payload = canonicalJson(feed);
+    assertMasjidDisplayFeedPayloadSize(payload);
     const headers = baseHeaders(etag);
 
     if (matchesIfNoneMatch(request.headers.get("if-none-match"), etag)) {
       return new Response(null, { status: 304, headers });
     }
 
-    return new Response(canonicalJson(feed), {
+    return new Response(payload, {
       status: 200,
       headers: {
         ...headers,

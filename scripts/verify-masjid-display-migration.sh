@@ -108,6 +108,7 @@ insert into public.jumuah_times (
 
 create temporary table plan5_before_prayer as
 select
+  id,
   date,
   md5(concat_ws('|',
     date::text, fajr, sunrise, dhuhr, asr, maghrib, isha,
@@ -163,7 +164,8 @@ begin
     where not exists (
       select 1
       from public.prayer_times p
-      where p.date = b.date
+      where p.id = b.id
+        and p.date = b.date
         and b.schedule_hash = md5(concat_ws('|',
           p.date::text, p.fajr, p.sunrise, p.dhuhr, p.asr, p.maghrib, p.isha,
           p.published::text,

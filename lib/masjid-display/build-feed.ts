@@ -67,8 +67,20 @@ const defaultDependencies: FeedDependencies = {
   getMasjidDisplayGeneratedAt,
 };
 
+export const MAX_MASJID_DISPLAY_FEED_BYTES = 128 * 1024;
+
 const HH_MM = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export function assertMasjidDisplayFeedPayloadSize(value: unknown) {
+  const serialized = typeof value === "string" ? value : JSON.stringify(value);
+  const byteLength = new TextEncoder().encode(serialized).byteLength;
+  if (byteLength > MAX_MASJID_DISPLAY_FEED_BYTES) {
+    throw new DisplayFeedBuildError(
+      `Masjid Display Feed exceeds maximum size of ${MAX_MASJID_DISPLAY_FEED_BYTES} bytes`,
+    );
+  }
+}
 
 function endOfLocalDate(date: string) {
   return new Date(zonedDateTime(addDaysIso(date, 1), "00:00").getTime() - 1);
@@ -415,7 +427,7 @@ export async function buildMasjidDisplayFeed(
     zonedDateTime(today, "00:00").toISOString(),
   );
 
-  return {
+  const feed: MasjidDisplayFeedBodyV1 = {
     schemaVersion: 1,
     generatedAt,
     timezone: APP_TIME_ZONE,
@@ -439,4 +451,7 @@ export async function buildMasjidDisplayFeed(
     events: projectedEvents,
     campaigns: projectedCampaigns,
   };
+
+  assertMasjidDisplayFeedPayloadSize(feed);
+  return feed;
 }

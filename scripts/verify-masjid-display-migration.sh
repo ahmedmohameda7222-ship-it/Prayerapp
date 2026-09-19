@@ -102,10 +102,20 @@ insert into public.prayer_times (
 delete from public.jumuah_times where notes = 'PLAN5_MIGRATION_CERT';
 insert into public.jumuah_times (
   date, khutbah_time, prayer_time, location_name, location_address,
-  khateeb_name, language, notes, published
+  khateeb_name,
+  language, language_ar, language_en, language_de, language_tr,
+  notes, notes_ar, notes_en, notes_de, notes_tr,
+  published
 ) values (
   '2099-01-16', '13:20', '13:30', 'Plan 5 Mosque', 'Plan 5 Address',
-  'Plan 5 Khateeb', 'de', 'PLAN5_MIGRATION_CERT', true
+  'Plan 5 Khateeb',
+  'de',
+  'PLAN5_JUMUAH_LANGUAGE_AR', 'PLAN5_JUMUAH_LANGUAGE_EN',
+  'PLAN5_JUMUAH_LANGUAGE_DE', 'PLAN5_JUMUAH_LANGUAGE_TR',
+  'PLAN5_MIGRATION_CERT',
+  'PLAN5_JUMUAH_NOTES_AR', 'PLAN5_JUMUAH_NOTES_EN',
+  'PLAN5_JUMUAH_NOTES_DE', 'PLAN5_JUMUAH_NOTES_TR',
+  true
 );
 
 create temporary table plan5_before_prayer as
@@ -133,7 +143,18 @@ create temporary table plan5_before_jumuah as
 select
   id,
   md5(concat_ws('|', date::text, khutbah_time, prayer_time, location_name,
-    location_address, khateeb_name, language, coalesce(notes, ''), published::text)) as row_hash
+    location_address, khateeb_name,
+    language,
+    coalesce(language_ar, ''),
+    coalesce(language_en, ''),
+    coalesce(language_de, ''),
+    coalesce(language_tr, ''),
+    coalesce(notes, ''),
+    coalesce(notes_ar, ''),
+    coalesce(notes_en, ''),
+    coalesce(notes_de, ''),
+    coalesce(notes_tr, ''),
+    published::text)) as row_hash
 from public.jumuah_times
 where notes = 'PLAN5_MIGRATION_CERT';
 
@@ -217,8 +238,18 @@ begin
       from public.jumuah_times j
       where j.id = b.id
         and b.row_hash = md5(concat_ws('|', j.date::text, j.khutbah_time, j.prayer_time,
-          j.location_name, j.location_address, j.khateeb_name, j.language,
-          coalesce(j.notes, ''), j.published::text))
+          j.location_name, j.location_address, j.khateeb_name,
+          j.language,
+          coalesce(j.language_ar, ''),
+          coalesce(j.language_en, ''),
+          coalesce(j.language_de, ''),
+          coalesce(j.language_tr, ''),
+          coalesce(j.notes, ''),
+          coalesce(j.notes_ar, ''),
+          coalesce(j.notes_en, ''),
+          coalesce(j.notes_de, ''),
+          coalesce(j.notes_tr, ''),
+          j.published::text))
     )
   ) then
     raise exception 'Jumuah row changed';

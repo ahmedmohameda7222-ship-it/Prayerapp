@@ -10,12 +10,9 @@ create index if not exists idx_masjid_display_jumuah_published_date
   on public.jumuah_times (date, id)
   where published is true;
 
-create index if not exists idx_masjid_display_announcements_published_window
-  on public.announcements (
-    (coalesce(display_until, 'infinity'::timestamptz)),
-    (coalesce(display_from, '-infinity'::timestamptz)),
-    id
-  )
+create index if not exists idx_masjid_display_announcements_published_overlap
+  on public.announcements
+  using gist (tstzrange(display_from, display_until, '[]'))
   where published is true;
 
 create index if not exists idx_masjid_display_events_published_date
@@ -67,12 +64,21 @@ begin
   end if;
 
   with selected as (
-    select to_jsonb(j) as row_json, j.date, j.prayer_time, j.id
+    select
+      to_jsonb(j) as row_json,
+      jsonb_build_object(
+        'id', j.id,
+        'date', j.date,
+        'prayerTime', j.prayer_time
+      ) as public_row_json,
+      j.date,
+      j.prayer_time,
+      j.id
     from public.jumuah_times as j
     where j.id = any(source_ids)
   )
   select
-    coalesce(max(pg_column_size(row_json)), 0)::integer,
+    coalesce(max(pg_column_size(public_row_json)), 0)::integer,
     coalesce(jsonb_agg(row_json order by date asc, prayer_time asc, id asc), '[]'::jsonb)
   into max_source_bytes, result
   from selected;
@@ -112,8 +118,8 @@ begin
     select a.id
     from public.announcements as a
     where a.published is true
-      and coalesce(a.display_until, 'infinity'::timestamptz) >= p_now
-      and coalesce(a.display_from, '-infinity'::timestamptz) <= p_horizon_end
+      and tstzrange(a.display_from, a.display_until, '[]')
+        && tstzrange(p_now, p_horizon_end, '[]')
     limit 65
   )
   select coalesce(array_agg(id), array[]::uuid[]), count(*)::integer
@@ -125,12 +131,26 @@ begin
   end if;
 
   with selected as (
-    select to_jsonb(a) as row_json, a.created_at, a.id
+    select
+      to_jsonb(a) as row_json,
+      jsonb_build_object(
+        'id', a.id,
+        'titleAr', a.title_ar,
+        'titleDe', a.title_de,
+        'messageAr', a.message_ar,
+        'messageDe', a.message_de,
+        'isUrgent', a.is_urgent,
+        'displayStyle', a.display_style,
+        'displayFrom', a.display_from,
+        'displayUntil', a.display_until
+      ) as public_row_json,
+      a.created_at,
+      a.id
     from public.announcements as a
     where a.id = any(source_ids)
   )
   select
-    coalesce(max(pg_column_size(row_json)), 0)::integer,
+    coalesce(max(pg_column_size(public_row_json)), 0)::integer,
     coalesce(jsonb_agg(row_json order by created_at desc, id asc), '[]'::jsonb)
   into max_source_bytes, result
   from selected;
@@ -183,12 +203,29 @@ begin
   end if;
 
   with selected as (
-    select to_jsonb(e) as row_json, e.date, e.start_time, e.id
+    select
+      to_jsonb(e) as row_json,
+      jsonb_build_object(
+        'id', e.id,
+        'titleAr', e.title_ar,
+        'titleDe', e.title_de,
+        'descriptionAr', e.description_ar,
+        'descriptionDe', e.description_de,
+        'locationAr', e.location_ar,
+        'locationDe', e.location_de,
+        'date', e.date,
+        'startTime', e.start_time,
+        'endTime', e.end_time,
+        'type', e.type
+      ) as public_row_json,
+      e.date,
+      e.start_time,
+      e.id
     from public.events as e
     where e.id = any(source_ids)
   )
   select
-    coalesce(max(pg_column_size(row_json)), 0)::integer,
+    coalesce(max(pg_column_size(public_row_json)), 0)::integer,
     coalesce(jsonb_agg(row_json order by date asc, start_time asc, id asc), '[]'::jsonb)
   into max_source_bytes, result
   from selected;
@@ -241,12 +278,28 @@ begin
   end if;
 
   with selected as (
-    select to_jsonb(c) as row_json, c.start_date, c.id
+    select
+      to_jsonb(c) as row_json,
+      jsonb_build_object(
+        'id', c.id,
+        'titleAr', c.title_ar,
+        'titleDe', c.title_de,
+        'descriptionAr', c.description_ar,
+        'descriptionDe', c.description_de,
+        'targetAmount', c.target_amount,
+        'collectedAmount', c.collected_amount,
+        'startDate', c.start_date,
+        'endDate', c.end_date,
+        'donationUrl', c.donation_url,
+        'isFeatured', c.is_featured
+      ) as public_row_json,
+      c.start_date,
+      c.id
     from public.donation_campaigns as c
     where c.id = any(source_ids)
   )
   select
-    coalesce(max(pg_column_size(row_json)), 0)::integer,
+    coalesce(max(pg_column_size(public_row_json)), 0)::integer,
     coalesce(jsonb_agg(row_json order by start_date asc, id asc), '[]'::jsonb)
   into max_source_bytes, result
   from selected;

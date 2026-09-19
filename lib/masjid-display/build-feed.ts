@@ -94,12 +94,14 @@ function assertDynamicSourceBounds(label: string, rows: unknown[], maxRows: numb
       `Masjid Display ${label} source exceeds maximum row count of ${maxRows}`,
     );
   }
+}
 
+function assertProjectedSourceRowSizes(label: string, rows: unknown[]) {
   for (const row of rows) {
     const bytes = new TextEncoder().encode(JSON.stringify(row)).byteLength;
     if (bytes > MAX_MASJID_DISPLAY_SOURCE_ROW_BYTES) {
       throw new DisplayFeedBuildError(
-        `Masjid Display ${label} source row exceeds maximum size of ${MAX_MASJID_DISPLAY_SOURCE_ROW_BYTES} bytes`,
+        `Masjid Display ${label} public row exceeds maximum size of ${MAX_MASJID_DISPLAY_SOURCE_ROW_BYTES} bytes`,
       );
     }
   }
@@ -385,6 +387,7 @@ export async function buildMasjidDisplayFeed(
     .flatMap((item) => getValidAdditionalFridayServices(item.date, item.dhuhr, jumuahTimes))
     .map((item) => ({ id: item.id, date: item.date, prayerTime: item.prayerTime }))
     .sort((a, b) => a.date.localeCompare(b.date) || a.prayerTime.localeCompare(b.prayerTime) || a.id.localeCompare(b.id));
+  assertProjectedSourceRowSizes("Jumuah", additionalJumuah);
 
   const representedAnnouncementSources: Array<Announcement & { sourceUpdatedAt?: string }> = [];
   const projectedAnnouncements: DisplayAnnouncementDto[] = [];
@@ -399,6 +402,7 @@ export async function buildMasjidDisplayFeed(
     const bSource = representedAnnouncementSources.find((item) => item.id === b.id);
     return (aSource?.createdAt || "").localeCompare(bSource?.createdAt || "") || a.id.localeCompare(b.id);
   });
+  assertProjectedSourceRowSizes("announcement", projectedAnnouncements);
 
   const representedEventSources: Array<Event & { sourceUpdatedAt?: string }> = [];
   const projectedEvents: DisplayEventDto[] = [];
@@ -409,6 +413,7 @@ export async function buildMasjidDisplayFeed(
     projectedEvents.push(projected);
   }
   projectedEvents.sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`) || a.id.localeCompare(b.id));
+  assertProjectedSourceRowSizes("event", projectedEvents);
 
   const representedCampaignSources: Array<DonationCampaign & { sourceUpdatedAt?: string }> = [];
   const projectedCampaigns: DisplayCampaignDto[] = [];
@@ -419,6 +424,7 @@ export async function buildMasjidDisplayFeed(
     projectedCampaigns.push(projected);
   }
   projectedCampaigns.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
+  assertProjectedSourceRowSizes("campaign", projectedCampaigns);
 
   const projectedAzkar = selectDisplayAzkar(azkarItems, validAzkarPlaylistIds);
 

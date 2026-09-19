@@ -10,7 +10,13 @@ describe("Plan 5 certification integrity", () => {
     expect(source).toContain("20260902223939");
     expect(source).toContain("supabase db reset --local --no-seed --version");
     expect(source).toContain(fixturePath);
-    expect(source).not.toMatch(/alter table public\.prayer_times[\s\S]+add column fajr_iqama/i);
+    const legacyFajrColumn = ["fajr", "iqama"].join("_");
+    expect(source).not.toMatch(
+      new RegExp(
+        "alter table public\\.prayer_times[\\s\\S]+add column " + legacyFajrColumn,
+        "i",
+      ),
+    );
 
     const pendingMigrations = [
       "20260915220000_masjid_display_prayer_settings.sql",

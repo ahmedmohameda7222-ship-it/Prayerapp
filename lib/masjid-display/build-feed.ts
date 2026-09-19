@@ -68,6 +68,12 @@ const defaultDependencies: FeedDependencies = {
 };
 
 export const MAX_MASJID_DISPLAY_FEED_BYTES = 128 * 1024;
+export const MAX_MASJID_DISPLAY_SOURCE_ROW_BYTES = 16 * 1024;
+
+const MAX_DISPLAY_JUMUAH_ROWS = 64;
+const MAX_DISPLAY_ANNOUNCEMENT_ROWS = 64;
+const MAX_DISPLAY_EVENT_ROWS = 128;
+const MAX_DISPLAY_CAMPAIGN_ROWS = 64;
 
 const HH_MM = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -79,6 +85,23 @@ export function assertMasjidDisplayFeedPayloadSize(value: unknown) {
     throw new DisplayFeedBuildError(
       `Masjid Display Feed exceeds maximum size of ${MAX_MASJID_DISPLAY_FEED_BYTES} bytes`,
     );
+  }
+}
+
+function assertDynamicSourceBounds(label: string, rows: unknown[], maxRows: number) {
+  if (rows.length > maxRows) {
+    throw new DisplayFeedBuildError(
+      `Masjid Display ${label} source exceeds maximum row count of ${maxRows}`,
+    );
+  }
+
+  for (const row of rows) {
+    const bytes = new TextEncoder().encode(JSON.stringify(row)).byteLength;
+    if (bytes > MAX_MASJID_DISPLAY_SOURCE_ROW_BYTES) {
+      throw new DisplayFeedBuildError(
+        `Masjid Display ${label} source row exceeds maximum size of ${MAX_MASJID_DISPLAY_SOURCE_ROW_BYTES} bytes`,
+      );
+    }
   }
 }
 
@@ -314,6 +337,11 @@ export async function buildMasjidDisplayFeed(
   if (!prayerSettingsSource) throw new DisplayFeedBuildError("Prayer settings are required for the display feed");
   if (!displaySettingsSource) throw new DisplayFeedBuildError("Masjid Display settings are required for the display feed");
   if (prayers.length === 0) throw new DisplayFeedBuildError("Published prayer schedule is unavailable for the display window");
+
+  assertDynamicSourceBounds("Jumuah", jumuahTimes, MAX_DISPLAY_JUMUAH_ROWS);
+  assertDynamicSourceBounds("announcement", announcements, MAX_DISPLAY_ANNOUNCEMENT_ROWS);
+  assertDynamicSourceBounds("event", events, MAX_DISPLAY_EVENT_ROWS);
+  assertDynamicSourceBounds("campaign", campaigns, MAX_DISPLAY_CAMPAIGN_ROWS);
 
   const prayerSettings = prayerSettingsSource.value;
   const mosqueSettings = mosqueSettingsSource.value;

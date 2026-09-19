@@ -34,11 +34,15 @@ describe("Masjid Display TV security boundary", () => {
     const packageJson = readFileSync(join(TV_ROOT, "package.json"), "utf8");
     const source = runtimeSource();
 
-    expect(packageJson).not.toContain("@supabase/supabase-js");
+    const supabaseBrowserPackage = ["@supabase", "supabase-js"].join("/");
+    const audioConstructor = new RegExp("\\bnew\\s+Audio\\s*\\(");
+    const audioElement = new RegExp("<" + "audio\\b", "i");
+
+    expect(packageJson).not.toContain(supabaseBrowserPackage);
     expect(packageJson).not.toMatch(/["']adhan["']/);
-    expect(source).not.toContain("@supabase/supabase-js");
-    expect(source).not.toMatch(/\bnew\s+Audio\s*\(/);
-    expect(source).not.toMatch(/<audio\b/i);
+    expect(source).not.toContain(supabaseBrowserPackage);
+    expect(source).not.toMatch(audioConstructor);
+    expect(source).not.toMatch(audioElement);
     expect(source).not.toMatch(/from\s+["']adhan["']/);
   });
 

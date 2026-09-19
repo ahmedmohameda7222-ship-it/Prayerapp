@@ -75,6 +75,48 @@ describe("Plan 5 final Codex regression guards", () => {
     }
   });
 
+  it("preserves legacy Arabic fallback fields in bounded public projections", () => {
+    const sql = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
+
+    const sections = {
+      jumuah: sql.slice(
+        sql.indexOf("create or replace function public.get_masjid_display_jumuah_window"),
+        sql.indexOf("create or replace function public.get_masjid_display_announcements_window"),
+      ),
+      announcements: sql.slice(
+        sql.indexOf("create or replace function public.get_masjid_display_announcements_window"),
+        sql.indexOf("create or replace function public.get_masjid_display_events_window"),
+      ),
+      events: sql.slice(
+        sql.indexOf("create or replace function public.get_masjid_display_events_window"),
+        sql.indexOf("create or replace function public.get_masjid_display_campaigns_window"),
+      ),
+      campaigns: sql.slice(
+        sql.indexOf("create or replace function public.get_masjid_display_campaigns_window"),
+      ),
+    };
+
+    for (const required of ["'language', j.language", "'notes', j.notes"]) {
+      expect(sections.jumuah).toContain(required);
+    }
+    for (const required of ["'title', a.title", "'message', a.message"]) {
+      expect(sections.announcements).toContain(required);
+    }
+    for (const required of [
+      "'title', e.title",
+      "'description', e.description",
+      "'location', e.location",
+    ]) {
+      expect(sections.events).toContain(required);
+    }
+    for (const required of ["'title', c.title", "'description', c.description"]) {
+      expect(sections.campaigns).toContain(required);
+    }
+  });
+
   it("uses an overlap-indexed announcement candidate search instead of scanning one-sided B-tree ranges", () => {
     const sql = readFileSync(
       "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",

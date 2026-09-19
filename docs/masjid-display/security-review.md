@@ -31,6 +31,7 @@ All mutation authority remains in the root Prayerapp Admin application. Test Mod
 | LKG poisoning | Strict full Feed validation before install | LKG calls `validateFeedV1`; invalid 200/schema retained as diagnostics only |
 | Synthetic Test data | Dedicated local synthetic rendering; production LKG untouched | Dedicated Test Mode certification added |
 | Payload exhaustion / silent truncation | Fixed horizon, fail-closed DB readers, bounded serialized public response | Dynamic RPCs reject >16 KiB matching rows and return max+1 for overflow detection; campaign overlap candidates use a partial GiST daterange index; builder rejects source overflow and enforces source-row limits plus a 128 KiB serialized ceiling |
+| Admin publish-to-Feed size mismatch | Published/active Admin content must fit public projection budget before mutation | Announcement/event/campaign publication and activation use a 10 KiB UTF-8 variable-content budget, including Campaign donation URL; drafts/inactive records remain editable |
 
 ## Public Feed minimization
 
@@ -54,9 +55,9 @@ Synthetic Test payloads are rendered as typed data. They do not become productio
 
 No significant unresolved Plan 5 security defect was identified.
 
-Actual implementation evidence on HEAD `3218c4d4eb2083730c08db17658cf5e507473340`:
+Actual implementation evidence on HEAD `57d2c46c56d6af46511e5223e3bc230ed4a854ca`:
 
-- Security Scanners run `35441435290`: SUCCESS.
+- Security Scanners run `35472416596`: SUCCESS.
 - CodeQL JavaScript/TypeScript: SUCCESS.
 - Gitleaks full-history scan: SUCCESS.
 - OSV dependency scan: SUCCESS.
@@ -64,12 +65,14 @@ Actual implementation evidence on HEAD `3218c4d4eb2083730c08db17658cf5e507473340
 - deployed-production non-destructive public/unauthorized DAST: SUCCESS.
 - authenticated local DAST: SUCCESS.
 - SBOM/dependency evidence generation: SUCCESS.
-- Masjid Display Verification run `35441435271`: SUCCESS, including the forbidden Supabase/audio runtime gate and live two-app integration.
-- Root CI run `35441435280`: SUCCESS.
+- Masjid Display Verification run `35472416618`: SUCCESS, including the forbidden Supabase/audio runtime gate and live two-app integration.
+- Root CI run `35472416648`: SUCCESS.
 
 GitHub Codex identified eight successive payload/source-work issues. First, the original Plan 5 payload-exhaustion test measured only the golden fixture and did not bound the production path. Second, the first database row cap could silently truncate an older still-active urgent announcement while returning a healthy-looking Feed. Third, the oversize-row check still serialized every matching row before the later LIMIT and the public RPC parameters accepted arbitrarily broad horizons. Fourth, the max+1 readers still ordered the full qualifying source set before LIMIT and lacked supporting predicate indexes. Fifth, the active campaign reader still used a leading B-tree range that could scan an arbitrarily large expired-history prefix when overlap matches were sparse. Sixth, the announcement reader still used two one-sided timestamp inequalities that could scan a large non-overlapping suffix. Seventh, the source-row ceiling originally measured raw storage rows, so duplicated/non-displayed localized campaign columns could make an otherwise valid public projection fail. Eighth, the public RPCs still returned full raw database rows after sizing only the bounded projection, so unused/legacy/localized storage columns could still amplify database-to-server serialization and parsing.
 
-The final implementation fails closed without silently discarding valid content: public RPCs reject null/reversed/broad horizons; bounded max+1 candidate IDs are selected before serialization; event/Jumuah date indexes and partial GiST overlap indexes for announcements/campaigns bound candidate discovery; source-count overflow raises instead of truncating; row-size checks measure the bounded public projection rather than duplicated/non-displayed storage columns; public RPCs return only explicit `jsonb_build_object` projections consumed by the server display mappers; required legacy base fields are conditionally retained only when the corresponding Arabic localized field is blank so mapper fallback semantics remain intact; the server builder independently enforces source-count/projection-size limits; and both builder and finalized route enforce the 128 KiB serialized Feed ceiling. Final implementation verification on `3218c4d4eb2083730c08db17658cf5e507473340`: Plan 3 `35441435398`, root CI `35441435280`, Masjid Display Verification `35441435271`, and Security Scanners `35441435290` are all SUCCESS.
+A final Codex P1 also identified an Admin/public-boundary mismatch: UTF-16 character caps could accept Arabic/German content whose UTF-8 public projection exceeded the 16 KiB RPC row ceiling. Plan 5 added a separate Admin-only publication validator with a conservative 10 KiB UTF-8 variable-content budget for announcements, events, and campaigns, including donation URL during campaign activation. Draft/inactive content is unaffected. RED: Plan 3 `35472186359` failed the three multibyte publish-size assertions while 78 focused tests passed. An initial implementation exposed a runtime omission regression in Plan 3 `35472297934`; the final split Admin/runtime validation fixes that regression. GREEN: Plan 3 `35472416604`, Root CI `35472416648`, Masjid Display Verification `35472416618`, and Security Scanners `35472416596` are all SUCCESS.
+
+The final implementation fails closed without silently discarding valid content: public RPCs reject null/reversed/broad horizons; bounded max+1 candidate IDs are selected before serialization; event/Jumuah date indexes and partial GiST overlap indexes for announcements/campaigns bound candidate discovery; source-count overflow raises instead of truncating; row-size checks measure the bounded public projection rather than duplicated/non-displayed storage columns; public RPCs return only explicit `jsonb_build_object` projections consumed by the server display mappers; required legacy base fields are conditionally retained only when the corresponding Arabic localized field is blank so mapper fallback semantics remain intact; the server builder independently enforces source-count/projection-size limits; and both builder and finalized route enforce the 128 KiB serialized Feed ceiling. Final implementation verification on `57d2c46c56d6af46511e5223e3bc230ed4a854ca`: Plan 3 `35472416604`, root CI `35472416648`, Masjid Display Verification `35472416618`, and Security Scanners `35472416596` are all SUCCESS.
 
 **SECURITY REVIEW: PASS.**
 

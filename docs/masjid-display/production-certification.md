@@ -13,7 +13,7 @@ Plan 5 is a production-readiness evidence gate. Software/certification-framework
 | DB migration local/staging dry run | Yes | PASS | Root CI `35418592166`; strengthened rollback-only prayer/Jumuah identity and preservation exercise passed after Codex fixes |
 | Real-target legacy-Iqama cutover prerequisite | Yes | BLOCKED | Read-only target evidence: 81 prayer rows, 3 Jumuah rows, 5 legacy Iqama columns, no `prayer_settings` table |
 | Root tests/lint/typecheck/build | Yes | PASS | Root CI `35418592166`: install/audit/lint/tests/typecheck/Supabase gates/build all success |
-| TV tests/lint/typecheck/build | Yes | PASS | Masjid Display Verification `35418592180` and root CI `35415341665` |
+| TV tests/lint/typecheck/build | Yes | PASS | Masjid Display Verification `35418592180` and root CI `35418592166` |
 | Producer/consumer Feed-v1 contract | Yes | PASS | Root CI `35418592166`: semantic fixture verifier success |
 | Feed/security boundary | Yes | PASS | Security Scanners `35418592173` + TV forbidden-runtime/live verification `35418592180` |
 | Offline/LKG certification | Yes | PASS | Strengthened forward-wake certification passed in `35418592180`; RED integrity guard was `35413283210` |

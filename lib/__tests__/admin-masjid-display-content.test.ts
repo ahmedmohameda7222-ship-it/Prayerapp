@@ -59,6 +59,14 @@ describe("Masjid Display content Admin", () => {
     expect(actions).toContain('validateDisplayPublishableContent("event"');
   });
 
+  it("revalidates the full campaign display projection before activation", () => {
+    const actions = source("app/admin/donations/actions.ts");
+    expect(actions).toContain(
+      'select("title_ar,title_de,description_ar,description_de,donation_url")',
+    );
+    expect(actions).toContain("donationUrl: row.donation_url || undefined");
+  });
+
   it("allows campaign end date to be blank and exposes an HTTP(S) donation URL without QR upload", () => {
     const page = source("app/admin/donations/page.tsx");
     const actions = source("app/admin/donations/actions.ts");

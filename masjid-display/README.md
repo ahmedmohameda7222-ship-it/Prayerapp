@@ -32,6 +32,8 @@ The root release CI also runs these TV gates plus the producer/consumer Feed-v1 
 
 The browser polls production Feed through `/api/display-feed` and Test Control through `/api/test-control`. Valid Feed v1 snapshots may enter Last Known Good. Synthetic Test Mode data never enters LKG. On reconnect, visibility return, or wake, the runtime recalculates current state from current time/data and immediately refreshes instead of replaying expired transient states.
 
+Production dynamic Feed readers are row/record-size bounded, and the root producer fails closed rather than emitting a finalized public Feed larger than 128 KiB. An oversized or invalid response therefore cannot replace the TV's validated LKG.
+
 See `../docs/masjid-display/deployment.md` for deployment/rollback and `../docs/masjid-display/production-certification.md` for release status.
 
 

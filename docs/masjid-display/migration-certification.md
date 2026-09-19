@@ -24,9 +24,9 @@ Second, with validated shared delays present, it records BEFORE evidence and app
 - the five canonical shared Iqama delays;
 - removal of the five legacy absolute-Iqama columns only after the approved gate.
 
-Actual GitHub Actions evidence on strengthened implementation HEAD `c8d2dc97772d96b029f192ad3aa6946f18d285a7`:
+Actual GitHub Actions evidence on strengthened implementation HEAD `c8036b75ef340f31048137d89fa351700ceb8005`:
 
-- Root CI run `35424784026`: SUCCESS.
+- Root CI run `35425882225`: SUCCESS.
 - Step `Certify Masjid Display legacy-Iqama migration safety`: SUCCESS.
 - Gate probe: destructive removal was rejected when validated shared delays were absent.
 - BEFORE prayer row count: `2`.

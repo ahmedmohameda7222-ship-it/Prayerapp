@@ -30,7 +30,7 @@ All mutation authority remains in the root Prayerapp Admin application. Test Mod
 | Upstream errors | Generic public error, no stack/SQL details | Root and TV route tests/source checks |
 | LKG poisoning | Strict full Feed validation before install | LKG calls `validateFeedV1`; invalid 200/schema retained as diagnostics only |
 | Synthetic Test data | Dedicated local synthetic rendering; production LKG untouched | Dedicated Test Mode certification added |
-| Payload exhaustion / silent truncation | Fixed horizon, fail-closed DB readers, bounded serialized public response | Dynamic RPCs reject >16 KiB matching rows and return max+1 for overflow detection; builder rejects source overflow and enforces source-row limits plus a 128 KiB serialized ceiling; generated overflow/oversize tests added |
+| Payload exhaustion / silent truncation | Fixed horizon, fail-closed DB readers, bounded serialized public response | Dynamic RPCs reject >16 KiB matching rows and return max+1 for overflow detection; campaign overlap candidates use a partial GiST daterange index; builder rejects source overflow and enforces source-row limits plus a 128 KiB serialized ceiling |
 
 ## Public Feed minimization
 
@@ -54,9 +54,9 @@ Synthetic Test payloads are rendered as typed data. They do not become productio
 
 No significant unresolved Plan 5 security defect was identified.
 
-Actual implementation evidence on HEAD `c8d2dc97772d96b029f192ad3aa6946f18d285a7`:
+Actual implementation evidence on HEAD `c8036b75ef340f31048137d89fa351700ceb8005`:
 
-- Security Scanners run `35424783997`: SUCCESS.
+- Security Scanners run `35425882196`: SUCCESS.
 - CodeQL JavaScript/TypeScript: SUCCESS.
 - Gitleaks full-history scan: SUCCESS.
 - OSV dependency scan: SUCCESS.
@@ -64,10 +64,10 @@ Actual implementation evidence on HEAD `c8d2dc97772d96b029f192ad3aa6946f18d285a7
 - deployed-production non-destructive public/unauthorized DAST: SUCCESS.
 - authenticated local DAST: SUCCESS.
 - SBOM/dependency evidence generation: SUCCESS.
-- Masjid Display Verification run `35424783969`: SUCCESS, including the forbidden Supabase/audio runtime gate.
-- Root CI run `35424784026`: SUCCESS.
+- Masjid Display Verification run `35425882213`: SUCCESS, including the forbidden Supabase/audio runtime gate and live two-app integration.
+- Root CI run `35425882225`: SUCCESS.
 
-GitHub Codex identified four successive payload/source-work issues. First, the original Plan 5 payload-exhaustion test measured only the golden fixture and did not bound the production path. Second, the first database row cap could silently truncate an older still-active urgent announcement while returning a healthy-looking Feed. Third, the oversize-row check still serialized every matching row before the later LIMIT and the public RPC parameters accepted arbitrarily broad horizons. Fourth, the max+1 readers still ordered the full qualifying source set before LIMIT and lacked the needed predicate indexes. The final implementation fails closed at every layer: public RPCs reject null/reversed/broad horizons; predicate indexes support the public filters; each RPC selects at most max+1 candidate IDs **without sorting**, rejects overflow, and only then serializes/orders the bounded ID set; >16 KiB source rows raise errors; the server builder independently enforces row/source-size limits; and both builder and finalized route enforce the 128 KiB serialized Feed ceiling. RED evidence: Plan 3 `35417740593` / root CI `35417740571` for the initial runtime-bound guard, Plan 3 `35418516067` for silent truncation/oversized source rows, Plan 3 `35421192534` for horizon/source-work enforcement, and Plan 3 `35424608216` plus root CI `35424608214` for pre-LIMIT sorting/index enforcement. GREEN: Plan 3 `35424783971`, root CI `35424784026`, Masjid Display `35424783969`, and Security Scanners `35424783997`.
+GitHub Codex identified five successive payload/source-work issues. First, the original Plan 5 payload-exhaustion test measured only the golden fixture and did not bound the production path. Second, the first database row cap could silently truncate an older still-active urgent announcement while returning a healthy-looking Feed. Third, the oversize-row check still serialized every matching row before the later LIMIT and the public RPC parameters accepted arbitrarily broad horizons. Fourth, the max+1 readers still ordered the full qualifying source set before LIMIT and lacked supporting predicate indexes. Fifth, the active campaign reader still used a leading `start_date <= p_end_date` B-tree range that could scan an arbitrarily large expired-history prefix when overlap matches were sparse. The final implementation fails closed at every layer: public RPCs reject null/reversed/broad horizons; bounded max+1 candidate sets are selected before serialization; >16 KiB source rows and source-count overflow raise errors; the campaign reader uses a partial GiST index on `daterange(start_date, end_date, '[]')` with the `&&` overlap operator; the server builder independently enforces row/source-size limits; and both builder and finalized route enforce the 128 KiB serialized Feed ceiling. The campaign-overlap finding was RED in Plan 3 `35425752539` (1 failed / 70 passed) and is GREEN in Plan 3 `35425882221`, root CI `35425882225` including clean Supabase bootstrap, Masjid Display Verification `35425882213`, and Security Scanners `35425882196`.
 
 **SECURITY REVIEW: PASS.**
 

@@ -34,6 +34,33 @@ describe("Plan 5 final Codex regression guards", () => {
     }
   });
 
+  it("returns only bounded mapper projections from public snapshot RPCs", () => {
+    const sql = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
+
+    for (const alias of ["j", "a", "e", "c"]) {
+      expect(sql).not.toContain(`to_jsonb(${alias}) as row_json`);
+    }
+    expect(sql).not.toContain("as public_row_json");
+    expect((sql.match(/jsonb_build_object\([\s\S]*?\) as row_json/gi) ?? []).length).toBe(4);
+    expect((sql.match(/max\(pg_column_size\(row_json\)\)/gi) ?? []).length).toBe(4);
+
+    for (const requiredKey of [
+      "'updated_at'",
+      "'published'",
+      "'title_ar'",
+      "'title_de'",
+      "'message_ar'",
+      "'message_de'",
+      "'language_ar'",
+      "'language_de'",
+    ]) {
+      expect(sql).toContain(requiredKey);
+    }
+  });
+
   it("uses an overlap-indexed announcement candidate search instead of scanning one-sided B-tree ranges", () => {
     const sql = readFileSync(
       "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",

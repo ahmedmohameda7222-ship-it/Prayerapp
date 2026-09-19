@@ -6,7 +6,7 @@ import { invalidateAnnouncementCaches } from "@/lib/data/announcements";
 import { createServerClient } from "@/lib/supabase/server";
 import type { AnnouncementDisplayStyle, AnnouncementType } from "@/lib/types";
 import { sendAdminContentPush } from "@/lib/push/web-push";
-import { validateDisplayPublishableContent } from "@/lib/masjid-display/content-validation";
+import { validateDisplayAdminPublishableContent } from "@/lib/masjid-display/content-validation";
 import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import { parseAdminBoolean, parseAdminEnum, parseAdminText, parseAdminUuid } from "@/lib/security/admin-input";
 
@@ -66,7 +66,7 @@ function parseOptionalDisplayInstant(value: string | undefined, field: string): 
 }
 
 function validateAnnouncementPublishability(parsed: ReturnType<typeof parseAnnouncement>): string | null {
-  return validateDisplayPublishableContent("announcement", parsed)[0] ?? null;
+  return validateDisplayAdminPublishableContent("announcement", parsed)[0] ?? null;
 }
 
 function parseAnnouncement(data: Record<string, string>) {
@@ -150,7 +150,7 @@ export async function togglePublishAnnouncementAction(token: string, id: string,
     if (nextPublished) {
       const { data: row, error: readError } = await client.from("announcements").select("id,title,title_ar,title_en,title_de,title_tr,message_ar,message_de,is_urgent,published").eq("id", entityId).maybeSingle();
       if (readError || !row) return { success: false, error: "admin.errors.saveFailed" };
-      const validationError = validateDisplayPublishableContent("announcement", {
+      const validationError = validateDisplayAdminPublishableContent("announcement", {
         published: true, titleAr: row.title_ar || undefined, titleDe: row.title_de || undefined, messageAr: row.message_ar || undefined, messageDe: row.message_de || undefined,
       })[0];
       if (validationError) return { success: false, error: validationError };

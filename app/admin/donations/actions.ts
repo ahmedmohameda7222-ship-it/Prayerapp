@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { invalidateDonationCampaignCaches } from "@/lib/data/donations";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
-import { validateDisplayPublishableContent } from "@/lib/masjid-display/content-validation";
+import { validateDisplayAdminPublishableContent } from "@/lib/masjid-display/content-validation";
 import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import {
   parseAdminBoolean,
@@ -93,7 +93,7 @@ function parseCampaign(data: Record<string, string>) {
 }
 
 function campaignValidationError(parsed: ReturnType<typeof parseCampaign>): string | undefined {
-  return validateDisplayPublishableContent("campaign", parsed)[0];
+  return validateDisplayAdminPublishableContent("campaign", parsed)[0];
 }
 
 export async function updateDonationSettingsAction(token: string, data: Record<string, string>): Promise<ActionResult> {
@@ -173,7 +173,7 @@ export async function toggleActiveCampaignAction(token: string, id: string, isAc
     if (nextActive) {
       const { data: row, error: readError } = await client.from("donation_campaigns").select("title_ar,title_de,description_ar,description_de,donation_url").eq("id", entityId).maybeSingle();
       if (readError || !row) return { success: false, error: "admin.errors.saveFailed" };
-      const validationError = validateDisplayPublishableContent("campaign", {
+      const validationError = validateDisplayAdminPublishableContent("campaign", {
         isActive: true, titleAr: row.title_ar || undefined, titleDe: row.title_de || undefined,
         descriptionAr: row.description_ar || undefined, descriptionDe: row.description_de || undefined,
         donationUrl: row.donation_url || undefined,

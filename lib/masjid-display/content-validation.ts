@@ -14,7 +14,10 @@ type PublishableDisplayContent = {
   donationUrl?: string | null;
 };
 
-const MAX_DISPLAY_PUBLISHABLE_VARIABLE_UTF8_BYTES = 10 * 1024;
+// Keep Admin-publishable variable text comfortably below the public RPC's
+// 16 KiB jsonb projection ceiling. The remaining headroom covers keys, UUIDs,
+// timestamps, flags, dates, numeric fields, and jsonb representation overhead.
+const MAX_DISPLAY_ADMIN_VARIABLE_UTF8_BYTES = 10 * 1024;
 
 function variableUtf8Bytes(values: Array<string | null | undefined>): number {
   return new TextEncoder().encode(
@@ -40,7 +43,7 @@ function exceedsDisplayProjectionBudget(
           ]
         : [item.titleAr, item.titleDe, item.descriptionAr, item.descriptionDe, item.donationUrl];
 
-  return variableUtf8Bytes(values) > MAX_DISPLAY_PUBLISHABLE_VARIABLE_UTF8_BYTES;
+  return variableUtf8Bytes(values) > MAX_DISPLAY_ADMIN_VARIABLE_UTF8_BYTES;
 }
 
 function missing(value: string | undefined): boolean {
@@ -63,21 +66,17 @@ export function validateDisplayPublishableContent(
 ): string[] {
   if (kind === "announcement") {
     if (!item.published) return [];
-    const errors = requireFields(item, [
+    return requireFields(item, [
       ["titleAr", "Arabic title"],
       ["messageAr", "Arabic message"],
       ["titleDe", "German title"],
       ["messageDe", "German message"],
     ], "published display content");
-    if (exceedsDisplayProjectionBudget(kind, item)) {
-      errors.push("Published display content exceeds maximum display size");
-    }
-    return errors;
   }
 
   if (kind === "event") {
     if (!item.published) return [];
-    const errors = requireFields(item, [
+    return requireFields(item, [
       ["titleAr", "Arabic title"],
       ["descriptionAr", "Arabic description"],
       ["locationAr", "Arabic location"],
@@ -85,21 +84,34 @@ export function validateDisplayPublishableContent(
       ["descriptionDe", "German description"],
       ["locationDe", "German location"],
     ], "published display content");
-    if (exceedsDisplayProjectionBudget(kind, item)) {
-      errors.push("Published display content exceeds maximum display size");
-    }
-    return errors;
   }
 
   if (!item.isActive) return [];
-  const errors = requireFields(item, [
+  return requireFields(item, [
     ["titleAr", "Arabic title"],
     ["descriptionAr", "Arabic description"],
     ["titleDe", "German title"],
     ["descriptionDe", "German description"],
   ], "active display campaign");
+}
+
+export function validateDisplayAdminPublishableContent(
+  kind: DisplayContentKind,
+  item: PublishableDisplayContent,
+): string[] {
+  const errors = validateDisplayPublishableContent(kind, item);
+  const isDisplayActive =
+    kind === "campaign" ? item.isActive === true : item.published === true;
+
+  if (!isDisplayActive) return errors;
+
   if (exceedsDisplayProjectionBudget(kind, item)) {
-    errors.push("Active display campaign exceeds maximum display size");
+    errors.push(
+      kind === "campaign"
+        ? "Active display campaign exceeds maximum display size"
+        : "Published display content exceeds maximum display size",
+    );
   }
+
   return errors;
 }

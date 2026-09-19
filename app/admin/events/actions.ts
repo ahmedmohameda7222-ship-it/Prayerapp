@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { invalidateEventCaches } from "@/lib/data/events";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
-import { validateDisplayPublishableContent } from "@/lib/masjid-display/content-validation";
+import { validateDisplayAdminPublishableContent } from "@/lib/masjid-display/content-validation";
 import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import { parseAdminDate, parseAdminOptionalTime, parseAdminText, parseAdminTime, parseAdminUuid } from "@/lib/security/admin-input";
 
@@ -52,7 +52,7 @@ function eventDb(parsed: ReturnType<typeof parseEvent>) {
 }
 
 function eventValidationError(parsed: ReturnType<typeof parseEvent>): string | undefined {
-  return validateDisplayPublishableContent("event", parsed)[0];
+  return validateDisplayAdminPublishableContent("event", parsed)[0];
 }
 
 export async function createEventAction(token: string, data: Record<string, string>): Promise<ActionResult> {

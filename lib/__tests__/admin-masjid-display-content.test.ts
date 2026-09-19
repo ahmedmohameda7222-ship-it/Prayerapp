@@ -56,11 +56,16 @@ describe("Masjid Display content Admin", () => {
     expect(actions).toContain("titleDe");
     expect(actions).toContain("descriptionDe");
     expect(actions).toContain("locationDe");
-    expect(actions).toContain('validateDisplayPublishableContent("event"');
+    expect(actions).toContain('validateDisplayAdminPublishableContent("event"');
   });
 
-  it("revalidates the full campaign display projection before activation", () => {
+  it("revalidates publishable display size in all Admin mutation paths", () => {
+    const announcementActions = source("app/admin/announcements/actions.ts");
+    const eventActions = source("app/admin/events/actions.ts");
     const actions = source("app/admin/donations/actions.ts");
+    expect(announcementActions).toContain("validateDisplayAdminPublishableContent");
+    expect(eventActions).toContain("validateDisplayAdminPublishableContent");
+    expect(actions).toContain("validateDisplayAdminPublishableContent");
     expect(actions).toContain(
       'select("title_ar,title_de,description_ar,description_de,donation_url")',
     );

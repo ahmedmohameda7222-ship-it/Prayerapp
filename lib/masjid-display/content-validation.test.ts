@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { validateDisplayPublishableContent } from "./content-validation";
+import {
+  validateDisplayAdminPublishableContent,
+  validateDisplayPublishableContent,
+} from "./content-validation";
 
 describe("display publishability validation", () => {
   it("rejects a published announcement missing German message", () => {
@@ -17,7 +20,7 @@ describe("display publishability validation", () => {
   });
 
   it("rejects published announcement text whose UTF-8 projection would exceed the display source ceiling", () => {
-    expect(validateDisplayPublishableContent("announcement", {
+    expect(validateDisplayAdminPublishableContent("announcement", {
       published: true,
       titleAr: "تنبيه",
       titleDe: "Hinweis",
@@ -27,7 +30,7 @@ describe("display publishability validation", () => {
   });
 
   it("allows the same oversized announcement while it remains an unpublished draft", () => {
-    expect(validateDisplayPublishableContent("announcement", {
+    expect(validateDisplayAdminPublishableContent("announcement", {
       published: false,
       titleAr: "تنبيه",
       titleDe: "Hinweis",
@@ -49,7 +52,7 @@ describe("display publishability validation", () => {
   });
 
   it("rejects published event text whose UTF-8 projection would exceed the display source ceiling", () => {
-    expect(validateDisplayPublishableContent("event", {
+    expect(validateDisplayAdminPublishableContent("event", {
       published: true,
       titleAr: "فعالية",
       titleDe: "Veranstaltung",
@@ -72,7 +75,7 @@ describe("display publishability validation", () => {
   });
 
   it("rejects active campaign text whose UTF-8 projection would exceed the display source ceiling", () => {
-    expect(validateDisplayPublishableContent("campaign", {
+    expect(validateDisplayAdminPublishableContent("campaign", {
       isActive: true,
       titleAr: "تبرع",
       titleDe: "Spende",
@@ -82,7 +85,7 @@ describe("display publishability validation", () => {
   });
 
   it("allows the same oversized campaign while it remains inactive", () => {
-    expect(validateDisplayPublishableContent("campaign", {
+    expect(validateDisplayAdminPublishableContent("campaign", {
       isActive: false,
       titleAr: "تبرع",
       titleDe: "Spende",

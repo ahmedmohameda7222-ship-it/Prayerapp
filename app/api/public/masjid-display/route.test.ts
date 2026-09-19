@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 const mocks = vi.hoisted(() => ({
   buildMasjidDisplayFeed: vi.fn(),
+  assertMasjidDisplayFeedPayloadSize: vi.fn(),
   finalizeFeed: vi.fn(),
   etagForFeed: vi.fn(),
   canonicalJson: vi.fn(),
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/masjid-display/build-feed", () => ({
   buildMasjidDisplayFeed: mocks.buildMasjidDisplayFeed,
+  assertMasjidDisplayFeedPayloadSize: mocks.assertMasjidDisplayFeedPayloadSize,
 }));
 
 vi.mock("@/lib/masjid-display/feed-etag", () => ({
@@ -65,6 +67,9 @@ describe("GET /api/public/masjid-display", () => {
     expect(response.headers.get("date")).toBeTruthy();
     expect(await response.json()).toEqual(finalizedFeed);
     expect(mocks.buildMasjidDisplayFeed).toHaveBeenCalledTimes(1);
+    expect(mocks.assertMasjidDisplayFeedPayloadSize).toHaveBeenCalledWith(
+      JSON.stringify(finalizedFeed),
+    );
   });
 
   it("returns 304 with no body for matching If-None-Match", async () => {

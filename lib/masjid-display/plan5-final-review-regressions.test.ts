@@ -43,9 +43,23 @@ describe("Plan 5 final Codex regression guards", () => {
     for (const alias of ["j", "a", "e", "c"]) {
       expect(sql).not.toContain(`to_jsonb(${alias}) as row_json`);
     }
-    expect(sql).not.toContain("as row_json");
+    expect(sql).not.toContain("as public_row_json");
     expect((sql.match(/jsonb_build_object\([\s\S]*?\) as row_json/gi) ?? []).length).toBe(4);
     expect((sql.match(/max\(pg_column_size\(row_json\)\)/gi) ?? []).length).toBe(4);
+    for (const omittedKey of [
+      "'title_en'",
+      "'title_tr'",
+      "'message_en'",
+      "'message_tr'",
+      "'description_en'",
+      "'description_tr'",
+      "'language_en'",
+      "'language_tr'",
+      "'notes_en'",
+      "'notes_tr'",
+    ]) {
+      expect(sql).not.toContain(omittedKey);
+    }
 
     for (const requiredKey of [
       "'updated_at'",
@@ -93,10 +107,10 @@ describe("Plan 5 final Codex regression guards", () => {
       "utf8",
     );
 
-    expect((sql.match(/as row_json/gi) ?? []).length).toBeGreaterThanOrEqual(3);
-    expect((sql.match(/max\\(pg_column_size\\(row_json\\)\\)/gi) ?? []).length)
-      .toBeGreaterThanOrEqual(3);
-    expect(sql).not.toMatch(/max\(pg_column_size\(row_json\)\)/i);
+    expect((sql.match(/jsonb_build_object\([\s\S]*?\) as row_json/gi) ?? []).length).toBe(4);
+    expect((sql.match(/max\(pg_column_size\(row_json\)\)/gi) ?? []).length).toBe(4);
+    expect(sql).not.toMatch(/to_jsonb\([jaec]\)\s+as\s+row_json/i);
+    expect(sql).not.toContain("public_row_json");
   });
 
   it("uses an overlap-indexed campaign candidate search instead of scanning expired history", () => {

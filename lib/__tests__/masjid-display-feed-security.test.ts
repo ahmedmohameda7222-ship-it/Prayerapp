@@ -103,7 +103,7 @@ describe("Masjid Display Plan 5 attacker-perspective boundary", () => {
       /if exists \([\s\S]*?pg_column_size\(to_jsonb\(/i,
     );
     expect((boundsMigration.match(/with bounded as \(/gi) ?? []).length).toBe(4);
-    expect((boundsMigration.match(/max\\(pg_column_size\\(row_json\\)\\)/gi) ?? []).length).toBe(4);
+    expect((boundsMigration.match(/max\(pg_column_size\(row_json\)\)/gi) ?? []).length).toBe(4);
   });
 
   it("does not expose secret-bearing keys or internal error details in public payloads", () => {

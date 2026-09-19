@@ -143,6 +143,11 @@ describe("Masjid Display offline/LKG production certification", () => {
   });
 
   it("refreshes immediately on reconnect and visibility/wake without replaying stale transient state", async () => {
+    const beforeWakeAt = new Date("2026-09-15T15:55:00.000Z");
+    const afterWakeAt = new Date("2026-09-15T16:25:00.000Z");
+    expect(afterWakeAt.getTime()).toBeGreaterThan(beforeWakeAt.getTime());
+    vi.setSystemTime(beforeWakeAt);
+
     const valid = cloneFeed();
     const day = valid.prayers.schedule.find((row) => row.date === "2026-09-15");
     if (!day) throw new Error("fixture missing current day");
@@ -151,10 +156,10 @@ describe("Masjid Display offline/LKG production certification", () => {
     valid.displaySettings.prayerDurations.asr = 10;
     seedLkg(valid);
 
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () =>
       new Response(null, {
         status: 304,
-        headers: { date: "Tue, 15 Sep 2026 18:00:05 GMT" },
+        headers: { date: new Date().toUTCString() },
       }),
     );
     vi.stubGlobal("fetch", fetchMock);
@@ -162,6 +167,10 @@ describe("Masjid Display offline/LKG production certification", () => {
     const { result } = renderHook(() => useDisplayRuntime());
     await flush();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.current.state).toMatchObject({
+      kind: "PRAYER_APPROACHING",
+      prayer: "asr",
+    });
 
     await act(async () => {
       window.dispatchEvent(new Event("online"));
@@ -173,19 +182,17 @@ describe("Masjid Display offline/LKG production certification", () => {
       configurable: true,
       value: "visible",
     });
+
+    vi.setSystemTime(afterWakeAt);
     await act(async () => {
       document.dispatchEvent(new Event("visibilitychange"));
-      await Promise.resolve();
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-
-    vi.setSystemTime(new Date("2026-09-15T16:13:00.000Z"));
-    await act(async () => {
       await vi.advanceTimersByTimeAsync(1_000);
     });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(result.current.state).toMatchObject({
-      kind: "PRAYER_IN_PROGRESS",
-      prayer: "asr",
+      kind: "NORMAL",
+      prayer: null,
     });
   });
 

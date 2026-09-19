@@ -185,13 +185,23 @@ begin
     raise exception 'historical row or Maghrib Program was not preserved';
   end if;
 
+  if (select count(*) from plan5_before_jumuah) <> (
+    select count(*) from public.jumuah_times where notes = 'PLAN5_MIGRATION_CERT'
+  ) then
+    raise exception 'Jumuah row count changed';
+  end if;
+
   if exists (
     select 1
     from plan5_before_jumuah b
-    join public.jumuah_times j on j.id = b.id
-    where b.row_hash <> md5(concat_ws('|', j.date::text, j.khutbah_time, j.prayer_time,
-      j.location_name, j.location_address, j.khateeb_name, j.language,
-      coalesce(j.notes, ''), j.published::text))
+    where not exists (
+      select 1
+      from public.jumuah_times j
+      where j.id = b.id
+        and b.row_hash = md5(concat_ws('|', j.date::text, j.khutbah_time, j.prayer_time,
+          j.location_name, j.location_address, j.khateeb_name, j.language,
+          coalesce(j.notes, ''), j.published::text))
+    )
   ) then
     raise exception 'Jumuah row changed';
   end if;

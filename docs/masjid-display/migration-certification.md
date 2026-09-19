@@ -1,53 +1,114 @@
 # Masjid Display — Migration Certification
 
-Status: PASS FOR LOCAL/STAGING DRY RUN — REAL TARGET CUTOVER BLOCKED
+Status: PASS FOR LOCAL/STAGING FULL-CHAIN CERTIFICATION — REAL TARGET CUTOVER BLOCKED
 
 ## Scope separation
 
-This document distinguishes a rollback-only local/staging certification exercise from any real-target destructive cutover. A passing local exercise does **not** authorize production mutation.
+This document distinguishes a disposable local/staging certification exercise from any real-target destructive cutover. A passing local exercise does **not** authorize production mutation.
 
-## Local/staging migration dry run
+## Reviewed starting point
 
 Executable certification: `scripts/verify-masjid-display-migration.sh`.
 
-The script runs only against the local Supabase Docker database used by CI and wraps the successful cutover exercise in a transaction that is rolled back. It performs two independent checks.
+The certification reconstructs the reviewed pre-cutover state rather than fabricating legacy columns on the final schema. It exercises the **full pending migration chain** from:
 
-First, it reconstructs populated legacy absolute-Iqama columns without a configured `prayer_settings` singleton and confirms that `20260915223000_remove_absolute_iqama_columns.sql` refuses the destructive cutover.
+- reviewed cutoff migration: `20260902223939_admin_audit_hardening`;
+- production-like fixture: `supabase/tests/fixtures/plan5-precutover-production-like.sql`;
+- fixture source: authorized read-only evidence from the Prayerapp target;
+- prayer rows: **81**, preserving original UUIDs and retained public fields;
+- Jumuah rows: **3**, preserving original UUIDs and base/localized retained fields.
 
-Second, with validated shared delays present, it records BEFORE evidence and applies the same migration inside a rollback-only transaction. It verifies AFTER evidence for:
+The local Supabase database is disposable. The successful full-chain exercise is **not** wrapped in a rollback transaction: the script resets the local database back to the reviewed cutoff, loads the fixture, applies the pending migrations, verifies the resulting final schema/data, and leaves that local database at the migrated state.
 
-- representative historical and future `prayer_times` rows;
-- all six daily prayer values (Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha);
-- representative schedule hashes;
-- Jumuah row/count/hash;
+## Gate probe
+
+The script first resets to the reviewed cutoff, loads the same 81/3 fixture, applies the first three pending Plan 5 migrations, and then attempts `20260915223000_remove_absolute_iqama_columns.sql` without validated shared delays.
+
+Expected and observed result:
+
+`PLAN5_GATE_RESULT=PASS destructive legacy-Iqama cutover rejected without validated shared delays`
+
+This proves the destructive migration refuses populated legacy Iqama data when the required shared-delay prerequisite has not been supplied.
+
+## Full pending migration chain
+
+After the gate probe, the script resets again to the same reviewed cutoff/fixture, captures BEFORE evidence, and applies these nine pending migrations in repository order:
+
+1. `20260915220000_masjid_display_prayer_settings.sql`
+2. `20260915221000_prayer_schedule_atomic_generation.sql`
+3. `20260915222000_masjid_display_admin_schema.sql`
+4. `20260915223000_remove_absolute_iqama_columns.sql`
+5. `20260917041000_masjid_display_feed_revision.sql`
+6. `20260917233500_masjid_display_bounded_generated_at.sql`
+7. `20260918001500_masjid_display_semantic_source_timestamps.sql`
+8. `20260918015000_masjid_display_snapshot_window_readers.sql`
+9. `20260919023000_masjid_display_feed_bounds.sql`
+
+For this **local certification exercise only**, after the prayer-settings schema exists, the script supplies explicit canonical shared delays:
+
+`20,15,15,5,10`
+
+That local prerequisite permits the gated destructive migration to be exercised. It is not evidence that the real production target currently has those settings.
+
+## Preserved data certified
+
+The BEFORE/AFTER hashes include the retained prayer/Jumuah identities and values, including:
+
+- prayer row UUID and date;
+- Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha;
+- `note`, `note_ar`, `note_en`, `note_de`, `note_tr`;
+- publication/update metadata represented by the certification hash;
 - Maghrib Program enabled/title/duration/combined-Isha fields;
-- the five canonical shared Iqama delays;
-- removal of the five legacy absolute-Iqama columns only after the approved gate.
+- Jumuah UUID/date/khutbah/prayer/location/khateeb;
+- Jumuah base + Arabic/English/German/Turkish language fields;
+- Jumuah base + Arabic/English/German/Turkish notes;
+- canonical shared delays;
+- absence of legacy absolute-Iqama columns after the gated cutover.
 
-Actual GitHub Actions evidence on strengthened implementation HEAD `c8036b75ef340f31048137d89fa351700ceb8005`:
+## Actual GitHub Actions evidence
 
-- Root CI run `35425882225`: SUCCESS.
-- Step `Certify Masjid Display legacy-Iqama migration safety`: SUCCESS.
-- Gate probe: destructive removal was rejected when validated shared delays were absent.
-- BEFORE prayer row count: `2`.
-- BEFORE/AFTER representative prayer schedule hash: `f9f16a6cab070324c14e95d0feeaf4e6`.
-- BEFORE/AFTER Jumuah count: `1`.
-- BEFORE/AFTER Jumuah hash: `588499537ba00c5ffe5755b7aa26bc8b`.
-- BEFORE/AFTER canonical shared delays: `11,12,13,14,15`.
-- AFTER legacy absolute-Iqama columns: `0`.
-- The successful exercise was rollback-only.
+Implementation/evidence HEAD:
 
-GitHub Codex Plan 5 review found five migration-certification integrity gaps.
+`5873ffd6cc5d666986c5156e98a90f5772281892`
 
-1. The first version compared Jumuah rows through an inner join, which could miss deletion. The script now asserts the certified Jumuah row count and uses a `NOT EXISTS` anti-join. RED: root CI `35413351843`. GREEN: root CI `35413523120`.
-2. The prayer-row preservation check used an inner join by date, which could miss deletion/date mutation. It was changed to a `NOT EXISTS` anti-join. RED: root CI `35414872550`. GREEN: root CI `35415341665`.
-3. The strengthened prayer-row snapshot still omitted the row UUID, so delete/reinsert under the same date and values could masquerade as preservation. `plan5_before_prayer` now snapshots `id`, and the anti-join requires original UUID + date + identical represented-value hash. RED: root CI `35417740571`. GREEN: root CI `35418592166`.
-4. The preservation hash still omitted `note` and localized note columns. The certification fixtures now use distinct values for `note_ar`, `note_en`, `note_de`, and `note_tr`, and the BEFORE/AFTER hash includes all five note fields. RED: Plan 3 `35421192534` failed the new note-preservation guard while 68 other focused tests passed. GREEN: root CI `35421280923`, including the rollback-only migration certification.
-5. The Jumuah hash still omitted `language_ar/en/de/tr` and `notes_ar/en/de/tr`. The Jumuah fixture now assigns distinct sentinel values to all eight localized fields and the BEFORE/AFTER hash includes them together with the base fields and UUID. RED: root CI `35424608214` failed the localized-Jumuah guard while 835 other tests passed. GREEN: root CI `35424784026`.
+Root CI:
 
-Deletion, replacement under a new UUID, date mutation, represented-value drift, or base/localized note/language corruption in either the certified prayer rows or Jumuah row now blocks PASS.
+`35439858258` — SUCCESS.
 
-**LOCAL/STAGING MIGRATION DRY RUN: PASS**
+Migration certification step:
+
+`Certify Masjid Display legacy-Iqama migration safety` — SUCCESS.
+
+Recorded output:
+
+- `PLAN5_CHAIN_BEFORE prayer_times_count=81`
+- `PLAN5_CHAIN_AFTER prayer_times_count=81`
+- prayer hash BEFORE/AFTER: `a611e20d391dc7c306fc0f2a41a66b67`
+- `PLAN5_CHAIN_BEFORE jumuah_times_count=3`
+- `PLAN5_CHAIN_AFTER jumuah_times_count=3`
+- Jumuah hash BEFORE/AFTER: `aabc1b96fe44f8ca8c29ff2e0b087764`
+- Maghrib Program enabled rows BEFORE/AFTER: `8`
+- `PLAN5_CHAIN_PREREQUISITE shared_delays=20,15,15,5,10`
+- `PLAN5_CHAIN_AFTER shared_delays=20,15,15,5,10`
+- `PLAN5_CHAIN_AFTER legacy_iqama_columns=0`
+- `PLAN5_PENDING_CHAIN=PASS`
+- `PLAN5_MIGRATION_DRY_RUN=PASS full pending-chain local certification completed`
+
+**LOCAL/STAGING FULL PENDING-CHAIN CERTIFICATION: PASS**
+
+## Codex migration-certification integrity loop
+
+GitHub Codex identified and Plan 5 fixed these migration-certification gaps:
+
+1. deleted Jumuah rows could evade the original inner-join check;
+2. prayer-row deletion/date mutation could evade the original inner join;
+3. prayer-row UUID identity was initially omitted;
+4. prayer base/localized note fields were initially omitted from the hash;
+5. Jumuah localized language/notes were initially omitted from the hash;
+6. the original local exercise did not restore a reviewed pre-cutover production-like snapshot or apply the complete pending migration chain;
+7. the certification document itself later remained stale and still described the obsolete 2-prayer/1-Jumuah rollback-only exercise after the full-chain gate had replaced it.
+
+The executable gate and this evidence record now agree on the reviewed cutoff, 81/3 fixture, nine-migration chain, prerequisite probe, preserved fields, and actual local reset/apply semantics.
 
 ## Real target destructive cutover
 
@@ -57,9 +118,9 @@ Authorized read-only inspection of the Prayerapp Supabase target identified the 
 - `jumuah_times`: 3 rows;
 - legacy absolute-Iqama columns present: all 5;
 - `public.prayer_settings`: not present;
-- latest applied repository migration visible on target: `20260902223939_admin_audit_hardening`.
+- latest applied repository migration visible on target during Plan 5 inspection: `20260902223939_admin_audit_hardening`.
 
-Therefore the destructive cutover prerequisite is not satisfied. No schema or production-data mutation was performed by Plan 5.
+Therefore the destructive cutover prerequisite is **not** satisfied. No schema or production-data mutation was performed on the real target by Plan 5.
 
 **REAL TARGET DESTRUCTIVE CUTOVER: BLOCKED — `prayer_settings`/validated shared-delay prerequisite absent on the real target and destructive execution not authorized.**
 

@@ -24,9 +24,9 @@ Second, with validated shared delays present, it records BEFORE evidence and app
 - the five canonical shared Iqama delays;
 - removal of the five legacy absolute-Iqama columns only after the approved gate.
 
-Actual GitHub Actions evidence on strengthened implementation HEAD `27845baffce4359dcdac82f6754df3b33e70684a`:
+Actual GitHub Actions evidence on strengthened implementation HEAD `6d5a3e8054dba7254984bd8ccb75d4915f664959`:
 
-- Root CI run `35417979067`: SUCCESS.
+- Root CI run `35418592166`: SUCCESS.
 - Step `Certify Masjid Display legacy-Iqama migration safety`: SUCCESS.
 - Gate probe: destructive removal was rejected when validated shared delays were absent.
 - BEFORE prayer row count: `2`.
@@ -41,7 +41,7 @@ GitHub Codex Plan 5 review found three migration-certification integrity gaps.
 
 1. The first version compared Jumuah rows through an inner join, which could miss deletion. The script now asserts the certified Jumuah row count and uses a `NOT EXISTS` anti-join. RED: root CI `35413351843`. GREEN: root CI `35413523120`.
 2. The prayer-row preservation check used an inner join by date, which could miss deletion/date mutation. It was changed to a `NOT EXISTS` anti-join. RED: root CI `35414872550`. GREEN: root CI `35415341665`.
-3. The strengthened prayer-row snapshot still omitted the row UUID, so delete/reinsert under the same date and values could masquerade as preservation. `plan5_before_prayer` now snapshots `id`, and the anti-join requires original UUID + date + identical six-prayer/Maghrib-program hash. RED: root CI `35417740571` failed this guard while 830 other tests passed. GREEN: root CI `35417979067`.
+3. The strengthened prayer-row snapshot still omitted the row UUID, so delete/reinsert under the same date and values could masquerade as preservation. `plan5_before_prayer` now snapshots `id`, and the anti-join requires original UUID + date + identical six-prayer/Maghrib-program hash. RED: root CI `35417740571` failed this guard while 830 other tests passed. GREEN: root CI `35418592166`.
 
 Deletion, replacement under a new UUID, date mutation, or represented-value drift in either the certified prayer rows or Jumuah row now blocks PASS.
 

@@ -81,8 +81,10 @@ describe("logic hardening", () => {
 
   it("uses Europe/Berlin for Azkar daily state while keeping Azkar hard-coded and read-only", () => {
     const routine = source("components/azkar/AzkarRoutine.tsx");
+    const routineSelection = source("lib/azkar-routine.ts");
     const azkarData = source("lib/data/azkar.ts");
-    expect(routine).toContain("APP_TIME_ZONE");
+    expect(routineSelection).toContain("APP_TIME_ZONE");
+    expect(routine).toContain("smartAzkarCategory(now)");
     expect(routine).toContain("todayIso(date)");
     expect(azkarData).toContain("hardcodedAzkarCategories");
     expect(azkarData).toContain("hardcodedAzkarItems");

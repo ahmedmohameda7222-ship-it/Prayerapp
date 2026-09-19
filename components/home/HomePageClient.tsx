@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { refreshHomePrayerRuntime } from "@/app/home-prayer-runtime";
 import { HomeSectionTitle } from "@/components/home/HomeSectionTitle";
 import { HomeEmptyState } from "@/components/home/HomeEmptyState";
 import { HomeNextPrayerSurface } from "@/components/home/HomeNextPrayerSurface";
@@ -14,12 +15,12 @@ import { DonationCampaignCard } from "@/components/donations/DonationCampaignCar
 import { TransparencyCard } from "@/components/donations/TransparencyCard";
 import { PayPalCard } from "@/components/donations/PayPalCard";
 import { SmartNextActionCard } from "@/components/home/SmartNextActionCard";
-import { addDaysIso, todayIso } from "@/lib/date-utils";
-import { getPrayerTimes } from "@/lib/data/prayer-times";
+import { todayIso } from "@/lib/date-utils";
 import { getSmartNextAction } from "@/lib/home-utils";
 import { getHomeJumuahSchedule } from "@/lib/home-jumuah";
-import { getNextPrayer, getNextPrayerFromSchedule, getPrayerForDate } from "@/lib/prayer-utils";
+import { derivePrayerIqamaTimes, getNextPrayer, getNextPrayerFromSchedule, getPrayerForDate } from "@/lib/prayer-utils";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import type { PrayerIqamaDelays } from "@/lib/prayer-engine/types";
 import type { Announcement, DonationCampaign, DonationReport, DonationSettings, Event, JumuahTime, PrayerTime } from "@/lib/types";
 
 const EMPTY_SCHEDULE: PrayerTime[] = [];
@@ -47,6 +48,7 @@ const HOME_EMPTY_COPY = {
 
 type HomePageClientProps = {
   initialPrayerTimes: PrayerTime[];
+  iqamaDelays: PrayerIqamaDelays | null;
   urgentAnnouncements: Announcement[];
   jumuahTimes: JumuahTime[];
   allowAnyFutureJumuah?: boolean;
@@ -59,6 +61,7 @@ type HomePageClientProps = {
 
 export function HomePageClient({
   initialPrayerTimes,
+  iqamaDelays,
   urgentAnnouncements,
   jumuahTimes,
   allowAnyFutureJumuah = false,
@@ -71,7 +74,11 @@ export function HomePageClient({
   const { t, locale } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
   const [schedule, setSchedule] = useState<PrayerTime[]>(initialPrayerTimes || EMPTY_SCHEDULE);
+  const [liveIqamaDelays, setLiveIqamaDelays] = useState<PrayerIqamaDelays | null>(iqamaDelays);
   const today = getPrayerForDate(schedule, todayIso(now));
+  const iqamaByDate = useMemo(() => Object.fromEntries(
+    schedule.map((item) => [item.date, liveIqamaDelays ? derivePrayerIqamaTimes(item, liveIqamaDelays) : {}]),
+  ), [schedule, liveIqamaDelays]);
   const activePrayer = useMemo(() => {
     const next = getNextPrayerFromSchedule(schedule, now);
     return next?.name || (today ? getNextPrayer(today, now)?.name : undefined);
@@ -90,12 +97,14 @@ export function HomePageClient({
   useEffect(() => {
     let active = true;
     const refreshPrayerSchedule = async () => {
-      const currentToday = todayIso(new Date());
       try {
-        const latest = await getPrayerTimes(false, addDaysIso(currentToday, -1), addDaysIso(currentToday, 30));
-        if (active) setSchedule(latest);
+        const latest = await refreshHomePrayerRuntime();
+        if (active) {
+          setSchedule(latest.schedule);
+          setLiveIqamaDelays(latest.iqamaDelays);
+        }
       } catch {
-        // Keep the last verified schedule. The data layer only permits a very short stale fallback.
+        // Keep the last verified schedule and Iqama-delay snapshot together.
       }
     };
     const onFocus = () => { void refreshPrayerSchedule(); };
@@ -131,7 +140,7 @@ export function HomePageClient({
       <section className="home-section-next" data-home-section="hero" aria-label={t("prayer.nextPrayer")}>
         {today ? (
           <HomeNextPrayerSurface>
-            <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} initialNow={initialNow} variant="instrument" />
+            <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} iqamaByDate={iqamaByDate} initialNow={initialNow} variant="instrument" />
           </HomeNextPrayerSurface>
         ) : (
           <HomeEmptyState message={t("prayer.notPublished")} />
@@ -140,65 +149,37 @@ export function HomePageClient({
 
       {urgentAnnouncements.length ? (
         <section className="home-section-urgent home-section-card" data-home-section="urgent">
-          <div className="home-section-card-header">
-            <HomeSectionTitle>{t("news.title")}</HomeSectionTitle>
-          </div>
+          <div className="home-section-card-header"><HomeSectionTitle>{t("news.title")}</HomeSectionTitle></div>
           <div className="home-urgent-surface divide-y divide-[var(--home-divider)]" data-testid="home-urgent-surface">
-            {urgentAnnouncements.map((announcement) => (
-              <AnnouncementCard key={announcement.id} announcement={announcement} home />
-            ))}
+            {urgentAnnouncements.map((announcement) => <AnnouncementCard key={announcement.id} announcement={announcement} home />)}
           </div>
         </section>
       ) : null}
 
-      {jumuahSchedule ? (
-        <section className="home-section-jumuah" data-home-section="jumuah">
-          <HomeJumuahCard schedule={jumuahSchedule} />
-        </section>
-      ) : null}
+      {jumuahSchedule ? <section className="home-section-jumuah" data-home-section="jumuah"><HomeJumuahCard schedule={jumuahSchedule} /></section> : null}
 
       {today ? (
         <div className="home-section-prayer" data-home-section="prayer-times">
-          <HomePrayerTimesCard prayer={today} activePrayer={activePrayer} />
+          <HomePrayerTimesCard prayer={today} activePrayer={activePrayer} iqamaTimes={iqamaByDate[today.date]} />
         </div>
       ) : null}
 
-      {smartAction ? (
-        <div className="home-section-contextual" data-home-section="contextual-action">
-          <SmartNextActionCard action={smartAction} />
-        </div>
-      ) : null}
+      {smartAction ? <div className="home-section-contextual" data-home-section="contextual-action"><SmartNextActionCard action={smartAction} /></div> : null}
 
       <section className="home-section-events home-section-card" data-home-section="events">
-        <div className="home-section-card-header">
-          <HomeSectionTitle>{t("events.title")}</HomeSectionTitle>
-        </div>
-        {events.length ? (
-          <HomeEventsList events={events} />
-        ) : (
-          <p className="home-section-empty-message">{HOME_EMPTY_COPY.events[locale]}</p>
-        )}
+        <div className="home-section-card-header"><HomeSectionTitle>{t("events.title")}</HomeSectionTitle></div>
+        {events.length ? <HomeEventsList events={events} /> : <p className="home-section-empty-message">{HOME_EMPTY_COPY.events[locale]}</p>}
       </section>
 
       <section className="home-section-donations home-section-card" data-home-section="donations">
-        <div className="home-section-card-header">
-          <HomeSectionTitle>{t("donations.title")}</HomeSectionTitle>
-        </div>
+        <div className="home-section-card-header"><HomeSectionTitle>{t("donations.title")}</HomeSectionTitle></div>
         <div className="home-donation-reflection text-center">
-          <p dir="rtl" lang="ar" className="home-donation-verse font-semibold leading-[1.85] text-[var(--home-brand-strong)]">
-            لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ
-          </p>
+          <p dir="rtl" lang="ar" className="home-donation-verse font-semibold leading-[1.85] text-[var(--home-brand-strong)]">لَن تَنَالُوا الْبِرَّ حَتَّىٰ تُنفِقُوا مِمَّا تُحِبُّونَ</p>
           <p dir="rtl" lang="ar" className="home-donation-reference mt-1 font-semibold text-[var(--home-text-secondary)]">آل عمران: 92</p>
           <p className="home-donation-reflection-copy mt-3 leading-6 text-[var(--home-text-secondary)]">{t("phase1.donationReflection")}</p>
         </div>
         <div className="home-donation-stack">
-          {donationCampaigns.length ? (
-            donationCampaigns.map((campaign) => (
-              <DonationCampaignCard key={campaign.id} campaign={campaign} home />
-            ))
-          ) : (
-            <p className="home-section-empty-message home-donation-empty-message">{donationEmptyMessage}</p>
-          )}
+          {donationCampaigns.length ? donationCampaigns.map((campaign) => <DonationCampaignCard key={campaign.id} campaign={campaign} home />) : <p className="home-section-empty-message home-donation-empty-message">{donationEmptyMessage}</p>}
           {hasBankDetails && donationSettings ? <BankTransferCard settings={donationSettings} home /> : null}
           {donationReport ? <TransparencyCard report={donationReport} home /> : null}
           {donationSettings?.paypalLink ? <PayPalCard paypalLink={donationSettings.paypalLink} showUrl={false} home /> : null}

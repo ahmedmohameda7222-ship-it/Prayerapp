@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
+import { invalidateJumuahPublicCache } from "@/lib/data/jumuah";
 import { sendAdminContentPush } from "@/lib/push/web-push";
 import { DEFAULT_APP_NAME } from "@/lib/app-brand";
 import { validateAdditionalJumuah, type AdditionalJumuahValidationError } from "@/lib/admin-jumuah-validation";
@@ -107,6 +108,7 @@ export async function createJumuahAction(token: string, data: Record<string, str
     const validationError = await validateAgainstPrimary(client, parsed); if (validationError) return { success: false, error: validationError };
     const { data: result, error } = await client.from("jumuah_times").insert(toAdditionalDb(parsed)).select().single();
     if (error || !result) return { success: false, error: "admin.errors.saveFailed" };
+    invalidateJumuahPublicCache();
     await notifyPublishedJumuah(result as JumuahPushRow); revalidateFridaySurfaces(); return { success: true };
   });
 }
@@ -121,6 +123,7 @@ export async function updateJumuahAction(token: string, id: string, data: Record
     const { data: previous } = await client.from("jumuah_times").select("published").eq("id", entityId).maybeSingle();
     const { data: result, error } = await client.from("jumuah_times").update(toAdditionalDb(parsed)).eq("id", entityId).select().single();
     if (error || !result) return { success: false, error: "admin.errors.saveFailed" };
+    invalidateJumuahPublicCache();
     if (!previous?.published) await notifyPublishedJumuah(result as JumuahPushRow); revalidateFridaySurfaces(); return { success: true };
   });
 }
@@ -131,7 +134,9 @@ export async function deleteJumuahAction(token: string, id: string): Promise<Act
   return runAuditedAction(token, { action: "jumuah.delete", entityType: "jumuah_service", entityId }, async () => {
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { error } = await client.from("jumuah_times").delete().eq("id", entityId);
-    if (error) return { success: false, error: "admin.errors.deleteFailed" }; revalidateFridaySurfaces(); return { success: true };
+    if (error) return { success: false, error: "admin.errors.deleteFailed" };
+    invalidateJumuahPublicCache();
+    revalidateFridaySurfaces(); return { success: true };
   });
 }
 
@@ -144,6 +149,7 @@ export async function togglePublishJumuahAction(token: string, id: string, publi
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { data: result, error } = await client.from("jumuah_times").update({ published: nextPublished }).eq("id", entityId).select().single();
     if (error || !result) return { success: false, error: "admin.errors.toggleFailed" };
+    invalidateJumuahPublicCache();
     if (nextPublished) await notifyPublishedJumuah(result as JumuahPushRow); revalidateFridaySurfaces(); return { success: true };
   });
 }

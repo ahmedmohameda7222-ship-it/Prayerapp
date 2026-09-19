@@ -187,7 +187,7 @@ describe("Phase 1 account and personalization contracts", () => {
     expect(settings).not.toContain('id="prayer-reminder"');
     expect(countdown).not.toContain("01:24:36");
     expect(countdown).not.toContain('name: "asr"');
-    expect(countdown).toContain("stateFor(effectiveSchedule, new Date(initialNow))");
+    expect(countdown).toContain("stateFor(effectiveSchedule, iqamaByDate, new Date(initialNow))");
   });
 
   it("keeps PayPal URLs hidden on Home and exposes explicit bank-copy feedback", () => {

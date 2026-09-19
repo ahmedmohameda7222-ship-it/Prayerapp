@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { invalidateEventCaches } from "@/lib/data/events";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendAdminContentPush } from "@/lib/push/web-push";
+import { validateDisplayPublishableContent } from "@/lib/masjid-display/content-validation";
 import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import { parseAdminDate, parseAdminOptionalTime, parseAdminText, parseAdminTime, parseAdminUuid } from "@/lib/security/admin-input";
 
@@ -34,10 +36,8 @@ function parseEvent(data: Record<string, string>) {
     locationEn: parseAdminText(data.locationEn ?? "", { field: "locationEn", max: 300 }),
     locationDe: parseAdminText(data.locationDe ?? "", { field: "locationDe", max: 300 }),
     locationTr: parseAdminText(data.locationTr ?? "", { field: "locationTr", max: 300 }),
-    date: parseAdminDate(data.date, "date"),
-    startTime,
-    endTime,
-    type: parseAdminText(data.type, { field: "type", max: 64, required: true }),
+    date: parseAdminDate(data.date, "date"), startTime, endTime,
+    type: parseAdminText(data.type, { field: "type", max: 64, required: true }), published: true,
   };
 }
 
@@ -51,12 +51,18 @@ function eventDb(parsed: ReturnType<typeof parseEvent>) {
   };
 }
 
+function eventValidationError(parsed: ReturnType<typeof parseEvent>): string | undefined {
+  return validateDisplayPublishableContent("event", parsed)[0];
+}
+
 export async function createEventAction(token: string, data: Record<string, string>): Promise<ActionResult> {
   return runAuditedAction(token, { action: "event.create", entityType: "event" }, async () => {
     let parsed; try { parsed = parseEvent(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    const validationError = eventValidationError(parsed); if (validationError) return { success: false, error: validationError };
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { data: result, error } = await client.from("events").insert(eventDb(parsed)).select().single();
     if (error) return { success: false, error: "admin.errors.saveFailed" };
+    invalidateEventCaches();
     try {
       await sendAdminContentPush({
         eventKey: `event:${result.id}:published`, notificationType: "event", sourceId: result.id, url: "/events",
@@ -71,9 +77,11 @@ export async function updateEventAction(token: string, id: string, data: Record<
   let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
   return runAuditedAction(token, { action: "event.update", entityType: "event", entityId }, async () => {
     let parsed; try { parsed = parseEvent(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    const validationError = eventValidationError(parsed); if (validationError) return { success: false, error: validationError };
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { error } = await client.from("events").update(eventDb(parsed)).eq("id", entityId);
     if (error) return { success: false, error: "admin.errors.saveFailed" };
+    invalidateEventCaches();
     revalidatePath("/admin/events"); revalidatePath("/events"); revalidatePath("/"); return { success: true };
   });
 }
@@ -84,6 +92,7 @@ export async function deleteEventAction(token: string, id: string): Promise<Acti
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { error } = await client.from("events").delete().eq("id", entityId);
     if (error) return { success: false, error: "admin.errors.deleteFailed" };
+    invalidateEventCaches();
     revalidatePath("/admin/events"); revalidatePath("/events"); revalidatePath("/"); return { success: true };
   });
 }

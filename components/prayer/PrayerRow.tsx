@@ -2,7 +2,6 @@
 
 import { ChevronRight, Clock, Moon, Sun, Sunrise } from "lucide-react";
 import type { PrayerName, PrayerTime } from "@/lib/types";
-import { getIqama } from "@/lib/prayer-utils";
 import { getPrayerDisplayNameKey } from "@/lib/prayer-display-name";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { useTimeFormat } from "@/components/providers/TimeFormatProvider";
@@ -21,17 +20,18 @@ export function PrayerRow({
   prayer,
   name,
   active = false,
-  showIqama = true,
+  iqama,
+  showIqama = name !== "sunrise",
 }: {
   prayer: PrayerTime;
   name: PrayerName;
   active?: boolean;
+  iqama?: string;
   showIqama?: boolean;
 }) {
   const { t } = useTranslation();
   const { timeFormat } = useTimeFormat();
   const Icon = icons[name];
-  const iqama = getIqama(prayer, name);
   const formattedTime = formatTime(prayer[name], timeFormat);
   const formattedIqama = iqama ? formatTime(iqama, timeFormat) : undefined;
   const displayNameKey = getPrayerDisplayNameKey(name, prayer.date);

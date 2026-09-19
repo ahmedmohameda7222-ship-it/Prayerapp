@@ -45,6 +45,27 @@ jobs:
       - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm test
+      - name: Typecheck root application
+        run: npx tsc --noEmit
+      - name: Verify Masjid Display producer/consumer contract
+        run: node scripts/verify-masjid-display-contract.mjs
+      - name: Install locked TV dependencies
+        working-directory: masjid-display
+        run: npm ci
+      - name: Run TV tests
+        working-directory: masjid-display
+        run: npm test
+      - name: Lint TV package
+        working-directory: masjid-display
+        run: npm run lint
+      - name: Typecheck TV package
+        working-directory: masjid-display
+        run: npm run typecheck
+      - name: Build TV package
+        working-directory: masjid-display
+        env:
+          PRAYERAPP_ORIGIN: https://prayerapp.example.test
+        run: npm run build
       - name: Verify clean Supabase migration bootstrap
         run: |
           supabase start
@@ -349,6 +370,8 @@ jobs:
 
           docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
             < scripts/security/verify-production-schema.sql
+      - name: Certify Masjid Display legacy-Iqama migration safety
+        run: bash scripts/verify-masjid-display-migration.sh
       - name: Verify reconciliation idempotence and data preservation
         run: |
           DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"

@@ -17,7 +17,6 @@ import {
 type ActionResult = { success: boolean; error?: string; count?: number };
 type ParsedPrayerTime = {
   date: string; fajr: string; sunrise: string; dhuhr: string; asr: string; maghrib: string; isha: string;
-  fajrIqama: string | null; dhuhrIqama: string | null; asrIqama: string | null; maghribIqama: string | null; ishaIqama: string | null;
   maghribProgramEnabled: boolean; maghribLessonTitle: string | null; maghribLessonDurationMinutes: number | null;
   maghribCombinedIshaTime: string | null; note: string | null; published: boolean;
 };
@@ -39,9 +38,6 @@ function parsePrayerTime(data: Record<string, string>): ParsedPrayerTime {
     date: parseAdminDate(data.date, "date"),
     fajr: parseAdminTime(data.fajr, "fajr"), sunrise: parseAdminTime(data.sunrise, "sunrise"), dhuhr: parseAdminTime(data.dhuhr, "dhuhr"),
     asr: parseAdminTime(data.asr, "asr"), maghrib: parseAdminTime(data.maghrib, "maghrib"), isha: parseAdminTime(data.isha, "isha"),
-    fajrIqama: parseAdminOptionalTime(data.fajrIqama, "fajrIqama"), dhuhrIqama: parseAdminOptionalTime(data.dhuhrIqama, "dhuhrIqama"),
-    asrIqama: parseAdminOptionalTime(data.asrIqama, "asrIqama"), maghribIqama: parseAdminOptionalTime(data.maghribIqama, "maghribIqama"),
-    ishaIqama: parseAdminOptionalTime(data.ishaIqama, "ishaIqama"),
     maghribProgramEnabled: data.maghribProgramEnabled ? parseAdminBoolean(data.maghribProgramEnabled, "maghribProgramEnabled") : false,
     maghribLessonTitle: data.maghribLessonTitle ? parseAdminText(data.maghribLessonTitle, { field: "maghribLessonTitle", max: 160 }) || null : null,
     maghribLessonDurationMinutes: duration,
@@ -54,7 +50,6 @@ function parsePrayerTime(data: Record<string, string>): ParsedPrayerTime {
 function prayerDb(data: ParsedPrayerTime): Record<string, unknown> {
   return {
     date: data.date, fajr: data.fajr, sunrise: data.sunrise, dhuhr: data.dhuhr, asr: data.asr, maghrib: data.maghrib, isha: data.isha,
-    fajr_iqama: data.fajrIqama, dhuhr_iqama: data.dhuhrIqama, asr_iqama: data.asrIqama, maghrib_iqama: data.maghribIqama, isha_iqama: data.ishaIqama,
     maghrib_program_enabled: data.maghribProgramEnabled, maghrib_lesson_title: data.maghribLessonTitle,
     maghrib_lesson_duration_minutes: data.maghribLessonDurationMinutes, maghrib_combined_isha_time: data.maghribCombinedIshaTime,
     note: data.note, published: data.published,
@@ -73,6 +68,8 @@ async function checkDuplicateDate(client: ReturnType<typeof createServerClient>,
   return Boolean(data);
 }
 
+// Kept as a reusable emergency ingestion action; it imports only the six prayer starts.
+// The normal Admin navigation no longer exposes CSV import.
 export async function importPrayerTimesAction(token: string, rows: Record<string, string>[]): Promise<ActionResult> {
   return runAuditedAction(token, { action: "prayer_times.import", entityType: "prayer_time", entityId: "batch", metadata: { rowCount: Array.isArray(rows) ? rows.length : 0 } }, async () => {
     if (!Array.isArray(rows) || rows.length < 1 || rows.length > 366) return { success: false, error: "admin.errors.invalidCsv" };
@@ -81,9 +78,7 @@ export async function importPrayerTimesAction(token: string, rows: Record<string
       try {
         const parsed = parsePrayerTime({
           date: row.date, fajr: row.fajr, sunrise: row.sunrise, dhuhr: row.dhuhr, asr: row.asr, maghrib: row.maghrib, isha: row.isha,
-          fajrIqama: row.fajr_iqama || "", dhuhrIqama: row.dhuhr_iqama || "", asrIqama: row.asr_iqama || "",
-          maghribIqama: row.maghrib_iqama || "", ishaIqama: row.isha_iqama || "", note: row.note || "",
-          published: ["false", "0", "no"].includes((row.published || "true").toLowerCase()) ? "false" : "true",
+          note: row.note || "", published: ["false", "0", "no"].includes((row.published || "true").toLowerCase()) ? "false" : "true",
         });
         payload.push({ ...prayerDb(parsed), updated_at: new Date().toISOString() });
       } catch { return { success: false, error: "admin.errors.invalidCsv" }; }

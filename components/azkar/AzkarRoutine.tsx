@@ -7,7 +7,8 @@ import { AzkarCategoryChips, type AzkarTab } from "@/components/azkar/AzkarCateg
 import { TasbeehCounter } from "@/components/azkar/TasbeehCounter";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { APP_TIME_ZONE, todayIso } from "@/lib/date-utils";
+import { smartAzkarCategory } from "@/lib/azkar-routine";
+import { todayIso } from "@/lib/date-utils";
 import { useSavedAzkar } from "@/lib/hooks/use-saved-azkar";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { AzkarCategory, AzkarItem } from "@/lib/types";
@@ -20,32 +21,8 @@ type StoredProgress = {
   counts: Record<string, number>;
 };
 
-function mosqueClock(date: Date) {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: APP_TIME_ZONE,
-      weekday: "short",
-      hour: "2-digit",
-      hourCycle: "h23",
-    }).formatToParts(date).map((part) => [part.type, part.value]),
-  );
-  return {
-    weekday: parts.weekday,
-    hour: Number(parts.hour),
-  };
-}
-
 function localDateKey(date: Date) {
   return todayIso(date);
-}
-
-function smartDefaultCategory(date: Date): AzkarCategory {
-  const { weekday, hour } = mosqueClock(date);
-  if (weekday === "Fri") return "Friday";
-  if (hour >= 4 && hour < 12) return "Morning";
-  if (hour >= 15 && hour < 22) return "Evening";
-  if (hour >= 22 || hour < 4) return "Sleep";
-  return "Morning";
 }
 
 function isCategory(value: unknown, categories: AzkarCategory[]): value is AzkarCategory {
@@ -55,7 +32,7 @@ function isCategory(value: unknown, categories: AzkarCategory[]): value is Azkar
 function readStoredProgress(categories: AzkarCategory[]): StoredProgress {
   const now = new Date();
   const today = localDateKey(now);
-  const fallbackCategory = smartDefaultCategory(now);
+  const fallbackCategory = smartAzkarCategory(now);
 
   try {
     const raw = window.localStorage.getItem(PROGRESS_KEY);

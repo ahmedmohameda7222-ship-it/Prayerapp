@@ -6,7 +6,6 @@ import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCac
 const PRAYER_STALE_FALLBACK_MS = 5 * 60_000;
 
 function mapFromDb(row: Record<string, unknown>): PrayerTime {
-  const maghribIqama = row.maghrib_iqama ? String(row.maghrib_iqama) : undefined;
   return {
     id: String(row.id),
     date: String(row.date),
@@ -16,14 +15,8 @@ function mapFromDb(row: Record<string, unknown>): PrayerTime {
     asr: String(row.asr),
     maghrib: String(row.maghrib),
     isha: String(row.isha),
-    fajrIqama: row.fajr_iqama ? String(row.fajr_iqama) : undefined,
-    dhuhrIqama: row.dhuhr_iqama ? String(row.dhuhr_iqama) : undefined,
-    asrIqama: row.asr_iqama ? String(row.asr_iqama) : undefined,
-    maghribIqama,
-    ishaIqama: row.isha_iqama ? String(row.isha_iqama) : undefined,
     maghribProgram: {
       enabled: Boolean(row.maghrib_program_enabled),
-      maghribIqamaTime: maghribIqama,
       lessonTitle: row.maghrib_lesson_title ? String(row.maghrib_lesson_title) : undefined,
       lessonDurationMinutes: row.maghrib_lesson_duration_minutes == null ? undefined : Number(row.maghrib_lesson_duration_minutes),
       combinedIshaTime: row.maghrib_combined_isha_time ? String(row.maghrib_combined_isha_time) : undefined,
@@ -44,14 +37,8 @@ function mapToDb(item: Partial<PrayerTime>): Record<string, unknown> {
   if (item.asr) db.asr = item.asr;
   if (item.maghrib) db.maghrib = item.maghrib;
   if (item.isha) db.isha = item.isha;
-  if (item.fajrIqama !== undefined) db.fajr_iqama = item.fajrIqama;
-  if (item.dhuhrIqama !== undefined) db.dhuhr_iqama = item.dhuhrIqama;
-  if (item.asrIqama !== undefined) db.asr_iqama = item.asrIqama;
-  if (item.maghribIqama !== undefined) db.maghrib_iqama = item.maghribIqama;
-  if (item.ishaIqama !== undefined) db.isha_iqama = item.ishaIqama;
   if (item.maghribProgram !== undefined) {
     db.maghrib_program_enabled = item.maghribProgram.enabled;
-    db.maghrib_iqama = item.maghribProgram.maghribIqamaTime || null;
     db.maghrib_lesson_title = item.maghribProgram.lessonTitle || null;
     db.maghrib_lesson_duration_minutes = item.maghribProgram.lessonDurationMinutes ?? null;
     db.maghrib_combined_isha_time = item.maghribProgram.combinedIshaTime || null;
@@ -89,10 +76,7 @@ export async function getPrayerTimes(
   if (!client) return [];
 
   if (includeUnpublished) {
-    let query = client
-      .from("prayer_times")
-      .select("*")
-      .order("date", { ascending: true });
+    let query = client.from("prayer_times").select("*").order("date", { ascending: true });
     if (startDate) query = query.gte("date", startDate);
     if (endDate) query = query.lte("date", endDate);
     if (limit) query = query.limit(limit);
@@ -104,11 +88,7 @@ export async function getPrayerTimes(
   const key = `prayer_times_${startDate || "all"}_${endDate || "all"}_${limit || "all"}`;
   return getCached(key, async () => {
     try {
-      let query = client
-        .from("prayer_times")
-        .select("*")
-        .order("date", { ascending: true })
-        .eq("published", true);
+      let query = client.from("prayer_times").select("*").order("date", { ascending: true }).eq("published", true);
       if (startDate) query = query.gte("date", startDate);
       if (endDate) query = query.lte("date", endDate);
       if (limit) query = query.limit(limit);
@@ -131,12 +111,7 @@ export async function getPrayerTimeByDate(date: string): Promise<PrayerTime | un
   const key = `prayer_time_${date}`;
   return getCached(key, async () => {
     try {
-      const { data, error } = await client
-        .from("prayer_times")
-        .select("*")
-        .eq("date", date)
-        .eq("published", true)
-        .single();
+      const { data, error } = await client.from("prayer_times").select("*").eq("date", date).eq("published", true).single();
       if (error || !data) {
         if (error?.code === "PGRST116") return undefined;
         throw new Error("Unable to load prayer time");

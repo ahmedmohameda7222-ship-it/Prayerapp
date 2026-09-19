@@ -4,6 +4,13 @@ import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./loca
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
+export type DisplayEventSource = Event & { sourceUpdatedAt: string };
+
+export function invalidateEventCaches() {
+  invalidateCachePrefix("events");
+  clearPersistentCachePrefix("events");
+}
+
 function mapEvent(row: unknown): Event {
   const record = row as Record<string, unknown>;
   return {
@@ -20,6 +27,22 @@ function mapEvent(row: unknown): Event {
     ...localizedFieldsFromDb(record, "description", "description"),
     ...localizedFieldsFromDb(record, "location", "location"),
   };
+}
+
+export async function getEventsForDisplayWindow(startDate: string, endDate: string): Promise<DisplayEventSource[]> {
+  const client = createClient();
+  if (!client) return [];
+
+  const { data, error } = await client.rpc("get_masjid_display_events_window", {
+    p_start_date: startDate,
+    p_end_date: endDate,
+  } as never);
+  if (error || !Array.isArray(data)) throw new Error("Unable to load events");
+
+  return (data as Record<string, unknown>[]).map((row) => ({
+    ...mapEvent(row),
+    sourceUpdatedAt: String(row.updated_at),
+  }));
 }
 
 export async function getEvents(includeUnpublished = false): Promise<Event[]> {
@@ -66,8 +89,7 @@ export async function createEvent(item: Omit<Event, "id">): Promise<Event> {
   };
   const { data, error } = await client.from("events").insert(db as never).select().single();
   if (error || !data) throw new Error("Failed to create event");
-  invalidateCachePrefix("events");
-  clearPersistentCachePrefix("events");
+  invalidateEventCaches();
   return mapEvent(data);
 }
 
@@ -88,8 +110,7 @@ export async function updateEvent(id: string, item: Partial<Event>): Promise<Eve
   if (item.published !== undefined) db.published = item.published;
   const { data, error } = await client.from("events").update(db as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update event");
-  invalidateCachePrefix("events");
-  clearPersistentCachePrefix("events");
+  invalidateEventCaches();
   return mapEvent(data);
 }
 
@@ -98,6 +119,5 @@ export async function deleteEvent(id: string): Promise<void> {
   if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("events").delete().eq("id", id);
   if (error) throw new Error("Failed to delete event");
-  invalidateCachePrefix("events");
-  clearPersistentCachePrefix("events");
+  invalidateEventCaches();
 }

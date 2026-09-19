@@ -1,24 +1,73 @@
-import type { PrayerName, PrayerTime } from "./types";
-import { zonedDateTime } from "./date-utils";
+import type { ObligatoryPrayerName, PrayerIqamaTimes, PrayerName, PrayerTime } from "./types";
+import type { PrayerIqamaDelays } from "./prayer-engine/types";
+import { APP_TIME_ZONE, zonedDateTime } from "./date-utils";
+import { isFridayIso } from "./friday";
 
-export const prayerOrder: PrayerName[] = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"];
-export const obligatoryPrayerOrder: Exclude<PrayerName, "sunrise">[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+export const prayerOrder: PrayerName[] = [
+  "fajr",
+  "sunrise",
+  "dhuhr",
+  "asr",
+  "maghrib",
+  "isha",
+];
+export const obligatoryPrayerOrder: ObligatoryPrayerName[] = [
+  "fajr",
+  "dhuhr",
+  "asr",
+  "maghrib",
+  "isha",
+];
 
 export function getPrayerForDate(times: PrayerTime[], date: string) {
   return times.find((item) => item.date === date && item.published);
 }
 
-export function getIqama(prayer: PrayerTime, name: PrayerName) {
-  if (name === "sunrise") return undefined;
-  return prayer[`${name}Iqama` as keyof PrayerTime] as string | undefined;
+export function deriveIqamaInstant(
+  prayerDate: string,
+  prayerTime: string,
+  delayMinutes: number,
+): Date {
+  if (!Number.isInteger(delayMinutes) || delayMinutes < 0) {
+    throw new Error("Invalid Iqama delay");
+  }
+  return new Date(
+    zonedDateTime(prayerDate, prayerTime).getTime() + delayMinutes * 60_000,
+  );
+}
+
+function localTime(instant: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: APP_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(instant);
+}
+
+/** Root Prayerapp presentation adapter for the five shared Iqama delays. */
+export function derivePrayerIqamaTimes(
+  prayer: PrayerTime,
+  delays: PrayerIqamaDelays,
+): PrayerIqamaTimes {
+  const result: PrayerIqamaTimes = {};
+  for (const name of obligatoryPrayerOrder) {
+    if (name === "dhuhr" && isFridayIso(prayer.date)) continue;
+    result[name] = localTime(deriveIqamaInstant(prayer.date, prayer[name], delays[name]));
+  }
+  return result;
 }
 
 export function getNextPrayerFromSchedule(times: PrayerTime[], now = new Date()) {
-  const schedule = times.filter((item) => item.published).sort((a, b) => a.date.localeCompare(b.date));
+  const schedule = times
+    .filter((item) => item.published)
+    .sort((a, b) => a.date.localeCompare(b.date));
   for (const day of schedule) {
     for (const name of obligatoryPrayerOrder) {
       const target = zonedDateTime(day.date, day[name]);
-      if (target.getTime() > now.getTime()) return { name, time: day[name], target, date: day.date };
+      if (target.getTime() > now.getTime()) {
+        return { name, time: day[name], target, date: day.date };
+      }
     }
   }
   return undefined;

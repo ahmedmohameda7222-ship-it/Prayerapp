@@ -16,6 +16,7 @@ const announcement: Announcement = {
   message: "The complete announcement message must remain visible on Home.",
   type: "Urgent",
   isUrgent: true,
+  displayStyle: "normal",
   published: true,
   createdAt: "2026-08-12T10:00:00.000Z",
 };

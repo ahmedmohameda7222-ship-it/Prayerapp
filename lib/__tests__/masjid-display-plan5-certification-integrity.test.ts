@@ -10,6 +10,11 @@ describe("Plan 5 certification integrity", () => {
     expect(source).toMatch(
       /from plan5_before_prayer b[\s\S]+where not exists \([\s\S]+select 1[\s\S]+from public\.prayer_times p[\s\S]+p\.id = b\.id/,
     );
+
+    for (const field of ["note", "note_ar", "note_en", "note_de", "note_tr"]) {
+      expect(source).toContain(`coalesce(${field}, '')`);
+      expect(source).toContain(`coalesce(p.${field}, '')`);
+    }
   });
 
   it("requires the migration dry run to reject deleted or changed certified Jumuah rows", () => {

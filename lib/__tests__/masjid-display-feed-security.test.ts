@@ -92,6 +92,18 @@ describe("Masjid Display Plan 5 attacker-perspective boundary", () => {
     expect(boundsMigration).toContain("pg_column_size");
     expect(boundsMigration).toMatch(/raise exception/i);
     expect(boundsMigration).not.toMatch(/pg_column_size\([^\n]+\)\s*<=/i);
+
+    // Public RPC parameters must not permit arbitrarily broad source scans.
+    expect(boundsMigration).toContain("p_end_date - p_start_date > 36");
+    expect(boundsMigration).toContain("p_horizon_end > p_now + interval '37 days'");
+
+    // Size checks must operate only on the bounded max+1 set, never on every
+    // matching source row before LIMIT is applied.
+    expect(boundsMigration).not.toMatch(
+      /if exists \([\s\S]*?pg_column_size\(to_jsonb\(/i,
+    );
+    expect((boundsMigration.match(/with bounded as \(/gi) ?? []).length).toBe(4);
+    expect((boundsMigration.match(/max\(pg_column_size\(row_json\)\)/gi) ?? []).length).toBe(4);
   });
 
   it("does not expose secret-bearing keys or internal error details in public payloads", () => {

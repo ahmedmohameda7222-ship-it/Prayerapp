@@ -55,3 +55,53 @@ describe("Masjid Display Feed public security boundary", () => {
     expect(source).toContain("errorType");
   });
 });
+
+
+describe("Masjid Display Plan 5 attacker-perspective boundary", () => {
+  it("keeps public Test Control GET-only and Admin mutation behind existing authorization", () => {
+    const publicRoute = readFileSync("app/api/public/masjid-display-test-control/route.ts", "utf8");
+    const adminActions = readFileSync("app/admin/masjid-display-test/actions.ts", "utf8");
+
+    expect(publicRoute).toMatch(/export async function GET\(/);
+    for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+      expect(publicRoute).not.toMatch(
+        new RegExp(`export\\s+(?:async\\s+)?function\\s+${method}\\b`),
+      );
+    }
+    expect(publicRoute).not.toContain("createServiceRoleClient");
+    expect(publicRoute).not.toContain(".from(");
+
+    expect(adminActions).toContain("requireAllowedAdminIdentity");
+    expect(adminActions).toContain('.from("masjid_display_test_state")');
+    expect(adminActions).not.toMatch(
+      /\.from\(["'](?:prayer_times|prayer_settings|announcements|events|donation_campaigns|jumuah_times)["']\)/,
+    );
+  });
+
+  it("keeps the public Feed horizon and fixture bounded", () => {
+    const builder = readFileSync(BUILDER_PATH, "utf8");
+    const fixture = readFileSync(FIXTURE_PATH, "utf8");
+    expect(builder).toContain("const startDate = addDaysIso(today, -1)");
+    expect(builder).toContain("const endDate = addDaysIso(today, 35)");
+    expect(Buffer.byteLength(fixture, "utf8")).toBeLessThan(128 * 1024);
+  });
+
+  it("does not expose secret-bearing keys or internal error details in public payloads", () => {
+    const fixture = readFileSync(FIXTURE_PATH, "utf8");
+    const route = readFileSync(ROUTE_PATH, "utf8");
+    for (const marker of [
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "SUPABASE_SECRET_KEY",
+      "SERVICE_ROLE_KEY",
+      "admin_users",
+      "audit_logs",
+      "password",
+      "access_token",
+      "refresh_token",
+    ]) {
+      expect(fixture).not.toContain(marker);
+    }
+    expect(route).toContain('{ error: "masjid_display_feed_unavailable" }');
+    expect(route).not.toMatch(/stack|sql|postgres|supabase.*error/i);
+  });
+});

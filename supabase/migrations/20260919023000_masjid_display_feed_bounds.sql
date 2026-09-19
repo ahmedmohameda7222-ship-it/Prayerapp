@@ -73,8 +73,10 @@ begin
         'location_name', j.location_name,
         'location_address', j.location_address,
         'khateeb_name', j.khateeb_name,
+        'language', case when nullif(btrim(j.language_ar), '') is null then j.language else null end,
         'language_ar', j.language_ar,
         'language_de', j.language_de,
+        'notes', case when nullif(btrim(j.notes_ar), '') is null then j.notes else null end,
         'notes_ar', j.notes_ar,
         'notes_de', j.notes_de,
         'published', j.published,
@@ -143,8 +145,10 @@ begin
     select
       jsonb_build_object(
         'id', a.id,
+        'title', case when nullif(btrim(a.title_ar), '') is null then a.title else null end,
         'title_ar', a.title_ar,
         'title_de', a.title_de,
+        'message', case when nullif(btrim(a.message_ar), '') is null then a.message else null end,
         'message_ar', a.message_ar,
         'message_de', a.message_de,
         'type', a.type,
@@ -218,10 +222,13 @@ begin
     select
       jsonb_build_object(
         'id', e.id,
+        'title', case when nullif(btrim(e.title_ar), '') is null then e.title else null end,
         'title_ar', e.title_ar,
         'title_de', e.title_de,
+        'description', case when nullif(btrim(e.description_ar), '') is null then e.description else null end,
         'description_ar', e.description_ar,
         'description_de', e.description_de,
+        'location', case when nullif(btrim(e.location_ar), '') is null then e.location else null end,
         'location_ar', e.location_ar,
         'location_de', e.location_de,
         'date', e.date,
@@ -294,8 +301,10 @@ begin
     select
       jsonb_build_object(
         'id', c.id,
+        'title', case when nullif(btrim(c.title_ar), '') is null then c.title else null end,
         'title_ar', c.title_ar,
         'title_de', c.title_de,
+        'description', case when nullif(btrim(c.description_ar), '') is null then c.description else null end,
         'description_ar', c.description_ar,
         'description_de', c.description_de,
         'target_amount', c.target_amount,

@@ -99,21 +99,16 @@ describe("Plan 5 final Codex regression guards", () => {
       ),
     };
 
-    for (const required of ["'language', j.language", "'notes', j.notes"]) {
-      expect(sections.jumuah).toContain(required);
-    }
-    for (const required of ["'title', a.title", "'message', a.message"]) {
-      expect(sections.announcements).toContain(required);
-    }
-    for (const required of [
-      "'title', e.title",
-      "'description', e.description",
-      "'location', e.location",
-    ]) {
-      expect(sections.events).toContain(required);
-    }
-    for (const required of ["'title', c.title", "'description', c.description"]) {
-      expect(sections.campaigns).toContain(required);
+    for (const [section, alias, fields] of [
+      [sections.jumuah, "j", ["language", "notes"]],
+      [sections.announcements, "a", ["title", "message"]],
+      [sections.events, "e", ["title", "description", "location"]],
+      [sections.campaigns, "c", ["title", "description"]],
+    ] as const) {
+      for (const field of fields) {
+        expect(section).toContain(`'${field}', case when`);
+        expect(section).toContain(`then ${alias}.${field} else null end`);
+      }
     }
   });
 

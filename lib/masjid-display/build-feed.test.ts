@@ -390,6 +390,58 @@ describe("buildMasjidDisplayFeed", () => {
     ).rejects.toThrow(/maximum size|too large|payload/i);
   });
 
+  it("fails closed when a dynamic source window contains more rows than the certified maximum", async () => {
+    const source = deps();
+    const announcements = Array.from({ length: 65 }, (_, index) => ({
+      id: `announcement-${index}`,
+      title: "Announcement",
+      message: "Message",
+      type: "General" as const,
+      titleAr: "إعلان",
+      titleDe: "Ankündigung",
+      messageAr: "رسالة",
+      messageDe: "Nachricht",
+      isUrgent: index === 64,
+      displayStyle: "normal" as const,
+      displayFrom: undefined,
+      displayUntil: undefined,
+      published: true,
+      createdAt: new Date(Date.UTC(2026, 8, 15, 12, 0, index)).toISOString(),
+    }));
+    source.getAnnouncementsForDisplayWindow.mockResolvedValue(announcements as never);
+
+    await expect(
+      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
+    ).rejects.toThrow(/maximum row count|too many|source/i);
+  });
+
+  it("fails closed when one dynamic source row exceeds the certified per-row size", async () => {
+    const source = deps();
+    const large = "x".repeat(9 * 1024);
+    source.getAnnouncementsForDisplayWindow.mockResolvedValue([
+      {
+        id: "large-announcement",
+        title: "Large",
+        message: "Large",
+        type: "General",
+        titleAr: "إعلان",
+        titleDe: "Ankündigung",
+        messageAr: large,
+        messageDe: large,
+        isUrgent: true,
+        displayStyle: "normal",
+        displayFrom: undefined,
+        displayUntil: undefined,
+        published: true,
+        createdAt: "2026-09-15T09:00:00.000Z",
+      },
+    ] as never);
+
+    await expect(
+      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
+    ).rejects.toThrow(/source row.*maximum size|maximum source row size/i);
+  });
+
   it("fails atomically when required prayer or display settings are missing", async () => {
     const missingPrayer = deps();
     missingPrayer.getPrayerSettings.mockResolvedValue(null as never);

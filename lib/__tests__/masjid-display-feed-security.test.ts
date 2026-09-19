@@ -87,8 +87,11 @@ describe("Masjid Display Plan 5 attacker-perspective boundary", () => {
     expect(builder).toContain("const startDate = addDaysIso(today, -1)");
     expect(builder).toContain("const endDate = addDaysIso(today, 35)");
     expect(builder).toContain("MAX_MASJID_DISPLAY_FEED_BYTES");
-    expect(boundsMigration).toMatch(/limit\s+\d+/i);
+    expect(boundsMigration).toContain("limit 65");
+    expect(boundsMigration).toContain("limit 129");
     expect(boundsMigration).toContain("pg_column_size");
+    expect(boundsMigration).toMatch(/raise exception/i);
+    expect(boundsMigration).not.toMatch(/pg_column_size\([^\n]+\)\s*<=/i);
   });
 
   it("does not expose secret-bearing keys or internal error details in public payloads", () => {

@@ -22,12 +22,9 @@ create index if not exists idx_masjid_display_events_published_date
   on public.events (date, id)
   where published is true;
 
-create index if not exists idx_masjid_display_campaigns_active_window
-  on public.donation_campaigns (
-    start_date,
-    (coalesce(end_date, 'infinity'::date)),
-    id
-  )
+create index if not exists idx_masjid_display_campaigns_active_overlap
+  on public.donation_campaigns
+  using gist (daterange(start_date, end_date, '[]'))
   where is_active is true;
 
 create or replace function public.get_masjid_display_jumuah_window(
@@ -231,8 +228,8 @@ begin
     select c.id
     from public.donation_campaigns as c
     where c.is_active is true
-      and c.start_date <= p_end_date
-      and coalesce(c.end_date, 'infinity'::date) >= p_start_date
+      and daterange(c.start_date, c.end_date, '[]')
+        && daterange(p_start_date, p_end_date, '[]')
     limit 65
   )
   select coalesce(array_agg(id), array[]::uuid[]), count(*)::integer

@@ -9,6 +9,14 @@ describe("root CI Masjid Display release contract", () => {
     expect(existsSync(verifierPath)).toBe(true);
   });
 
+  it("preserves the embedded root security SQL line structure", () => {
+    const workflow = readFileSync(workflowPath, "utf8");
+    expect(workflow).toContain("end if;\n            if not has_table_privilege('authenticated', 'public.user_prayer_reminders'");
+    expect(workflow).toContain("if not has_function_privilege(\n              'service_role'");
+    expect(workflow).toContain("end if;\n          end\n          $;");
+    expect(workflow).toContain(") values (\n            'legacy-test@local.invalid'");
+  });
+
   it("enforces root, TV, and cross-project verification without replacing existing root gates", () => {
     const workflow = readFileSync(workflowPath, "utf8");
 

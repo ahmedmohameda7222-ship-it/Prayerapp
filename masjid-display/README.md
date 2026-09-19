@@ -33,3 +33,8 @@ The root release CI also runs these TV gates plus the producer/consumer Feed-v1 
 The browser polls production Feed through `/api/display-feed` and Test Control through `/api/test-control`. Valid Feed v1 snapshots may enter Last Known Good. Synthetic Test Mode data never enters LKG. On reconnect, visibility return, or wake, the runtime recalculates current state from current time/data and immediately refreshes instead of replaying expired transient states.
 
 See `../docs/masjid-display/deployment.md` for deployment/rollback and `../docs/masjid-display/production-certification.md` for release status.
+
+
+## Certification status
+
+Plan 5 automated software/certification gates are green on the post-Codex-fix implementation. Overall production certification remains **BLOCKED** until the required religious calibration, real-target migration prerequisite, physical TV/QR execution, and 24-hour soak evidence are actually supplied. See `../docs/masjid-display/production-certification.md`.

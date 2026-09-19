@@ -54,9 +54,9 @@ Synthetic Test payloads are rendered as typed data. They do not become productio
 
 No significant unresolved Plan 5 security defect was identified.
 
-Actual implementation evidence on HEAD `2cb0f3370fd7043b60f3ea025f80cd1adb4d5d4c`:
+Actual implementation evidence on HEAD `b16811c0e994c7ab05831625de886c06b2a785a2`:
 
-- Security Scanners run `35411293050`: SUCCESS.
+- Security Scanners run `35413523141`: SUCCESS.
 - CodeQL JavaScript/TypeScript: SUCCESS.
 - Gitleaks full-history scan: SUCCESS.
 - OSV dependency scan: SUCCESS.
@@ -64,8 +64,8 @@ Actual implementation evidence on HEAD `2cb0f3370fd7043b60f3ea025f80cd1adb4d5d4c
 - deployed-production non-destructive public/unauthorized DAST: SUCCESS.
 - authenticated local DAST: SUCCESS.
 - SBOM/dependency evidence generation: SUCCESS.
-- Masjid Display Verification run `35411293061`: SUCCESS, including the forbidden Supabase/audio runtime gate.
-- Root CI run `35411293077`: SUCCESS.
+- Masjid Display Verification run `35413523100`: SUCCESS, including the forbidden Supabase/audio runtime gate.
+- Root CI run `35413523120`: SUCCESS.
 
 **SECURITY REVIEW: PASS.**
 

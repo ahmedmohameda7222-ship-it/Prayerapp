@@ -26,7 +26,7 @@ Second, with validated shared delays present, it records BEFORE evidence and app
 
 Actual GitHub Actions evidence on implementation HEAD `2cb0f3370fd7043b60f3ea025f80cd1adb4d5d4c`:
 
-- Root CI run `35411293077`: SUCCESS.
+- Root CI run `35413523120`: SUCCESS.
 - Step `Certify Masjid Display legacy-Iqama migration safety`: SUCCESS.
 - Gate probe: destructive removal was rejected when validated shared delays were absent.
 - BEFORE prayer row count: `2`.
@@ -36,6 +36,8 @@ Actual GitHub Actions evidence on implementation HEAD `2cb0f3370fd7043b60f3ea025
 - BEFORE/AFTER canonical shared delays: `11,12,13,14,15`.
 - AFTER legacy absolute-Iqama columns: `0`.
 - The successful exercise was rollback-only.
+
+GitHub Codex Plan 5 review found that the first version only compared Jumuah rows through an inner join, which could miss deletion. The certification script now also asserts the certified Jumuah row count and uses a `NOT EXISTS` anti-join so either deletion or mutation blocks PASS. RED evidence: root CI `35413351843` failed only the new migration-integrity guard. GREEN evidence: root CI `35413523120` passed the strengthened migration certification.
 
 **LOCAL/STAGING MIGRATION DRY RUN: PASS**
 

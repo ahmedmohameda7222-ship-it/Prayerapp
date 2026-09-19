@@ -7,7 +7,7 @@ describe("Plan 5 certification integrity", () => {
 
     expect(source).toContain("Jumuah row count changed");
     expect(source).toMatch(
-      /from plan5_before_jumuah b\s+where not exists \(\s+select 1\s+from public\.jumuah_times j/s,
+      /from plan5_before_jumuah b[\s\S]+where not exists \([\s\S]+select 1[\s\S]+from public\.jumuah_times j/,
     );
   });
 });

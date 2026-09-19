@@ -82,19 +82,21 @@ insert into public.prayer_times (
   fajr_iqama, dhuhr_iqama, asr_iqama, maghrib_iqama, isha_iqama,
   maghrib_program_enabled, maghrib_lesson_title,
   maghrib_lesson_duration_minutes, maghrib_combined_isha_time,
-  note, published
+  note, note_ar, note_en, note_de, note_tr, published
 ) values
 (
   '2025-01-15', '06:01', '08:00', '12:18', '14:35', '16:50', '18:20',
   '06:12', '12:30', '14:48', '17:04', '18:35',
   true, 'PLAN5 preserved Maghrib lesson', 17, '19:45',
-  'PLAN5_MIGRATION_CERT_HISTORICAL', true
+  'PLAN5_MIGRATION_CERT_HISTORICAL',
+  'PLAN5_HIST_AR', 'PLAN5_HIST_EN', 'PLAN5_HIST_DE', 'PLAN5_HIST_TR', true
 ),
 (
   '2099-01-15', '05:11', '07:22', '12:33', '15:44', '18:55', '20:06',
   '05:22', '12:45', '15:57', '19:09', '20:21',
   false, null, null, null,
-  'PLAN5_MIGRATION_CERT_FUTURE', true
+  'PLAN5_MIGRATION_CERT_FUTURE',
+  'PLAN5_FUTURE_AR', 'PLAN5_FUTURE_EN', 'PLAN5_FUTURE_DE', 'PLAN5_FUTURE_TR', true
 );
 
 delete from public.jumuah_times where notes = 'PLAN5_MIGRATION_CERT';
@@ -112,6 +114,11 @@ select
   date,
   md5(concat_ws('|',
     date::text, fajr, sunrise, dhuhr, asr, maghrib, isha,
+    coalesce(note, ''),
+    coalesce(note_ar, ''),
+    coalesce(note_en, ''),
+    coalesce(note_de, ''),
+    coalesce(note_tr, ''),
     published::text,
     maghrib_program_enabled::text,
     coalesce(maghrib_lesson_title, ''),
@@ -168,6 +175,11 @@ begin
         and p.date = b.date
         and b.schedule_hash = md5(concat_ws('|',
           p.date::text, p.fajr, p.sunrise, p.dhuhr, p.asr, p.maghrib, p.isha,
+          coalesce(p.note, ''),
+          coalesce(p.note_ar, ''),
+          coalesce(p.note_en, ''),
+          coalesce(p.note_de, ''),
+          coalesce(p.note_tr, ''),
           p.published::text,
           p.maghrib_program_enabled::text,
           coalesce(p.maghrib_lesson_title, ''),

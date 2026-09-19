@@ -47,53 +47,65 @@ describe("Plan 5 certification integrity", () => {
     expect(source).toContain("PLAN5_PENDING_CHAIN=PASS");
   });
 
-  it("requires the migration dry run to reject deleted or changed certified prayer rows", () => {
+  it("requires the full-chain dry run to reject deleted or changed certified prayer rows", () => {
     const source = readFileSync("scripts/verify-masjid-display-migration.sh", "utf8");
 
-    expect(source).toContain("representative prayer row changed or missing");
-    expect(source).toMatch(/create temporary table plan5_before_prayer as[\s\S]+select[\s\S]+id,[\s\S]+date,/);
-    expect(source).toMatch(
-      /from plan5_before_prayer b[\s\S]+where not exists \([\s\S]+select 1[\s\S]+from public\.prayer_times p[\s\S]+p\.id = b\.id/,
-    );
-
-    for (const field of ["note", "note_ar", "note_en", "note_de", "note_tr"]) {
-      expect(source).toContain(`coalesce(${field}, '')`);
-      expect(source).toContain(`coalesce(p.${field}, '')`);
+    expect(source).toContain("before_prayer_count=");
+    expect(source).toContain("after_prayer_count=");
+    expect(source).toContain("before_prayer_hash=");
+    expect(source).toContain("after_prayer_hash=");
+    expect(source).toContain('[ "$before_prayer_hash" != "$after_prayer_hash" ]');
+    expect(source).toContain("Plan 5 pending migration chain changed preserved prayer_times fields");
+    for (const field of [
+      "id::text",
+      "date::text",
+      "fajr",
+      "sunrise",
+      "dhuhr",
+      "asr",
+      "maghrib",
+      "isha",
+      "note",
+      "note_ar",
+      "note_en",
+      "note_de",
+      "note_tr",
+      "updated_at::text",
+      "maghrib_program_enabled::text",
+      "maghrib_lesson_title",
+      "maghrib_lesson_duration_minutes::text",
+      "maghrib_combined_isha_time",
+    ]) {
+      expect(source).toContain(field);
     }
   });
 
-  it("requires the migration dry run to reject deleted or changed certified Jumuah rows", () => {
+  it("requires the full-chain dry run to reject deleted or changed certified Jumuah rows", () => {
     const source = readFileSync("scripts/verify-masjid-display-migration.sh", "utf8");
 
-    expect(source).toContain("Jumuah row count changed");
-    expect(source).toMatch(
-      /from plan5_before_jumuah b[\s\S]+where not exists \([\s\S]+select 1[\s\S]+from public\.jumuah_times j/,
-    );
-
+    expect(source).toContain("before_jumuah_count=");
+    expect(source).toContain("after_jumuah_count=");
+    expect(source).toContain("before_jumuah_hash=");
+    expect(source).toContain("after_jumuah_hash=");
+    expect(source).toContain('[ "$before_jumuah_hash" != "$after_jumuah_hash" ]');
+    expect(source).toContain("Plan 5 pending migration chain changed preserved Jumuah fields");
     for (const field of [
+      "location_name",
+      "location_address",
+      "khateeb_name",
+      "language",
       "language_ar",
       "language_en",
       "language_de",
       "language_tr",
+      "notes",
       "notes_ar",
       "notes_en",
       "notes_de",
       "notes_tr",
+      "updated_at::text",
     ]) {
-      expect(source).toContain(`coalesce(${field}, '')`);
-      expect(source).toContain(`coalesce(j.${field}, '')`);
-    }
-    for (const sentinel of [
-      "PLAN5_JUMUAH_LANGUAGE_AR",
-      "PLAN5_JUMUAH_LANGUAGE_EN",
-      "PLAN5_JUMUAH_LANGUAGE_DE",
-      "PLAN5_JUMUAH_LANGUAGE_TR",
-      "PLAN5_JUMUAH_NOTES_AR",
-      "PLAN5_JUMUAH_NOTES_EN",
-      "PLAN5_JUMUAH_NOTES_DE",
-      "PLAN5_JUMUAH_NOTES_TR",
-    ]) {
-      expect(source).toContain(sentinel);
+      expect(source).toContain(field);
     }
   });
 });

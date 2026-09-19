@@ -22,6 +22,7 @@ const IGNORE_PREFIXES = [
   "node_modules/",
   "docs/",
   "supabase/migrations/",
+  "supabase/tests/fixtures/",
   "lib/__tests__/masjid-display-iqama-cutover.test.ts",
 ];
 

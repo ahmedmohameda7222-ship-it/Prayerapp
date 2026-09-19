@@ -34,6 +34,27 @@ describe("Plan 5 final Codex regression guards", () => {
     }
   });
 
+  it("uses an overlap-indexed campaign candidate search instead of scanning expired history", () => {
+    const sql = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
+
+    expect(sql).toMatch(
+      /create index if not exists idx_masjid_display_campaigns_active_overlap[\s\S]+using gist[\s\S]+daterange\([\s\S]+where is_active is true/i,
+    );
+
+    const campaignFunction = sql.slice(
+      sql.indexOf("create or replace function public.get_masjid_display_campaigns_window"),
+    );
+    expect(campaignFunction).toMatch(
+      /daterange\([\s\S]+\)\s*&&\s*daterange\(p_start_date, p_end_date, '\[\]'\)/i,
+    );
+    expect(campaignFunction).not.toMatch(
+      /c\.start_date\s*<=\s*p_end_date[\s\S]+coalesce\(c\.end_date,[\s\S]+>=\s*p_start_date/i,
+    );
+  });
+
   it("preserves prayer note and localized-note fields in the rollback certification snapshot", () => {
     const source = readFileSync("scripts/verify-masjid-display-migration.sh", "utf8");
 

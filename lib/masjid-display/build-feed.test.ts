@@ -442,6 +442,49 @@ describe("buildMasjidDisplayFeed", () => {
     ).rejects.toThrow(/source row.*maximum size|maximum source row size/i);
   });
 
+  it("accepts a bounded public campaign projection even when non-displayed legacy/locales make the raw source row large", async () => {
+    const source = deps();
+    const nonDisplayed = "x".repeat(5_000);
+    source.getDonationCampaignsForDisplayWindow.mockResolvedValue([
+      {
+        id: "projection-sized-campaign",
+        title: nonDisplayed,
+        description: nonDisplayed,
+        titleAr: "تبرع",
+        titleEn: nonDisplayed,
+        titleDe: "Spende",
+        titleTr: nonDisplayed,
+        descriptionAr: "وصف قصير",
+        descriptionEn: nonDisplayed,
+        descriptionDe: "Kurze Beschreibung",
+        descriptionTr: nonDisplayed,
+        targetAmount: 10_000,
+        collectedAmount: 1_000,
+        startDate: "2026-09-01",
+        endDate: undefined,
+        donationUrl: "https://donate.example.test",
+        isActive: true,
+        isFeatured: true,
+        sourceUpdatedAt: "2026-09-12T10:00:00.000Z",
+      },
+    ] as never);
+
+    const feed = await buildMasjidDisplayFeed(
+      new Date("2026-09-15T10:00:00.000Z"),
+      source as never,
+    );
+
+    expect(feed.campaigns).toEqual([
+      expect.objectContaining({
+        id: "projection-sized-campaign",
+        titleAr: "تبرع",
+        titleDe: "Spende",
+        descriptionAr: "وصف قصير",
+        descriptionDe: "Kurze Beschreibung",
+      }),
+    ]);
+  });
+
   it("fails atomically when required prayer or display settings are missing", async () => {
     const missingPrayer = deps();
     missingPrayer.getPrayerSettings.mockResolvedValue(null as never);

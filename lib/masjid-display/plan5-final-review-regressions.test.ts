@@ -34,6 +34,44 @@ describe("Plan 5 final Codex regression guards", () => {
     }
   });
 
+  it("uses an overlap-indexed announcement candidate search instead of scanning one-sided B-tree ranges", () => {
+    const sql = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
+
+    expect(sql).toMatch(
+      /create index if not exists idx_masjid_display_announcements_published_overlap[\s\S]+using gist[\s\S]+tstzrange\([\s\S]+where published is true/i,
+    );
+
+    const start = sql.indexOf(
+      "create or replace function public.get_masjid_display_announcements_window",
+    );
+    const end = sql.indexOf(
+      "create or replace function public.get_masjid_display_events_window",
+      start,
+    );
+    const announcementFunction = sql.slice(start, end);
+    expect(announcementFunction).toMatch(
+      /tstzrange\(a\.display_from, a\.display_until, '\[\]'\)\s*&&\s*tstzrange\(p_now, p_horizon_end, '\[\]'\)/i,
+    );
+    expect(announcementFunction).not.toMatch(
+      /coalesce\(a\.display_until,[\s\S]+>=\s*p_now[\s\S]+coalesce\(a\.display_from,[\s\S]+<=\s*p_horizon_end/i,
+    );
+  });
+
+  it("sizes bounded dynamic rows by their public projection rather than duplicated raw columns", () => {
+    const sql = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
+
+    expect((sql.match(/as public_row_json/gi) ?? []).length).toBeGreaterThanOrEqual(3);
+    expect((sql.match(/max\(pg_column_size\(public_row_json\)\)/gi) ?? []).length)
+      .toBeGreaterThanOrEqual(3);
+    expect(sql).not.toMatch(/max\(pg_column_size\(row_json\)\)/i);
+  });
+
   it("uses an overlap-indexed campaign candidate search instead of scanning expired history", () => {
     const sql = readFileSync(
       "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",

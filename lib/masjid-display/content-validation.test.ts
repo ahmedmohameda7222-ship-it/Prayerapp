@@ -16,6 +16,26 @@ describe("display publishability validation", () => {
     expect(validateDisplayPublishableContent("announcement", { published: false })).toEqual([]);
   });
 
+  it("rejects published announcement text whose UTF-8 projection would exceed the display source ceiling", () => {
+    expect(validateDisplayPublishableContent("announcement", {
+      published: true,
+      titleAr: "تنبيه",
+      titleDe: "Hinweis",
+      messageAr: "ا".repeat(5_000),
+      messageDe: "x".repeat(5_000),
+    })).toContain("Published display content exceeds maximum display size");
+  });
+
+  it("allows the same oversized announcement while it remains an unpublished draft", () => {
+    expect(validateDisplayPublishableContent("announcement", {
+      published: false,
+      titleAr: "تنبيه",
+      titleDe: "Hinweis",
+      messageAr: "ا".repeat(5_000),
+      messageDe: "x".repeat(5_000),
+    })).toEqual([]);
+  });
+
   it("requires Arabic and German title, description, and location for published events", () => {
     expect(validateDisplayPublishableContent("event", {
       published: true,
@@ -28,6 +48,18 @@ describe("display publishability validation", () => {
     })).toContain("German description is required for published display content");
   });
 
+  it("rejects published event text whose UTF-8 projection would exceed the display source ceiling", () => {
+    expect(validateDisplayPublishableContent("event", {
+      published: true,
+      titleAr: "فعالية",
+      titleDe: "Veranstaltung",
+      descriptionAr: "ا".repeat(4_000),
+      descriptionDe: "x".repeat(4_000),
+      locationAr: "المسجد",
+      locationDe: "Moschee",
+    })).toContain("Published display content exceeds maximum display size");
+  });
+
   it("requires Arabic and German title and description only for active campaigns", () => {
     expect(validateDisplayPublishableContent("campaign", {
       isActive: true,
@@ -37,5 +69,25 @@ describe("display publishability validation", () => {
       descriptionDe: "",
     })).toContain("German description is required for active display campaign");
     expect(validateDisplayPublishableContent("campaign", { isActive: false })).toEqual([]);
+  });
+
+  it("rejects active campaign text whose UTF-8 projection would exceed the display source ceiling", () => {
+    expect(validateDisplayPublishableContent("campaign", {
+      isActive: true,
+      titleAr: "تبرع",
+      titleDe: "Spende",
+      descriptionAr: "ا".repeat(5_000),
+      descriptionDe: "x".repeat(5_000),
+    })).toContain("Active display campaign exceeds maximum display size");
+  });
+
+  it("allows the same oversized campaign while it remains inactive", () => {
+    expect(validateDisplayPublishableContent("campaign", {
+      isActive: false,
+      titleAr: "تبرع",
+      titleDe: "Spende",
+      descriptionAr: "ا".repeat(5_000),
+      descriptionDe: "x".repeat(5_000),
+    })).toEqual([]);
   });
 });

@@ -13,6 +13,25 @@ describe("Plan 5 final Codex regression guards", () => {
     expect(sql).not.toMatch(/if exists \([\s\S]*?pg_column_size\(to_jsonb\(/i);
     expect((sql.match(/with bounded as \(/gi) ?? []).length).toBe(4);
     expect((sql.match(/max\(pg_column_size\(row_json\)\)/gi) ?? []).length).toBe(4);
+
+    const boundedBlocks = Array.from(
+      sql.matchAll(/with bounded as \(([\s\S]*?)\n\s*\)/gi),
+      (match) => match[1],
+    );
+    expect(boundedBlocks).toHaveLength(4);
+    for (const block of boundedBlocks) {
+      expect(block).not.toMatch(/\border by\b/i);
+      expect(block).toMatch(/\blimit\s+(?:65|129)\b/i);
+    }
+
+    for (const indexName of [
+      "idx_masjid_display_jumuah_published_date",
+      "idx_masjid_display_announcements_published_window",
+      "idx_masjid_display_events_published_date",
+      "idx_masjid_display_campaigns_active_window",
+    ]) {
+      expect(sql).toContain(`create index if not exists ${indexName}`);
+    }
   });
 
   it("preserves prayer note and localized-note fields in the rollback certification snapshot", () => {

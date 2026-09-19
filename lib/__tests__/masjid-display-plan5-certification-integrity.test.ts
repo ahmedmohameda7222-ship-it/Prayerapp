@@ -24,5 +24,31 @@ describe("Plan 5 certification integrity", () => {
     expect(source).toMatch(
       /from plan5_before_jumuah b[\s\S]+where not exists \([\s\S]+select 1[\s\S]+from public\.jumuah_times j/,
     );
+
+    for (const field of [
+      "language_ar",
+      "language_en",
+      "language_de",
+      "language_tr",
+      "notes_ar",
+      "notes_en",
+      "notes_de",
+      "notes_tr",
+    ]) {
+      expect(source).toContain(`coalesce(${field}, '')`);
+      expect(source).toContain(`coalesce(j.${field}, '')`);
+    }
+    for (const sentinel of [
+      "PLAN5_JUMUAH_LANGUAGE_AR",
+      "PLAN5_JUMUAH_LANGUAGE_EN",
+      "PLAN5_JUMUAH_LANGUAGE_DE",
+      "PLAN5_JUMUAH_LANGUAGE_TR",
+      "PLAN5_JUMUAH_NOTES_AR",
+      "PLAN5_JUMUAH_NOTES_EN",
+      "PLAN5_JUMUAH_NOTES_DE",
+      "PLAN5_JUMUAH_NOTES_TR",
+    ]) {
+      expect(source).toContain(sentinel);
+    }
   });
 });

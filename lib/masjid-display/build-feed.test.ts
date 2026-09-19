@@ -439,7 +439,7 @@ describe("buildMasjidDisplayFeed", () => {
 
     await expect(
       buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
-    ).rejects.toThrow(/source row.*maximum size|maximum source row size/i);
+    ).rejects.toThrow(/(?:source|public) row.*maximum size|maximum (?:source|public) row size/i);
   });
 
   it("accepts a bounded public campaign projection even when non-displayed legacy/locales make the raw source row large", async () => {

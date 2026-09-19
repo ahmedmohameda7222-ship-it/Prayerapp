@@ -12,7 +12,7 @@ describe("Plan 5 final Codex regression guards", () => {
     expect(sql).toContain("p_horizon_end > p_now + interval '37 days'");
     expect(sql).not.toMatch(/if exists \([\s\S]*?pg_column_size\(to_jsonb\(/i);
     expect((sql.match(/with bounded as \(/gi) ?? []).length).toBe(4);
-    expect((sql.match(/max\(pg_column_size\(row_json\)\)/gi) ?? []).length).toBe(4);
+    expect((sql.match(/max\(pg_column_size\(public_row_json\)\)/gi) ?? []).length).toBe(4);
 
     const boundedBlocks = Array.from(
       sql.matchAll(/with bounded as \(([\s\S]*?)\n\s*\)/gi),
@@ -26,7 +26,7 @@ describe("Plan 5 final Codex regression guards", () => {
 
     for (const indexName of [
       "idx_masjid_display_jumuah_published_date",
-      "idx_masjid_display_announcements_published_window",
+      "idx_masjid_display_announcements_published_overlap",
       "idx_masjid_display_events_published_date",
       "idx_masjid_display_campaigns_active_overlap",
     ]) {

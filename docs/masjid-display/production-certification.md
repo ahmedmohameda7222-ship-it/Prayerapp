@@ -13,9 +13,9 @@ Plan 5 is a production-readiness evidence gate. Software/certification-framework
 | DB migration local/staging dry run | Yes | PASS | Root CI `35472416648`; reviewed 81/3 fixture + full nine-migration pending-chain certification, unchanged hashes/counts, Maghrib Program 8→8, shared delays `20,15,15,5,10`, legacy Iqama columns 0 |
 | Real-target legacy-Iqama cutover prerequisite | Yes | BLOCKED | Read-only target evidence: 81 prayer rows, 3 Jumuah rows, 5 legacy Iqama columns, no `prayer_settings` table |
 | Root tests/lint/typecheck/build | Yes | PASS | Root CI `35472416648`: install/audit/lint/tests/typecheck/Supabase gates/build all success |
-| TV tests/lint/typecheck/build | Yes | PASS | Masjid Display Verification `35472416618` and root CI `35441435280` |
+| TV tests/lint/typecheck/build | Yes | PASS | Masjid Display Verification `35472416618` and root CI `35472416648` |
 | Producer/consumer Feed-v1 contract | Yes | PASS | Root CI `35472416648`: semantic fixture verifier success |
-| Feed/security boundary | Yes | PASS | Security Scanners `35472416596` + TV forbidden-runtime/live verification `35441435271`; bounded public RPC projections and fail-closed source/output limits |
+| Feed/security boundary | Yes | PASS | Security Scanners `35472416596` + TV forbidden-runtime/live verification `35472416618`; bounded public RPC projections and fail-closed source/output limits |
 | Offline/LKG certification | Yes | PASS | Dedicated forward-wake/offline certification passed in `35472416618` |
 | Test Mode certification | Yes | PASS | Dedicated TV certification tests + live two-app verification passed in `35472416618` |
 | Display-state certification | Yes | PASS | Dedicated five-prayer/Friday certification suite passed in `35472416618` |
@@ -34,9 +34,9 @@ The PASS rows above are backed by implementation/evidence HEAD `57d2c46c56d6af46
 
 - Root CI `35472416648`: SUCCESS.
 - Masjid Display Verification `35472416618`: SUCCESS, including live two-app integration.
-- Plan 3 Display Feed Verification `35441435398`: SUCCESS.
+- Plan 3 Display Feed Verification `35472416604`: SUCCESS.
 - Security Scanners `35472416596`: SUCCESS.
-- Android TWA `35441435313`: FAILURE at SDK setup only, before project execution.
+- Android TWA `35472416623`: FAILURE at SDK setup only, before project execution.
 
 GitHub Codex Plan 5 review identified eighteen legitimate Plan 5 certification/security-integrity findings in the final review loop:
 

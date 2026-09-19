@@ -30,7 +30,7 @@ All mutation authority remains in the root Prayerapp Admin application. Test Mod
 | Upstream errors | Generic public error, no stack/SQL details | Root and TV route tests/source checks |
 | LKG poisoning | Strict full Feed validation before install | LKG calls `validateFeedV1`; invalid 200/schema retained as diagnostics only |
 | Synthetic Test data | Dedicated local synthetic rendering; production LKG untouched | Dedicated Test Mode certification added |
-| Payload exhaustion | Fixed -1/+35 day prayer horizon and strict projections | Horizon + fixture-size release gate added |
+| Payload exhaustion | Fixed horizon, bounded DB readers, bounded serialized public response | Dynamic RPCs use deterministic row caps and a 16 KiB per-source-row ceiling; builder and finalized public response fail closed above 128 KiB; generated oversized payload test added |
 
 ## Public Feed minimization
 
@@ -54,9 +54,9 @@ Synthetic Test payloads are rendered as typed data. They do not become productio
 
 No significant unresolved Plan 5 security defect was identified.
 
-Actual implementation evidence on HEAD `dbd2145a60dd866a7c55a88e6762ce26ccadf6b9`:
+Actual implementation evidence on HEAD `27845baffce4359dcdac82f6754df3b33e70684a`:
 
-- Security Scanners run `35415341667`: SUCCESS.
+- Security Scanners run `35417979047`: SUCCESS.
 - CodeQL JavaScript/TypeScript: SUCCESS.
 - Gitleaks full-history scan: SUCCESS.
 - OSV dependency scan: SUCCESS.
@@ -64,8 +64,10 @@ Actual implementation evidence on HEAD `dbd2145a60dd866a7c55a88e6762ce26ccadf6b9
 - deployed-production non-destructive public/unauthorized DAST: SUCCESS.
 - authenticated local DAST: SUCCESS.
 - SBOM/dependency evidence generation: SUCCESS.
-- Masjid Display Verification run `35415341668`: SUCCESS, including the forbidden Supabase/audio runtime gate.
-- Root CI run `35415341665`: SUCCESS.
+- Masjid Display Verification run `35417979029`: SUCCESS, including the forbidden Supabase/audio runtime gate.
+- Root CI run `35417979067`: SUCCESS.
+
+GitHub Codex identified that the original Plan 5 payload-exhaustion test measured only the golden fixture and did not bound the production path. The corrected implementation adds `20260919023000_masjid_display_feed_bounds.sql`, which bounds dynamic reader row counts and rejects source rows larger than 16 KiB, plus a 128 KiB serialized ceiling enforced in both the Feed builder and finalized public route. The generated-data regression creates an approximately 160 KiB dynamic Feed candidate and requires fail-closed behavior. RED: Plan 3 `35417740593` and root CI `35417740571`. GREEN: Plan 3 `35417979109`, root CI `35417979067`, Masjid Display `35417979029`, and Security Scanners `35417979047`.
 
 **SECURITY REVIEW: PASS.**
 

@@ -13,7 +13,13 @@ describe("root CI Masjid Display release contract", () => {
     const workflow = readFileSync(workflowPath, "utf8");
     expect(workflow).toContain("end if;\n            if not has_table_privilege('authenticated', 'public.user_prayer_reminders'");
     expect(workflow).toContain("if not has_function_privilege(\n              'service_role'");
-    expect(workflow).toContain("end if;\n          end\n          " + "$" + "$;");
+    expect(workflow).toContain(
+      "raise exception 'synthetic admin audit row was not preserved';\\n" +
+        "            end if;\\n          end\\n          " +
+        "$" +
+        "$;\\n          rollback;",
+    );
+    expect(workflow).not.toContain("\\n          " + "$" + ";\\n");
     expect(workflow).toContain(") values (\n            'legacy-test@local.invalid'");
   });
 

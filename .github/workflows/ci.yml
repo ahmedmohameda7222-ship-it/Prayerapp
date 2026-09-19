@@ -502,7 +502,7 @@ jobs:
               raise exception 'synthetic admin audit row was not preserved';
             end if;
           end
-          $;
+          $$;
           rollback;
           SQL
           } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1

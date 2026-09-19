@@ -24,26 +24,27 @@ Second, with validated shared delays present, it records BEFORE evidence and app
 - the five canonical shared Iqama delays;
 - removal of the five legacy absolute-Iqama columns only after the approved gate.
 
-Actual GitHub Actions evidence on strengthened implementation HEAD `6d5a3e8054dba7254984bd8ccb75d4915f664959`:
+Actual GitHub Actions evidence on strengthened implementation HEAD `86ce2380f35651a0ebe23d5db0fab072069e0e3c`:
 
-- Root CI run `35418592166`: SUCCESS.
+- Root CI run `35421280923`: SUCCESS.
 - Step `Certify Masjid Display legacy-Iqama migration safety`: SUCCESS.
 - Gate probe: destructive removal was rejected when validated shared delays were absent.
 - BEFORE prayer row count: `2`.
-- BEFORE/AFTER representative prayer schedule hash: `72f7c4f396bc2aed735f5e2a363d5090`.
+- BEFORE/AFTER representative prayer schedule hash: `f9f16a6cab070324c14e95d0feeaf4e6`.
 - BEFORE/AFTER Jumuah count: `1`.
 - BEFORE/AFTER Jumuah hash: `9cc14930e312b5952309d02eda89768c`.
 - BEFORE/AFTER canonical shared delays: `11,12,13,14,15`.
 - AFTER legacy absolute-Iqama columns: `0`.
 - The successful exercise was rollback-only.
 
-GitHub Codex Plan 5 review found three migration-certification integrity gaps.
+GitHub Codex Plan 5 review found four migration-certification integrity gaps.
 
 1. The first version compared Jumuah rows through an inner join, which could miss deletion. The script now asserts the certified Jumuah row count and uses a `NOT EXISTS` anti-join. RED: root CI `35413351843`. GREEN: root CI `35413523120`.
 2. The prayer-row preservation check used an inner join by date, which could miss deletion/date mutation. It was changed to a `NOT EXISTS` anti-join. RED: root CI `35414872550`. GREEN: root CI `35415341665`.
-3. The strengthened prayer-row snapshot still omitted the row UUID, so delete/reinsert under the same date and values could masquerade as preservation. `plan5_before_prayer` now snapshots `id`, and the anti-join requires original UUID + date + identical six-prayer/Maghrib-program hash. RED: root CI `35417740571` failed this guard while 830 other tests passed. GREEN: root CI `35418592166`.
+3. The strengthened prayer-row snapshot still omitted the row UUID, so delete/reinsert under the same date and values could masquerade as preservation. `plan5_before_prayer` now snapshots `id`, and the anti-join requires original UUID + date + identical represented-value hash. RED: root CI `35417740571`. GREEN: root CI `35418592166`.
+4. The preservation hash still omitted `note` and localized note columns. The certification fixtures now use distinct values for `note_ar`, `note_en`, `note_de`, and `note_tr`, and the BEFORE/AFTER hash includes all five note fields. RED: Plan 3 `35421192534` failed the new note-preservation guard while 68 other focused tests passed. GREEN: root CI `35421280923`, including the rollback-only migration certification.
 
-Deletion, replacement under a new UUID, date mutation, or represented-value drift in either the certified prayer rows or Jumuah row now blocks PASS.
+Deletion, replacement under a new UUID, date mutation, represented-value drift, or note/localized-note corruption in either the certified prayer rows or Jumuah row now blocks PASS.
 
 **LOCAL/STAGING MIGRATION DRY RUN: PASS**
 

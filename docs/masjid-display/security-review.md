@@ -54,9 +54,9 @@ Synthetic Test payloads are rendered as typed data. They do not become productio
 
 No significant unresolved Plan 5 security defect was identified.
 
-Actual implementation evidence on HEAD `6d5a3e8054dba7254984bd8ccb75d4915f664959`:
+Actual implementation evidence on HEAD `86ce2380f35651a0ebe23d5db0fab072069e0e3c`:
 
-- Security Scanners run `35418592173`: SUCCESS.
+- Security Scanners run `35421280936`: SUCCESS.
 - CodeQL JavaScript/TypeScript: SUCCESS.
 - Gitleaks full-history scan: SUCCESS.
 - OSV dependency scan: SUCCESS.
@@ -64,10 +64,10 @@ Actual implementation evidence on HEAD `6d5a3e8054dba7254984bd8ccb75d4915f664959
 - deployed-production non-destructive public/unauthorized DAST: SUCCESS.
 - authenticated local DAST: SUCCESS.
 - SBOM/dependency evidence generation: SUCCESS.
-- Masjid Display Verification run `35418592180`: SUCCESS, including the forbidden Supabase/audio runtime gate.
-- Root CI run `35418592166`: SUCCESS.
+- Masjid Display Verification run `35421280963`: SUCCESS, including the forbidden Supabase/audio runtime gate.
+- Root CI run `35421280923`: SUCCESS.
 
-GitHub Codex identified two successive payload-boundary issues. First, the original Plan 5 payload-exhaustion test measured only the golden fixture and did not bound the production path. Second, the first database row cap could silently truncate an older still-active urgent announcement while returning a healthy-looking Feed. The final implementation makes the boundary fail closed: `20260919023000_masjid_display_feed_bounds.sql` raises when any matching dynamic source row exceeds 16 KiB and returns at most max+1 rows; the builder rejects max+1 overflow before projection and independently checks source-row size; the builder and finalized public route both enforce the 128 KiB serialized Feed ceiling. RED evidence: Plan 3 `35417740593` / root CI `35417740571` for the initial runtime-bound guard, then Plan 3 `35418516067` for the silent-truncation/oversized-source guards. GREEN: Plan 3 `35418592174`, root CI `35418592166`, Masjid Display `35418592180`, and Security Scanners `35418592173`.
+GitHub Codex identified three successive payload-boundary issues. First, the original Plan 5 payload-exhaustion test measured only the golden fixture and did not bound the production path. Second, the first database row cap could silently truncate an older still-active urgent announcement while returning a healthy-looking Feed. Third, the oversize-row check still serialized every matching row before the later LIMIT and the public RPC parameters accepted arbitrarily broad horizons. The final implementation fails closed at every layer: the public RPCs reject null/reversed/broad horizons before source processing; each reader materializes only max+1 matching rows before JSON sizing/aggregation; source overflow and >16 KiB bounded rows raise errors; the server builder independently enforces row/source-size limits; and both builder and finalized route enforce the 128 KiB serialized Feed ceiling. RED evidence: Plan 3 `35417740593` / root CI `35417740571` for the initial runtime-bound guard, Plan 3 `35418516067` for silent truncation/oversized source rows, and Plan 3 `35421192534` for bounded source work/horizon enforcement. GREEN: Plan 3 `35421280917`, root CI `35421280923`, Masjid Display `35421280963`, and Security Scanners `35421280936`.
 
 **SECURITY REVIEW: PASS.**
 

@@ -1,6 +1,6 @@
 # Masjid Display — Attacker-Perspective Security Review
 
-Status: PENDING FINAL AUTOMATED VERIFICATION
+Status: PASS — AUTOMATED SECURITY CERTIFICATION
 
 ## Boundary
 
@@ -13,7 +13,7 @@ All mutation authority remains in the root Prayerapp Admin application. Test Mod
 
 ## Reviewed attack surfaces
 
-| Attack surface | Expected control | Review result before final CI |
+| Attack surface | Expected control | Certification result |
 | --- | --- | --- |
 | Supabase access from TV browser | No Supabase browser dependency/runtime | No dependency/use found; automated source gate added |
 | Audio/runtime media abuse | No `new Audio` or `<audio>` | No runtime use found; automated source gate added |
@@ -52,4 +52,21 @@ Synthetic Test payloads are rendered as typed data. They do not become productio
 - `masjid-display/lib/runtime/test-mode-certification.test.tsx`
 - existing strict Feed/LKG/proxy/Admin tests
 
-No significant unresolved Plan 5 security defect was identified during source review. This document remains **PENDING**, not PASS, until the final automated security and wider CI evidence is recorded. Any legitimate security finding from GitHub Codex Review reopens this gate.
+No significant unresolved Plan 5 security defect was identified.
+
+Actual implementation evidence on HEAD `2cb0f3370fd7043b60f3ea025f80cd1adb4d5d4c`:
+
+- Security Scanners run `35411293050`: SUCCESS.
+- CodeQL JavaScript/TypeScript: SUCCESS.
+- Gitleaks full-history scan: SUCCESS.
+- OSV dependency scan: SUCCESS.
+- exact-head isolated runtime DAST: SUCCESS.
+- deployed-production non-destructive public/unauthorized DAST: SUCCESS.
+- authenticated local DAST: SUCCESS.
+- SBOM/dependency evidence generation: SUCCESS.
+- Masjid Display Verification run `35411293061`: SUCCESS, including the forbidden Supabase/audio runtime gate.
+- Root CI run `35411293077`: SUCCESS.
+
+**SECURITY REVIEW: PASS.**
+
+A later legitimate GitHub Codex Critical/Important/security finding would reopen this gate.

@@ -1,6 +1,6 @@
 # Masjid Display — Migration Certification
 
-Status: PENDING FINAL CI EVIDENCE
+Status: PASS FOR LOCAL/STAGING DRY RUN — REAL TARGET CUTOVER BLOCKED
 
 ## Scope separation
 
@@ -24,16 +24,33 @@ Second, with validated shared delays present, it records BEFORE evidence and app
 - the five canonical shared Iqama delays;
 - removal of the five legacy absolute-Iqama columns only after the approved gate.
 
-Final GitHub Actions run ID and PASS/BLOCKED result are recorded after the script executes on the finalized Plan 5 implementation commit.
+Actual GitHub Actions evidence on implementation HEAD `2cb0f3370fd7043b60f3ea025f80cd1adb4d5d4c`:
 
-**LOCAL/STAGING MIGRATION DRY RUN: PENDING FINAL CI EVIDENCE**
+- Root CI run `35411293077`: SUCCESS.
+- Step `Certify Masjid Display legacy-Iqama migration safety`: SUCCESS.
+- Gate probe: destructive removal was rejected when validated shared delays were absent.
+- BEFORE prayer row count: `2`.
+- BEFORE/AFTER representative prayer schedule hash: `72f7c4f396bc2aed735f5e2a363d5090`.
+- BEFORE/AFTER Jumuah count: `1`.
+- BEFORE/AFTER Jumuah hash: `9cc14930e312b5952309d02eda89768c`.
+- BEFORE/AFTER canonical shared delays: `11,12,13,14,15`.
+- AFTER legacy absolute-Iqama columns: `0`.
+- The successful exercise was rollback-only.
+
+**LOCAL/STAGING MIGRATION DRY RUN: PASS**
 
 ## Real target destructive cutover
 
-Plan 5 has not been given verified, read-only evidence proving that the real target currently contains the required validated `prayer_settings` singleton/shared delays, nor authorization to manufacture those prerequisites merely for certification.
+Authorized read-only inspection of the Prayerapp Supabase target identified the current real-target state:
 
-No destructive real-target change was applied by this certification work.
+- `prayer_times`: 81 rows;
+- `jumuah_times`: 3 rows;
+- legacy absolute-Iqama columns present: all 5;
+- `public.prayer_settings`: not present;
+- latest applied repository migration visible on target: `20260902223939_admin_audit_hardening`.
 
-**REAL TARGET DESTRUCTIVE CUTOVER: BLOCKED — production prerequisites/authorization not proven.**
+Therefore the destructive cutover prerequisite is not satisfied. No schema or production-data mutation was performed by Plan 5.
+
+**REAL TARGET DESTRUCTIVE CUTOVER: BLOCKED — `prayer_settings`/validated shared-delay prerequisite absent on the real target and destructive execution not authorized.**
 
 To turn this row into PASS, an authorized operator must capture current real-target read-only evidence showing the singleton and five validated shared delays, approve the cutover, execute the migration through the normal release path, and record before/after counts and representative hashes/values.

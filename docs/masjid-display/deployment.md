@@ -26,7 +26,9 @@ Prayerapp and Masjid Display deploy independently. They must not be treated as a
 
 ## Environment configuration
 
-In the TV Vercel project, configure `PRAYERAPP_ORIGIN` as the canonical Prayerapp **origin only**, for example the origin value shown by the root project's production deployment settings. The implementation rejects credentials, query strings, fragments, and paths in this variable.
+Authorized Vercel inspection identifies the root Prayerapp production project as `donaumoschee`. Its current production deployment is READY and exposes the canonical Vercel production alias `https://donaumoschee.vercel.app`.
+
+In the independent TV Vercel project, configure `PRAYERAPP_ORIGIN` as the canonical Prayerapp **origin only**. At the time of this certification, the authorized root production alias is `https://donaumoschee.vercel.app`; the operator must still confirm the production alias has not changed when deploying the TV project. The implementation rejects credentials, query strings, fragments, and paths in this variable.
 
 Do not create `NEXT_PUBLIC_PRAYERAPP_ORIGIN`. The browser talks only to same-origin TV route handlers.
 

@@ -39,7 +39,17 @@ These values are **historical evidence**, not a fresh Plan 5 re-execution. Plan 
 
 ## Exact rows/date coverage
 
-An authoritative reviewed production fixture set containing the exact historical rows and required seasonal matrix is **not present in the Plan 5 branch evidence available to this execution**. Therefore Plan 5 cannot truthfully record exact row IDs/date coverage for a new production calibration run.
+Authorized read-only inspection of the current Prayerapp production timetable found:
+
+- total `prayer_times` rows: **81**;
+- total date range: **2026-08-12 through 2026-10-31**;
+- published rows: **70**;
+- published date range: **2026-08-23 through 2026-10-31**;
+- published dates are contiguous across that range;
+- published six-prayer reference hash: `1725481dd6c98c4017c42fec4e42bb22`;
+- all-row six-prayer reference hash: `f93721141e2e6af24c6c98879853d8c4`.
+
+This is fresh reference-data evidence, **not** a fresh Adhan-profile residual computation. The available published range includes the 2026 DST-end transition on October 25 but does not constitute the required reviewed seasonal production fixture matrix.
 
 Required coverage still missing as an approved fixture set:
 

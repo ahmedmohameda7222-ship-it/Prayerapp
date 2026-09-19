@@ -12,7 +12,7 @@ The TV browser has no Supabase client, no service-role/browser secret, no prayer
 
 ## Required server environment
 
-`PRAYERAPP_ORIGIN` is a **server-only** origin used by the TV project's route handlers. Set it in the independent TV deployment to the real Prayerapp production origin copied from the root project's deployment settings. Do not expose it through a `NEXT_PUBLIC_` variable and do not append paths/query parameters.
+`PRAYERAPP_ORIGIN` is a **server-only** origin used by the TV project's route handlers. Authorized Vercel inspection during Plan 5 identified the current root Prayerapp production alias as `https://donaumoschee.vercel.app`. Set the independent TV deployment to the canonical root production origin after confirming it in Vercel at deployment time. Do not expose it through a `NEXT_PUBLIC_` variable and do not append paths/query parameters.
 
 ## Local verification
 

@@ -2,6 +2,20 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("Plan 5 certification integrity", () => {
+  it("keeps migration certification documentation aligned with the full pending-chain gate", () => {
+    const doc = readFileSync("docs/masjid-display/migration-certification.md", "utf8");
+
+    expect(doc).toContain("full pending migration chain");
+    expect(doc).toContain("81");
+    expect(doc).toContain("3");
+    expect(doc).toContain("20260902223939");
+    expect(doc).toContain("20,15,15,5,10");
+    expect(doc).toContain("PLAN5_PENDING_CHAIN=PASS");
+    expect(doc).not.toMatch(/wraps the successful cutover exercise in a transaction that is rolled back/i);
+    expect(doc).not.toMatch(/BEFORE prayer row count:\s*`2`/);
+    expect(doc).not.toMatch(/BEFORE\/AFTER Jumuah count:\s*`1`/);
+  });
+
   it("certifies the complete pending migration chain from the reviewed real-target cutoff snapshot", () => {
     const source = readFileSync("scripts/verify-masjid-display-migration.sh", "utf8");
     const fixturePath = "supabase/tests/fixtures/plan5-precutover-production-like.sql";

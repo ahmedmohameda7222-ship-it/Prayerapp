@@ -37,4 +37,4 @@ See `../docs/masjid-display/deployment.md` for deployment/rollback and `../docs/
 
 ## Certification status
 
-Plan 5 automated software/certification gates are green on the post-Codex-fix implementation. Overall production certification remains **BLOCKED** until the required religious calibration, real-target migration prerequisite, physical TV/QR execution, and 24-hour soak evidence are actually supplied. See `../docs/masjid-display/production-certification.md`.
+Plan 5 automated software/certification gates are green after the Codex certification-integrity fixes. Overall production certification remains **BLOCKED** until the required religious calibration, real-target migration prerequisite, physical TV/QR execution, and 24-hour soak evidence are actually supplied. See `../docs/masjid-display/production-certification.md`.

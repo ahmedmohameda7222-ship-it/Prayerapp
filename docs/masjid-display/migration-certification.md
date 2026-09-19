@@ -24,9 +24,9 @@ Second, with validated shared delays present, it records BEFORE evidence and app
 - the five canonical shared Iqama delays;
 - removal of the five legacy absolute-Iqama columns only after the approved gate.
 
-Actual GitHub Actions evidence on implementation HEAD `2cb0f3370fd7043b60f3ea025f80cd1adb4d5d4c`:
+Actual GitHub Actions evidence on strengthened implementation HEAD `dbd2145a60dd866a7c55a88e6762ce26ccadf6b9`:
 
-- Root CI run `35413523120`: SUCCESS.
+- Root CI run `35415341665`: SUCCESS.
 - Step `Certify Masjid Display legacy-Iqama migration safety`: SUCCESS.
 - Gate probe: destructive removal was rejected when validated shared delays were absent.
 - BEFORE prayer row count: `2`.
@@ -37,7 +37,12 @@ Actual GitHub Actions evidence on implementation HEAD `2cb0f3370fd7043b60f3ea025
 - AFTER legacy absolute-Iqama columns: `0`.
 - The successful exercise was rollback-only.
 
-GitHub Codex Plan 5 review found that the first version only compared Jumuah rows through an inner join, which could miss deletion. The certification script now also asserts the certified Jumuah row count and uses a `NOT EXISTS` anti-join so either deletion or mutation blocks PASS. RED evidence: root CI `35413351843` failed only the new migration-integrity guard. GREEN evidence: root CI `35413523120` passed the strengthened migration certification.
+GitHub Codex Plan 5 review found two migration-certification integrity gaps across its first two rounds.
+
+1. The first version compared Jumuah rows through an inner join, which could miss deletion. The script now asserts the certified Jumuah row count and uses a `NOT EXISTS` anti-join. RED: root CI `35413351843`. GREEN: root CI `35413523120`.
+2. The prayer-row preservation check also used an inner join by date, which could miss a date/identity mutation. Every certified `plan5_before_prayer` row is now checked through a `NOT EXISTS` anti-join requiring the original date and identical six-prayer/Maghrib-program hash. RED: root CI `35414872550` failed only this new integrity guard with 831 tests passing. GREEN: root CI `35415341665` passed the strengthened migration certification.
+
+Deletion, date mutation, replacement, or represented value drift in either the certified prayer rows or Jumuah row now blocks PASS.
 
 **LOCAL/STAGING MIGRATION DRY RUN: PASS**
 

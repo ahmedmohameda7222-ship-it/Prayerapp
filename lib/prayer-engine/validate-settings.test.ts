@@ -23,11 +23,14 @@ describe("validatePrayerCalculationSettings", () => {
     ).toThrow();
   });
 
-  it("restricts prayer calculation to the canonical mosque timezone", () => {
+  it("accepts any valid operator-selected IANA timezone", () => {
     expect(validSettings.timezone).toBe(APP_TIME_ZONE);
-    expect(() =>
-      validatePrayerCalculationSettings({ ...validSettings, timezone: "UTC" }),
-    ).toThrow("Invalid timezone");
+    expect(
+      validatePrayerCalculationSettings({
+        ...validSettings,
+        timezone: "America/New_York",
+      }).timezone,
+    ).toBe("America/New_York");
   });
 
   it("requires exactly the fields for the selected Isha rule", () => {

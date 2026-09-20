@@ -10,12 +10,12 @@ Plan 5 is a production-readiness evidence gate. Software/certification-framework
 | --- | --- | --- | --- |
 | Prayer Engine calibration | Yes | BLOCKED | `docs/masjid-display/prayer-engine-calibration.md`; approved calibrated profile unavailable |
 | Prayer Engine production calendar certification | Yes | BLOCKED | Invariant harness exists, but no approved reviewed production timetable fixture matrix |
-| DB migration local/staging dry run | Yes | PASS | Root CI `35472416648`; reviewed 81/3 fixture + full nine-migration pending-chain certification, unchanged hashes/counts, Maghrib Program 8→8, shared delays `20,15,15,5,10`, legacy Iqama columns 0 |
+| DB migration local/staging dry run | Yes | PASS | Root CI `35517769622`; reviewed 81/3 fixture + full nine-migration pending-chain certification, unchanged hashes/counts, Maghrib Program 8→8, shared delays `20,15,15,5,10`, legacy Iqama columns 0 |
 | Real-target legacy-Iqama cutover prerequisite | Yes | BLOCKED | Read-only target evidence: 81 prayer rows, 3 Jumuah rows, 5 legacy Iqama columns, no `prayer_settings` table |
-| Root tests/lint/typecheck/build | Yes | PASS | Root CI `35472416648`: install/audit/lint/tests/typecheck/Supabase gates/build all success |
-| TV tests/lint/typecheck/build | Yes | PASS | Masjid Display Verification `35472416618` and root CI `35472416648` |
-| Producer/consumer Feed-v1 contract | Yes | PASS | Root CI `35472416648`: semantic fixture verifier success |
-| Feed/security boundary | Yes | PASS | Security Scanners `35472416596` + TV forbidden-runtime/live verification `35472416618`; bounded public RPC projections and fail-closed source/output limits |
+| Root tests/lint/typecheck/build | Yes | PASS | Root CI `35517769622`: install/audit/lint/tests/typecheck/Supabase gates/build all success |
+| TV tests/lint/typecheck/build | Yes | PASS | Masjid Display Verification `35517769767` and root CI `35472416648` |
+| Producer/consumer Feed-v1 contract | Yes | PASS | Root CI `35517769622`: semantic fixture verifier success |
+| Feed/security boundary | Yes | PASS | Security Scanners `35517769620` + TV forbidden-runtime/live verification `35472416618`; bounded public RPC projections and fail-closed source/output limits |
 | Offline/LKG certification | Yes | PASS | Dedicated forward-wake/offline certification passed in `35472416618` |
 | Test Mode certification | Yes | PASS | Dedicated TV certification tests + live two-app verification passed in `35472416618` |
 | Display-state certification | Yes | PASS | Dedicated five-prayer/Friday certification suite passed in `35472416618` |
@@ -26,19 +26,19 @@ Plan 5 is a production-readiness evidence gate. Software/certification-framework
 | 24-hour soak / wake certification | Yes | BLOCKED | Continuous physical/runtime soak not performed |
 | 72-hour extension | No for initial 24h gate; recommended before release | BLOCKED | Not performed |
 | Deployment/rollback documentation | Yes | PASS | `docs/masjid-display/deployment.md` and `masjid-display/README.md` |
-| Android TWA repository workflow | Repository-level | EXTERNAL ISSUE | Run `35472416623` failed at Android SDK setup before API install/Gradle/project tests; `sdkmanager tools` cannot find obsolete package `tools` |
+| Android TWA repository workflow | Repository-level | EXTERNAL ISSUE | Run `35517769631` failed at Android SDK setup before API install/Gradle/project tests; `sdkmanager tools` cannot find obsolete package `tools` |
 
 ## Automated implementation evidence baseline
 
-The PASS rows above are backed by implementation/evidence HEAD `57d2c46c56d6af46511e5223e3bc230ed4a854ca`:
+The PASS rows above are backed by implementation/evidence HEAD `a6e691934b26cee3dabde93d853dd446286f78c0`:
 
-- Root CI `35472416648`: SUCCESS.
-- Masjid Display Verification `35472416618`: SUCCESS, including live two-app integration.
-- Plan 3 Display Feed Verification `35472416604`: SUCCESS.
-- Security Scanners `35472416596`: SUCCESS.
+- Root CI `35517769622`: SUCCESS.
+- Masjid Display Verification `35517769767`: SUCCESS, including live two-app integration.
+- Plan 3 Display Feed Verification `35517769731`: SUCCESS.
+- Security Scanners `35517769620`: SUCCESS.
 - Android TWA `35472416623`: FAILURE at SDK setup only, before project execution.
 
-GitHub Codex Plan 5 review identified eighteen legitimate Plan 5 certification/security-integrity findings in the final review loop:
+GitHub Codex Plan 5 review identified twenty legitimate Plan 5 certification/security-integrity findings in the review loop:
 
 1. migration certification could miss deleted Jumuah rows;
 2. wake certification moved time backward instead of proving a forward wake across expired transient states;
@@ -57,9 +57,11 @@ GitHub Codex Plan 5 review identified eighteen legitimate Plan 5 certification/s
 15. bounded public RPCs still returned full raw database records instead of only the fields consumed by display mappers;
 16. the migration certification document remained stale after the full-chain gate replaced the obsolete 2-prayer/1-Jumuah rollback-only exercise;
 17. the bounded public projections initially omitted legacy base text fields still required as Arabic fallbacks, which could silently drop valid urgent/announcement/event/campaign content;
-18. Admin publication/activation used character-count validation that could admit multibyte localized content whose public projection exceeded the 16 KiB RPC ceiling, causing a fail-closed Feed outage after publication.
+18. Admin publication/activation used character-count validation that could admit multibyte localized content whose public projection exceeded the 16 KiB RPC ceiling, causing a fail-closed Feed outage after publication;
+19. Admin projection sizing still counted raw text bytes rather than JSON-escaped serialized bytes, so quote/backslash/control-character content could pass publication but exceed the runtime row ceiling;
+20. individually valid dynamic rows could collectively exceed the whole-Feed ceiling, and the first aggregate gate only protected today's rolling horizon, allowing already-scheduled future content to become over-capacity solely as time advanced.
 
-Each legitimate finding received regression/integrity coverage where appropriate before closure. The current implementation restores the authorized 81-prayer/3-Jumuah production-like snapshot at the reviewed cutoff, applies all nine pending Plan 5 migrations, verifies retained identities/values/hashes and Maghrib Program rows, uses bounded/indexed public source discovery with explicit public projections, preserves required legacy Arabic fallback semantics conditionally, and enforces a conservative 10 KiB UTF-8 variable-content budget in announcement/event/campaign Admin publication and activation paths before content can violate the public 16 KiB row ceiling. Draft/inactive content remains editable, and runtime Feed validation remains fail-closed rather than silently omitting oversized source rows. All required real-world/religious gates remain BLOCKED when evidence is absent.
+Each legitimate finding received regression/integrity coverage where appropriate before closure. The current implementation restores the authorized 81-prayer/3-Jumuah production-like snapshot at the reviewed cutoff, applies all nine pending Plan 5 migrations, verifies retained identities/values/hashes and Maghrib Program rows, uses bounded/indexed public source discovery with explicit public projections, preserves required legacy Arabic fallback semantics conditionally, measures Admin publication against JSON-serialized public projections, and atomically reserves aggregate capacity across all already-scheduled non-expired/future dynamic content under one database transaction lock. The server independently enforces family counts, per-row bounds, a 64 KiB dynamic-content envelope, and the final 128 KiB serialized Feed ceiling. Draft/inactive content remains editable, and runtime Feed validation remains fail-closed rather than silently omitting or truncating valid source rows. All required real-world/religious gates remain BLOCKED when evidence is absent.
 
 Committing this certification evidence creates a newer evidence-only HEAD. Exact verification for that final documentation commit is recorded in PR #108 metadata/final Plan 5 report rather than recursively rewriting this document with its own future SHA/run IDs.
 

@@ -30,8 +30,9 @@ describe("Plan 5 certification integrity", () => {
     );
     const assertionFunction = migration.slice(start, end);
 
-    expect(assertionFunction).toContain("return;\nend;\n$;");
-    expect(assertionFunction).not.toContain("\n$;\n");
+    const dollar = String.fromCharCode(36);
+    expect(assertionFunction).toContain("return;\\nend;\\n" + dollar + dollar + ";");
+    expect(assertionFunction).not.toContain("return;\\nend;\\n" + dollar + ";");
   });
 
   it("requires an existing-content capacity preflight before capacity triggers are enabled", () => {

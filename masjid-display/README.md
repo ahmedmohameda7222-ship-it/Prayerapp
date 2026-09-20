@@ -10,9 +10,19 @@ The Masjid Display is an independent Next.js TV project inside the Prayerapp rep
 
 The TV browser has no Supabase client, no service-role/browser secret, no prayer-calculation engine, and no audio runtime.
 
-## Required server environment
+## Plan 6 Vercel live preview
 
-`PRAYERAPP_ORIGIN` is a **server-only** origin used by the TV project's route handlers. Authorized Vercel inspection during Plan 5 identified the current root Prayerapp production alias as `https://donaumoschee.vercel.app`. Set the independent TV deployment to the canonical root production origin after confirming it in Vercel at deployment time. Do not expose it through a `NEXT_PUBLIC_` variable and do not append paths/query parameters.
+Approved project configuration:
+
+- Vercel team: `Ahmed's projects`;
+- project name: `donaumoschee-tv`;
+- Git repository: `ahmedmohameda7222-ship-it/Prayerapp`;
+- Root Directory: `masjid-display`;
+- framework: Next.js;
+- candidate branch: `feat/masjid-display`;
+- server-only environment: `PRAYERAPP_ORIGIN=https://donaumoschee.vercel.app`.
+
+`PRAYERAPP_ORIGIN` is used only by the TV project's server route handlers. Do not expose it through a `NEXT_PUBLIC_` variable and do not append credentials, path, query, or fragment. The browser talks only to the TV's same-origin `/api/display-feed` and `/api/test-control` routes.
 
 ## Local verification
 
@@ -37,6 +47,6 @@ Production dynamic Feed readers are row/record-size bounded, and the root produc
 See `../docs/masjid-display/deployment.md` for deployment/rollback and `../docs/masjid-display/production-certification.md` for release status.
 
 
-## Certification status
+## Plan 6 scope
 
-Plan 5 automated software/certification gates are green after the Codex certification-integrity fixes. Overall production certification remains **BLOCKED** until the required religious calibration, real-target migration prerequisite, physical TV/QR execution, and 24-hour soak evidence are actually supplied. See `../docs/masjid-display/production-certification.md`.
+Plan 6 live-preview completion is separate from final production cutover. Historical ±1-minute calibration, destructive real-target legacy-Iqama cutover, physical TV/QR signoff, and 24/72-hour soak remain truthful operational follow-ups for Plan 7; they are not Plan 6 completion gates and are not claimed as executed here. See `../docs/masjid-display/production-certification.md` for preserved Plan 5 history.

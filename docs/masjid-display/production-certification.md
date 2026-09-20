@@ -4,6 +4,19 @@ Status: BLOCKED
 
 Plan 5 is a production-readiness evidence gate. Software/certification-framework completion does not convert missing religious, real-target, physical, or soak evidence into PASS.
 
+
+## Plan 6 policy note — 2026-09-21
+
+This document preserves the Plan 5 certification result and evidence table below as historical release evidence. The approved Plan 6 policy changes what blocks **Plan 6 completion** without rewriting those historical rows:
+
+- historical ±1-minute Prayer Engine matching is optional reference; mosque/operator approval is performed through Admin Settings plus preview/confirmation;
+- destructive real-target legacy-Iqama cutover is deferred to Plan 7;
+- physical TV QA, physical Prayerapp/Campaign QR scans, and 24/72-hour soak remain **NOT EXECUTED / operational follow-up** unless separately recorded;
+- none of those deferred items may be relabeled PASS merely because Plan 6 can complete without them.
+
+Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control verification, settings-path audit, browser viewport verification, relevant CI/security gates, and a clean exact-head GitHub Codex review.
+
+
 ## Evidence table
 
 | Gate | Required | Current status | Evidence / blocker |

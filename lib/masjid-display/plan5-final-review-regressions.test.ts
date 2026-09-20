@@ -219,7 +219,7 @@ describe("Plan 5 final Codex regression guards", () => {
 
     expect(sql).toContain("masjid_display_dynamic_content_budget");
     expect(sql).toContain("pg_advisory_xact_lock");
-    expect(sql).toMatch(/64\s*\*\s*1024|65536/);
+    expect(sql).toMatch(/32\s*\*\s*1024|32768/);
     expect(sql).toMatch(/octet_length\([\s\S]+::text\)/i);
     for (const table of ["announcements", "events", "donation_campaigns", "jumuah_times"]) {
       expect(sql).toMatch(

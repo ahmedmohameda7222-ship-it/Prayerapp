@@ -485,6 +485,62 @@ describe("buildMasjidDisplayFeed", () => {
     ]);
   });
 
+  it("reserves static/Azkar capacity by rejecting dynamic content above 32 KiB", async () => {
+    const source = deps();
+    source.getAnnouncementsForDisplayWindow.mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) => ({
+        id: `reserved-budget-${index}`,
+        title: "Announcement",
+        message: "Message",
+        type: "General" as const,
+        titleAr: "إعلان",
+        titleDe: "Ankündigung",
+        messageAr: "a".repeat(3_600),
+        messageDe: "b".repeat(3_600),
+        isUrgent: false,
+        displayStyle: "normal" as const,
+        displayFrom: undefined,
+        displayUntil: undefined,
+        published: true,
+        createdAt: new Date(Date.UTC(2026, 8, 15, 12, 0, index)).toISOString(),
+      })) as never,
+    );
+
+    await expect(
+      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
+    ).rejects.toThrow(/dynamic content exceeds aggregate budget/i);
+  });
+
+  it("rejects a selected Azkar projection above the reserved 64 KiB envelope", async () => {
+    const source = deps();
+    source.getMasjidDisplaySettings.mockResolvedValue({
+      fajrPrayerDurationMinutes: 10,
+      dhuhrPrayerDurationMinutes: 10,
+      asrPrayerDurationMinutes: 10,
+      maghribPrayerDurationMinutes: 10,
+      ishaPrayerDurationMinutes: 10,
+      azkarPlaylistIds: ["huge-azkar"],
+    });
+    source.getAzkarItems.mockResolvedValue([
+      {
+        id: "huge-azkar",
+        category: "Morning",
+        arabicText: "ا".repeat(20_000),
+        transliteration: "",
+        translationEn: "",
+        translationDe: "x".repeat(30_000),
+        source: "Synthetic",
+        repeatCount: 1,
+        sortOrder: 1,
+        isPublished: true,
+      },
+    ]);
+
+    await expect(
+      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
+    ).rejects.toThrow(/Azkar.*aggregate budget/i);
+  });
+
   it("fails atomically when required prayer or display settings are missing", async () => {
     const missingPrayer = deps();
     missingPrayer.getPrayerSettings.mockResolvedValue(null as never);

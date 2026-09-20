@@ -41,7 +41,7 @@ import {
   commitPrayerScheduleExtensionAction,
   savePrayerEngineSettingsAction,
 } from "./actions";
-import { SYNTHETIC_TEST_PRAYER_SETTINGS } from "@/lib/prayer-engine/test-settings";
+import { validSettings } from "@/lib/prayer-engine/test-settings";
 
 const extensionPreview: PrayerSchedulePreview = {
   startDate: "2026-11-01",
@@ -67,13 +67,13 @@ describe("Prayer Engine operator-controlled schedule commits", () => {
     mocks.completeAudit.mockImplementation(async (_audit, result) => result);
     mocks.commitExtension.mockResolvedValue(3);
     mocks.commitRecalculation.mockResolvedValue(2);
-    mocks.saveSettings.mockResolvedValue(SYNTHETIC_TEST_PRAYER_SETTINGS);
+    mocks.saveSettings.mockResolvedValue(validSettings);
   });
 
 
   it("saves operator settings without invoking either schedule commit path", async () => {
     await expect(
-      savePrayerEngineSettingsAction("token", SYNTHETIC_TEST_PRAYER_SETTINGS),
+      savePrayerEngineSettingsAction("token", validSettings),
     ).resolves.toMatchObject({ success: true });
 
     expect(mocks.saveSettings).toHaveBeenCalledTimes(1);

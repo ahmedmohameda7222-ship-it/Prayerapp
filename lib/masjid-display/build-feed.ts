@@ -1,6 +1,6 @@
 import "server-only";
 
-import { addDaysIso, APP_TIME_ZONE, todayIso, zonedDateTime } from "@/lib/date-utils";
+import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
 import { getValidAdditionalFridayServices, isFridayIso } from "@/lib/friday";
 import { getAnnouncementsForDisplayWindow } from "@/lib/data/announcements";
 import { getAzkarItems } from "@/lib/data/azkar";
@@ -126,8 +126,8 @@ function assertDynamicContentAggregateSize(value: {
   }
 }
 
-function endOfLocalDate(date: string) {
-  return new Date(zonedDateTime(addDaysIso(date, 1), "00:00").getTime() - 1);
+function endOfLocalDate(date: string, timezone: string) {
+  return new Date(zonedDateTime(addDaysIso(date, 1), "00:00", timezone).getTime() - 1);
 }
 
 function requiredText(value: string | undefined, field: string) {
@@ -311,16 +311,22 @@ export async function buildMasjidDisplayFeed(
   now = new Date(),
   dependencies: FeedDependencies = defaultDependencies,
 ): Promise<MasjidDisplayFeedBodyV1> {
-  const today = todayIso(now);
-  const startDate = addDaysIso(today, -1);
-  const endDate = addDaysIso(today, 35);
-  const horizonEnd = endOfLocalDate(endDate);
-
-  const prayerSettingsPromise = dependencies.getPrayerSettingsForDisplay
-    ? dependencies.getPrayerSettingsForDisplay()
-    : dependencies.getPrayerSettings().then((value) =>
+  const prayerSettingsSource = dependencies.getPrayerSettingsForDisplay
+    ? await dependencies.getPrayerSettingsForDisplay()
+    : await dependencies.getPrayerSettings().then((value) =>
         value ? { value, sourceUpdatedAt: undefined as string | undefined } : null
       );
+  if (!prayerSettingsSource) {
+    throw new DisplayFeedBuildError("Prayer settings are required for the display feed");
+  }
+
+  const prayerSettings = prayerSettingsSource.value;
+  const timezone = prayerSettings.timezone;
+  const today = todayIso(now, timezone);
+  const startDate = addDaysIso(today, -1);
+  const endDate = addDaysIso(today, 35);
+  const horizonEnd = endOfLocalDate(endDate, timezone);
+
   const mosqueSettingsPromise = dependencies.getMosqueSettingsForDisplay
     ? dependencies.getMosqueSettingsForDisplay()
     : dependencies.getMosqueSettings(true).then((value) => ({
@@ -335,7 +341,6 @@ export async function buildMasjidDisplayFeed(
 
   const [
     prayers,
-    prayerSettingsSource,
     jumuahTimes,
     announcements,
     events,
@@ -345,7 +350,6 @@ export async function buildMasjidDisplayFeed(
     azkarItems,
   ] = await Promise.all([
     dependencies.getPrayerTimes(true, startDate, endDate),
-    prayerSettingsPromise,
     dependencies.getJumuahTimesForDisplayWindow(startDate, endDate),
     dependencies.getAnnouncementsForDisplayWindow(now.toISOString(), horizonEnd.toISOString()),
     dependencies.getEventsForDisplayWindow(today, endDate),
@@ -355,7 +359,6 @@ export async function buildMasjidDisplayFeed(
     dependencies.getAzkarItems(true),
   ]);
 
-  if (!prayerSettingsSource) throw new DisplayFeedBuildError("Prayer settings are required for the display feed");
   if (!displaySettingsSource) throw new DisplayFeedBuildError("Masjid Display settings are required for the display feed");
   if (prayers.length === 0) throw new DisplayFeedBuildError("Published prayer schedule is unavailable for the display window");
 
@@ -364,7 +367,6 @@ export async function buildMasjidDisplayFeed(
   assertDynamicSourceBounds("event", events, MAX_DISPLAY_EVENT_ROWS);
   assertDynamicSourceBounds("campaign", campaigns, MAX_DISPLAY_CAMPAIGN_ROWS);
 
-  const prayerSettings = prayerSettingsSource.value;
   const mosqueSettings = mosqueSettingsSource.value;
   const displaySettings = displaySettingsSource.value;
 
@@ -427,7 +429,7 @@ export async function buildMasjidDisplayFeed(
   const projectedEvents: DisplayEventDto[] = [];
   for (const item of events) {
     const projected = projectEvent(item);
-    if (!projected || !includeEventInFeed(item, now, horizonEnd)) continue;
+    if (!projected || !includeEventInFeed(item, now, horizonEnd, timezone)) continue;
     representedEventSources.push(item);
     projectedEvents.push(projected);
   }
@@ -438,7 +440,7 @@ export async function buildMasjidDisplayFeed(
   const projectedCampaigns: DisplayCampaignDto[] = [];
   for (const item of campaigns) {
     const projected = projectCampaign(item);
-    if (!projected || !includeCampaignInFeed(item, now, horizonEnd)) continue;
+    if (!projected || !includeCampaignInFeed(item, now, horizonEnd, timezone)) continue;
     representedCampaignSources.push(item);
     projectedCampaigns.push(projected);
   }
@@ -489,13 +491,13 @@ export async function buildMasjidDisplayFeed(
       sourceTimestamps: sourceTimestamps,
       azkar: projectedAzkar,
     },
-    zonedDateTime(today, "00:00").toISOString(),
+    zonedDateTime(today, "00:00", timezone).toISOString(),
   );
 
   const feed: MasjidDisplayFeedBodyV1 = {
     schemaVersion: 1,
     generatedAt,
-    timezone: APP_TIME_ZONE,
+    timezone,
     mosque: {
       nameAr: requiredText(mosqueSettings.mosqueNameAr, "mosqueNameAr"),
       nameDe: requiredText(mosqueSettings.mosqueNameDe, "mosqueNameDe"),

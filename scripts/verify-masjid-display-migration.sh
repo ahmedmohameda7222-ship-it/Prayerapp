@@ -186,3 +186,47 @@ echo "PLAN5_CHAIN_AFTER shared_delays=$shared_delays"
 echo "PLAN5_CHAIN_AFTER legacy_iqama_columns=0"
 echo "PLAN5_PENDING_CHAIN=PASS"
 echo "PLAN5_MIGRATION_DRY_RUN=PASS full pending-chain local certification completed"
+
+
+# Aggregate content-budget probe: after the full chain exists, a single
+# statement that would make the eligible dynamic Feed exceed 64 KiB must fail
+# atomically rather than publishing rows that turn the public Feed into 503.
+set +e
+content_budget_output="$(
+  docker exec -i "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1 <<'SQL'
+insert into public.announcements (
+  title, title_ar, title_de,
+  message, message_ar, message_de,
+  type, is_urgent, published
+)
+select
+  'PLAN5_BUDGET',
+  'PLAN5_BUDGET',
+  'PLAN5_BUDGET',
+  repeat('a', 4400),
+  repeat('a', 4400),
+  repeat('b', 4400),
+  'General',
+  false,
+  true
+from generate_series(1, 8);
+SQL
+)"
+content_budget_status=$?
+set -e
+
+if [ "$content_budget_status" -eq 0 ]; then
+  echo "Plan 5 aggregate content-budget probe unexpectedly succeeded" >&2
+  exit 1
+fi
+if ! grep -Fq "Masjid Display dynamic content exceeds aggregate budget" <<<"$content_budget_output"; then
+  echo "Plan 5 aggregate content-budget probe failed for an unexpected reason" >&2
+  printf '%s\n' "$content_budget_output" >&2
+  exit 1
+fi
+if [ "$(query_scalar "select count(*) from public.announcements where title = 'PLAN5_BUDGET';")" != "0" ]; then
+  echo "Plan 5 aggregate content-budget rejection was not atomic" >&2
+  exit 1
+fi
+
+echo "PLAN5_CONTENT_BUDGET=PASS aggregate overflow rejected atomically"

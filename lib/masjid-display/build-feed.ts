@@ -69,6 +69,7 @@ const defaultDependencies: FeedDependencies = {
 
 export const MAX_MASJID_DISPLAY_FEED_BYTES = 128 * 1024;
 export const MAX_MASJID_DISPLAY_SOURCE_ROW_BYTES = 16 * 1024;
+export const MAX_MASJID_DISPLAY_DYNAMIC_CONTENT_BYTES = 64 * 1024;
 
 const MAX_DISPLAY_JUMUAH_ROWS = 64;
 const MAX_DISPLAY_ANNOUNCEMENT_ROWS = 64;
@@ -104,6 +105,20 @@ function assertProjectedSourceRowSizes(label: string, rows: unknown[]) {
         `Masjid Display ${label} public row exceeds maximum size of ${MAX_MASJID_DISPLAY_SOURCE_ROW_BYTES} bytes`,
       );
     }
+  }
+}
+
+function assertDynamicContentAggregateSize(value: {
+  additionalJumuah: unknown[];
+  announcements: unknown[];
+  events: unknown[];
+  campaigns: unknown[];
+}) {
+  const bytes = new TextEncoder().encode(JSON.stringify(value)).byteLength;
+  if (bytes > MAX_MASJID_DISPLAY_DYNAMIC_CONTENT_BYTES) {
+    throw new DisplayFeedBuildError(
+      `Masjid Display dynamic content exceeds aggregate budget of ${MAX_MASJID_DISPLAY_DYNAMIC_CONTENT_BYTES} bytes`,
+    );
   }
 }
 
@@ -427,6 +442,13 @@ export async function buildMasjidDisplayFeed(
   assertProjectedSourceRowSizes("campaign", projectedCampaigns);
 
   const projectedAzkar = selectDisplayAzkar(azkarItems, validAzkarPlaylistIds);
+
+  assertDynamicContentAggregateSize({
+    additionalJumuah,
+    announcements: projectedAnnouncements,
+    events: projectedEvents,
+    campaigns: projectedCampaigns,
+  });
 
   const prayerIds = representedPrayers.map((item) => item.id);
   const jumuahIds = additionalJumuah.map((item) => item.id);

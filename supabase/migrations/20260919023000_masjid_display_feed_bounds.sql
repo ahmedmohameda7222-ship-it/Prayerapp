@@ -344,3 +344,131 @@ grant execute on function public.get_masjid_display_jumuah_window(date, date) to
 grant execute on function public.get_masjid_display_announcements_window(timestamptz, timestamptz) to anon, authenticated, service_role;
 grant execute on function public.get_masjid_display_events_window(date, date) to anon, authenticated, service_role;
 grant execute on function public.get_masjid_display_campaigns_window(date, date) to anon, authenticated, service_role;
+
+
+-- Keep Admin/direct writes from creating a collection of individually valid
+-- rows that collectively exceeds the Feed's reserved dynamic-content budget.
+-- The statement-level trigger is shared by all dynamic source tables and uses
+-- one transaction advisory lock so concurrent content mutations serialize
+-- their aggregate-capacity check.
+create or replace function public.enforce_masjid_display_dynamic_content_budget()
+returns trigger
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  total_bytes bigint;
+  p_now timestamptz := now();
+  p_today date := (now() at time zone 'Europe/Berlin')::date;
+  p_end_date date := (now() at time zone 'Europe/Berlin')::date + 35;
+  p_horizon_end timestamptz :=
+    ((((now() at time zone 'Europe/Berlin')::date + 36)::timestamp)
+      at time zone 'Europe/Berlin') - interval '1 millisecond';
+begin
+  perform pg_advisory_xact_lock(hashtext('masjid_display_dynamic_content_budget'));
+
+  with dynamic_rows as (
+    select jsonb_build_object(
+      'id', j.id,
+      'date', j.date,
+      'prayerTime', j.prayer_time
+    ) as row_json
+    from public.jumuah_times as j
+    where j.published is true
+      and j.date >= p_today - 1
+      and j.date <= p_end_date
+
+    union all
+
+    select jsonb_build_object(
+      'id', a.id,
+      'titleAr', coalesce(nullif(btrim(a.title_ar), ''), btrim(a.title)),
+      'titleDe', btrim(a.title_de),
+      'messageAr', coalesce(nullif(btrim(a.message_ar), ''), btrim(a.message)),
+      'messageDe', btrim(a.message_de),
+      'isUrgent', a.is_urgent,
+      'displayStyle', a.display_style,
+      'displayFrom', a.display_from,
+      'displayUntil', a.display_until
+    ) as row_json
+    from public.announcements as a
+    where a.published is true
+      and tstzrange(a.display_from, a.display_until, '[]')
+        && tstzrange(p_now, p_horizon_end, '[]')
+
+    union all
+
+    select jsonb_build_object(
+      'id', e.id,
+      'titleAr', coalesce(nullif(btrim(e.title_ar), ''), btrim(e.title)),
+      'titleDe', btrim(e.title_de),
+      'descriptionAr', coalesce(nullif(btrim(e.description_ar), ''), btrim(e.description)),
+      'descriptionDe', btrim(e.description_de),
+      'locationAr', coalesce(nullif(btrim(e.location_ar), ''), btrim(e.location)),
+      'locationDe', btrim(e.location_de),
+      'date', e.date,
+      'startTime', e.start_time,
+      'endTime', e.end_time,
+      'type', e.type
+    ) as row_json
+    from public.events as e
+    where e.published is true
+      and e.date >= p_today
+      and e.date <= p_end_date
+
+    union all
+
+    select jsonb_build_object(
+      'id', c.id,
+      'titleAr', coalesce(nullif(btrim(c.title_ar), ''), btrim(c.title)),
+      'titleDe', btrim(c.title_de),
+      'descriptionAr', coalesce(nullif(btrim(c.description_ar), ''), btrim(c.description)),
+      'descriptionDe', btrim(c.description_de),
+      'targetAmount', c.target_amount,
+      'collectedAmount', c.collected_amount,
+      'startDate', c.start_date,
+      'endDate', c.end_date,
+      'donationUrl', c.donation_url,
+      'isFeatured', c.is_featured
+    ) as row_json
+    from public.donation_campaigns as c
+    where c.is_active is true
+      and daterange(c.start_date, c.end_date, '[]')
+        && daterange(p_today, p_end_date, '[]')
+  )
+  select coalesce(sum(octet_length(row_json::text)), 0)
+  into total_bytes
+  from dynamic_rows;
+
+  if total_bytes > 64 * 1024 then
+    raise exception 'Masjid Display dynamic content exceeds aggregate budget of 65536 bytes';
+  end if;
+
+  return null;
+end;
+$$;
+
+revoke all on function public.enforce_masjid_display_dynamic_content_budget() from public, anon, authenticated;
+grant execute on function public.enforce_masjid_display_dynamic_content_budget() to service_role;
+
+drop trigger if exists trg_masjid_display_dynamic_budget_announcements on public.announcements;
+create trigger trg_masjid_display_dynamic_budget_announcements
+after insert or update or delete on public.announcements
+for each statement execute function public.enforce_masjid_display_dynamic_content_budget();
+
+drop trigger if exists trg_masjid_display_dynamic_budget_events on public.events;
+create trigger trg_masjid_display_dynamic_budget_events
+after insert or update or delete on public.events
+for each statement execute function public.enforce_masjid_display_dynamic_content_budget();
+
+drop trigger if exists trg_masjid_display_dynamic_budget_campaigns on public.donation_campaigns;
+create trigger trg_masjid_display_dynamic_budget_campaigns
+after insert or update or delete on public.donation_campaigns
+for each statement execute function public.enforce_masjid_display_dynamic_content_budget();
+
+drop trigger if exists trg_masjid_display_dynamic_budget_jumuah on public.jumuah_times;
+create trigger trg_masjid_display_dynamic_budget_jumuah
+after insert or update or delete on public.jumuah_times
+for each statement execute function public.enforce_masjid_display_dynamic_content_budget();

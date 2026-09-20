@@ -14,36 +14,69 @@ type PublishableDisplayContent = {
   donationUrl?: string | null;
 };
 
-// Keep Admin-publishable variable text comfortably below the public RPC's
-// 16 KiB jsonb projection ceiling. The remaining headroom covers keys, UUIDs,
-// timestamps, flags, dates, numeric fields, and jsonb representation overhead.
-const MAX_DISPLAY_ADMIN_VARIABLE_UTF8_BYTES = 10 * 1024;
+// Admin publication uses the same JSON string representation as the Feed
+// builder, rather than raw string-byte counts, so quotes/backslashes/control
+// characters cannot pass here and later exceed the public-row ceiling after
+// JSON escaping. The 10 KiB limit leaves headroom below the 16 KiB RPC row cap.
+const MAX_DISPLAY_ADMIN_PROJECTED_UTF8_BYTES = 10 * 1024;
+const DISPLAY_SIZING_ID = "00000000-0000-0000-0000-000000000000";
+const DISPLAY_SIZING_TIMESTAMP = "9999-12-31T23:59:59.999Z";
 
-function variableUtf8Bytes(values: Array<string | null | undefined>): number {
-  return new TextEncoder().encode(
-    values.filter((value): value is string => typeof value === "string").join("\u0000"),
-  ).byteLength;
+function displayProjectionForSizing(
+  kind: DisplayContentKind,
+  item: PublishableDisplayContent,
+): unknown {
+  if (kind === "announcement") {
+    return {
+      id: DISPLAY_SIZING_ID,
+      titleAr: item.titleAr ?? "",
+      titleDe: item.titleDe ?? "",
+      messageAr: item.messageAr ?? "",
+      messageDe: item.messageDe ?? "",
+      isUrgent: true,
+      displayStyle: "special",
+      displayFrom: DISPLAY_SIZING_TIMESTAMP,
+      displayUntil: DISPLAY_SIZING_TIMESTAMP,
+    };
+  }
+
+  if (kind === "event") {
+    return {
+      id: DISPLAY_SIZING_ID,
+      titleAr: item.titleAr ?? "",
+      titleDe: item.titleDe ?? "",
+      descriptionAr: item.descriptionAr ?? "",
+      descriptionDe: item.descriptionDe ?? "",
+      locationAr: item.locationAr ?? "",
+      locationDe: item.locationDe ?? "",
+      date: "9999-12-31",
+      startTime: "23:59",
+      endTime: "23:59",
+      type: "x".repeat(64),
+    };
+  }
+
+  return {
+    id: DISPLAY_SIZING_ID,
+    titleAr: item.titleAr ?? "",
+    titleDe: item.titleDe ?? "",
+    descriptionAr: item.descriptionAr ?? "",
+    descriptionDe: item.descriptionDe ?? "",
+    targetAmount: 100_000_000,
+    collectedAmount: 100_000_000,
+    startDate: "9999-12-31",
+    endDate: "9999-12-31",
+    donationUrl: item.donationUrl ?? null,
+    isFeatured: true,
+  };
 }
 
 function exceedsDisplayProjectionBudget(
   kind: DisplayContentKind,
   item: PublishableDisplayContent,
 ): boolean {
-  const values =
-    kind === "announcement"
-      ? [item.titleAr, item.titleDe, item.messageAr, item.messageDe]
-      : kind === "event"
-        ? [
-            item.titleAr,
-            item.titleDe,
-            item.descriptionAr,
-            item.descriptionDe,
-            item.locationAr,
-            item.locationDe,
-          ]
-        : [item.titleAr, item.titleDe, item.descriptionAr, item.descriptionDe, item.donationUrl];
-
-  return variableUtf8Bytes(values) > MAX_DISPLAY_ADMIN_VARIABLE_UTF8_BYTES;
+  const serialized = JSON.stringify(displayProjectionForSizing(kind, item));
+  return new TextEncoder().encode(serialized).byteLength > MAX_DISPLAY_ADMIN_PROJECTED_UTF8_BYTES;
 }
 
 function missing(value: string | undefined): boolean {

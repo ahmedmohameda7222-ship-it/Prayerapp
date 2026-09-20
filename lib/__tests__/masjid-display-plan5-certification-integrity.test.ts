@@ -16,6 +16,30 @@ describe("Plan 5 certification integrity", () => {
     expect(doc).not.toMatch(/BEFORE\/AFTER Jumuah count:\s*`1`/);
   });
 
+  it("requires an existing-content capacity preflight before capacity triggers are enabled", () => {
+    const migration = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
+    const script = readFileSync("scripts/verify-masjid-display-migration.sh", "utf8");
+
+    expect(migration).toContain(
+      "create or replace function public.assert_masjid_display_dynamic_content_budget()",
+    );
+    const preflightIndex = migration.indexOf(
+      "select public.assert_masjid_display_dynamic_content_budget();",
+    );
+    const firstTriggerIndex = migration.indexOf(
+      "create trigger trg_masjid_display_dynamic_budget_announcements",
+    );
+    expect(preflightIndex).toBeGreaterThan(-1);
+    expect(firstTriggerIndex).toBeGreaterThan(preflightIndex);
+    expect(migration).toMatch(
+      /create or replace function public\.enforce_masjid_display_dynamic_content_budget\(\)[\s\S]+perform public\.assert_masjid_display_dynamic_content_budget\(\)/,
+    );
+    expect(script).toContain("PLAN5_CONTENT_PREFLIGHT=PASS");
+  });
+
   it("certifies the complete pending migration chain from the reviewed real-target cutoff snapshot", () => {
     const source = readFileSync("scripts/verify-masjid-display-migration.sh", "utf8");
     const fixturePath = "supabase/tests/fixtures/plan5-precutover-production-like.sql";

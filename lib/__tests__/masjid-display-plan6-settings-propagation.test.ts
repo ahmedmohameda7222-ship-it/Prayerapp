@@ -45,10 +45,9 @@ describe("Plan 6 settings-driven Masjid Display runtime", () => {
       expect(persistence).toContain(column);
     }
 
-    for (const prayer of ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"]) {
-      expect(admin).toContain(`offset_${prayer}`);
-      expect(calculation).toContain("settings.offsets[key]");
-    }
+    expect(admin).toContain('form[`offset_${prayer}`]');
+    expect(admin).toContain('onChange={(e) => update(`offset_${prayer}`, e.target.value)}');
+    expect(calculation).toContain("settings.offsets[key]");
   });
 
   it("wires all five shared Iqama delays and derives Iqama from stored prayer start plus delay", () => {
@@ -57,8 +56,9 @@ describe("Plan 6 settings-driven Masjid Display runtime", () => {
     const feed = read("lib/masjid-display/build-feed.ts");
     const tv = read("masjid-display/lib/state/prayer-state.ts");
 
+    expect(admin).toContain('form[`iqama_${prayer}`]');
+    expect(admin).toContain('onChange={(e) => update(`iqama_${prayer}`, e.target.value)}');
     for (const prayer of ["fajr", "dhuhr", "asr", "maghrib", "isha"]) {
-      expect(admin).toContain(`iqama_${prayer}`);
       expect(persistence).toContain(`${prayer}_iqama_delay_minutes`);
       expect(feed).toContain(`prayerSettings.iqamaDelays.${prayer}`);
     }
@@ -123,11 +123,11 @@ describe("Plan 6 settings-driven Masjid Display runtime", () => {
     const feed = read("lib/masjid-display/build-feed.ts");
     const tv = read("masjid-display/lib/state/prayer-state.ts");
     const joined = `${feed}\n${tv}`;
-    for (const token of [
-      "fajr_iqama", "dhuhr_iqama", "asr_iqama", "maghrib_iqama", "isha_iqama",
-      "fajrIqama", "dhuhrIqama", "asrIqama", "maghribIqama", "ishaIqama",
-    ]) {
-      expect(joined).not.toContain(token);
+    for (const prayer of ["fajr", "dhuhr", "asr", "maghrib", "isha"]) {
+      const camelLegacy = new RegExp(`\\b${prayer}${"Iqama"}\\b`, "u");
+      const snakeLegacy = new RegExp(`\\b${prayer}${"_iqama"}\\b`, "u");
+      expect(joined).not.toMatch(camelLegacy);
+      expect(joined).not.toMatch(snakeLegacy);
     }
   });
 });

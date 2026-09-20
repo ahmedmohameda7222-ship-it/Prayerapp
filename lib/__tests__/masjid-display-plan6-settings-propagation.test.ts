@@ -10,6 +10,9 @@ describe("Plan 6 settings-driven Masjid Display runtime", () => {
     const persistence = read("lib/data/prayer-settings.ts");
     const calculation = read("lib/prayer-engine/calculate.ts");
 
+    expect(calculation).toContain("settings.timezone");
+    expect(read("lib/masjid-display/build-feed.ts")).not.toContain("timezone: APP_TIME_ZONE");
+
     for (const field of [
       "latitude",
       "longitude",

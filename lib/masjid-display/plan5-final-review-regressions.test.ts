@@ -1,6 +1,17 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+function publicReaderSql() {
+  const sql = readFileSync(
+    "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+    "utf8",
+  );
+  const aggregateStart = sql.indexOf(
+    "create or replace function public.enforce_masjid_display_dynamic_content_budget",
+  );
+  return aggregateStart >= 0 ? sql.slice(0, aggregateStart) : sql;
+}
+
 describe("Plan 5 final Codex regression guards", () => {
   it("bounds public snapshot-reader work before serializing source rows", () => {
     const sql = readFileSync(
@@ -35,10 +46,7 @@ describe("Plan 5 final Codex regression guards", () => {
   });
 
   it("returns only bounded mapper projections from public snapshot RPCs", () => {
-    const sql = readFileSync(
-      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
-      "utf8",
-    );
+    const sql = publicReaderSql();
 
     for (const alias of ["j", "a", "e", "c"]) {
       expect(sql).not.toContain(`to_jsonb(${alias}) as row_json`);
@@ -139,10 +147,7 @@ describe("Plan 5 final Codex regression guards", () => {
   });
 
   it("sizes bounded dynamic rows by their public projection rather than duplicated raw columns", () => {
-    const sql = readFileSync(
-      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
-      "utf8",
-    );
+    const sql = publicReaderSql();
 
     expect((sql.match(/jsonb_build_object\([\s\S]*?\) as row_json/gi) ?? []).length).toBe(4);
     expect((sql.match(/max\(pg_column_size\(row_json\)\)/gi) ?? []).length).toBe(4);

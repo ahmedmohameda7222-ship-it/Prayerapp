@@ -5,7 +5,6 @@ import { AdminShell } from "@/components/layout/AdminShell";
 import { Card } from "@/components/ui/Card";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import type { PrayerCalculationSettings } from "@/lib/prayer-engine/types";
-import { PRODUCTION_PRAYER_PROFILE_APPROVED } from "@/lib/prayer-engine/production-approval";
 import { PrayerEngineAdmin } from "./PrayerEngineAdmin";
 import { loadPrayerEngineSettingsAction } from "./actions";
 
@@ -36,7 +35,6 @@ export default function PrayerEnginePage() {
       {loaded && session && isAdmin ? (
         <PrayerEngineAdmin
           initialSettings={settings}
-          profileApproved={PRODUCTION_PRAYER_PROFILE_APPROVED}
           token={session.access_token}
         />
       ) : null}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { PrayerScheduleDiff, PrayerSchedulePreview } from "@/lib/prayer-engine/generate";
 import type { PrayerCalculationSettings, PrayerKey } from "@/lib/prayer-engine/types";
-import { PRODUCTION_PRAYER_PROFILE_APPROVAL_REASON } from "@/lib/prayer-engine/production-approval";
+import { PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY } from "@/lib/prayer-engine/production-approval";
 import {
   calibratePrayerEngineAction,
   commitPrayerRecalculationAction,
@@ -22,7 +22,6 @@ type NumericForm = Record<string, string>;
 
 type Props = {
   initialSettings: PrayerCalculationSettings | null;
-  profileApproved: boolean;
   token?: string;
 };
 
@@ -73,7 +72,7 @@ function buildSettings(form: NumericForm, current: PrayerCalculationSettings | n
   };
 }
 
-export function PrayerEngineAdmin({ initialSettings, profileApproved, token = "" }: Props) {
+export function PrayerEngineAdmin({ initialSettings, token = "" }: Props) {
   const [settings, setSettings] = useState(initialSettings);
   const [form, setForm] = useState<NumericForm>(() => settingsToForm(initialSettings));
   const [message, setMessage] = useState("");
@@ -137,7 +136,7 @@ export function PrayerEngineAdmin({ initialSettings, profileApproved, token = ""
   }
 
   function commitExtension() {
-    if (!canUseServerActions || !extensionPreview || !profileApproved) return;
+    if (!canUseServerActions || !extensionPreview) return;
     startTransition(async () => {
       const result = await commitPrayerScheduleExtensionAction(token, extensionPreview);
       if (!result.success) { setError(result.error || "Extension failed"); return; }
@@ -158,7 +157,7 @@ export function PrayerEngineAdmin({ initialSettings, profileApproved, token = ""
   }
 
   function commitRecalculation() {
-    if (!canUseServerActions || !recalcPreview || !profileApproved) return;
+    if (!canUseServerActions || !recalcPreview) return;
     if (!window.confirm("Apply this future prayer schedule diff?")) return;
     startTransition(async () => {
       const result = await commitPrayerRecalculationAction(token, recalcPreview);
@@ -180,11 +179,7 @@ export function PrayerEngineAdmin({ initialSettings, profileApproved, token = ""
           <h2 className="text-lg font-extrabold">Prayer Engine</h2>
           <span className="rounded-full border px-3 py-1 text-sm font-bold">{status}</span>
         </div>
-        {!profileApproved ? (
-          <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
-            {PRODUCTION_PRAYER_PROFILE_APPROVAL_REASON}
-          </p>
-        ) : null}
+        <p className="text-sm text-[var(--color-muted)]">{PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY}</p>
         {settings ? <p className="text-sm text-[var(--color-muted)]">Calculation revision {settings.calculationRevision}; applied {settings.appliedCalculationRevision}.</p> : null}
       </Card>
 
@@ -228,7 +223,7 @@ export function PrayerEngineAdmin({ initialSettings, profileApproved, token = ""
       <Card className="grid gap-4 p-5">
         <h3 className="font-extrabold">Extend Schedule +1 Year</h3>
         <Button type="button" onClick={previewExtension} disabled={isPending || !canUseServerActions || !settings || needsRecalculation}>Preview Extend Schedule +1 Year</Button>
-        <Button type="button" onClick={commitExtension} disabled={isPending || !profileApproved || !extensionPreview || needsRecalculation}>Extend Schedule +1 Year</Button>
+        <Button type="button" onClick={commitExtension} disabled={isPending || !extensionPreview || needsRecalculation}>Extend Schedule +1 Year</Button>
         {extensionPreview ? <p className="text-sm">Preview ready: {extensionPreview.rows.length} missing date(s), {extensionPreview.startDate}–{extensionPreview.endDate}.</p> : null}
       </Card>
 
@@ -236,7 +231,7 @@ export function PrayerEngineAdmin({ initialSettings, profileApproved, token = ""
         <h3 className="font-extrabold">Recalculate Future Schedule</h3>
         <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1 text-sm font-bold">Recalculation start<input className={inputClass()} type="date" value={recalcStart} onChange={(e) => setRecalcStart(e.target.value)} /></label><label className="grid gap-1 text-sm font-bold">Recalculation end<input className={inputClass()} type="date" value={recalcEnd} onChange={(e) => setRecalcEnd(e.target.value)} /></label></div>
         <Button type="button" onClick={previewRecalculation} disabled={isPending || !canUseServerActions || !settings || !recalcStart || !recalcEnd}>Preview Recalculation</Button>
-        <Button type="button" onClick={commitRecalculation} disabled={isPending || !profileApproved || !recalcPreview}>Commit Recalculation</Button>
+        <Button type="button" onClick={commitRecalculation} disabled={isPending || !recalcPreview}>Commit Recalculation</Button>
         {recalcPreview ? <p className="text-sm">Diff ready: {recalcPreview.changedRowCount} row(s), {recalcPreview.changedPrayerCount} prayer value(s) change.</p> : null}
       </Card>
 

@@ -16,6 +16,24 @@ describe("Plan 5 certification integrity", () => {
     expect(doc).not.toMatch(/BEFORE\/AFTER Jumuah count:\s*`1`/);
   });
 
+  it("keeps the reusable capacity assertion as valid PL/pgSQL", () => {
+    const migration = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
+    const start = migration.indexOf(
+      "create or replace function public.assert_masjid_display_dynamic_content_budget()",
+    );
+    const end = migration.indexOf(
+      "revoke all on function public.assert_masjid_display_dynamic_content_budget()",
+      start,
+    );
+    const assertionFunction = migration.slice(start, end);
+
+    expect(assertionFunction).toContain("return;\nend;\n$;");
+    expect(assertionFunction).not.toContain("\n$;\n");
+  });
+
   it("requires an existing-content capacity preflight before capacity triggers are enabled", () => {
     const migration = readFileSync(
       "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",

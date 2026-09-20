@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { requireAllowedAdminIdentity } from "@/lib/auth/admin-server";
 import { getAzkarItems } from "@/lib/data/azkar";
+import {
+  displayAzkarSerializedBytes,
+  MAX_MASJID_DISPLAY_AZKAR_BYTES,
+  selectDisplayAzkar,
+} from "@/lib/masjid-display/azkar-selection";
 import { createServerClient } from "@/lib/supabase/server";
 import type { MasjidDisplaySettings } from "@/lib/types";
 import { adminActionError, beginAdminAudit, completeAdminAudit } from "@/lib/security/admin-audit";
@@ -45,9 +50,15 @@ async function validateSettings(input: unknown): Promise<MasjidDisplaySettings> 
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Invalid Masjid Display settings");
   const candidate = input as Record<string, unknown>;
   const playlist = Array.isArray(candidate.azkarPlaylistIds) ? candidate.azkarPlaylistIds.map(String) : [];
-  const validIds = new Set((await getAzkarItems(true)).map((item) => item.id));
+  const allAzkar = await getAzkarItems(true);
+  const validIds = new Set(allAzkar.map((item) => item.id));
   for (const id of playlist) {
     if (!validIds.has(id)) throw new Error(`Unknown Azkar playlist ID: ${id}`);
+  }
+  const uniquePlaylist = [...new Set(playlist)];
+  const projectedAzkar = selectDisplayAzkar(allAzkar, uniquePlaylist);
+  if (displayAzkarSerializedBytes(projectedAzkar) > MAX_MASJID_DISPLAY_AZKAR_BYTES) {
+    throw new Error("Azkar playlist exceeds maximum display size");
   }
   return {
     fajrPrayerDurationMinutes: validateDuration(candidate.fajrPrayerDurationMinutes, "Fajr prayer duration"),
@@ -55,7 +66,7 @@ async function validateSettings(input: unknown): Promise<MasjidDisplaySettings> 
     asrPrayerDurationMinutes: validateDuration(candidate.asrPrayerDurationMinutes, "Asr prayer duration"),
     maghribPrayerDurationMinutes: validateDuration(candidate.maghribPrayerDurationMinutes, "Maghrib prayer duration"),
     ishaPrayerDurationMinutes: validateDuration(candidate.ishaPrayerDurationMinutes, "Isha prayer duration"),
-    azkarPlaylistIds: [...new Set(playlist)],
+    azkarPlaylistIds: uniquePlaylist,
   };
 }
 

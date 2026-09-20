@@ -13,7 +13,11 @@ import { getMosqueSettings, getMosqueSettingsForDisplay } from "@/lib/data/mosqu
 import { getPrayerSettings, getPrayerSettingsForDisplay } from "@/lib/data/prayer-settings";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import type { Announcement, DonationCampaign, Event, PrayerTime } from "@/lib/types";
-import { selectDisplayAzkar } from "./azkar-selection";
+import {
+  displayAzkarSerializedBytes,
+  MAX_MASJID_DISPLAY_AZKAR_BYTES,
+  selectDisplayAzkar,
+} from "./azkar-selection";
 import {
   includeAnnouncementInFeed,
   includeCampaignInFeed,
@@ -69,7 +73,7 @@ const defaultDependencies: FeedDependencies = {
 
 export const MAX_MASJID_DISPLAY_FEED_BYTES = 128 * 1024;
 export const MAX_MASJID_DISPLAY_SOURCE_ROW_BYTES = 16 * 1024;
-export const MAX_MASJID_DISPLAY_DYNAMIC_CONTENT_BYTES = 64 * 1024;
+export const MAX_MASJID_DISPLAY_DYNAMIC_CONTENT_BYTES = 32 * 1024;
 
 const MAX_DISPLAY_JUMUAH_ROWS = 64;
 const MAX_DISPLAY_ANNOUNCEMENT_ROWS = 64;
@@ -442,6 +446,11 @@ export async function buildMasjidDisplayFeed(
   assertProjectedSourceRowSizes("campaign", projectedCampaigns);
 
   const projectedAzkar = selectDisplayAzkar(azkarItems, validAzkarPlaylistIds);
+  if (displayAzkarSerializedBytes(projectedAzkar) > MAX_MASJID_DISPLAY_AZKAR_BYTES) {
+    throw new DisplayFeedBuildError(
+      `Masjid Display Azkar exceeds aggregate budget of ${MAX_MASJID_DISPLAY_AZKAR_BYTES} bytes`,
+    );
+  }
 
   assertDynamicContentAggregateSize({
     additionalJumuah,

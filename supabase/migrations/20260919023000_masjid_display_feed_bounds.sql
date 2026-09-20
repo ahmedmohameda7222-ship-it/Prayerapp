@@ -485,8 +485,8 @@ begin
   if max_source_bytes > 16384 then
     raise exception 'Masjid Display dynamic source row exceeds maximum size';
   end if;
-  if total_bytes > 64 * 1024 then
-    raise exception 'Masjid Display dynamic content exceeds aggregate budget of 65536 bytes';
+  if total_bytes > 32 * 1024 then
+    raise exception 'Masjid Display dynamic content exceeds aggregate budget of 32768 bytes';
   end if;
 
   return null;

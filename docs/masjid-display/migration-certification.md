@@ -69,11 +69,11 @@ The BEFORE/AFTER hashes include the retained prayer/Jumuah identities and values
 
 Implementation/evidence HEAD:
 
-`3f6f3b440d15130a230fcb4c7b536efad12f5f9f`
+`870871a52285d26cfe3f0103d8eb7e5945902519`
 
 Root CI:
 
-`35521914361` — SUCCESS.
+`35526336680` — SUCCESS.
 
 Migration certification step:
 
@@ -91,6 +91,7 @@ Recorded output:
 - `PLAN5_CHAIN_PREREQUISITE shared_delays=20,15,15,5,10`
 - `PLAN5_CHAIN_AFTER shared_delays=20,15,15,5,10`
 - `PLAN5_CHAIN_AFTER legacy_iqama_columns=0`
+- `PLAN5_CONTENT_PREFLIGHT=PASS existing over-capacity content rejected before capacity triggers`
 - `PLAN5_PENDING_CHAIN=PASS`
 - `PLAN5_MIGRATION_DRY_RUN=PASS full pending-chain local certification completed`
 
@@ -106,9 +107,12 @@ GitHub Codex identified and Plan 5 fixed these migration-certification gaps:
 4. prayer base/localized note fields were initially omitted from the hash;
 5. Jumuah localized language/notes were initially omitted from the hash;
 6. the original local exercise did not restore a reviewed pre-cutover production-like snapshot or apply the complete pending migration chain;
-7. the certification document itself later remained stale and still described the obsolete 2-prayer/1-Jumuah rollback-only exercise after the full-chain gate had replaced it.
+7. the certification document itself later remained stale and still described the obsolete 2-prayer/1-Jumuah rollback-only exercise after the full-chain gate had replaced it;
+8. capacity-enforcement triggers could be installed on a target whose existing published/future content was already over budget, creating a fail-closed Feed plus a cleanup deadlock because each capacity-reducing mutation would itself be rejected.
 
-The executable gate and this evidence record now agree on the reviewed cutoff, 81/3 fixture, nine-migration chain, prerequisite probe, preserved fields, and actual local reset/apply semantics.
+For finding 8, the migration now runs `select public.assert_masjid_display_dynamic_content_budget();` before creating any capacity trigger. If existing target content is over any certified row/source/aggregate limit, the migration aborts before trigger installation so operators can reduce content normally. RED: root CI `35525178440` failed exactly the new preflight-integrity test while 858 tests passed. GREEN: root CI `35526336680` passed the clean Supabase bootstrap and recorded `PLAN5_CONTENT_PREFLIGHT=PASS`.
+
+The executable gate and this evidence record now agree on the reviewed cutoff, 81/3 fixture, nine-migration chain, destructive-Iqama prerequisite probe, capacity preflight, preserved fields, and actual local reset/apply semantics.
 
 ## Real target destructive cutover
 

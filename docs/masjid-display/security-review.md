@@ -30,7 +30,7 @@ All mutation authority remains in the root Prayerapp Admin application. Test Mod
 | Upstream errors | Generic public error, no stack/SQL details | Root and TV route tests/source checks |
 | LKG poisoning | Strict full Feed validation before install | LKG calls `validateFeedV1`; invalid 200/schema retained as diagnostics only |
 | Synthetic Test data | Dedicated local synthetic rendering; production LKG untouched | Dedicated Test Mode certification added |
-| Payload exhaustion / silent truncation | Fail-closed DB readers, atomic aggregate publication budget, bounded serialized public response | Dynamic RPCs reject >16 KiB matching rows and return max+1 for overflow detection; database statement triggers serialize aggregate capacity across all already-scheduled non-expired/future dynamic content; builder rejects source overflow and enforces a 32 KiB dynamic envelope plus a separate 64 KiB selected-Azkar envelope and the 128 KiB final Feed ceiling |
+| Payload exhaustion / silent truncation | Fail-closed DB readers, atomic aggregate publication budget, migration-time capacity preflight, bounded serialized public response | Dynamic RPCs reject >16 KiB matching rows and return max+1 for overflow detection; database statement triggers serialize aggregate capacity across all already-scheduled non-expired/future dynamic content; migration preflight rejects an already-over-capacity target before trigger installation; builder rejects source overflow and enforces a 32 KiB dynamic envelope plus a separate 64 KiB selected-Azkar envelope and the 128 KiB final Feed ceiling |
 | Admin publish-to-Feed size mismatch | Published/active Admin content must fit the serialized public projection before mutation | Announcement/event/campaign publication and activation measure `JSON.stringify` UTF-8 bytes for the public DTO shape; escaped characters are included; drafts/inactive records remain editable |
 
 ## Public Feed minimization
@@ -55,9 +55,9 @@ Synthetic Test payloads are rendered as typed data. They do not become productio
 
 No significant unresolved Plan 5 security defect was identified.
 
-Actual implementation evidence on HEAD `3f6f3b440d15130a230fcb4c7b536efad12f5f9f`:
+Actual implementation evidence on HEAD `870871a52285d26cfe3f0103d8eb7e5945902519`:
 
-- Security Scanners run `35521914347`: SUCCESS.
+- Security Scanners run `35526336684`: SUCCESS.
 - CodeQL JavaScript/TypeScript: SUCCESS.
 - Gitleaks full-history scan: SUCCESS.
 - OSV dependency scan: SUCCESS.
@@ -65,14 +65,14 @@ Actual implementation evidence on HEAD `3f6f3b440d15130a230fcb4c7b536efad12f5f9f
 - deployed-production non-destructive public/unauthorized DAST: SUCCESS.
 - authenticated local DAST: SUCCESS.
 - SBOM/dependency evidence generation: SUCCESS.
-- Masjid Display Verification run `35521914343`: SUCCESS, including the forbidden Supabase/audio runtime gate and live two-app integration.
-- Root CI run `35521914361`: SUCCESS.
+- Masjid Display Verification run `35526336682`: SUCCESS, including the forbidden Supabase/audio runtime gate and live two-app integration.
+- Root CI run `35526336680`: SUCCESS.
 
 GitHub Codex identified eight successive payload/source-work issues. First, the original Plan 5 payload-exhaustion test measured only the golden fixture and did not bound the production path. Second, the first database row cap could silently truncate an older still-active urgent announcement while returning a healthy-looking Feed. Third, the oversize-row check still serialized every matching row before the later LIMIT and the public RPC parameters accepted arbitrarily broad horizons. Fourth, the max+1 readers still ordered the full qualifying source set before LIMIT and lacked supporting predicate indexes. Fifth, the active campaign reader still used a leading B-tree range that could scan an arbitrarily large expired-history prefix when overlap matches were sparse. Sixth, the announcement reader still used two one-sided timestamp inequalities that could scan a large non-overlapping suffix. Seventh, the source-row ceiling originally measured raw storage rows, so duplicated/non-displayed localized campaign columns could make an otherwise valid public projection fail. Eighth, the public RPCs still returned full raw database rows after sizing only the bounded projection, so unused/legacy/localized storage columns could still amplify database-to-server serialization and parsing.
 
-A final Codex P1 also identified an Admin/public-boundary mismatch: UTF-16 character caps could accept Arabic/German content whose UTF-8 public projection exceeded the 16 KiB RPC row ceiling. Plan 5 added a separate Admin-only publication validator with a conservative 10 KiB UTF-8 variable-content budget for announcements, events, and campaigns, including donation URL during campaign activation. Draft/inactive content is unaffected. RED: Plan 3 `35472186359` failed the three multibyte publish-size assertions while 78 focused tests passed. An initial implementation exposed a runtime omission regression in Plan 3 `35472297934`; the final split Admin/runtime validation fixes that regression. GREEN: Plan 3 `35521914359`, Root CI `35521914361`, Masjid Display Verification `35521914343`, and Security Scanners `35521914347` are all SUCCESS.
+A final Codex P1 also identified an Admin/public-boundary mismatch: UTF-16 character caps could accept Arabic/German content whose UTF-8 public projection exceeded the 16 KiB RPC row ceiling. Plan 5 added a separate Admin-only publication validator with a conservative 10 KiB UTF-8 variable-content budget for announcements, events, and campaigns, including donation URL during campaign activation. Draft/inactive content is unaffected. RED: Plan 3 `35472186359` failed the three multibyte publish-size assertions while 78 focused tests passed. An initial implementation exposed a runtime omission regression in Plan 3 `35472297934`; the final split Admin/runtime validation fixes that regression. GREEN: Plan 3 `35526336782`, Root CI `35521914361`, Masjid Display Verification `35526336682`, and Security Scanners `35526336684` are all SUCCESS.
 
-The final implementation fails closed without silently discarding valid content: public RPCs reject null/reversed/broad horizons; bounded max+1 candidate IDs are selected before serialization; event/Jumuah date indexes and partial GiST overlap indexes for announcements/campaigns bound candidate discovery; source-count overflow raises instead of truncating; row-size checks measure the bounded public projection rather than duplicated/non-displayed storage columns; public RPCs return only explicit `jsonb_build_object` projections consumed by the server display mappers; required legacy base fields are conditionally retained only when the corresponding Arabic localized field is blank so mapper fallback semantics remain intact; the server builder independently enforces source-count/projection-size limits; and both builder and finalized route enforce the 128 KiB serialized Feed ceiling. Final implementation verification on `3f6f3b440d15130a230fcb4c7b536efad12f5f9f`: Plan 3 `35521914359`, root CI `35521914361`, Masjid Display Verification `35521914343`, and Security Scanners `35521914347` are all SUCCESS.
+The final implementation fails closed without silently discarding valid content: public RPCs reject null/reversed/broad horizons; bounded max+1 candidate IDs are selected before serialization; event/Jumuah date indexes and partial GiST overlap indexes for announcements/campaigns bound candidate discovery; source-count overflow raises instead of truncating; row-size checks measure the bounded public projection rather than duplicated/non-displayed storage columns; public RPCs return only explicit `jsonb_build_object` projections consumed by the server display mappers; required legacy base fields are conditionally retained only when the corresponding Arabic localized field is blank so mapper fallback semantics remain intact; the server builder independently enforces source-count/projection-size limits; and both builder and finalized route enforce the 128 KiB serialized Feed ceiling. Final implementation verification on `870871a52285d26cfe3f0103d8eb7e5945902519`: Plan 3 `35526336782`, root CI `35526336680`, Masjid Display Verification `35526336682`, and Security Scanners `35526336684` are all SUCCESS.
 
 **SECURITY REVIEW: PASS.**
 
@@ -83,4 +83,15 @@ A later legitimate GitHub Codex Critical/Important/security finding would reopen
 
 A later Codex P1 found that the previous 64 KiB dynamic-content reservation did not account for a valid selected Azkar playlist approaching its own 64 KiB public projection. The final capacity model reserves both independently: dynamic content is capped at **32 KiB** in the server builder and matching database aggregate gate, selected Azkar are capped at **64 KiB**, and Admin Masjid Display settings apply the same serialized Azkar-envelope check before persistence. The final serialized Feed ceiling remains **128 KiB**.
 
-Exact-head verification after this reservation change and evidence refresh on `3f6f3b440d15130a230fcb4c7b536efad12f5f9f`: Root CI `35521914361`, Masjid Display Verification `35521914343`, Plan 3 `35521914359`, and Security Scanners `35521914347` are all SUCCESS.
+Exact-head verification after this reservation change, capacity-preflight hardening, and evidence refresh on `870871a52285d26cfe3f0103d8eb7e5945902519`: Root CI `35521914361`, Masjid Display Verification `35526336682`, Plan 3 `35526336782`, and Security Scanners `35526336684` are all SUCCESS.
+
+
+## Existing-content capacity preflight
+
+The final Codex P1 in the Plan 5 review loop identified a migration-order hazard: if the target already contained published/future dynamic content above the certified 32 KiB aggregate or row-count limits, installing statement triggers first could leave the Feed fail-closed while also preventing ordinary cleanup mutations.
+
+The migration now calls `public.assert_masjid_display_dynamic_content_budget()` **before** any capacity trigger is created. Over-capacity existing content aborts the migration before enforcement triggers exist, so an operator can reduce content and retry safely. Trigger enforcement reuses the same assertion after installation.
+
+RED: root CI `35525178440` failed exactly `requires an existing-content capacity preflight before capacity triggers are enabled` while 858 tests passed.
+
+GREEN on implementation HEAD `870871a52285d26cfe3f0103d8eb7e5945902519`: Root CI `35526336680`, Masjid Display Verification `35526336682`, Plan 3 `35526336782`, and Security Scanners `35526336684` all succeeded. Root migration evidence includes `PLAN5_CONTENT_PREFLIGHT=PASS existing over-capacity content rejected before capacity triggers`.

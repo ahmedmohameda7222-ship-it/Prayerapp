@@ -1,10 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { calculatePrayerTimes } from "./calculate";
-import {
-  PRODUCTION_PRAYER_PROFILE_APPROVED,
-  PRODUCTION_PRAYER_PROFILE_APPROVAL_REASON,
-} from "./production-approval";
+import { PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY } from "./production-approval";
 import { ceilInstantToLocalMinute } from "./rounding";
 import { validSettings } from "./test-settings";
 
@@ -82,8 +79,13 @@ describe("Prayer Engine calendar certification invariants", () => {
     expect(source).not.toMatch(/getTimezoneOffset\(|setHours\(/);
   });
 
-  it("keeps production timetable approval blocked until reviewed fixtures exist", () => {
-    expect(PRODUCTION_PRAYER_PROFILE_APPROVED).toBe(false);
-    expect(PRODUCTION_PRAYER_PROFILE_APPROVAL_REASON).toMatch(/not approved|calibration/i);
+  it("keeps approval operator-controlled without a compile-time religious gate", () => {
+    const actions = readFileSync("app/admin/prayer-engine/actions.ts", "utf8");
+    const admin = readFileSync("app/admin/prayer-engine/PrayerEngineAdmin.tsx", "utf8");
+    expect(actions).not.toContain("PRODUCTION_PRAYER_PROFILE_APPROVED");
+    expect(admin).not.toContain("profileApproved");
+    expect(PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY).toMatch(/operator-controlled/i);
+    expect(PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY).toMatch(/preview/i);
+    expect(PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY).toMatch(/optional reference/i);
   });
 });

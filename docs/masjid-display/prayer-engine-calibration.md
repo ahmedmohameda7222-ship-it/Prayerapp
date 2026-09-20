@@ -88,3 +88,18 @@ Synthetic settings used by unit/certification tests are explicitly test-only and
 **Production calibration: BLOCKED.**
 
 To turn this gate into PASS, a qualified reviewer/operator must provide or approve an authoritative fixture set from the existing published Prayerapp timetable covering the required calendar periods, the exact calculation settings under review must be recorded, and a fresh comparison must show no unexplained absolute difference greater than one minute for every reviewed prayer value.
+
+
+## Plan 6 policy supersession — 2026-09-21
+
+The BLOCKED result above is retained as historical Plan 5 evidence under the then-approved ±1-minute certification rule. Plan 6 explicitly supersedes that rule for Plan 6 progression.
+
+For Plan 6:
+
+- historical timetable comparison is an optional operator reference, not a mandatory release gate;
+- calculation parameters remain mosque/operator-controlled through Admin Prayer Engine Settings;
+- saving Settings does not rewrite canonical `prayer_times`;
+- schedule changes still require a generated preview and the existing authenticated, audited, revision/stale-preview, future-only commit path;
+- Plan 6 does not choose or hard-code mosque-specific religious calibration values.
+
+The former compile-time `PRODUCTION_PRAYER_PROFILE_APPROVED` blocker is removed. This does not convert the historical Plan 5 calibration evidence above to PASS; it changes the operational approval policy for Plan 6.

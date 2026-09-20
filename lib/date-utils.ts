@@ -62,9 +62,9 @@ export function formatDateRange(start: string, end: string, _locale: Locale = "a
   return `${numericDate(start)} – ${numericDate(end)}`;
 }
 
-export function todayIso(now = new Date()) {
+export function todayIso(now = new Date(), timeZone = APP_TIME_ZONE) {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    year: "numeric", month: "2-digit", day: "2-digit", timeZone: APP_TIME_ZONE,
+    year: "numeric", month: "2-digit", day: "2-digit", timeZone,
   }).formatToParts(now);
   const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${value.year}-${value.month}-${value.day}`;
@@ -116,12 +116,12 @@ export function addMonthsIso(date: string, months: number) {
   return target.toISOString().slice(0, 10);
 }
 
-export function zonedDateTime(date: string, time: string) {
+export function zonedDateTime(date: string, time: string, timeZone = APP_TIME_ZONE) {
   const [year, month, day] = date.split("-").map(Number);
   const [hour, minute] = time.split(":").map(Number);
   const desiredUtc = Date.UTC(year, month - 1, day, hour, minute);
   const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: APP_TIME_ZONE,
+    timeZone,
     year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
     hourCycle: "h23",
   });

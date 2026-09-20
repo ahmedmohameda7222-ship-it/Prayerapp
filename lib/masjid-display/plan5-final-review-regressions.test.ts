@@ -6,9 +6,15 @@ function publicReaderSql() {
     "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
     "utf8",
   );
-  const aggregateStart = sql.indexOf(
-    "create or replace function public.enforce_masjid_display_dynamic_content_budget",
+  const assertionStart = sql.indexOf(
+    "create or replace function public.assert_masjid_display_dynamic_content_budget",
   );
+  const aggregateStart =
+    assertionStart >= 0
+      ? assertionStart
+      : sql.indexOf(
+          "create or replace function public.enforce_masjid_display_dynamic_content_budget",
+        );
   return aggregateStart >= 0 ? sql.slice(0, aggregateStart) : sql;
 }
 
@@ -194,9 +200,13 @@ describe("Plan 5 final Codex regression guards", () => {
       "utf8",
     );
     const start = sql.indexOf(
-      "create or replace function public.enforce_masjid_display_dynamic_content_budget",
+      "create or replace function public.assert_masjid_display_dynamic_content_budget",
     );
-    const aggregateFunction = sql.slice(start);
+    const end = sql.indexOf(
+      "create or replace function public.enforce_masjid_display_dynamic_content_budget",
+      start,
+    );
+    const aggregateFunction = sql.slice(start, end);
 
     expect(aggregateFunction).toContain("jsonb_build_object(");
     expect(aggregateFunction).toContain("'additionalJumuah'");

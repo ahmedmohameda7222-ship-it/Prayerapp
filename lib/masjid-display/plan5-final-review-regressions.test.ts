@@ -188,6 +188,29 @@ describe("Plan 5 final Codex regression guards", () => {
       expect(fixture).toContain(`"${field}"`);
     }
   });
+  it("keeps the aggregate budget safe for already-scheduled future content as the Feed horizon advances", () => {
+    const sql = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
+    const start = sql.indexOf(
+      "create or replace function public.enforce_masjid_display_dynamic_content_budget",
+    );
+    const aggregateFunction = sql.slice(start);
+
+    expect(aggregateFunction).toContain("jsonb_build_object(");
+    expect(aggregateFunction).toContain("'additionalJumuah'");
+    expect(aggregateFunction).toContain("'announcements'");
+    expect(aggregateFunction).toContain("'events'");
+    expect(aggregateFunction).toContain("'campaigns'");
+    expect(aggregateFunction).toContain("a.display_until is null or a.display_until >= p_now");
+    expect(aggregateFunction).toContain("e.date >= p_today");
+    expect(aggregateFunction).toContain("c.end_date is null or c.end_date >= p_today");
+    expect(aggregateFunction).toContain("j.date >= p_today - 1");
+    expect(aggregateFunction).not.toContain("p_horizon_end");
+    expect(aggregateFunction).not.toContain("p_end_date");
+  });
+
   it("enforces the aggregate dynamic display-content budget atomically in the database", () => {
     const sql = readFileSync(
       "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",

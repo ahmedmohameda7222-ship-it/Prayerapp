@@ -13,10 +13,6 @@ import {
 import type { PrayerScheduleDiff, PrayerSchedulePreview } from "@/lib/prayer-engine/generate";
 import type { PrayerCalculationSettings } from "@/lib/prayer-engine/types";
 import { validatePrayerCalculationSettings } from "@/lib/prayer-engine/validate-settings";
-import {
-  PRODUCTION_PRAYER_PROFILE_APPROVED,
-  PRODUCTION_PRAYER_PROFILE_APPROVAL_REASON,
-} from "@/lib/prayer-engine/production-approval";
 import { adminActionError, beginAdminAudit, completeAdminAudit } from "@/lib/security/admin-audit";
 
 export type PrayerEngineActionResult<T = undefined> = {
@@ -96,9 +92,6 @@ export async function commitPrayerScheduleExtensionAction(
   token: string,
   preview: PrayerSchedulePreview,
 ): Promise<PrayerEngineActionResult<number>> {
-  if (!PRODUCTION_PRAYER_PROFILE_APPROVED) {
-    return { success: false, error: PRODUCTION_PRAYER_PROFILE_APPROVAL_REASON };
-  }
   let audit;
   try {
     audit = await beginAdminAudit(token, {
@@ -141,9 +134,6 @@ export async function commitPrayerRecalculationAction(
   token: string,
   preview: PrayerScheduleDiff,
 ): Promise<PrayerEngineActionResult<number>> {
-  if (!PRODUCTION_PRAYER_PROFILE_APPROVED) {
-    return { success: false, error: PRODUCTION_PRAYER_PROFILE_APPROVAL_REASON };
-  }
   let audit;
   try {
     audit = await beginAdminAudit(token, {

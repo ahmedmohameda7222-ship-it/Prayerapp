@@ -13,7 +13,6 @@ describe("Prayer Engine Admin", () => {
           calculationRevision: 2,
           appliedCalculationRevision: 1,
         }}
-        profileApproved={false}
       />,
     );
 
@@ -23,9 +22,10 @@ describe("Prayer Engine Admin", () => {
     expect(screen.getByRole("button", { name: /^Extend Schedule \+1 Year$/i })).toBeDisabled();
   });
 
-  it("makes the unresolved production calibration gate explicit", () => {
-    render(<PrayerEngineAdmin initialSettings={SYNTHETIC_TEST_PRAYER_SETTINGS} profileApproved={false} />);
-    expect(screen.getByText(/Production calculation profile is not approved/i)).toBeInTheDocument();
+  it("treats historical calibration as optional operator reference instead of a production blocker", () => {
+    render(<PrayerEngineAdmin initialSettings={SYNTHETIC_TEST_PRAYER_SETTINGS} />);
+    expect(screen.queryByText(/Production calculation profile is not approved/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/historical timetable comparison is optional reference/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Commit Recalculation/i })).toBeDisabled();
   });
 });

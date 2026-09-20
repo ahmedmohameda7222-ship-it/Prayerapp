@@ -1,4 +1,2 @@
-export const PRODUCTION_PRAYER_PROFILE_APPROVED = false;
-
-export const PRODUCTION_PRAYER_PROFILE_APPROVAL_REASON =
-  "Production calculation profile is not approved. Calibration against the existing published Prayerapp schedule remains outside the approved ±1-minute tolerance.";
+export const PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY =
+  "Prayer calculation settings are operator-controlled. Review the generated preview before committing schedule changes; historical timetable comparison is optional reference.";

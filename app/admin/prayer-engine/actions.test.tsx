@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   previewRecalculation: vi.fn(),
   calibrate: vi.fn(),
   revalidatePath: vi.fn(),
+  saveSettings: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
@@ -19,7 +20,7 @@ vi.mock("@/lib/auth/admin-server", () => ({
 }));
 vi.mock("@/lib/data/prayer-settings", () => ({
   getPrayerSettings: vi.fn(),
-  savePrayerSettings: vi.fn(),
+  savePrayerSettings: mocks.saveSettings,
 }));
 vi.mock("@/lib/prayer-engine/server", () => ({
   calibrateAgainstHistoricalSchedule: mocks.calibrate,
@@ -38,7 +39,9 @@ vi.mock("@/lib/security/admin-audit", () => ({
 import {
   commitPrayerRecalculationAction,
   commitPrayerScheduleExtensionAction,
+  savePrayerEngineSettingsAction,
 } from "./actions";
+import { SYNTHETIC_TEST_PRAYER_SETTINGS } from "@/lib/prayer-engine/test-settings";
 
 const extensionPreview: PrayerSchedulePreview = {
   startDate: "2026-11-01",
@@ -64,6 +67,18 @@ describe("Prayer Engine operator-controlled schedule commits", () => {
     mocks.completeAudit.mockImplementation(async (_audit, result) => result);
     mocks.commitExtension.mockResolvedValue(3);
     mocks.commitRecalculation.mockResolvedValue(2);
+    mocks.saveSettings.mockResolvedValue(SYNTHETIC_TEST_PRAYER_SETTINGS);
+  });
+
+
+  it("saves operator settings without invoking either schedule commit path", async () => {
+    await expect(
+      savePrayerEngineSettingsAction("token", SYNTHETIC_TEST_PRAYER_SETTINGS),
+    ).resolves.toMatchObject({ success: true });
+
+    expect(mocks.saveSettings).toHaveBeenCalledTimes(1);
+    expect(mocks.commitExtension).not.toHaveBeenCalled();
+    expect(mocks.commitRecalculation).not.toHaveBeenCalled();
   });
 
   it("allows an audited extension commit to reach the existing server safety layer without a hard-coded profile gate", async () => {
@@ -131,5 +146,6 @@ describe("Prayer Engine operator-controlled schedule commits", () => {
     expect(admin).not.toContain("profileApproved");
     expect(admin).not.toContain("PRODUCTION_PRAYER_PROFILE_APPROVAL_REASON");
     expect(page).not.toContain("PRODUCTION_PRAYER_PROFILE_APPROVED");
+    expect(admin).toContain('window.confirm("Apply this future prayer schedule diff?")');
   });
 });

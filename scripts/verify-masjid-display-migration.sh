@@ -95,6 +95,93 @@ fi
 
 echo "PLAN5_GATE_RESULT=PASS destructive legacy-Iqama cutover rejected without validated shared delays"
 
+# Existing-content capacity preflight: build the reviewed cutoff through every
+# migration before the final bounds migration, seed content that is already
+# above the 32 KiB dynamic budget, and prove the final migration rejects it
+# before capacity triggers are installed. The failed migration must leave the
+# over-capacity rows deletable so an operator can remediate and retry.
+reset_to_reviewed_cutoff
+
+for migration_index in 0 1 2 3 4 5 6 7; do
+  migration_name="${pending_migrations[$migration_index]}"
+  apply_sql_file "supabase/migrations/$migration_name"
+
+  if [ "$migration_name" = "20260915220000_masjid_display_prayer_settings.sql" ]; then
+    docker exec -i "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+insert into public.prayer_settings (
+  id, latitude, longitude, timezone,
+  fajr_angle, isha_rule, isha_angle, isha_minutes_after_maghrib,
+  asr_shadow_factor, high_latitude_rule,
+  fajr_offset_minutes, sunrise_offset_minutes, dhuhr_offset_minutes,
+  asr_offset_minutes, maghrib_offset_minutes, isha_offset_minutes,
+  fajr_iqama_delay_minutes, dhuhr_iqama_delay_minutes, asr_iqama_delay_minutes,
+  maghrib_iqama_delay_minutes, isha_iqama_delay_minutes,
+  calculation_revision, applied_calculation_revision, row_revision
+) values (
+  '1', 48.0, 12.0, 'Europe/Berlin',
+  18, 'angle', 17, null,
+  1, 'middle_of_night',
+  0, 0, 0, 0, 0, 0,
+  20, 15, 15, 5, 10,
+  1, 1, 1
+);
+SQL
+  fi
+done
+
+docker exec -i "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+insert into public.announcements (
+  title, title_ar, title_de,
+  message, message_ar, message_de,
+  type, is_urgent, published
+)
+select
+  'PLAN5_PREFLIGHT',
+  'PLAN5_PREFLIGHT',
+  'PLAN5_PREFLIGHT',
+  repeat('a', 4400),
+  repeat('a', 4400),
+  repeat('b', 4400),
+  'General',
+  false,
+  true
+from generate_series(1, 8);
+SQL
+
+if [ "$(query_scalar "select count(*) from public.announcements where title = 'PLAN5_PREFLIGHT';")" != "8" ]; then
+  echo "Plan 5 capacity preflight fixture did not create the expected 8 rows" >&2
+  exit 1
+fi
+
+set +e
+capacity_preflight_output="$(apply_sql_file "supabase/migrations/${pending_migrations[8]}" 2>&1)"
+capacity_preflight_status=$?
+set -e
+
+if [ "$capacity_preflight_status" -eq 0 ]; then
+  echo "Plan 5 capacity migration unexpectedly accepted an existing over-budget dataset" >&2
+  exit 1
+fi
+if ! grep -Fq "Masjid Display dynamic content exceeds aggregate budget of 32768 bytes" <<<"$capacity_preflight_output"; then
+  echo "Plan 5 capacity migration preflight failed for an unexpected reason" >&2
+  printf '%s\n' "$capacity_preflight_output" >&2
+  exit 1
+fi
+
+capacity_trigger_count="$(query_scalar "select count(*) from pg_trigger where not tgisinternal and tgname like 'trg_masjid_display_dynamic_budget_%';")"
+if [ "$capacity_trigger_count" != "0" ]; then
+  echo "Plan 5 capacity migration installed enforcement triggers before the preflight passed" >&2
+  exit 1
+fi
+
+docker exec "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "delete from public.announcements where title = 'PLAN5_PREFLIGHT';"
+if [ "$(query_scalar "select count(*) from public.announcements where title = 'PLAN5_PREFLIGHT';")" != "0" ]; then
+  echo "Plan 5 capacity preflight failure trapped over-budget rows and prevented cleanup" >&2
+  exit 1
+fi
+
+echo "PLAN5_CONTENT_PREFLIGHT=PASS existing over-capacity content rejected before capacity triggers"
+
 # Full-chain certification: restore the same reviewed cutoff snapshot, capture
 # before evidence, apply every pending migration in repository order, and then
 # compare the preserved production-like rows after the complete chain.
@@ -189,7 +276,7 @@ echo "PLAN5_MIGRATION_DRY_RUN=PASS full pending-chain local certification comple
 
 
 # Aggregate content-budget probe: after the full chain exists, a single
-# statement that would make the eligible dynamic Feed exceed 64 KiB must fail
+# statement that would make the eligible dynamic Feed exceed 32 KiB must fail
 # atomically rather than publishing rows that turn the public Feed into 503.
 set +e
 content_budget_output="$(

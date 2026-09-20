@@ -351,8 +351,8 @@ grant execute on function public.get_masjid_display_campaigns_window(date, date)
 -- The statement-level trigger is shared by all dynamic source tables and uses
 -- one transaction advisory lock so concurrent content mutations serialize
 -- their aggregate-capacity check.
-create or replace function public.enforce_masjid_display_dynamic_content_budget()
-returns trigger
+create or replace function public.assert_masjid_display_dynamic_content_budget()
+returns void
 language plpgsql
 volatile
 security definer
@@ -489,6 +489,27 @@ begin
     raise exception 'Masjid Display dynamic content exceeds aggregate budget of 32768 bytes';
   end if;
 
+  return;
+end;
+$;
+
+revoke all on function public.assert_masjid_display_dynamic_content_budget() from public, anon, authenticated;
+grant execute on function public.assert_masjid_display_dynamic_content_budget() to service_role;
+
+-- Preflight the rows that already exist before installing enforcement triggers.
+-- If the target is already above any row/source/aggregate limit, abort here so
+-- operators can reduce content without trigger-enforced cleanup deadlock.
+select public.assert_masjid_display_dynamic_content_budget();
+
+create or replace function public.enforce_masjid_display_dynamic_content_budget()
+returns trigger
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  perform public.assert_masjid_display_dynamic_content_budget();
   return null;
 end;
 $$;

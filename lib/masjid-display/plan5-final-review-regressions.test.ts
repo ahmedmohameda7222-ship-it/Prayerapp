@@ -183,4 +183,22 @@ describe("Plan 5 final Codex regression guards", () => {
       expect(fixture).toContain(`"${field}"`);
     }
   });
+  it("enforces the aggregate dynamic display-content budget atomically in the database", () => {
+    const sql = readFileSync(
+      "supabase/migrations/20260919023000_masjid_display_feed_bounds.sql",
+      "utf8",
+    );
+
+    expect(sql).toContain("masjid_display_dynamic_content_budget");
+    expect(sql).toContain("pg_advisory_xact_lock");
+    expect(sql).toMatch(/64\s*\*\s*1024|65536/);
+    expect(sql).toMatch(/octet_length\([\s\S]+::text\)/i);
+    for (const table of ["announcements", "events", "donation_campaigns", "jumuah_times"]) {
+      expect(sql).toMatch(
+        new RegExp(`create trigger[^;]+on public\\.${table}[^;]+execute function public\\.enforce_masjid_display_dynamic_content_budget`, "i"),
+      );
+    }
+  });
+
+
 });

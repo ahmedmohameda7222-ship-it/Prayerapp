@@ -29,6 +29,16 @@ describe("display publishability validation", () => {
     })).toContain("Published display content exceeds maximum display size");
   });
 
+  it("measures JSON-escaped announcement projection bytes before publishing", () => {
+    expect(validateDisplayAdminPublishableContent("announcement", {
+      published: true,
+      titleAr: "تنبيه",
+      titleDe: "Hinweis",
+      messageAr: '"'.repeat(5_000),
+      messageDe: '"'.repeat(4_000),
+    })).toContain("Published display content exceeds maximum display size");
+  });
+
   it("allows the same oversized announcement while it remains an unpublished draft", () => {
     expect(validateDisplayAdminPublishableContent("announcement", {
       published: false,

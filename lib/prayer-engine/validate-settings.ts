@@ -1,4 +1,3 @@
-import { APP_TIME_ZONE } from "@/lib/date-utils";
 import type {
   HighLatitudeSetting,
   PrayerCalculationSettings,
@@ -76,9 +75,6 @@ function validateTimezone(value: unknown): string {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: value }).format(new Date(0));
   } catch {
-    throw new Error("Invalid timezone");
-  }
-  if (value !== APP_TIME_ZONE) {
     throw new Error("Invalid timezone");
   }
   return value;

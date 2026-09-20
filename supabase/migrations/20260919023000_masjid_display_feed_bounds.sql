@@ -360,16 +360,18 @@ set search_path = public, pg_temp
 as $$
 declare
   total_bytes bigint;
+  max_source_bytes integer;
+  jumuah_count integer;
+  announcement_count integer;
+  event_count integer;
+  campaign_count integer;
   p_now timestamptz := now();
   p_today date := (now() at time zone 'Europe/Berlin')::date;
-  p_end_date date := (now() at time zone 'Europe/Berlin')::date + 35;
-  p_horizon_end timestamptz :=
-    ((((now() at time zone 'Europe/Berlin')::date + 36)::timestamp)
-      at time zone 'Europe/Berlin') - interval '1 millisecond';
 begin
   perform pg_advisory_xact_lock(hashtext('masjid_display_dynamic_content_budget'));
 
-  with dynamic_rows as (
+  with
+  jumuah_rows as (
     select jsonb_build_object(
       'id', j.id,
       'date', j.date,
@@ -378,10 +380,8 @@ begin
     from public.jumuah_times as j
     where j.published is true
       and j.date >= p_today - 1
-      and j.date <= p_end_date
-
-    union all
-
+  ),
+  announcement_rows as (
     select jsonb_build_object(
       'id', a.id,
       'titleAr', coalesce(nullif(btrim(a.title_ar), ''), btrim(a.title)),
@@ -395,11 +395,9 @@ begin
     ) as row_json
     from public.announcements as a
     where a.published is true
-      and tstzrange(a.display_from, a.display_until, '[]')
-        && tstzrange(p_now, p_horizon_end, '[]')
-
-    union all
-
+      and (a.display_until is null or a.display_until >= p_now)
+  ),
+  event_rows as (
     select jsonb_build_object(
       'id', e.id,
       'titleAr', coalesce(nullif(btrim(e.title_ar), ''), btrim(e.title)),
@@ -416,10 +414,8 @@ begin
     from public.events as e
     where e.published is true
       and e.date >= p_today
-      and e.date <= p_end_date
-
-    union all
-
+  ),
+  campaign_rows as (
     select jsonb_build_object(
       'id', c.id,
       'titleAr', coalesce(nullif(btrim(c.title_ar), ''), btrim(c.title)),
@@ -435,13 +431,60 @@ begin
     ) as row_json
     from public.donation_campaigns as c
     where c.is_active is true
-      and daterange(c.start_date, c.end_date, '[]')
-        && daterange(p_today, p_end_date, '[]')
+      and (c.end_date is null or c.end_date >= p_today)
+  ),
+  stats as (
+    select
+      (select count(*)::integer from jumuah_rows) as jumuah_count,
+      (select count(*)::integer from announcement_rows) as announcement_count,
+      (select count(*)::integer from event_rows) as event_count,
+      (select count(*)::integer from campaign_rows) as campaign_count,
+      greatest(
+        coalesce((select max(octet_length(row_json::text)) from jumuah_rows), 0),
+        coalesce((select max(octet_length(row_json::text)) from announcement_rows), 0),
+        coalesce((select max(octet_length(row_json::text)) from event_rows), 0),
+        coalesce((select max(octet_length(row_json::text)) from campaign_rows), 0)
+      )::integer as max_source_bytes,
+      octet_length(
+        jsonb_build_object(
+          'additionalJumuah', coalesce((select jsonb_agg(row_json) from jumuah_rows), '[]'::jsonb),
+          'announcements', coalesce((select jsonb_agg(row_json) from announcement_rows), '[]'::jsonb),
+          'events', coalesce((select jsonb_agg(row_json) from event_rows), '[]'::jsonb),
+          'campaigns', coalesce((select jsonb_agg(row_json) from campaign_rows), '[]'::jsonb)
+        )::text
+      )::bigint as total_bytes
   )
-  select coalesce(sum(octet_length(row_json::text)), 0)
-  into total_bytes
-  from dynamic_rows;
+  select
+    stats.total_bytes,
+    stats.max_source_bytes,
+    stats.jumuah_count,
+    stats.announcement_count,
+    stats.event_count,
+    stats.campaign_count
+  into
+    total_bytes,
+    max_source_bytes,
+    jumuah_count,
+    announcement_count,
+    event_count,
+    campaign_count
+  from stats;
 
+  if jumuah_count > 64 then
+    raise exception 'Masjid Display Jumuah source exceeds maximum future row count';
+  end if;
+  if announcement_count > 64 then
+    raise exception 'Masjid Display announcement source exceeds maximum future row count';
+  end if;
+  if event_count > 128 then
+    raise exception 'Masjid Display event source exceeds maximum future row count';
+  end if;
+  if campaign_count > 64 then
+    raise exception 'Masjid Display campaign source exceeds maximum future row count';
+  end if;
+  if max_source_bytes > 16384 then
+    raise exception 'Masjid Display dynamic source row exceeds maximum size';
+  end if;
   if total_bytes > 64 * 1024 then
     raise exception 'Masjid Display dynamic content exceeds aggregate budget of 65536 bytes';
   end if;

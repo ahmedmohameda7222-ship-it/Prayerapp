@@ -1,5 +1,21 @@
 # Masjid Display — Deployment, Rollback, and Operations
 
+## Plan 6 live-preview configuration
+
+The approved Plan 6 candidate configuration is:
+
+| Setting | Value |
+| --- | --- |
+| Vercel team | `Ahmed's projects` |
+| TV project | `donaumoschee-tv` |
+| Git repository | `ahmedmohameda7222-ship-it/Prayerapp` |
+| Root Directory | `masjid-display` |
+| Framework | Next.js |
+| Candidate branch | `feat/masjid-display` |
+| Server environment | `PRAYERAPP_ORIGIN=https://donaumoschee.vercel.app` |
+
+`PRAYERAPP_ORIGIN` remains server-only. No `NEXT_PUBLIC_PRAYERAPP_ORIGIN` is permitted. Plan 6 deployment does not include the destructive real-target legacy-Iqama migration and does not claim physical TV/QR or soak evidence.
+
 ## Independent projects
 
 Prayerapp and Masjid Display deploy independently. They must not be treated as an atomic deployment.
@@ -65,7 +81,7 @@ Never assume simultaneous deployment.
 3. Run TV tests, lint, typecheck, build, and producer/consumer contract verification.
 4. Deploy the exact candidate commit.
 5. Open diagnostics only for maintenance (`?diagnostics=1`) and verify schema, snapshot, sync, logical clock, coverage, online/LKG, and Test Mode flags.
-6. Perform the physical-TV/QR and soak certification before calling the release production-certified.
+6. Record browser/live-preview evidence for Plan 6. Physical-TV/QR and soak certification remain separate Plan 7/operational release follow-ups.
 
 ## Runtime outage behavior
 

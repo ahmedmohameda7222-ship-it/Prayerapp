@@ -5,10 +5,13 @@ import type { PrayerTime } from "@/lib/types";
 
 vi.mock("server-only", () => ({}));
 
-function prayerRows(): PrayerTime[] {
+function prayerRows(
+  startDate = "2026-09-14",
+  endDate = "2026-10-20",
+): PrayerTime[] {
   const rows: PrayerTime[] = [];
-  let date = "2026-09-14";
-  while (date <= "2026-10-20") {
+  let date = startDate;
+  while (date <= endDate) {
     rows.push({
       id: `prayer-${date}`,
       date,
@@ -36,6 +39,7 @@ function deps() {
   return {
     getPrayerTimes: vi.fn(async () => prayerRows()),
     getPrayerSettings: vi.fn(async () => ({
+      timezone: "Europe/Berlin",
       iqamaDelays: { fajr: 20, dhuhr: 15, asr: 15, maghrib: 10, isha: 15 },
     })),
     getJumuahTimesForDisplayWindow: vi.fn(async () => [
@@ -178,6 +182,45 @@ describe("buildMasjidDisplayFeed", () => {
     expect(feed.azkar.map((item) => item.id)).toEqual(["morning-1", "evening-1"]);
     expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajr" + "Iqama");
     expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajr_" + "iqama");
+  });
+
+  it("uses the persisted Prayer Engine timezone for Feed date windows and output", async () => {
+    const source = deps();
+    source.getPrayerSettings.mockResolvedValue({
+      timezone: "America/New_York",
+      iqamaDelays: { fajr: 20, dhuhr: 15, asr: 15, maghrib: 10, isha: 15 },
+    } as never);
+    source.getPrayerTimes.mockResolvedValue(
+      prayerRows("2026-09-13", "2026-10-19"),
+    );
+
+    const feed = await buildMasjidDisplayFeed(
+      new Date("2026-09-15T02:00:00.000Z"),
+      source as never,
+    );
+
+    expect(feed.timezone).toBe("America/New_York");
+    expect(source.getPrayerTimes).toHaveBeenCalledWith(
+      true,
+      "2026-09-13",
+      "2026-10-19",
+    );
+    expect(source.getJumuahTimesForDisplayWindow).toHaveBeenCalledWith(
+      "2026-09-13",
+      "2026-10-19",
+    );
+    expect(source.getEventsForDisplayWindow).toHaveBeenCalledWith(
+      "2026-09-14",
+      "2026-10-19",
+    );
+    expect(source.getDonationCampaignsForDisplayWindow).toHaveBeenCalledWith(
+      "2026-09-14",
+      "2026-10-19",
+    );
+    expect(source.getMasjidDisplayGeneratedAt).toHaveBeenCalledWith(
+      expect.any(Object),
+      "2026-09-14T04:00:00.000Z",
+    );
   });
 
   it("uses fresh database-bounded readers for feed source reads", async () => {

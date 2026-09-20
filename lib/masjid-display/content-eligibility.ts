@@ -30,39 +30,39 @@ export function includeAnnouncementInFeed(item: Announcement, now: Date, horizon
   return true;
 }
 
-function eventStart(item: Event): Date {
-  return zonedDateTime(item.date, item.startTime);
+function eventStart(item: Event, timezone?: string): Date {
+  return zonedDateTime(item.date, item.startTime, timezone);
 }
 
-function eventEnd(item: Event): Date {
-  if (item.endTime) return zonedDateTime(item.date, item.endTime);
+function eventEnd(item: Event, timezone?: string): Date {
+  if (item.endTime) return zonedDateTime(item.date, item.endTime, timezone);
   const nextDay = addDaysIso(item.date, 1);
-  return new Date(zonedDateTime(nextDay, "00:00").getTime() - 1);
+  return new Date(zonedDateTime(nextDay, "00:00", timezone).getTime() - 1);
 }
 
-export function isEventActive(item: Event, now: Date): boolean {
+export function isEventActive(item: Event, now: Date, timezone?: string): boolean {
   if (item.published !== true) return false;
   const current = now.getTime();
-  return current >= eventStart(item).getTime() && current <= eventEnd(item).getTime();
+  return current >= eventStart(item, timezone).getTime() && current <= eventEnd(item, timezone).getTime();
 }
 
-export function includeEventInFeed(item: Event, now: Date, horizonEnd: Date): boolean {
+export function includeEventInFeed(item: Event, now: Date, horizonEnd: Date, timezone?: string): boolean {
   if (item.published !== true) return false;
-  return eventEnd(item).getTime() >= now.getTime() && eventStart(item).getTime() <= horizonEnd.getTime();
+  return eventEnd(item, timezone).getTime() >= now.getTime() && eventStart(item, timezone).getTime() <= horizonEnd.getTime();
 }
 
-export function isCampaignActive(item: DonationCampaign, now: Date): boolean {
+export function isCampaignActive(item: DonationCampaign, now: Date, timezone?: string): boolean {
   if (!item.isActive) return false;
-  const currentDate = todayIso(now);
+  const currentDate = todayIso(now, timezone);
   if (item.startDate && currentDate < item.startDate) return false;
   if (item.endDate && currentDate > item.endDate) return false;
   return true;
 }
 
-export function includeCampaignInFeed(item: DonationCampaign, now: Date, horizonEnd: Date): boolean {
+export function includeCampaignInFeed(item: DonationCampaign, now: Date, horizonEnd: Date, timezone?: string): boolean {
   if (!item.isActive) return false;
-  const currentDate = todayIso(now);
-  const horizonDate = todayIso(horizonEnd);
+  const currentDate = todayIso(now, timezone);
+  const horizonDate = todayIso(horizonEnd, timezone);
   if (item.endDate && item.endDate < currentDate) return false;
   if (item.startDate && item.startDate > horizonDate) return false;
   return true;

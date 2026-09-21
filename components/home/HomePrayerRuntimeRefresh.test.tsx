@@ -14,15 +14,19 @@ describe("Home live prayer runtime refresh", () => {
     const client = source("components/home/HomePageClient.tsx");
     expect(client).toContain('import { refreshHomePrayerRuntime } from "@/app/home-prayer-runtime";');
     expect(client).toContain("const [liveIqamaDelays, setLiveIqamaDelays]");
+    expect(client).toContain("const [liveTimezone, setLiveTimezone]");
     expect(client).toContain("await refreshHomePrayerRuntime(");
     expect(client).toContain("setLiveIqamaDelays(latest.iqamaDelays);");
-    expect(client).toContain("liveIqamaDelays ? derivePrayerIqamaTimes(item, liveIqamaDelays) : {}");
+    expect(client).toContain("setLiveTimezone(latest.timezone);");
+    expect(client).toContain("derivePrayerIqamaTimes(item, liveIqamaDelays, liveTimezone)");
 
     const action = source("app/home-prayer-runtime.ts");
     expect(action).toContain('"use server";');
     expect(action).toContain("getPrayerSettings()");
     expect(action).toContain("getPrayerTimes(false, startDate, endDate)");
-    expect(action).toContain("iqamaDelays: prayerSettings?.iqamaDelays ?? null");
+    expect(action).toContain("todayIso(new Date(), prayerSettings.timezone)");
+    expect(action).toContain("iqamaDelays: prayerSettings.iqamaDelays");
+    expect(action).toContain("timezone: prayerSettings.timezone");
     expect(action).not.toContain("fajrAngle");
     expect(action).not.toContain("latitude");
     expect(action).not.toContain("longitude");

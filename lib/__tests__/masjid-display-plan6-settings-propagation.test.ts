@@ -67,8 +67,8 @@ describe("Plan 6 settings-driven Masjid Display runtime", () => {
     }
 
     expect(tv).toContain("const iqamaInstant = prayerInstant + delay * MINUTE_MS");
-    expect(deriveIqamaInstant("2026-09-21", "13:00", 15).getTime())
-      .toBe(deriveIqamaInstant("2026-09-21", "13:00", 0).getTime() + 15 * 60_000);
+    expect(deriveIqamaInstant("2026-09-21", "13:00", 15, "Europe/Berlin").getTime())
+      .toBe(deriveIqamaInstant("2026-09-21", "13:00", 0, "Europe/Berlin").getTime() + 15 * 60_000);
   });
 
   it("wires five prayer durations and the Azkar playlist through Admin, persistence, Feed, and TV", () => {

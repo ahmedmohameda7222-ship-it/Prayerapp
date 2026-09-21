@@ -16,9 +16,27 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 
 type RangeTab = "today" | "week" | "month";
 
-export function PrayerTimesBrowser({ iqamaDelays }: { iqamaDelays: PrayerIqamaDelays | null }) {
+export function PrayerTimesBrowser({
+  iqamaDelays,
+  timezone,
+}: {
+  iqamaDelays: PrayerIqamaDelays | null;
+  timezone: string | null;
+}) {
+  const { t } = useTranslation();
+  if (!timezone) return <EmptyState message={t("prayer.notPublished")} />;
+  return <PrayerTimesBrowserReady iqamaDelays={iqamaDelays} timezone={timezone} />;
+}
+
+function PrayerTimesBrowserReady({
+  iqamaDelays,
+  timezone,
+}: {
+  iqamaDelays: PrayerIqamaDelays | null;
+  timezone: string;
+}) {
   const { t, locale } = useTranslation();
-  const today = todayIso();
+  const today = todayIso(new Date(), timezone);
   const [tab, setTab] = useState<RangeTab>("week");
   const [cursor, setCursor] = useState(today);
 
@@ -55,9 +73,9 @@ export function PrayerTimesBrowser({ iqamaDelays }: { iqamaDelays: PrayerIqamaDe
   const iqamaByDate = useMemo(() => Object.fromEntries(
     effectivePrayerTimes.map((item) => [
       item.date,
-      iqamaDelays ? derivePrayerIqamaTimes(item, iqamaDelays) : {},
+      iqamaDelays ? derivePrayerIqamaTimes(item, iqamaDelays, timezone) : {},
     ]),
-  ), [effectivePrayerTimes, iqamaDelays]);
+  ), [effectivePrayerTimes, iqamaDelays, timezone]);
 
   function moveRange(direction: -1 | 1) {
     setCursor((current) => {

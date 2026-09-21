@@ -64,6 +64,33 @@ describe("prayer-utils", () => {
     );
   });
 
+  it("uses the supplied mosque timezone for prayer instants, Iqama, and next-prayer targets", () => {
+    const timezone = "Asia/Tokyo";
+    expect(
+      deriveIqamaInstant("2026-09-21", "05:00", 10, timezone).toISOString(),
+    ).toBe("2026-09-20T20:10:00.000Z");
+
+    const tokyoPrayer = {
+      ...samplePrayer,
+      id: "tokyo",
+      date: "2026-09-21",
+      fajr: "05:00",
+      dhuhr: "12:00",
+      asr: "15:00",
+      maghrib: "18:00",
+      isha: "19:30",
+    };
+    expect(derivePrayerIqamaTimes(tokyoPrayer, delays, timezone).fajr).toBe("05:00");
+
+    const next = getNextPrayerFromSchedule(
+      [tokyoPrayer],
+      new Date("2026-09-20T19:30:00.000Z"),
+      timezone,
+    );
+    expect(next?.name).toBe("fajr");
+    expect(next?.target.toISOString()).toBe("2026-09-20T20:00:00.000Z");
+  });
+
   it("derives shared Iqama display times, keeps zero delay, and never creates Sunrise Iqama", () => {
     const iqama = derivePrayerIqamaTimes(samplePrayer, delays);
     expect(iqama.fajr).toBe("03:19");

@@ -18,8 +18,9 @@ function stateFor(
   schedule: PrayerTime[],
   iqamaByDate: Record<string, PrayerIqamaTimes>,
   now: Date,
+  timezone: string,
 ): CountdownState | null {
-  const next = getNextPrayerFromSchedule(schedule, now);
+  const next = getNextPrayerFromSchedule(schedule, now, timezone);
   if (!next) return null;
   const iqama = iqamaByDate[next.date]?.[next.name];
   return {
@@ -36,24 +37,26 @@ export function PrayerCountdown({
   schedule,
   iqamaByDate,
   initialNow,
+  timezone,
   variant = "default",
 }: {
   prayer: PrayerTime;
   schedule?: PrayerTime[];
   iqamaByDate: Record<string, PrayerIqamaTimes>;
   initialNow: string;
+  timezone: string;
   variant?: "default" | "instrument";
 }) {
   const { t } = useTranslation();
   const effectiveSchedule = useMemo(() => schedule || [prayer], [schedule, prayer]);
-  const [state, setState] = useState<CountdownState | null>(() => stateFor(effectiveSchedule, iqamaByDate, new Date(initialNow)));
+  const [state, setState] = useState<CountdownState | null>(() => stateFor(effectiveSchedule, iqamaByDate, new Date(initialNow), timezone));
 
   useEffect(() => {
-    const tick = () => setState(stateFor(effectiveSchedule, iqamaByDate, new Date()));
+    const tick = () => setState(stateFor(effectiveSchedule, iqamaByDate, new Date(), timezone));
     tick();
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
-  }, [effectiveSchedule, iqamaByDate]);
+  }, [effectiveSchedule, iqamaByDate, timezone]);
 
   if (!state) return null;
   const prayerName = t(getPrayerDisplayNameKey(state.name, state.date));

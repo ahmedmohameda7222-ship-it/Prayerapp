@@ -17,6 +17,21 @@ This document preserves the Plan 5 certification result and evidence table below
 Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control verification, settings-path audit, browser viewport verification, relevant CI/security gates, and a clean exact-head GitHub Codex review.
 
 
+### Plan 6 implementation evidence snapshot
+
+Plan 6 implementation candidate HEAD `6e4cffb30da15505b55af805892c8ec794c38bf4` has the following fresh automated evidence:
+
+- Root CI `35553536449`: **SUCCESS**.
+- Masjid Display Verification `35553536466`: **SUCCESS**, including live two-app integration.
+- Plan 3 Display Feed Verification `35553536422`: **SUCCESS**.
+- Security Scanners `35553536413`: **SUCCESS**.
+- Android TWA `35553536421`: separate known failure at Android SDK setup before project tests/build.
+
+Those automated results do not satisfy the remaining Plan 6 live-preview requirements. Rechecked Vercel evidence still shows no dedicated `donaumoschee-tv` project, the canonical root Feed/Test Control endpoints return 404, and the advertised deployment mutation is unavailable. No Vercel READY deployment, browser viewport verification, or real Admin Test Mode → deployed TV evidence is claimed.
+
+The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
+
+
 ## Evidence table
 
 | Gate | Required | Current status | Evidence / blocker |

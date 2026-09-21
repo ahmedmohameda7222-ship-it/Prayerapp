@@ -19,17 +19,17 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Plan 6 implementation candidate HEAD `6e4cffb30da15505b55af805892c8ec794c38bf4` has the following fresh automated evidence:
+Current Plan 6 implementation HEAD `c19130d1a0fd8d63f13dc88acccbd76f53d5dd54` has the following fresh automated evidence:
 
-- Root CI `35553536449`: **SUCCESS**.
-- Masjid Display Verification `35553536466`: **SUCCESS**, including live two-app integration.
-- Plan 3 Display Feed Verification `35553536422`: **SUCCESS**.
-- Security Scanners `35553536413`: **SUCCESS**.
-- Android TWA `35553536421`: separate known failure at Android SDK setup before project tests/build.
+- Root CI `35556834716`: **SUCCESS**.
+- Masjid Display Verification `35556834669`: **SUCCESS**, including live two-app integration.
+- Plan 3 Display Feed Verification `35556833741`: **SUCCESS**.
+- Security Scanners `35556834662`: **SUCCESS**.
+- Android TWA `35556834663`: separate known failure at Android SDK setup before project tests/build.
 
-Those automated results do not satisfy the remaining Plan 6 live-preview requirements. Rechecked Vercel evidence still shows no dedicated `donaumoschee-tv` project, the canonical root Feed/Test Control endpoints return 404, and the advertised deployment mutation is unavailable. No Vercel READY deployment, browser viewport verification, or real Admin Test Mode → deployed TV evidence is claimed.
+Those automated results do not satisfy the remaining Plan 6 live-preview requirements. Rechecked Vercel evidence still shows no dedicated `donaumoschee-tv` project, no root-project preview deployment for `feat/masjid-display`, and the canonical root production deployment remains on `main`. No Vercel READY TV deployment, browser viewport verification, or real Admin Test Mode → deployed TV evidence is claimed.
 
-The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
+Per operator instruction, Codex review is deferred until all other Plan 6 implementation/live-verification work is complete. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
 
 
 ## Evidence table

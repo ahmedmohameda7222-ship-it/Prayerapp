@@ -261,7 +261,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
     const preferences = readNativePrayerPreferences();
     if (!preferences) return;
     const syncGeneration = syncGenerationRef.current;
-    const from = todayIso(new Date());
+    const from = addDaysIso(todayIso(new Date(), "UTC"), -1);
     try {
       const [scheduleResponse, catalogResponse] = await Promise.all([
         fetch(`/api/android/prayer-schedule?from=${from}&days=31`, { cache: "no-store" }),
@@ -275,7 +275,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
         rows: Array<Record<string, unknown>>;
       };
       const catalog = await catalogResponse.json() as { schemaVersion: number; sounds: Array<Record<string, unknown>> };
-      if (schedule.schemaVersion !== 1 || schedule.timeZone !== "Europe/Berlin" || !Array.isArray(schedule.rows) || schedule.rows.length === 0) return;
+      if (schedule.schemaVersion !== 1 || typeof schedule.timeZone !== "string" || !schedule.timeZone || !Array.isArray(schedule.rows) || schedule.rows.length === 0) return;
       if (
         accountTransitioningRef.current
         || syncGeneration !== syncGenerationRef.current
@@ -285,12 +285,12 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
         const updated = typeof row.updated_at === "string" ? row.updated_at : "";
         return updated > latest ? updated : latest;
       }, "");
-      const scheduleValidUntil = zonedDateTime(addDaysIso(schedule.through, 1), "00:00").toISOString();
+      const scheduleValidUntil = zonedDateTime(addDaysIso(schedule.through, 1), "00:00", schedule.timeZone).toISOString();
       if (accountTransitioningRef.current || syncGeneration !== syncGenerationRef.current) return;
       send("web.configure", {
         schemaVersion: 1,
         revision: `${preferences.updatedAt}|${latestRowRevision}`.slice(0, 128),
-        timeZone: "Europe/Berlin",
+        timeZone: schedule.timeZone,
         locale,
         scheduleValidUntil,
         rows: schedule.rows,

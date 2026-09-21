@@ -33,13 +33,14 @@ function extra(id: string, date: string, prayerTime: string, published = true): 
   };
 }
 
+const BERLIN = "Europe/Berlin";
+
 describe("unified Friday schedule resolver", () => {
   it("creates immutable Primary Jumu'ah from Friday dhuhr with zero DB rows", () => {
     const result = resolveUpcomingFridaySchedule(
       [prayer("2026-08-21", "12:18", true)],
       [],
-      new Date("2026-08-17T08:00:00.000Z"),
-    );
+      new Date("2026-08-17T08:00:00.000Z"),\n      BERLIN,\n    );
 
     expect(result?.date).toBe("2026-08-21");
     expect(result?.items).toHaveLength(1);
@@ -62,8 +63,7 @@ describe("unified Friday schedule resolver", () => {
         extra("duplicate-second", "2026-08-21", "13:30"),
         extra("hidden", "2026-08-21", "15:30", false),
       ],
-      new Date("2026-08-17T08:00:00.000Z"),
-    );
+      new Date("2026-08-17T08:00:00.000Z"),\n      BERLIN,\n    );
 
     expect(result?.items.map((item) => [item.prayerTime, item.source, item.editable])).toEqual([
       ["12:18", "prayer-times", false],
@@ -77,25 +77,23 @@ describe("unified Friday schedule resolver", () => {
     const result = resolveUpcomingFridaySchedule(
       [prayer("2026-08-20"), prayer("2026-08-21", "12:18", false)],
       [extra("orphan", "2026-08-21", "13:30")],
-      new Date("2026-08-17T08:00:00.000Z"),
-    );
+      new Date("2026-08-17T08:00:00.000Z"),\n      BERLIN,\n    );
     expect(result).toBeUndefined();
   });
 
   it("advances through Friday services using Europe/Berlin clock time", () => {
     const prayerRows = [prayer("2026-08-21")];
     const extras = [extra("two", "2026-08-21", "13:30"), extra("three", "2026-08-21", "14:30")];
-    expect(resolveUpcomingFridaySchedule(prayerRows, extras, new Date("2026-08-21T09:00:00.000Z"))?.nextIndex).toBe(0);
-    expect(resolveUpcomingFridaySchedule(prayerRows, extras, new Date("2026-08-21T10:30:00.000Z"))?.nextIndex).toBe(1);
-    expect(resolveUpcomingFridaySchedule(prayerRows, extras, new Date("2026-08-21T11:45:00.000Z"))?.nextIndex).toBe(2);
+    expect(resolveUpcomingFridaySchedule(prayerRows, extras, new Date("2026-08-21T09:00:00.000Z"), BERLIN)?.nextIndex).toBe(0);
+    expect(resolveUpcomingFridaySchedule(prayerRows, extras, new Date("2026-08-21T10:30:00.000Z"), BERLIN)?.nextIndex).toBe(1);
+    expect(resolveUpcomingFridaySchedule(prayerRows, extras, new Date("2026-08-21T11:45:00.000Z"), BERLIN)?.nextIndex).toBe(2);
   });
 
   it("moves to the next Friday prayer row after the final service passes", () => {
     const result = resolveUpcomingFridaySchedule(
       [prayer("2026-08-21"), prayer("2026-08-28", "12:19")],
       [extra("today-extra", "2026-08-21", "13:30")],
-      new Date("2026-08-21T12:00:00.000Z"),
-    );
+      new Date("2026-08-21T12:00:00.000Z"),\n      BERLIN,\n    );
     expect(result?.date).toBe("2026-08-28");
     expect(result?.items[0]?.prayerTime).toBe("12:19");
     expect(result?.isToday).toBe(false);
@@ -105,8 +103,8 @@ describe("unified Friday schedule resolver", () => {
 describe("Friday live prayer state", () => {
   it("uses the resolver nextIndex as the single live hero target", () => {
     const now = new Date("2026-08-21T10:30:00.000Z");
-    const schedule = resolveUpcomingFridaySchedule([prayer("2026-08-21")], [extra("two", "2026-08-21", "13:30")], now);
-    const live = getFridayLivePrayer(schedule, now);
+    const schedule = resolveUpcomingFridaySchedule([prayer("2026-08-21")], [extra("two", "2026-08-21", "13:30")], now, BERLIN);
+    const live = getFridayLivePrayer(schedule, now, BERLIN);
     expect(live?.item.id).toBe("two");
     expect(live?.index).toBe(1);
     expect(live?.remainingMs).toBeGreaterThan(0);
@@ -114,8 +112,8 @@ describe("Friday live prayer state", () => {
 
   it("preserves the five-minute imminent window", () => {
     const now = new Date("2026-08-21T10:14:00.000Z");
-    const schedule = resolveUpcomingFridaySchedule([prayer("2026-08-21")], [], now);
-    const live = getFridayLivePrayer(schedule, now);
+    const schedule = resolveUpcomingFridaySchedule([prayer("2026-08-21")], [], now, BERLIN);
+    const live = getFridayLivePrayer(schedule, now, BERLIN);
     expect(FRIDAY_IMMINENT_WINDOW_MS).toBe(300_000);
     expect(live?.imminent).toBe(true);
   });

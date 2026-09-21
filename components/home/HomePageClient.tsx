@@ -49,6 +49,7 @@ const HOME_EMPTY_COPY = {
 type HomePageClientProps = {
   initialPrayerTimes: PrayerTime[];
   iqamaDelays: PrayerIqamaDelays | null;
+  timezone: string | null;
   urgentAnnouncements: Announcement[];
   jumuahTimes: JumuahTime[];
   allowAnyFutureJumuah?: boolean;
@@ -62,6 +63,7 @@ type HomePageClientProps = {
 export function HomePageClient({
   initialPrayerTimes,
   iqamaDelays,
+  timezone,
   urgentAnnouncements,
   jumuahTimes,
   allowAnyFutureJumuah = false,
@@ -75,18 +77,30 @@ export function HomePageClient({
   const [now, setNow] = useState(() => new Date(initialNow));
   const [schedule, setSchedule] = useState<PrayerTime[]>(initialPrayerTimes || EMPTY_SCHEDULE);
   const [liveIqamaDelays, setLiveIqamaDelays] = useState<PrayerIqamaDelays | null>(iqamaDelays);
-  const today = getPrayerForDate(schedule, todayIso(now));
+  const [liveTimezone, setLiveTimezone] = useState<string | null>(timezone);
+  const today = liveTimezone
+    ? getPrayerForDate(schedule, todayIso(now, liveTimezone))
+    : undefined;
   const iqamaByDate = useMemo(() => Object.fromEntries(
-    schedule.map((item) => [item.date, liveIqamaDelays ? derivePrayerIqamaTimes(item, liveIqamaDelays) : {}]),
-  ), [schedule, liveIqamaDelays]);
+    schedule.map((item) => [
+      item.date,
+      liveIqamaDelays && liveTimezone ? derivePrayerIqamaTimes(item, liveIqamaDelays, liveTimezone) : {},
+    ]),
+  ), [schedule, liveIqamaDelays, liveTimezone]);
   const activePrayer = useMemo(() => {
-    const next = getNextPrayerFromSchedule(schedule, now);
-    return next?.name || (today ? getNextPrayer(today, now)?.name : undefined);
-  }, [now, schedule, today]);
-  const smartAction = useMemo(() => schedule.length ? getSmartNextAction(schedule, now) : undefined, [now, schedule]);
+    if (!liveTimezone) return undefined;
+    const next = getNextPrayerFromSchedule(schedule, now, liveTimezone);
+    return next?.name || (today ? getNextPrayer(today, now, liveTimezone)?.name : undefined);
+  }, [liveTimezone, now, schedule, today]);
+  const smartAction = useMemo(
+    () => schedule.length && liveTimezone ? getSmartNextAction(schedule, now, liveTimezone) : undefined,
+    [liveTimezone, now, schedule],
+  );
   const jumuahSchedule = useMemo(
-    () => getHomeJumuahSchedule(schedule, jumuahTimes, now, { allowAnyFutureFriday: allowAnyFutureJumuah }),
-    [allowAnyFutureJumuah, jumuahTimes, now, schedule],
+    () => liveTimezone
+      ? getHomeJumuahSchedule(schedule, jumuahTimes, now, liveTimezone, { allowAnyFutureFriday: allowAnyFutureJumuah })
+      : undefined,
+    [allowAnyFutureJumuah, jumuahTimes, liveTimezone, now, schedule],
   );
 
   useEffect(() => {
@@ -102,6 +116,7 @@ export function HomePageClient({
         if (active) {
           setSchedule(latest.schedule);
           setLiveIqamaDelays(latest.iqamaDelays);
+          setLiveTimezone(latest.timezone);
         }
       } catch {
         // Keep the last verified schedule and Iqama-delay snapshot together.
@@ -138,9 +153,9 @@ export function HomePageClient({
   return (
     <div className="home-dashboard grid" data-testid="home-dashboard">
       <section className="home-section-next" data-home-section="hero" aria-label={t("prayer.nextPrayer")}>
-        {today ? (
+        {today && liveTimezone ? (
           <HomeNextPrayerSurface>
-            <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} iqamaByDate={iqamaByDate} initialNow={initialNow} variant="instrument" />
+            <PrayerCountdown prayer={today} schedule={schedule.length ? schedule : [today]} iqamaByDate={iqamaByDate} initialNow={initialNow} timezone={liveTimezone} variant="instrument" />
           </HomeNextPrayerSurface>
         ) : (
           <HomeEmptyState message={t("prayer.notPublished")} />

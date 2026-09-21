@@ -34,7 +34,7 @@ export interface PrayerEngineServerDependencies {
   ) => Promise<PrayerTime[]>;
   rpc: (name: string, args: Record<string, unknown>) => Promise<RpcResult>;
   invalidatePrayerCaches: () => void;
-  today: () => string;
+  today: (timezone: string) => string;
 }
 
 function invalidatePrayerCaches(): void {
@@ -93,7 +93,7 @@ function defaultDependencies(): PrayerEngineServerDependencies {
       };
     },
     invalidatePrayerCaches,
-    today: todayIso,
+    today: (timezone) => todayIso(new Date(), timezone),
   };
 }
 
@@ -226,7 +226,7 @@ async function loadExtensionBasisDates(
 }
 
 export async function previewScheduleExtension(
-  today = todayIso(),
+  today: string | undefined = undefined,
   dependencies: PrayerEngineServerDependencies = defaultDependencies(),
 ): Promise<PrayerSchedulePreview> {
   const settings = requireSettings(await dependencies.getSettings());
@@ -234,16 +234,17 @@ export async function previewScheduleExtension(
     throw new Error("Recalculate the future schedule before extending it");
   }
 
-  const existingDates = await loadExtensionBasisDates(today, dependencies);
-  return buildExtensionPreview(existingDates, today, settings);
+  const localToday = today ?? dependencies.today(settings.timezone);
+  const existingDates = await loadExtensionBasisDates(localToday, dependencies);
+  return buildExtensionPreview(existingDates, localToday, settings);
 }
 
 export async function commitScheduleExtension(
   preview: PrayerSchedulePreview,
   dependencies: PrayerEngineServerDependencies = defaultDependencies(),
 ): Promise<number> {
-  const today = dependencies.today();
   const settings = requireSettings(await dependencies.getSettings());
+  const today = dependencies.today(settings.timezone);
   if (
     settings.calculationRevision !== preview.settingsRevision ||
     settings.appliedCalculationRevision !== preview.settingsRevision
@@ -278,10 +279,10 @@ export async function previewFutureRecalculation(
   endDate: string,
   dependencies: PrayerEngineServerDependencies = defaultDependencies(),
 ): Promise<PrayerScheduleDiff> {
-  if (startDate < dependencies.today()) {
+  const settings = requireSettings(await dependencies.getSettings());
+  if (startDate < dependencies.today(settings.timezone)) {
     throw new Error("Future recalculation cannot start before mosque-local today");
   }
-  const settings = requireSettings(await dependencies.getSettings());
   const existing = await loadPrayerTimesRange(startDate, endDate, dependencies);
   return buildRecalculationPreview(
     existing.map(toCalculationRow),
@@ -295,12 +296,11 @@ export async function commitFutureRecalculation(
   preview: PrayerScheduleDiff,
   dependencies: PrayerEngineServerDependencies = defaultDependencies(),
 ): Promise<number> {
-  const today = dependencies.today();
+  const settings = requireSettings(await dependencies.getSettings());
+  const today = dependencies.today(settings.timezone);
   if (preview.startDate < today) {
     throw new Error("Future recalculation cannot change past dates");
   }
-
-  const settings = requireSettings(await dependencies.getSettings());
   if (settings.calculationRevision !== preview.settingsRevision) {
     throw new Error("Prayer calculation revision changed; preview again");
   }

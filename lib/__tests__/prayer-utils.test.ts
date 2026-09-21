@@ -27,6 +27,8 @@ const samplePrayer: PrayerTime = {
   updatedAt: "2026-06-20T18:30:00+02:00",
 };
 
+const BERLIN = "Europe/Berlin";
+
 const delays: PrayerIqamaDelays = {
   fajr: 0,
   dhuhr: 10,
@@ -56,10 +58,10 @@ describe("prayer-utils", () => {
   });
 
   it("derives Iqama from stored prayer start plus shared delay", () => {
-    expect(deriveIqamaInstant("2026-09-15", "18:00", 0).getTime()).toBe(
+    expect(deriveIqamaInstant("2026-09-15", "18:00", 0, BERLIN).getTime()).toBe(
       zonedDateTime("2026-09-15", "18:00").getTime(),
     );
-    expect(deriveIqamaInstant("2026-09-15", "23:58", 5).getTime()).toBe(
+    expect(deriveIqamaInstant("2026-09-15", "23:58", 5, BERLIN).getTime()).toBe(
       zonedDateTime("2026-09-15", "23:58").getTime() + 5 * 60_000,
     );
   });
@@ -92,7 +94,7 @@ describe("prayer-utils", () => {
   });
 
   it("derives shared Iqama display times, keeps zero delay, and never creates Sunrise Iqama", () => {
-    const iqama = derivePrayerIqamaTimes(samplePrayer, delays);
+    const iqama = derivePrayerIqamaTimes(samplePrayer, delays, BERLIN);
     expect(iqama.fajr).toBe("03:19");
     expect(iqama.dhuhr).toBe("13:23");
     expect(iqama.asr).toBe("17:42");
@@ -103,12 +105,12 @@ describe("prayer-utils", () => {
 
   it("does not expose normal Friday Dhuhr Iqama because Friday Dhuhr is primary Jumuah", () => {
     const friday = { ...samplePrayer, id: "pt-friday", date: "2026-06-26" };
-    expect(derivePrayerIqamaTimes(friday, delays).dhuhr).toBeUndefined();
+    expect(derivePrayerIqamaTimes(friday, delays, BERLIN).dhuhr).toBeUndefined();
   });
 
   it("rejects invalid shared Iqama delays", () => {
-    expect(() => deriveIqamaInstant("2026-09-15", "18:00", -1)).toThrow();
-    expect(() => deriveIqamaInstant("2026-09-15", "18:00", 1.5)).toThrow();
+    expect(() => deriveIqamaInstant("2026-09-15", "18:00", -1, BERLIN)).toThrow();
+    expect(() => deriveIqamaInstant("2026-09-15", "18:00", 1.5, BERLIN)).toThrow();
   });
 
   it("formatCountdown formats milliseconds correctly", () => {
@@ -119,14 +121,14 @@ describe("prayer-utils", () => {
 
   it("getNextPrayer returns the next obligatory prayer after now", () => {
     const now = new Date("2026-06-24T12:00:00+02:00");
-    const next = getNextPrayer(samplePrayer, now);
+    const next = getNextPrayer(samplePrayer, now, BERLIN);
     expect(next?.name).toBe("dhuhr");
     expect(next?.time).toBe("13:13");
   });
 
   it("does not fabricate tomorrow Fajr from today's row after Isha", () => {
     const afterIsha = new Date("2026-06-24T23:30:00+02:00");
-    expect(getNextPrayer(samplePrayer, afterIsha)).toBeUndefined();
+    expect(getNextPrayer(samplePrayer, afterIsha, BERLIN)).toBeUndefined();
   });
 
   it("uses tomorrow's actual published Fajr when a multi-day schedule is available", () => {
@@ -137,7 +139,7 @@ describe("prayer-utils", () => {
       fajr: "03:21",
     };
     const afterIsha = new Date("2026-06-24T23:30:00+02:00");
-    const next = getNextPrayerFromSchedule([samplePrayer, tomorrow], afterIsha);
+    const next = getNextPrayerFromSchedule([samplePrayer, tomorrow], afterIsha, BERLIN);
     expect(next?.name).toBe("fajr");
     expect(next?.time).toBe("03:21");
     expect(next?.date).toBe("2026-06-25");
@@ -148,6 +150,7 @@ describe("prayer-utils", () => {
     const next = getNextPrayerFromSchedule(
       [samplePrayer],
       afterFajrBeforeSunrise,
+      BERLIN,
     );
     expect(next?.name).toBe("dhuhr");
     expect(next?.time).toBe("13:13");
@@ -157,7 +160,7 @@ describe("prayer-utils", () => {
 describe("getSmartNextAction", () => {
   it("prioritizes after-prayer Azkar shortly after an obligatory prayer", () => {
     const now = new Date("2026-06-24T13:30:00+02:00");
-    expect(getSmartNextAction([samplePrayer], now)).toBe("afterPrayer");
+    expect(getSmartNextAction([samplePrayer], now, BERLIN)).toBe("afterPrayer");
   });
 
   it("recommends the expected Azkar for morning, evening, and night", () => {
@@ -165,18 +168,21 @@ describe("getSmartNextAction", () => {
       getSmartNextAction(
         [samplePrayer],
         new Date("2026-06-24T10:00:00+02:00"),
+        BERLIN,
       ),
     ).toBe("morning");
     expect(
       getSmartNextAction(
         [samplePrayer],
         new Date("2026-06-24T19:00:00+02:00"),
+        BERLIN,
       ),
     ).toBe("evening");
     expect(
       getSmartNextAction(
         [samplePrayer],
         new Date("2026-06-24T23:50:00+02:00"),
+        BERLIN,
       ),
     ).toBe("sleep");
   });
@@ -184,7 +190,7 @@ describe("getSmartNextAction", () => {
   it("prefers Friday during the daytime Friday window", () => {
     const friday = { ...samplePrayer, id: "pt-friday", date: "2026-06-26" };
     expect(
-      getSmartNextAction([friday], new Date("2026-06-26T11:00:00+02:00")),
+      getSmartNextAction([friday], new Date("2026-06-26T11:00:00+02:00"), BERLIN),
     ).toBe("friday");
   });
 });

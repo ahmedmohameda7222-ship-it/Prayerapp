@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -8,13 +8,15 @@ function source(path: string) {
 
 function sourceTree(path: string): string {
   const absolute = join(process.cwd(), path);
-  return readdirSync(absolute)
+  return readdirSync(absolute, { withFileTypes: true })
     .flatMap((entry) => {
-      const child = join(absolute, entry);
-      if (statSync(child).isDirectory()) {
-        return sourceTree(join(path, entry));
+      const child = join(absolute, entry.name);
+      if (entry.isDirectory()) {
+        return sourceTree(join(path, entry.name));
       }
-      return entry.endsWith(".java") ? [readFileSync(child, "utf8")] : [];
+      return entry.isFile() && entry.name.endsWith(".java")
+        ? [readFileSync(child, "utf8")]
+        : [];
     })
     .join("\n");
 }

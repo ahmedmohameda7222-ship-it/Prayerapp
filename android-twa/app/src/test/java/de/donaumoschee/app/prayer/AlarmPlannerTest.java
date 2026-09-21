@@ -77,6 +77,17 @@ public final class AlarmPlannerTest {
     }
 
     @Test
+    public void usesConfiguredIanaTimezoneForPrayerInstants() throws Exception {
+        Instant now = Instant.parse("2026-08-22T00:00:00Z");
+        List<AlarmEvent> events = AlarmPlanner.plan(
+                configInZone("tokyo", "2026-08-22", "13:30", "dhuhr", true, 0, "abdul-basit-cairo", "Asia/Tokyo", now),
+                now
+        );
+        assertEquals(1, events.size());
+        assertEquals(Instant.parse("2026-08-22T04:30:00Z"), events.get(0).dueAt);
+    }
+
+    @Test
     public void usesEuropeBerlinAcrossDstTransitions() throws Exception {
         Instant springNow = Instant.parse("2026-03-28T00:00:00Z");
         List<AlarmEvent> spring = AlarmPlanner.plan(config("spring", "2026-03-29", "13:30", "dhuhr", true, 0, "abdul-basit-cairo", springNow), springNow);
@@ -88,8 +99,12 @@ public final class AlarmPlannerTest {
     }
 
     private static NativeConfig config(String revision, String date, String dhuhrTime, String prayer, boolean enabled, int lead, String sound, Instant now) throws Exception {
+        return configInZone(revision, date, dhuhrTime, prayer, enabled, lead, sound, "Europe/Berlin", now);
+    }
+
+    private static NativeConfig configInZone(String revision, String date, String dhuhrTime, String prayer, boolean enabled, int lead, String sound, String timeZone, Instant now) throws Exception {
         return NativeConfig.parse(new JSONObject("{"
-                + "\"schemaVersion\":1,\"revision\":\"" + revision + "\",\"timeZone\":\"Europe/Berlin\","
+                + "\"schemaVersion\":1,\"revision\":\"" + revision + "\",\"timeZone\":\"" + timeZone + "\","
                 + "\"scheduleValidUntil\":\"" + now.plusSeconds(30L * 24 * 60 * 60) + "\","
                 + "\"rows\":[{\"id\":\"" + SCHEDULE_ID + "\",\"date\":\"" + date + "\",\"fajr\":\"05:00\",\"sunrise\":\"06:30\",\"dhuhr\":\"" + dhuhrTime + "\",\"asr\":\"17:30\",\"maghrib\":\"20:30\",\"isha\":\"22:00\"}],"
                 + "\"reminders\":[{\"prayer\":\"" + prayer + "\",\"enabled\":" + enabled + ",\"leadMinutes\":" + lead + ",\"adhanSoundId\":\"" + sound + "\"}]}"), now);

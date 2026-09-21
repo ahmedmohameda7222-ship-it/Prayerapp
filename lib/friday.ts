@@ -70,8 +70,9 @@ export function resolveUpcomingFridaySchedule(
   prayerTimes: PrayerTime[],
   jumuahTimes: JumuahTime[],
   now: Date,
+  timezone: string,
 ): FridaySchedule | undefined {
-  const today = todayIso(now);
+  const today = todayIso(now, timezone);
   const fridayPrayerRows = prayerTimes
     .filter((row) => row.published && row.date >= today && isFridayIso(row.date))
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -84,7 +85,7 @@ export function resolveUpcomingFridaySchedule(
 
     if (prayerRow.date === today) {
       const nextIndex = items.findIndex(
-        (item) => zonedDateTime(prayerRow.date, item.prayerTime).getTime() >= now.getTime(),
+        (item) => zonedDateTime(prayerRow.date, item.prayerTime, timezone).getTime() >= now.getTime(),
       );
       if (nextIndex === -1) continue;
       return { date: prayerRow.date, items, nextIndex, isToday: true };
@@ -104,8 +105,9 @@ export function resolveUpcomingFridaySchedule(
 export function getUpcomingFridaySchedule(
   jumuahTimes: JumuahTime[],
   now: Date,
+  timezone: string,
 ): FridaySchedule | undefined {
-  const today = todayIso(now);
+  const today = todayIso(now, timezone);
   const published = jumuahTimes
     .filter((item) => item.published && item.date >= today && isFridayIso(item.date))
     .sort((a, b) => `${a.date}T${a.prayerTime}`.localeCompare(`${b.date}T${b.prayerTime}`));
@@ -122,7 +124,7 @@ export function getUpcomingFridaySchedule(
 
     if (date === today) {
       const nextIndex = items.findIndex(
-        (item) => zonedDateTime(date, item.prayerTime).getTime() >= now.getTime(),
+        (item) => zonedDateTime(date, item.prayerTime, timezone).getTime() >= now.getTime(),
       );
       if (nextIndex === -1) continue;
       return { date, items, nextIndex, isToday: true };
@@ -137,12 +139,13 @@ export function getUpcomingFridaySchedule(
 export function getFridayLivePrayer(
   schedule: FridaySchedule | undefined,
   now: Date,
+  timezone: string,
 ): FridayLivePrayer | undefined {
   if (!schedule?.items.length) return undefined;
 
   const index = Math.min(Math.max(schedule.nextIndex, 0), schedule.items.length - 1);
   const item = schedule.items[index];
-  const target = zonedDateTime(schedule.date, item.prayerTime);
+  const target = zonedDateTime(schedule.date, item.prayerTime, timezone);
   const remainingMs = Math.max(0, target.getTime() - now.getTime());
 
   return {

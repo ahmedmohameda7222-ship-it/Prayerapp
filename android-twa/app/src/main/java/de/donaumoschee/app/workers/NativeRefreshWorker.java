@@ -63,13 +63,15 @@ public final class NativeRefreshWorker extends Worker {
 
     private boolean refreshSchedule(NativeStore store, JSONObject config, int generation) {
         try {
-            String today = LocalDate.now(ZoneId.of("Europe/Berlin")).toString();
+            String today = LocalDate.now(ZoneId.of("UTC")).minusDays(1).toString();
             JSONObject response = NativeHttp.get(ORIGIN + "/api/android/prayer-schedule?from=" + today + "&days=31");
             if (store.accountGeneration() != generation) return false;
-            if (response.optInt("schemaVersion", -1) != 1 || !"Europe/Berlin".equals(response.optString("timeZone"))) return false;
+            if (response.optInt("schemaVersion", -1) != 1) return false;
+            ZoneId zone = ZoneId.of(response.getString("timeZone"));
             JSONArray rows = response.getJSONArray("rows");
             String through = response.getString("through");
-            Instant validUntil = LocalDate.parse(through).plusDays(1).atStartOfDay(ZoneId.of("Europe/Berlin")).toInstant();
+            Instant validUntil = LocalDate.parse(through).plusDays(1).atStartOfDay(zone).toInstant();
+            config.put("timeZone", zone.getId());
             config.put("rows", rows);
             config.put("scheduleValidUntil", validUntil.toString());
             return store.saveConfigIfGeneration(config, Instant.now(), generation);

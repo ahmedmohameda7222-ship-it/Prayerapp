@@ -19,13 +19,15 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Current Plan 6 implementation HEAD `c19130d1a0fd8d63f13dc88acccbd76f53d5dd54` has the following fresh automated evidence:
+Current Plan 6 repository HEAD `704d004b6b3650ae6a191f867b169ac2b0d442dd` has the following fresh automated evidence:
 
-- Root CI `35556834716`: **SUCCESS**.
-- Masjid Display Verification `35556834669`: **SUCCESS**, including live two-app integration.
-- Plan 3 Display Feed Verification `35556833741`: **SUCCESS**.
-- Security Scanners `35556834662`: **SUCCESS**.
-- Android TWA `35556834663`: separate known failure at Android SDK setup before project tests/build.
+- Root CI `35558147818`: **SUCCESS**.
+- Masjid Display Verification `35558147821`: **SUCCESS**, including live two-app integration.
+- Plan 3 Display Feed Verification `35558147809`: **SUCCESS**.
+- Security Scanners `35558147841`: **SUCCESS**, including CodeQL after removal of the Plan 6 test-helper stat race.
+- Android TWA `35558147806`: separate known failure at Android SDK setup before project tests/build.
+
+The CodeQL file-system-race finding introduced by the Plan 6 source-tree regression helper was closed with RED Root CI `35557966896` and GREEN exact-head Root CI/Security runs above. Current PR inline review threads are resolved.
 
 Those automated results do not satisfy the remaining Plan 6 live-preview requirements. Rechecked Vercel evidence still shows no dedicated `donaumoschee-tv` project, no root-project preview deployment for `feat/masjid-display`, and the canonical root production deployment remains on `main`. No Vercel READY TV deployment, browser viewport verification, or real Admin Test Mode → deployed TV evidence is claimed.
 

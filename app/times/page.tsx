@@ -8,7 +8,7 @@ export default async function TimesPage() {
   return (
     <AppShell>
       <PageHeader titleKey="times.title" arch backHref={null} />
-      <PrayerTimesBrowser iqamaDelays={settings?.iqamaDelays ?? null} />
+      <PrayerTimesBrowser iqamaDelays={settings?.iqamaDelays ?? null} timezone={settings?.timezone ?? null} />
     </AppShell>
   );
 }

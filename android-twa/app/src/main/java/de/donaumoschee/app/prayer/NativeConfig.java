@@ -48,7 +48,7 @@ public final class NativeConfig {
         if (object == null || object.optInt("schemaVersion", -1) != 1) throw new JSONException("Invalid config schema");
         ZoneId zone;
         try {
-            zone = ZoneId.of(object.optString("timeZone", ""));
+            zone = ZoneId.of(object.getString("timeZone"));
         } catch (RuntimeException error) {
             throw new JSONException("Invalid time zone");
         }

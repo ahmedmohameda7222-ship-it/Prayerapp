@@ -40,7 +40,7 @@ describe("Friday public page contract", () => {
   it("does not fabricate Primary when prayer-times loading fails", () => {
     const page = source("app/friday/page.tsx");
 
-    expect(page).toContain('prayerTimesResult.status === "fulfilled"\n    ? resolveUpcomingFridaySchedule');
+    expect(page).toContain('prayerTimesResult.status === "fulfilled" && timezone\n    ? resolveUpcomingFridaySchedule');
     expect(page).toContain(": undefined;");
     expect(page).toContain('prayerTimesLoadFailed={prayerTimesResult.status === "rejected"}');
   });

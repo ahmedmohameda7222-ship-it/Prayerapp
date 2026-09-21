@@ -92,6 +92,22 @@ describe("prayer engine server orchestration", () => {
     expect(getPrayerTimes.mock.calls.length).toBeGreaterThan(1);
   });
 
+  it("uses the persisted mosque timezone for the future-only recalculation boundary", async () => {
+    const today = vi.fn((timezone?: string) =>
+      timezone === "Asia/Tokyo" ? "2026-09-21" : "2026-09-20",
+    );
+    const settings = { ...validSettings, timezone: "Asia/Tokyo" };
+    const dependencies = deps({
+      getSettings: vi.fn().mockResolvedValue(settings),
+      today,
+    });
+
+    await expect(
+      previewFutureRecalculation("2026-09-20", "2026-09-20", dependencies),
+    ).rejects.toThrow("mosque-local today");
+    expect(today).toHaveBeenCalledWith("Asia/Tokyo");
+  });
+
   it("rejects a future recalculation when the approved prior-row basis changes", async () => {
     const date = "2026-09-16";
     let currentRows = [scheduleRow(date)];

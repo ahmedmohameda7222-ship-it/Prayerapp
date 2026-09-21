@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
+import { getPrayerSettings } from "@/lib/data/prayer-settings";
 import { logFallbackActivation } from "@/lib/android/delivery-diagnostics";
 import { prayerEventId } from "@/lib/android/prayer-event-id";
 import {
@@ -198,6 +199,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const prayerSettings = await getPrayerSettings().catch(() => null);
+  if (!prayerSettings) {
+    return NextResponse.json({ error: "Prayer settings are unavailable" }, { status: 503 });
+  }
+
   const now = new Date();
   const { error: receiptCleanupError } = await client
     .from("native_prayer_delivery_receipts")
@@ -208,7 +214,7 @@ export async function GET(request: Request) {
   }
 
   const nowMs = now.getTime();
-  const today = todayIso(now);
+  const today = todayIso(now, prayerSettings.timezone);
   const tomorrow = addDaysIso(today, 1);
   const [{ data: reminders, error: remindersError }, { data: schedules, error: schedulesError }] = await Promise.all([
     client
@@ -280,7 +286,7 @@ export async function GET(request: Request) {
   for (const schedule of prayerSchedules) {
     for (const prayer of Object.keys(prayerNames) as ReminderPrayer[]) {
       const time = schedule[prayer];
-      const adhanAt = zonedDateTime(schedule.date, time).getTime();
+      const adhanAt = zonedDateTime(schedule.date, time, prayerSettings.timezone).getTime();
       const prayerPreferences = enabledReminders.filter((item) => item.prayer === prayer);
       if (prayerPreferences.length === 0) continue;
 

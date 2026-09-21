@@ -15,10 +15,13 @@ public final class NativeConfigTest {
 
     @Test
     public void parsesBoundedPublishedScheduleCache() throws Exception {
-        NativeConfig config = NativeConfig.parse(valid("fajr", "fajr-cairo"), NOW);
+        NativeConfig config = NativeConfig.parse(
+                valid("fajr", "fajr-cairo").put("timeZone", "Asia/Tokyo"),
+                NOW
+        );
         assertEquals(1, config.rows.size());
         assertEquals(1, config.reminders.size());
-        assertEquals(NativeConfig.ZONE, java.time.ZoneId.of("Europe/Berlin"));
+        assertEquals(java.time.ZoneId.of("Asia/Tokyo"), config.zone);
     }
 
     @Test

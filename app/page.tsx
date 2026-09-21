@@ -16,12 +16,13 @@ const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 export default async function HomePage() {
   const initialNow = new Date().toISOString();
   const now = new Date(initialNow);
-  const today = todayIso(now);
-  const startDate = addDaysIso(today, -1);
-  const endDate = addDaysIso(today, 30);
-  const [prayerTimesResult, prayerSettingsResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
-    getPrayerTimes(false, startDate, endDate),
-    getPrayerSettings(),
+  const prayerSettings = await getPrayerSettings().catch(() => null);
+  const prayerTimezone = prayerSettings?.timezone ?? null;
+  const today = prayerTimezone ? todayIso(now, prayerTimezone) : null;
+  const startDate = today ? addDaysIso(today, -1) : null;
+  const endDate = today ? addDaysIso(today, 30) : null;
+  const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
+    startDate && endDate ? getPrayerTimes(false, startDate, endDate) : Promise.resolve([]),
     getUrgentAnnouncements(),
     getJumuahTimes(),
     getEvents(),
@@ -32,7 +33,6 @@ export default async function HomePage() {
   ]);
 
   const prayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
-  const prayerSettings = prayerSettingsResult.status === "fulfilled" ? prayerSettingsResult.value : null;
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
   const jumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
   const events = eventsResult.status === "fulfilled"
@@ -52,6 +52,7 @@ export default async function HomePage() {
       <HomePageClient
         initialPrayerTimes={prayerTimes}
         iqamaDelays={prayerSettings?.iqamaDelays ?? null}
+        timezone={prayerSettings?.timezone ?? null}
         urgentAnnouncements={urgentAnnouncements}
         jumuahTimes={jumuahTimes}
         allowAnyFutureJumuah={allowAnyFutureJumuah}

@@ -19,15 +19,17 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Current Plan 6 repository HEAD `704d004b6b3650ae6a191f867b169ac2b0d442dd` has the following fresh automated evidence:
+Current Plan 6 implementation HEAD `3af36168524d2092745ca1546bcfeea76db91adc` has the following fresh automated evidence:
 
-- Root CI `35558147818`: **SUCCESS**.
-- Masjid Display Verification `35558147821`: **SUCCESS**, including live two-app integration.
-- Plan 3 Display Feed Verification `35558147809`: **SUCCESS**.
-- Security Scanners `35558147841`: **SUCCESS**, including CodeQL after removal of the Plan 6 test-helper stat race.
-- Android TWA `35558147806`: separate known failure at Android SDK setup before project tests/build.
+- Root CI `35563381900`: **SUCCESS**.
+- Masjid Display Verification `35563381982`: **SUCCESS**, including live two-app integration.
+- Plan 3 Display Feed Verification `35563381833`: **SUCCESS**.
+- Security Scanners `35563381848`: **SUCCESS**.
+- Android TWA `35563381888`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37. Pull-request verification intentionally did not enter the protected signing job.
 
-The CodeQL file-system-race finding introduced by the Plan 6 source-tree regression helper was closed with RED Root CI `35557966896` and GREEN exact-head Root CI/Security runs above. Current PR inline review threads are resolved.
+The prior Android SDK setup blocker was closed in Plan 6 by explicitly setting setup-android's package input to `platform-tools`, avoiding Google's removed `tools` package while retaining pinned action commits. RED Android run `35563120667` failed at the obsolete package request; the first post-fix run then exposed and led to correction of a stale `NativeConfig.ZONE` Berlin test. Final Android run `35563381888` is green.
+
+The CodeQL file-system-race finding introduced by the Plan 6 source-tree regression helper was closed with RED Root CI `35557966896` and GREEN Root CI/Security evidence already recorded in the Plan 6 verification document.
 
 Those automated results do not satisfy the remaining Plan 6 live-preview requirements. Rechecked Vercel evidence still shows no dedicated `donaumoschee-tv` project, no root-project preview deployment for `feat/masjid-display`, and the canonical root production deployment remains on `main`. No Vercel READY TV deployment, browser viewport verification, or real Admin Test Mode → deployed TV evidence is claimed.
 

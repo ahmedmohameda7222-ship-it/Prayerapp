@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseScheduleRequest } from "@/lib/android/contracts";
+import { getPrayerSettings } from "@/lib/data/prayer-settings";
 import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -9,6 +10,10 @@ export async function GET(request: Request) {
   if (!range) return NextResponse.json({ error: "Invalid schedule range" }, { status: 400 });
   const client = createServerClient();
   if (!client) return NextResponse.json({ error: "Prayer schedule is unavailable" }, { status: 503 });
+  const prayerSettings = await getPrayerSettings().catch(() => null);
+  if (!prayerSettings) {
+    return NextResponse.json({ error: "Prayer schedule is unavailable" }, { status: 503 });
+  }
   const { data, error } = await client
     .from("prayer_times")
     .select("id, date, fajr, sunrise, dhuhr, asr, maghrib, isha, updated_at")
@@ -22,7 +27,7 @@ export async function GET(request: Request) {
   }
   return NextResponse.json({
     schemaVersion: 1,
-    timeZone: "Europe/Berlin",
+    timeZone: prayerSettings.timezone,
     from: range.from,
     through: range.through,
     generatedAt: new Date().toISOString(),

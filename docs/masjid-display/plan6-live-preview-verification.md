@@ -67,13 +67,13 @@ Legacy absolute-Iqama fields are not restored as active authority.
 
 Authorized Vercel inspection on 2026-09-21 found no existing `donaumoschee-tv` project.
 
-This was rechecked after implementation HEAD `c19130d1a0fd8d63f13dc88acccbd76f53d5dd54`: both connected Vercel accounts resolve to the same `Ahmed's projects` team and list the same seven projects, including root `donaumoschee` but no dedicated TV project.
+This was rechecked after implementation HEAD `704d004b6b3650ae6a191f867b169ac2b0d442dd`: both connected Vercel accounts resolve to the same `Ahmed's projects` team and list the same seven projects, including root `donaumoschee` but no dedicated TV project.
 
 The installed Vercel plugin has write permission, but exposes no project-creation or environment-variable mutation for this workflow. Its generic deploy action cannot be scoped to a dedicated TV project from the available interface and had previously returned `Tool deploy_to_vercel not found`. No unsafe deploy to the root Prayerapp project was attempted. Therefore no TV project ID, deployment ID, preview URL, or READY state is claimed.
 
 ## Real root-origin live check
 
-Direct authenticated Vercel fetches against the required root production origin returned the following results, rechecked after implementation HEAD `c19130d1a0fd8d63f13dc88acccbd76f53d5dd54`:
+Direct authenticated Vercel fetches against the required root production origin returned the following results, rechecked after implementation HEAD `704d004b6b3650ae6a191f867b169ac2b0d442dd`:
 
 | Endpoint | Result |
 | --- | --- |
@@ -113,20 +113,32 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 
 ## CI / security evidence
 
-Current Plan 6 implementation HEAD:
-`c19130d1a0fd8d63f13dc88acccbd76f53d5dd54`
+Current Plan 6 repository HEAD:
+`704d004b6b3650ae6a191f867b169ac2b0d442dd`
 
 Fresh exact-head evidence:
 
-- Root CI `35556834716`: **SUCCESS**.
-- Masjid Display Verification `35556834669`: **SUCCESS**, including TV package verification and live two-app integration.
-- Plan 3 Display Feed Verification `35556833741`: **SUCCESS**.
-- Security Scanners `35556834662`: **SUCCESS**.
-- Android TWA `35556834663`: **FAILURE** at the separately tracked Android SDK setup stage before project tests/build; it is not represented as green.
+- Root CI `35558147818`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, Supabase bootstrap/migration/reconciliation/admin-audit certification, and root build completed successfully.
+- Masjid Display Verification `35558147821`: **SUCCESS**, including TV package verification and live two-app integration.
+- Plan 3 Display Feed Verification `35558147809`: **SUCCESS**.
+- Security Scanners `35558147841`: **SUCCESS** — CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST completed successfully.
+- Android TWA `35558147806`: **FAILURE** at the known Android SDK setup stage because the action requests obsolete `sdkmanager tools`; Android project tests/build are skipped and this is not represented as green.
 
-The eight commits after documentation HEAD `d0d90924d84a453d52d607613a1848d6a5475c16` extend the same persisted-timezone authority into the native Android prayer path. Exact-head root/TV/security verification above passed after those changes.
+### Security finding closed during Plan 6 implementation
 
-Earlier TDD evidence for timezone authority remains valid historical implementation evidence:
+GitHub Advanced Security reported a CodeQL `Potential file system race condition` in the Plan 6 Java source-tree test helper, where directory enumeration was followed by a separate `statSync` call.
+
+TDD evidence:
+
+- RED Root CI `35557966896`: the new regression failed because the helper did not use `withFileTypes` and still contained `statSync`.
+- Fix: directory type information now comes directly from `readdirSync(..., { withFileTypes: true })`; the separate stat check is removed.
+- GREEN Root CI `35558147818`: **SUCCESS**.
+- GREEN Security Scanners `35558147841`: **SUCCESS**, including CodeQL.
+- PR inline review threads after the fix: **0 unresolved**.
+
+The native Android timezone commits that followed the earlier documentation snapshot remain covered by the same exact-head root/TV/security run set above.
+
+Earlier timezone-authority RED→GREEN evidence remains historical implementation evidence:
 
 - RED Root CI `35552740003`: seven intended failures exposed Berlin-default behavior in non-Berlin prayer runtime/cutoff paths.
 - GREEN Root CI `35553536449`: root tests/typecheck/build and repository certification passed after persisted timezone propagation.

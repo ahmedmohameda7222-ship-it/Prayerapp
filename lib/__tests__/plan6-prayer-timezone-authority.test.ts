@@ -1,9 +1,22 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 function source(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8");
+}
+
+function sourceTree(path: string): string {
+  const absolute = join(process.cwd(), path);
+  return readdirSync(absolute)
+    .flatMap((entry) => {
+      const child = join(absolute, entry);
+      if (statSync(child).isDirectory()) {
+        return sourceTree(join(path, entry));
+      }
+      return entry.endsWith(".java") ? [readFileSync(child, "utf8")] : [];
+    })
+    .join("\n");
 }
 
 describe("Plan 6 prayer timezone authority", () => {
@@ -31,6 +44,28 @@ describe("Plan 6 prayer timezone authority", () => {
     expect(countdown).toContain("getNextPrayerFromSchedule(schedule, now, timezone)");
     expect(timesPage).toContain("timezone={settings?.timezone ?? null}");
     expect(browser).toContain("todayIso(new Date(), timezone)");
+  });
+
+  it("keeps web and native Android prayer scheduling on the server-provided IANA timezone", () => {
+    const provider = source("components/providers/NativeAndroidProvider.tsx");
+    const config = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/NativeConfig.java");
+    const planner = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/AlarmPlanner.java");
+    const worker = source("android-twa/app/src/main/java/de/donaumoschee/app/workers/NativeRefreshWorker.java");
+    const nativeMain = sourceTree("android-twa/app/src/main/java");
+
+    expect(provider).not.toContain('schedule.timeZone !== "Europe/Berlin"');
+    expect(provider).toContain('timeZone: schedule.timeZone');
+    expect(provider).toContain('zonedDateTime(addDaysIso(schedule.through, 1), "00:00", schedule.timeZone)');
+
+    expect(config).toContain("public final ZoneId zone;");
+    expect(config).toContain('ZoneId.of(object.getString("timeZone"))');
+    expect(planner).toContain("config.zone");
+
+    expect(worker).toContain('ZoneId zone = ZoneId.of(response.getString("timeZone"))');
+    expect(worker).toContain('config.put("timeZone", zone.getId())');
+
+    expect(nativeMain).not.toContain('ZoneId.of("Europe/Berlin")');
+    expect(nativeMain).not.toContain('"Europe/Berlin".equals');
   });
 
   it("exports Android prayer schedule timezone from persisted Prayer Engine settings", () => {

@@ -40,7 +40,9 @@ describe("unified Friday schedule resolver", () => {
     const result = resolveUpcomingFridaySchedule(
       [prayer("2026-08-21", "12:18", true)],
       [],
-      new Date("2026-08-17T08:00:00.000Z"),\n      BERLIN,\n    );
+      new Date("2026-08-17T08:00:00.000Z"),
+      BERLIN,
+    );
 
     expect(result?.date).toBe("2026-08-21");
     expect(result?.items).toHaveLength(1);
@@ -63,7 +65,9 @@ describe("unified Friday schedule resolver", () => {
         extra("duplicate-second", "2026-08-21", "13:30"),
         extra("hidden", "2026-08-21", "15:30", false),
       ],
-      new Date("2026-08-17T08:00:00.000Z"),\n      BERLIN,\n    );
+      new Date("2026-08-17T08:00:00.000Z"),
+      BERLIN,
+    );
 
     expect(result?.items.map((item) => [item.prayerTime, item.source, item.editable])).toEqual([
       ["12:18", "prayer-times", false],
@@ -77,7 +81,9 @@ describe("unified Friday schedule resolver", () => {
     const result = resolveUpcomingFridaySchedule(
       [prayer("2026-08-20"), prayer("2026-08-21", "12:18", false)],
       [extra("orphan", "2026-08-21", "13:30")],
-      new Date("2026-08-17T08:00:00.000Z"),\n      BERLIN,\n    );
+      new Date("2026-08-17T08:00:00.000Z"),
+      BERLIN,
+    );
     expect(result).toBeUndefined();
   });
 
@@ -93,7 +99,9 @@ describe("unified Friday schedule resolver", () => {
     const result = resolveUpcomingFridaySchedule(
       [prayer("2026-08-21"), prayer("2026-08-28", "12:19")],
       [extra("today-extra", "2026-08-21", "13:30")],
-      new Date("2026-08-21T12:00:00.000Z"),\n      BERLIN,\n    );
+      new Date("2026-08-21T12:00:00.000Z"),
+      BERLIN,
+    );
     expect(result?.date).toBe("2026-08-28");
     expect(result?.items[0]?.prayerTime).toBe("12:19");
     expect(result?.isToday).toBe(false);

@@ -67,20 +67,20 @@ Legacy absolute-Iqama fields are not restored as active authority.
 
 Authorized Vercel inspection on 2026-09-21 found no existing `donaumoschee-tv` project.
 
-This was rechecked after implementation HEAD `6e4cffb30da15505b55af805892c8ec794c38bf4`: the connected team still listed the root `donaumoschee` project but no dedicated TV project.
+This was rechecked after implementation HEAD `c19130d1a0fd8d63f13dc88acccbd76f53d5dd54`: both connected Vercel accounts resolve to the same `Ahmed's projects` team and list the same seven projects, including root `donaumoschee` but no dedicated TV project.
 
-The connected Vercel deployment mutation advertised by the connector again returned `Tool deploy_to_vercel not found`; therefore no project ID, deployment ID, preview URL, or READY state is claimed.
+The installed Vercel plugin has write permission, but exposes no project-creation or environment-variable mutation for this workflow. Its generic deploy action cannot be scoped to a dedicated TV project from the available interface and had previously returned `Tool deploy_to_vercel not found`. No unsafe deploy to the root Prayerapp project was attempted. Therefore no TV project ID, deployment ID, preview URL, or READY state is claimed.
 
 ## Real root-origin live check
 
-Direct authenticated Vercel fetches against the required root production origin returned the following results, rechecked after implementation HEAD `6e4cffb30da15505b55af805892c8ec794c38bf4`:
+Direct authenticated Vercel fetches against the required root production origin returned the following results, rechecked after implementation HEAD `c19130d1a0fd8d63f13dc88acccbd76f53d5dd54`:
 
 | Endpoint | Result |
 | --- | --- |
 | `https://donaumoschee.vercel.app/api/public/masjid-display` | **404 Not Found**, matched `/_not-found` |
 | `https://donaumoschee.vercel.app/api/public/masjid-display-test-control` | **404 Not Found**, matched `/_not-found` |
 
-The current root production deployment is from `main`, while Plan 5/6 endpoints remain in draft PR #108. Plan 6 does **not** authorize silently publishing the entire unmerged root branch to the public production project.
+The current root production deployment remains from `main` (latest observed production SHA `dbe635a92e0e72ea8373831ae35502fe136a0f24`), and no `feat/masjid-display` preview deployment is present on the root project. Plan 5/6 endpoints remain in Draft PR #108. Plan 6 does **not** authorize silently publishing the entire unmerged root branch to the public production project.
 
 Consequences until the root endpoint prerequisite and TV project are actually deployed:
 
@@ -113,25 +113,25 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 
 ## CI / security evidence
 
-Plan 6 implementation candidate HEAD:
-`6e4cffb30da15505b55af805892c8ec794c38bf4`
+Current Plan 6 implementation HEAD:
+`c19130d1a0fd8d63f13dc88acccbd76f53d5dd54`
 
-Fresh exact-head evidence on that implementation candidate:
+Fresh exact-head evidence:
 
-- Root CI `35553536449`: **SUCCESS** — install/audit/lint, 880 tests, root typecheck, Feed contract, TV tests/lint/typecheck/build, Supabase bootstrap/migration safety, reconciliation/admin-audit integrity, and root production build all completed successfully.
-- Masjid Display Verification `35553536466`: **SUCCESS** — TV package verification and live two-app integration completed successfully.
-- Plan 3 Display Feed Verification `35553536422`: **SUCCESS**.
-- Security Scanners `35553536413`: **SUCCESS** — CodeQL, OSV, Gitleaks, authenticated local DAST, exact-head runtime DAST, deployed-production DAST, and SBOM evidence completed successfully.
-- Android TWA `35553536421`: **FAILURE** at the separately tracked Android SDK setup stage before project tests/build; it is not represented as green.
+- Root CI `35556834716`: **SUCCESS**.
+- Masjid Display Verification `35556834669`: **SUCCESS**, including TV package verification and live two-app integration.
+- Plan 3 Display Feed Verification `35556833741`: **SUCCESS**.
+- Security Scanners `35556834662`: **SUCCESS**.
+- Android TWA `35556834663`: **FAILURE** at the separately tracked Android SDK setup stage before project tests/build; it is not represented as green.
 
-TDD evidence for the second timezone-authority review finding:
+The eight commits after documentation HEAD `d0d90924d84a453d52d607613a1848d6a5475c16` extend the same persisted-timezone authority into the native Android prayer path. Exact-head root/TV/security verification above passed after those changes.
+
+Earlier TDD evidence for timezone authority remains valid historical implementation evidence:
 
 - RED Root CI `35552740003`: seven intended failures exposed Berlin-default behavior in non-Berlin prayer runtime/cutoff paths.
-- GREEN Root CI `35553536449`: all root tests/typecheck/build and repository certification tail passed after persisted timezone propagation.
+- GREEN Root CI `35553536449`: root tests/typecheck/build and repository certification passed after persisted timezone propagation.
 
-GitHub Codex review was requested again on exact implementation HEAD `6e4cffb30da15505b55af805892c8ec794c38bf4` after both prior legitimate P1 timezone findings were fixed and resolved. The final review result must be read and recorded before Plan 6 can be considered review-clean.
-
-A later documentation-only HEAD does not retroactively change which code commit the run IDs above executed. Final PR/Codex state must therefore be checked separately against the final documentation HEAD.
+Per operator instruction, **no further GitHub Codex review is requested during implementation**. Codex review is reserved for the final step only, after all non-review Plan 6 implementation/live-verification work is complete. If final review returns legitimate findings, they must be fixed and reverified before Plan 6 can be marked complete.
 
 ## Deferred operational follow-up / Plan 7
 
@@ -149,6 +149,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PLAN 6 BLOCKED — live root Feed/Test Control endpoints and dedicated READY TV deployment are not yet available; final exact-head Codex review must also be clean.**
+**PLAN 6 BLOCKED — live root Feed/Test Control endpoints and dedicated READY TV deployment are not yet available. Final Codex review is intentionally deferred until those implementation/live gates are complete.**
 
 Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until the required live Vercel/root/browser/Test Mode evidence is actually recorded.

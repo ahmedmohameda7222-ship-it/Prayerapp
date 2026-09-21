@@ -7,7 +7,7 @@ import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 describe("PrayerTimesBrowser", () => {
   it("keeps range controls usable without synthesizing prayer data", async () => {
     const user = userEvent.setup();
-    render(<TimeFormatProvider><PrayerTimesBrowser iqamaDelays={null} /></TimeFormatProvider>);
+    render(<TimeFormatProvider><PrayerTimesBrowser iqamaDelays={null} timezone="Europe/Berlin" /></TimeFormatProvider>);
 
     const week = await screen.findByRole("button", { name: "الأسبوع" });
     expect(week).toHaveAttribute("aria-pressed", "true");

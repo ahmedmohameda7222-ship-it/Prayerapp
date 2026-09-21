@@ -67,11 +67,13 @@ Legacy absolute-Iqama fields are not restored as active authority.
 
 Authorized Vercel inspection on 2026-09-21 found no existing `donaumoschee-tv` project.
 
-The connected Vercel deployment mutation advertised by the connector returned `Tool deploy_to_vercel not found`; therefore no project ID, deployment ID, or READY state is claimed.
+This was rechecked after implementation HEAD `6e4cffb30da15505b55af805892c8ec794c38bf4`: the connected team still listed the root `donaumoschee` project but no dedicated TV project.
+
+The connected Vercel deployment mutation advertised by the connector again returned `Tool deploy_to_vercel not found`; therefore no project ID, deployment ID, preview URL, or READY state is claimed.
 
 ## Real root-origin live check
 
-Direct authenticated Vercel fetches against the required root production origin returned:
+Direct authenticated Vercel fetches against the required root production origin returned the following results, rechecked after implementation HEAD `6e4cffb30da15505b55af805892c8ec794c38bf4`:
 
 | Endpoint | Result |
 | --- | --- |
@@ -111,14 +113,25 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 
 ## CI / security evidence
 
-Exact final run IDs are recorded after the final documentation/code HEAD is stable.
+Plan 6 implementation candidate HEAD:
+`6e4cffb30da15505b55af805892c8ec794c38bf4`
 
-Current observed evidence while Plan 6 is in progress includes:
+Fresh exact-head evidence on that implementation candidate:
 
-- Plan 3 Display Feed Verification: green on the current candidate series;
-- TV package verification: green on the current candidate series;
-- CodeQL / OSV / Gitleaks / exact-head DAST: green on the current candidate series;
-- Android TWA: known SDK-setup failure is tracked separately and is not represented as green.
+- Root CI `35553536449`: **SUCCESS** — install/audit/lint, 880 tests, root typecheck, Feed contract, TV tests/lint/typecheck/build, Supabase bootstrap/migration safety, reconciliation/admin-audit integrity, and root production build all completed successfully.
+- Masjid Display Verification `35553536466`: **SUCCESS** — TV package verification and live two-app integration completed successfully.
+- Plan 3 Display Feed Verification `35553536422`: **SUCCESS**.
+- Security Scanners `35553536413`: **SUCCESS** — CodeQL, OSV, Gitleaks, authenticated local DAST, exact-head runtime DAST, deployed-production DAST, and SBOM evidence completed successfully.
+- Android TWA `35553536421`: **FAILURE** at the separately tracked Android SDK setup stage before project tests/build; it is not represented as green.
+
+TDD evidence for the second timezone-authority review finding:
+
+- RED Root CI `35552740003`: seven intended failures exposed Berlin-default behavior in non-Berlin prayer runtime/cutoff paths.
+- GREEN Root CI `35553536449`: all root tests/typecheck/build and repository certification tail passed after persisted timezone propagation.
+
+GitHub Codex review was requested again on exact implementation HEAD `6e4cffb30da15505b55af805892c8ec794c38bf4` after both prior legitimate P1 timezone findings were fixed and resolved. The final review result must be read and recorded before Plan 6 can be considered review-clean.
+
+A later documentation-only HEAD does not retroactively change which code commit the run IDs above executed. Final PR/Codex state must therefore be checked separately against the final documentation HEAD.
 
 ## Deferred operational follow-up / Plan 7
 
@@ -136,6 +149,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PLAN 6 BLOCKED — live root Feed/Test Control endpoints and dedicated READY TV deployment are not yet available.**
+**PLAN 6 BLOCKED — live root Feed/Test Control endpoints and dedicated READY TV deployment are not yet available; final exact-head Codex review must also be clean.**
 
 Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until the required live Vercel/root/browser/Test Mode evidence is actually recorded.

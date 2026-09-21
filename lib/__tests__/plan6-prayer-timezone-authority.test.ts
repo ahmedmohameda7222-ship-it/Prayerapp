@@ -54,6 +54,7 @@ describe("Plan 6 prayer timezone authority", () => {
     const nativeMain = sourceTree("android-twa/app/src/main/java");
 
     expect(provider).not.toContain('schedule.timeZone !== "Europe/Berlin"');
+    expect(provider).toContain('addDaysIso(todayIso(new Date(), "UTC"), -1)');
     expect(provider).toContain('timeZone: schedule.timeZone');
     expect(provider).toContain('zonedDateTime(addDaysIso(schedule.through, 1), "00:00", schedule.timeZone)');
 
@@ -61,9 +62,11 @@ describe("Plan 6 prayer timezone authority", () => {
     expect(config).toContain('ZoneId.of(object.getString("timeZone"))');
     expect(planner).toContain("config.zone");
 
+    expect(worker).toContain('LocalDate.now(ZoneId.of("UTC")).minusDays(1)');
     expect(worker).toContain('ZoneId zone = ZoneId.of(response.getString("timeZone"))');
     expect(worker).toContain('config.put("timeZone", zone.getId())');
 
+    expect(nativeMain).not.toContain("NativeConfig.ZONE");
     expect(nativeMain).not.toContain('ZoneId.of("Europe/Berlin")');
     expect(nativeMain).not.toContain('"Europe/Berlin".equals');
   });

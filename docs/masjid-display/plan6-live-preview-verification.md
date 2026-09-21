@@ -67,13 +67,13 @@ Legacy absolute-Iqama fields are not restored as active authority.
 
 Authorized Vercel inspection on 2026-09-21 found no existing `donaumoschee-tv` project.
 
-This was rechecked after implementation HEAD `704d004b6b3650ae6a191f867b169ac2b0d442dd`: both connected Vercel accounts resolve to the same `Ahmed's projects` team and list the same seven projects, including root `donaumoschee` but no dedicated TV project.
+This was rechecked after implementation HEAD `3af36168524d2092745ca1546bcfeea76db91adc`: both connected Vercel accounts resolve to the same `Ahmed's projects` team and list the same seven projects, including root `donaumoschee` but no dedicated TV project.
 
 The installed Vercel plugin has write permission, but exposes no project-creation or environment-variable mutation for this workflow. Its generic deploy action cannot be scoped to a dedicated TV project from the available interface and had previously returned `Tool deploy_to_vercel not found`. No unsafe deploy to the root Prayerapp project was attempted. Therefore no TV project ID, deployment ID, preview URL, or READY state is claimed.
 
 ## Real root-origin live check
 
-Direct authenticated Vercel fetches against the required root production origin returned the following results, rechecked after implementation HEAD `704d004b6b3650ae6a191f867b169ac2b0d442dd`:
+Direct authenticated Vercel fetches against the required root production origin returned the following results, rechecked after implementation HEAD `3af36168524d2092745ca1546bcfeea76db91adc`:
 
 | Endpoint | Result |
 | --- | --- |
@@ -113,16 +113,33 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 
 ## CI / security evidence
 
-Current Plan 6 repository HEAD:
-`704d004b6b3650ae6a191f867b169ac2b0d442dd`
+Current Plan 6 implementation HEAD:
+`3af36168524d2092745ca1546bcfeea76db91adc`
 
 Fresh exact-head evidence:
 
-- Root CI `35558147818`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, Supabase bootstrap/migration/reconciliation/admin-audit certification, and root build completed successfully.
-- Masjid Display Verification `35558147821`: **SUCCESS**, including TV package verification and live two-app integration.
-- Plan 3 Display Feed Verification `35558147809`: **SUCCESS**.
-- Security Scanners `35558147841`: **SUCCESS** — CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST completed successfully.
-- Android TWA `35558147806`: **FAILURE** at the known Android SDK setup stage because the action requests obsolete `sdkmanager tools`; Android project tests/build are skipped and this is not represented as green.
+- Root CI `35563381900`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, Supabase bootstrap/migration/reconciliation/admin-audit certification, and root build completed successfully.
+- Masjid Display Verification `35563381982`: **SUCCESS**, including TV package verification and live two-app integration.
+- Plan 3 Display Feed Verification `35563381833`: **SUCCESS**.
+- Security Scanners `35563381848`: **SUCCESS**.
+- Android TWA `35563381888`: **SUCCESS** — Android SDK setup, API 37 installation, Gradle wrapper validation, debug/release unit tests, lint, APK/AAB builds, unsigned candidate artifacts, and instrumentation on API 23 and API 37 all completed successfully. The isolated signing job was intentionally skipped because this was a pull-request verification run, not an authorized signing dispatch.
+
+### Android SDK setup blocker closed during Plan 6 implementation
+
+The previously recorded Android failure was an infrastructure defect in the pinned `android-actions/setup-android` versions: their default package list still requested Google's removed `tools` package.
+
+RED / diagnosis:
+- Android TWA `35563120667` on RED HEAD `2b3a7db5faf95b2b3af0b18cf08fe90ba61381ba`: **FAILURE** at `Set up Android SDK`, with `sdkmanager tools` → `Failed to find package 'tools'`.
+- Focused source assertion also failed because both setup-android steps relied on the obsolete default.
+
+Fix:
+- every setup-android step now explicitly sets `packages: "platform-tools"`, avoiding the removed package while preserving the pinned action commits.
+
+The first post-fix Android run `35563210983` progressed past SDK setup and exposed a stale Plan 6 unit test that still referenced removed `NativeConfig.ZONE`. That test was corrected to assert the server-provided `Asia/Tokyo` zone through `config.zone`, rather than a Berlin constant.
+
+GREEN:
+- Android TWA `35563381888`: **SUCCESS**, including instrumentation on API 23 and API 37.
+- Root CI `35563381900`: **SUCCESS**, including the workflow regression contract.
 
 ### Security finding closed during Plan 6 implementation
 
@@ -135,8 +152,6 @@ TDD evidence:
 - GREEN Root CI `35558147818`: **SUCCESS**.
 - GREEN Security Scanners `35558147841`: **SUCCESS**, including CodeQL.
 - PR inline review threads after the fix: **0 unresolved**.
-
-The native Android timezone commits that followed the earlier documentation snapshot remain covered by the same exact-head root/TV/security run set above.
 
 Earlier timezone-authority RED→GREEN evidence remains historical implementation evidence:
 

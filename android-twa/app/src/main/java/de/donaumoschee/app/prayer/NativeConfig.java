@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 public final class NativeConfig {
-    public static final ZoneId ZONE = ZoneId.of("Europe/Berlin");
     public final String revision;
+    public final ZoneId zone;
     public final String locale;
     public final Instant scheduleValidUntil;
     public final List<ScheduleRow> rows;
@@ -29,6 +29,7 @@ public final class NativeConfig {
     private NativeConfig(
             String revision,
             String locale,
+            ZoneId zone,
             Instant scheduleValidUntil,
             List<ScheduleRow> rows,
             Map<Prayer, Reminder> reminders,
@@ -36,6 +37,7 @@ public final class NativeConfig {
     ) {
         this.revision = revision;
         this.locale = locale;
+        this.zone = zone;
         this.scheduleValidUntil = scheduleValidUntil;
         this.rows = Collections.unmodifiableList(rows);
         this.reminders = Collections.unmodifiableMap(reminders);
@@ -44,7 +46,12 @@ public final class NativeConfig {
 
     public static NativeConfig parse(JSONObject object, Instant now) throws JSONException {
         if (object == null || object.optInt("schemaVersion", -1) != 1) throw new JSONException("Invalid config schema");
-        if (!"Europe/Berlin".equals(object.optString("timeZone"))) throw new JSONException("Invalid time zone");
+        ZoneId zone;
+        try {
+            zone = ZoneId.of(object.optString("timeZone", ""));
+        } catch (RuntimeException error) {
+            throw new JSONException("Invalid time zone");
+        }
         String revision = object.optString("revision", "");
         if (revision.length() == 0 || revision.length() > 128) throw new JSONException("Invalid revision");
         String locale = AppLocale.normalize(object.optString("locale", "en"));
@@ -109,8 +116,10 @@ public final class NativeConfig {
                 throw new JSONException("Duplicate reminder prayer");
             }
         }
-        JSONObject source = new JSONObject(object.toString()).put("locale", locale);
-        return new NativeConfig(revision, locale, validUntil, rows, reminders, source);
+        JSONObject source = new JSONObject(object.toString())
+                .put("locale", locale)
+                .put("timeZone", zone.getId());
+        return new NativeConfig(revision, locale, zone, validUntil, rows, reminders, source);
     }
 
     public static final class ScheduleRow {

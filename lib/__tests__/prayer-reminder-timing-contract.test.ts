@@ -18,6 +18,15 @@ describe("prayer reminder timing contract", () => {
     expect(card).toContain("option === 0 ? copy.atAdhan");
   });
 
+  it("uses persisted Prayer Engine timezone for reminder date windows and prayer instants", () => {
+    const cron = source("app/api/cron/prayer-reminders/route.ts");
+
+    expect(cron).toContain('import { getPrayerSettings } from "@/lib/data/prayer-settings";');
+    expect(cron).toContain("todayIso(now, prayerSettings.timezone)");
+    expect(cron).toContain("zonedDateTime(schedule.date, time, prayerSettings.timezone)");
+    expect(cron).not.toContain("const today = todayIso(now);");
+  });
+
   it("sends a pre-Adhan push only for selected lead times and always sends an Adhan push", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
 

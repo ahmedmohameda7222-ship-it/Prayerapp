@@ -23,28 +23,44 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Current pre-merge Plan 6 implementation HEAD `7cfed5144be6a7c238fc27117b9dca0451a0b321` has the following fresh automated evidence:
+Certified pre-merge Plan 6 implementation HEAD `0e021520058a73a1407c488ae2cee4d19f69692b` has the following fresh automated evidence:
 
-- Root CI `35697531505`: **SUCCESS**.
-- Masjid Display Verification `35697531490`: **SUCCESS**, including two-app integration.
-- Plan 3 Display Feed Verification `35697531487`: **SUCCESS**.
-- Security Scanners `35697531497`: **SUCCESS**.
-- Android TWA `35697531488`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37; protected signing was intentionally skipped for this PR verification run.
-- unresolved inline review threads after resolving the latest Codex findings: **0**.
+- Root CI `35761167100`: **SUCCESS**.
+- Masjid Display Verification `35761167195`: **SUCCESS**, including two-app integration.
+- Plan 3 Display Feed Verification `35761167151`: **SUCCESS**.
+- Security Scanners `35761167067`: **SUCCESS**.
+- Android TWA `35761167078`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37; protected signing was intentionally skipped for this PR verification run.
 
-The final pre-merge Codex loop has so far produced four legitimate P1 correctness findings. The first required prayer-event IDs to follow the resolved delivery instant; canonical `p3/v3` IDs now include `dueAtMs` in matching server/native implementations while deterministic `p2` aliases support rollout compatibility.
+The final pre-merge Codex loop has produced six legitimate correctness P1 findings so far:
 
-The subsequent re-review exposed three rollout gaps. Test-only HEAD `596d8026e5c52ecce5280b175f8d595a327ddc30` produced Root CI `35689276038` with exactly six intended failures across the p3 database migration, legacy-receipt due-instant guard, and applied-timezone authority tests. The fixes now:
-- allow both p2 and p3 native receipt IDs in the final database CHECK;
-- require a legacy p2 receipt's `delivered_at` to be compatible with the current resolved due instant before suppressing fallback;
-- separate pending `timezone` from runtime `applied_timezone`, promoting the applied timezone atomically only with a full future schedule recalculation;
-- keep all live scheduling consumers on the applied runtime timezone until that promotion occurs.
+1. canonical prayer-event identity did not include the resolved delivery instant;
+2. the receipt API accepted p3 while the database CHECK still allowed only p2;
+3. a stale legacy p2 receipt could suppress fallback at a newly resolved due instant;
+4. a pending timezone edit could affect live scheduling before recalculation promoted it;
+5. the database dynamic-content capacity gate used the Berlin calendar date instead of the applied prayer timezone;
+6. Home and `/events` event filtering could still use Berlin across an applied-timezone date boundary.
 
-During the same proof cycle, CI was hardened to restore the final migration head after historical migration certification before later reconciliation checks, and a duplicated CI workflow tail was removed. The exact-head five-workflow set above is green after all of these changes.
+The first four were already closed with p3/v3 `dueAtMs` identity, additive p2/p3 receipt schema support, due-instant compatibility checks for legacy receipts, and persisted `applied_timezone` runtime authority.
 
-Those automated results complete the current repository-side pre-merge implementation/verification cycle but do not satisfy the remaining Plan 6 live-preview requirements. Under the 2026-09-22 sequencing override, no candidate-branch TV project will be created. After the approved branch is merged to `main`, the dedicated `donaumoschee-tv` project will be created against the real root production origin and the browser/Admin Test Mode evidence will be recorded.
+For findings 5–6, test-only HEAD `426990220da06a9d48f912df9afdcd0c4a2ba97f` produced Root CI `35760200228` with exactly three intended failures:
+- one in `plan6-dynamic-budget-timezone-authority.test.ts`;
+- two in `plan6-event-timezone-authority.test.ts`.
 
-A fresh exact-head Codex re-review after this final evidence update remains the last pre-merge review gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
+The fixes now:
+- redefine `assert_masjid_display_dynamic_content_budget()` after the applied-timezone migration so its date window comes from `prayer_settings.applied_timezone`;
+- keep the database aggregate budget aligned with the runtime Feed's applied calendar authority;
+- make `isUpcomingEvent` timezone-aware;
+- pass `getRuntimePrayerSettings().timezone` through Home and `/events` event filtering.
+
+The exact implementation-head five-workflow set above is green after all six correctness fixes.
+
+The latest Codex pass also raised a documentation/certification P1 because the prior checked-in snapshot still cited an older implementation SHA and run set. This snapshot corrects that mismatch by recording implementation HEAD `0e021520058a73a1407c488ae2cee4d19f69692b` and its five workflow IDs.
+
+Committing this evidence creates a newer documentation-only HEAD. Fresh exact documentation-HEAD workflows and the final Codex re-review are recorded in PR #108 metadata rather than recursively rewriting this document with its own future SHA/run IDs.
+
+Those automated results complete the current repository-side implementation/verification cycle but do not satisfy the remaining Plan 6 live-preview requirements. Under the 2026-09-22 sequencing override, no candidate-branch TV project will be created. After the approved branch is merged to `main`, the dedicated `donaumoschee-tv` project will be created against the real root production origin and the browser/Admin Test Mode evidence will be recorded.
+
+A clean final exact-head Codex re-review remains the last pre-merge review gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
 
 
 ## Evidence table

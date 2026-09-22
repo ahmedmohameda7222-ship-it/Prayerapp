@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
-import { getPrayerSettings } from "@/lib/data/prayer-settings";
+import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
 import { getUrgentAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns, getDonationReport, getDonationSettings } from "@/lib/data/donations";
 import { getEvents } from "@/lib/data/events";
@@ -16,7 +16,7 @@ const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 export default async function HomePage() {
   const initialNow = new Date().toISOString();
   const now = new Date(initialNow);
-  const prayerSettings = await getPrayerSettings().catch(() => null);
+  const prayerSettings = await getRuntimePrayerSettings().catch(() => null);
   const prayerTimezone = prayerSettings?.timezone ?? null;
   const today = prayerTimezone ? todayIso(now, prayerTimezone) : null;
   const startDate = today ? addDaysIso(today, -1) : null;

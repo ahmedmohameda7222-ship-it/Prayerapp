@@ -386,7 +386,9 @@ jobs:
             drop constraint if exists native_prayer_delivery_receipts_event_id_check;
           alter table public.native_prayer_delivery_receipts
             add constraint native_prayer_delivery_receipts_event_id_check
-            check (event_id ~ '^p2:[0-9a-f]{64}
+            check (event_id ~ '^p2:[0-9a-f]{64}$');
+
+          insert into auth.users (id, aud, role, created_at, updated_at)
           values (
             '00000000-0000-4000-8000-000000000212'::uuid,
             'authenticated',

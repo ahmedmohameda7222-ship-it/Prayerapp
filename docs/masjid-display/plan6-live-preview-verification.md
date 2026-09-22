@@ -216,7 +216,7 @@ Earlier timezone-authority RED→GREEN evidence remains historical implementatio
 - RED Root CI `35552740003`: seven intended failures exposed Berlin-default behavior in non-Berlin prayer runtime/cutoff paths.
 - GREEN Root CI `35553536449`: root tests/typecheck/build and repository certification passed after persisted timezone propagation.
 
-Per the 2026-09-22 operator sequencing override, the final GitHub Codex review is the **last pre-merge gate** after all repository-side implementation and exact-head automated verification are green. The post-merge Vercel/browser/Admin Test Mode checks remain required for eventual Plan 6 completion but no longer precede the pre-merge Codex review. Any legitimate Critical/Important/security/correctness finding from that review must be fixed with regression coverage and exact-head verification before merge authorization.
+Per the 2026-09-22 operator sequencing override, GitHub Codex review is the **last pre-merge review gate** after all repository-side implementation and exact-head automated verification are green. The first final review produced the prayer-event-identity P1 documented above; that finding is fixed and green on implementation HEAD `494e7815e9497a5ca8c7c02e7eed21809bd59e75`. A fresh exact-head re-review of the resulting documentation head is still required before merge authorization. The post-merge Vercel/browser/Admin Test Mode checks remain required for eventual Plan 6 completion but no longer precede the pre-merge Codex gate.
 
 ## Deferred operational follow-up / Plan 7
 
@@ -234,6 +234,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: GREEN AUTOMATED GATES; FINAL CODEX REVIEW PENDING.**
+**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: GREEN AUTOMATED GATES; FIRST FINAL CODEX P1 FIXED; FINAL EXACT-HEAD CODEX RE-REVIEW PENDING.**
 
 The real Vercel/root/browser/Admin Test Mode verification is intentionally scheduled for post-merge `main` under the operator sequencing override. Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until that post-merge evidence is actually recorded.

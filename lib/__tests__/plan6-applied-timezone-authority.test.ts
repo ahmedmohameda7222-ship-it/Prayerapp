@@ -1,17 +1,22 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const source = (path: string) => readFileSync(path, "utf8");
 
 describe("Plan 6 applied timezone authority", () => {
-  it("stores a separate applied timezone and promotes it atomically with schedule recalculation", () => {
-    const migrations = source("supabase/migrations/20260915220000_masjid_display_prayer_settings.sql");
-    const atomic = source("supabase/migrations/20260915221000_prayer_schedule_atomic_generation.sql");
+  it("adds an applied-timezone migration and promotes it atomically with full schedule recalculation", () => {
+    const migrationName = readdirSync("supabase/migrations")
+      .sort()
+      .find((name) => name.includes("applied_timezone"));
+    expect(migrationName).toBeTruthy();
+    if (!migrationName) return;
 
-    expect(migrations).toContain("applied_timezone");
-    expect(atomic).toContain("applied_timezone = timezone");
-    expect(atomic.indexOf("applied_timezone = timezone"))
-      .toBeGreaterThan(atomic.indexOf("insert into public.prayer_times"));
+    const sql = source(`supabase/migrations/${migrationName}`).toLowerCase();
+    expect(sql).toContain("applied_timezone");
+    expect(sql).toContain("applied_timezone = timezone");
+    expect(sql).toContain("timezone change requires full future recalculation");
+    expect(sql.indexOf("applied_timezone = timezone"))
+      .toBeGreaterThan(sql.indexOf("insert into public.prayer_times"));
   });
 
   it("exposes pending settings separately from applied runtime settings", () => {
@@ -27,6 +32,7 @@ describe("Plan 6 applied timezone authority", () => {
       "app/page.tsx",
       "app/times/page.tsx",
       "app/friday/page.tsx",
+      "app/home-prayer-runtime.ts",
       "app/api/cron/prayer-reminders/route.ts",
       "app/api/android/prayer-schedule/route.ts",
     ]) {

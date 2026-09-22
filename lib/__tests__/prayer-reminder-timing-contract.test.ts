@@ -21,7 +21,7 @@ describe("prayer reminder timing contract", () => {
   it("uses persisted Prayer Engine timezone for reminder date windows and prayer instants", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
 
-    expect(cron).toContain('import { getPrayerSettings } from "@/lib/data/prayer-settings";');
+    expect(cron).toContain('import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";');
     expect(cron).toContain("todayIso(now, prayerSettings.timezone)");
     expect(cron).toContain("zonedDateTime(schedule.date, time, prayerSettings.timezone)");
     expect(cron).not.toContain("const today = todayIso(now);");

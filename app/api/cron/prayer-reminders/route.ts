@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
-import { getPrayerSettings } from "@/lib/data/prayer-settings";
+import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
 import { logFallbackActivation } from "@/lib/android/delivery-diagnostics";
 import { legacyPrayerEventIdV2, legacyReceiptMatchesDueInstant, prayerEventId } from "@/lib/android/prayer-event-id";
 import {
@@ -204,7 +204,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const prayerSettings = await getPrayerSettings().catch(() => null);
+  const prayerSettings = await getRuntimePrayerSettings().catch(() => null);
   if (!prayerSettings) {
     return NextResponse.json({ error: "Prayer settings are unavailable" }, { status: 503 });
   }

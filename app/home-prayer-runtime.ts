@@ -1,11 +1,11 @@
 "use server";
 
 import { addDaysIso, todayIso } from "@/lib/date-utils";
-import { getPrayerSettings } from "@/lib/data/prayer-settings";
+import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 
 export async function refreshHomePrayerRuntime() {
-  const prayerSettings = await getPrayerSettings();
+  const prayerSettings = await getRuntimePrayerSettings();
   if (!prayerSettings) {
     return { schedule: [], iqamaDelays: null, timezone: null };
   }

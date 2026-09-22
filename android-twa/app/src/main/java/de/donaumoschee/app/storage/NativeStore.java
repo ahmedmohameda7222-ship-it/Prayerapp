@@ -190,7 +190,7 @@ public final class NativeStore {
             DeliveryLedger ledger = loadDeliveryLedgerLocked();
             DeliveryRecord current = ledger == null ? null : ledger.record(eventId);
             if (current == null || !ledger.markDelivered(eventId, deliveredAtMs)) return false;
-            if (!eventId.startsWith("p2:")) return persistDeliveryLedgerLocked(ledger);
+            if (!eventId.startsWith("p2:") && !eventId.startsWith("p3:")) return persistDeliveryLedgerLocked(ledger);
 
             DeliveryReceiptQueue receiptQueue = loadDeliveryReceiptQueueLocked();
             if (receiptQueue == null || !receiptQueue.enqueue(eventId, current.kind(), deliveredAtMs, accountGeneration())) {

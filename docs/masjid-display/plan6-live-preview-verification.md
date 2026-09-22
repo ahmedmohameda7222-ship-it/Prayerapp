@@ -130,23 +130,22 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 
 ## CI / security evidence
 
-Current pre-merge Plan 6 implementation HEAD:
-`7cfed5144be6a7c238fc27117b9dca0451a0b321`
+Certified pre-merge Plan 6 implementation HEAD:
+`0e021520058a73a1407c488ae2cee4d19f69692b`
 
-Fresh exact-head pre-merge evidence:
+Fresh exact-implementation-head evidence:
 
-- Root CI `35697531505`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
-- Masjid Display Verification `35697531490`: **SUCCESS**, including TV package verification and two-app integration.
-- Plan 3 Display Feed Verification `35697531487`: **SUCCESS**.
-- Security Scanners `35697531497`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
-- Android TWA `35697531488`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
-- unresolved inline PR review threads after replying to the latest Codex findings: **0**.
+- Root CI `35761167100`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
+- Masjid Display Verification `35761167195`: **SUCCESS**, including TV package verification and two-app integration.
+- Plan 3 Display Feed Verification `35761167151`: **SUCCESS**.
+- Security Scanners `35761167067`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
+- Android TWA `35761167078`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
 
-### Final Codex review loop — prayer-event identity and timezone rollout
+### Final Codex review loop — prayer-event identity, timezone rollout, and date-boundary authority
 
-The first final pre-merge Codex review on `4549d21b6de468918da09014ac210d7563a9e2b3` identified a legitimate P1: prayer-event identity did not include the resolved delivery instant. That finding was fixed with matching Java/TypeScript `p3/v3` identities containing `dueAtMs`, plus deterministic legacy `p2` aliases for rollout compatibility.
+The first final pre-merge Codex review identified a legitimate P1: prayer-event identity did not include the resolved delivery instant. That finding was fixed with matching Java/TypeScript `p3/v3` identities containing `dueAtMs`, plus deterministic legacy `p2` aliases for rollout compatibility.
 
-The next exact-head Codex re-review identified three additional legitimate P1 rollout/correctness gaps:
+The next re-review identified three legitimate P1 rollout/correctness gaps:
 
 1. the native receipt API accepted `p3` event IDs while the database receipt CHECK still allowed only `p2`;
 2. a stale legacy `p2` receipt could suppress fallback at a newly resolved due instant after a timezone change;
@@ -154,23 +153,36 @@ The next exact-head Codex re-review identified three additional legitimate P1 ro
 
 TDD RED evidence on test-only HEAD `596d8026e5c52ecce5280b175f8d595a327ddc30`:
 - Root CI `35689276038`: **FAILURE** at `npm test`.
-- Three test files failed with exactly six intended failures:
-  - `android-prayer-event-v3-migration.test.ts`: missing additive p2/p3 database migration;
-  - `android-legacy-receipt-due-instant.test.ts`: missing legacy receipt/due-instant compatibility guard;
-  - `plan6-applied-timezone-authority.test.ts`: missing applied-timezone persistence/runtime separation.
-- Plan 3 `35689276034` also failed typecheck on the intentionally incomplete RED state.
+- exactly six intended failures across:
+  - `android-prayer-event-v3-migration.test.ts`;
+  - `android-legacy-receipt-due-instant.test.ts`;
+  - `plan6-applied-timezone-authority.test.ts`.
 
-Fixes now present on the current implementation:
-- migration `20260922060000_prayer_event_v3.sql` replaces the receipt CHECK with `^p[23]:[0-9a-f]{64}$`, preserving legacy p2 while allowing current p3;
-- receipt lookup selects `delivered_at`; `legacyReceiptMatchesDueInstant` accepts a p2 alias only when delivery occurred within the bounded tolerance of the current `dueAtMs`, while p3 remains due-instant-bound by identity;
-- `prayer_settings.applied_timezone` records the timezone associated with the applied schedule;
-- runtime scheduling consumers use `getRuntimePrayerSettings()`, so pending Admin timezone edits do not move existing prayer instants;
-- `commit_prayer_schedule_recalculation` promotes `applied_timezone = timezone` atomically only after a full future schedule recalculation is committed;
-- CI restores the final migration head after historical migration certification before later reconciliation/schema assertions, and the duplicated CI workflow tail exposed during this proof cycle was removed.
+Those three findings were fixed by the additive p2/p3 receipt migration, due-instant compatibility checks for legacy receipts, and the persisted `applied_timezone` runtime authority.
 
-GREEN evidence is the exact-head five-workflow set above. The three P1 review threads were replied to with implementation/run evidence and resolved.
+The latest final re-review then identified two additional legitimate P1 correctness gaps:
 
-A fresh Codex re-review on the resulting final documentation HEAD is still required before pre-merge repository certification can be called review-clean.
+4. the database write-time dynamic-content budget still derived its calendar window in `Europe/Berlin`, while the runtime Feed used the applied prayer timezone;
+5. public event filtering on Home and `/events` could still classify events using Berlin across a configured-timezone date boundary.
+
+TDD RED evidence on test-only HEAD `426990220da06a9d48f912df9afdcd0c4a2ba97f`:
+- Root CI `35760200228`: **FAILURE** at `npm test`;
+- exactly three intended failures:
+  - `plan6-dynamic-budget-timezone-authority.test.ts`: 1 failure;
+  - `plan6-event-timezone-authority.test.ts`: 2 failures.
+
+Fixes on certified implementation HEAD `0e021520058a73a1407c488ae2cee4d19f69692b`:
+- migration `20260922062000_masjid_display_dynamic_budget_timezone.sql` redefines `assert_masjid_display_dynamic_content_budget()` to load `prayer_settings.applied_timezone` and derive `p_today` with `p_now AT TIME ZONE v_time_zone`;
+- the capacity gate therefore uses the same applied calendar authority as the runtime Feed;
+- `isUpcomingEvent` accepts an explicit IANA timezone;
+- both `app/page.tsx` and `app/events/page.tsx` load `getRuntimePrayerSettings()` and pass the applied runtime timezone into event filtering;
+- the America/Los_Angeles cross-date regression is covered directly.
+
+GREEN evidence for all six final-review correctness P1 fixes is the exact-implementation-head five-workflow set above. The six correctness review threads have implementation/run evidence and are resolved.
+
+The latest Codex pass also raised a certification-evidence P1 because the checked-in record still cited the preceding implementation snapshot. This section is the corrective evidence refresh: it records the actual certified implementation SHA `0e021520058a73a1407c488ae2cee4d19f69692b` and its five successful workflow IDs.
+
+Committing this documentation creates a newer evidence-only HEAD without changing implementation. Fresh exact documentation-HEAD workflow verification is recorded in PR #108 metadata after that commit, rather than recursively rewriting this document with its own future SHA/run IDs. A clean final exact-head Codex re-review remains required before the pre-merge review gate is closed.
 
 ### Deployed-production DAST timeout resilience
 
@@ -202,6 +214,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: GREEN AUTOMATED GATES; FIRST FINAL CODEX P1 FIXED; FINAL EXACT-HEAD CODEX RE-REVIEW PENDING.**
+**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: CERTIFIED IMPLEMENTATION HEAD GREEN; SIX LEGITIMATE FINAL-REVIEW CORRECTNESS P1s FIXED; EVIDENCE REFRESHED; FINAL EXACT-HEAD CODEX RE-REVIEW PENDING.**
 
 The real Vercel/root/browser/Admin Test Mode verification is intentionally scheduled for post-merge `main` under the operator sequencing override. Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until that post-merge evidence is actually recorded.

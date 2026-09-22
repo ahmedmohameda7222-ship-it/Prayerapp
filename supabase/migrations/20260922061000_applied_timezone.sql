@@ -4,7 +4,7 @@
 alter table public.prayer_settings
   add column if not exists applied_timezone text;
 
-do $
+do $$
 begin
   if exists (
     select 1
@@ -15,7 +15,7 @@ begin
     raise exception 'cannot infer applied timezone while prayer settings have pending calculation revision';
   end if;
 end
-$;
+$$;
 
 update public.prayer_settings as p
 set applied_timezone = p.timezone

@@ -131,70 +131,51 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 ## CI / security evidence
 
 Certified pre-merge Plan 6 implementation HEAD:
-`0e021520058a73a1407c488ae2cee4d19f69692b`
+`89cfece9635ef9601e9e36eede5ec1f98c668bd7`
 
 Fresh exact-implementation-head evidence:
 
-- Root CI `35761167100`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
-- Masjid Display Verification `35761167195`: **SUCCESS**, including TV package verification and two-app integration.
-- Plan 3 Display Feed Verification `35761167151`: **SUCCESS**.
-- Security Scanners `35761167067`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
-- Android TWA `35761167078`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
+- Root CI `35767472510`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
+- Masjid Display Verification `35767472504`: **SUCCESS**, including TV package verification and two-app integration.
+- Plan 3 Display Feed Verification `35767472590`: **SUCCESS**.
+- Security Scanners `35767472515`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
+- Android TWA `35767472472`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
 
-### Final Codex review loop — prayer-event identity, timezone rollout, and date-boundary authority
+### Final Codex review loop — latest runtime-safety findings
 
-The first final pre-merge Codex review identified a legitimate P1: prayer-event identity did not include the resolved delivery instant. That finding was fixed with matching Java/TypeScript `p3/v3` identities containing `dueAtMs`, plus deterministic legacy `p2` aliases for rollout compatibility.
+The pre-merge Codex loop has now produced **ten legitimate correctness findings** in total: nine P1 findings and one P2 finding.
 
-The next re-review identified three legitimate P1 rollout/correctness gaps:
+The earlier six P1 findings covered:
+1. prayer-event identity missing the resolved delivery instant;
+2. database receipt schema rejecting p3 identities;
+3. stale legacy p2 receipts suppressing fallback at a newly resolved due instant;
+4. pending timezone edits affecting live scheduling before recalculation promotion;
+5. the database dynamic-content budget using a Berlin date instead of the applied runtime timezone;
+6. Home and `/events` event filtering using Berlin across applied-timezone date boundaries.
 
-1. the native receipt API accepted `p3` event IDs while the database receipt CHECK still allowed only `p2`;
-2. a stale legacy `p2` receipt could suppress fallback at a newly resolved due instant after a timezone change;
-3. pending Admin timezone edits were being used immediately by live scheduling consumers before schedule recalculation committed them.
+Those six were fixed with p3/v3 due-instant-bound identities, additive p2/p3 receipt support, due-instant compatibility checks for legacy receipts, persisted `applied_timezone` runtime authority, applied-timezone budget windows, and explicit timezone propagation into event filtering.
 
-TDD RED evidence on test-only HEAD `596d8026e5c52ecce5280b175f8d595a327ddc30`:
-- Root CI `35689276038`: **FAILURE** at `npm test`.
-- exactly six intended failures across:
-  - `android-prayer-event-v3-migration.test.ts`;
-  - `android-legacy-receipt-due-instant.test.ts`;
-  - `plan6-applied-timezone-authority.test.ts`.
+The next exact-head Codex pass identified four additional legitimate runtime-safety findings:
+7. **P1:** current p3 Android deliveries were not queued into the delivery-receipt upload queue;
+8. **P1:** future-recalculation cutoff dates were still derived from pending calculation timezone instead of the applied runtime timezone;
+9. **P1:** promoting `applied_timezone` could expand the Feed capacity window without rechecking the dynamic-content budget in the same transaction;
+10. **P2:** the redefined serialized-byte budget function was not preflighted against existing rows during migration.
 
-Those three findings were fixed by the additive p2/p3 receipt migration, due-instant compatibility checks for legacy receipts, and the persisted `applied_timezone` runtime authority.
+TDD RED evidence on test-only HEAD `8e8b9c4e7ec68fbcc5c57534fd82cf0c6d60c632`:
+- Root CI `35765586800`: **FAILURE** at `npm test`;
+- `plan6-final-review-runtime-safety.test.ts`: exactly four intended failures, one for each finding above;
+- overall test summary: 4 failed, 902 passed, 1 skipped, 1 todo.
 
-The latest final re-review then identified two additional legitimate P1 correctness gaps:
+Fixes:
+- `015fe09e1d92043d783657c81d7fbb7d3416dfd1`: `NativeStore.markDeliveryDelivered` queues both p2 and p3 receipts; Android instrumentation directly verifies p3 receipt persistence/upload readiness.
+- `90342d09d75542c3e63284e3c1545b1b2bd17574`: recalculation preview/commit derive the future-only cutoff from `getRuntimePrayerSettings()`, while pending settings remain calculation inputs.
+- `3f32f4f32ee699750b87886f57cadbcdc904d9de`: timezone promotion performs `assert_masjid_display_dynamic_content_budget()` after updating `applied_timezone` in the same transaction so an over-budget promotion rolls back.
+- `4f88b587b97d29173d4d24294927162994a4eaa3`: the serialized-byte budget migration executes a preflight assertion after redefining the function, so incompatible existing rows abort migration.
+- `89cfece9635ef9601e9e36eede5ec1f98c668bd7`: removes a wall-clock assumption from the two-app Test Mode stop assertion; all five workflow families are green on this final implementation head.
 
-4. the database write-time dynamic-content budget still derived its calendar window in `Europe/Berlin`, while the runtime Feed used the applied prayer timezone;
-5. public event filtering on Home and `/events` could still classify events using Berlin across a configured-timezone date boundary.
+All ten correctness review threads now have implementation/run evidence and are resolved. Current unresolved inline review threads: **0**.
 
-TDD RED evidence on test-only HEAD `426990220da06a9d48f912df9afdcd0c4a2ba97f`:
-- Root CI `35760200228`: **FAILURE** at `npm test`;
-- exactly three intended failures:
-  - `plan6-dynamic-budget-timezone-authority.test.ts`: 1 failure;
-  - `plan6-event-timezone-authority.test.ts`: 2 failures.
-
-Fixes on certified implementation HEAD `0e021520058a73a1407c488ae2cee4d19f69692b`:
-- migration `20260922062000_masjid_display_dynamic_budget_timezone.sql` redefines `assert_masjid_display_dynamic_content_budget()` to load `prayer_settings.applied_timezone` and derive `p_today` with `p_now AT TIME ZONE v_time_zone`;
-- the capacity gate therefore uses the same applied calendar authority as the runtime Feed;
-- `isUpcomingEvent` accepts an explicit IANA timezone;
-- both `app/page.tsx` and `app/events/page.tsx` load `getRuntimePrayerSettings()` and pass the applied runtime timezone into event filtering;
-- the America/Los_Angeles cross-date regression is covered directly.
-
-GREEN evidence for all six final-review correctness P1 fixes is the exact-implementation-head five-workflow set above. The six correctness review threads have implementation/run evidence and are resolved.
-
-The latest Codex pass also raised a certification-evidence P1 because the checked-in record still cited the preceding implementation snapshot. This section is the corrective evidence refresh: it records the actual certified implementation SHA `0e021520058a73a1407c488ae2cee4d19f69692b` and its five successful workflow IDs.
-
-Committing this documentation creates a newer evidence-only HEAD without changing implementation. Fresh exact documentation-HEAD workflow verification is recorded in PR #108 metadata after that commit, rather than recursively rewriting this document with its own future SHA/run IDs. A clean final exact-head Codex re-review remains required before the pre-merge review gate is closed.
-
-### Deployed-production DAST timeout resilience
-
-The deployed-production DAST previously exposed a repeatable transport-timeout false negative while the same production URL returned HTTP 200 through Vercel inspection. The scanner keeps the 10-second per-attempt timeout and all security assertions, and retries exactly once only for `TimeoutError`. Arbitrary HTTP/security failures are not retried.
-
-### Android SDK setup blocker closed during Plan 6 implementation
-
-The pinned setup-android action previously requested Google's removed `tools` package. Both setup paths now explicitly request `platform-tools`, preserving pinned action commits. Android unit/lint/build and API 23/API 37 instrumentation are green in the exact-head run above.
-
-### Security finding closed during Plan 6 implementation
-
-The earlier CodeQL file-system-race finding in the Plan 6 source-tree test helper was fixed by using `readdirSync(..., { withFileTypes: true })` and eliminating the separate `statSync` check. Current Security Scanners remain green.
+Committing this documentation creates a newer evidence-only HEAD without changing implementation. Fresh exact documentation-HEAD workflow verification is recorded in PR #108 metadata after that commit rather than recursively rewriting this document with its own future SHA/run IDs.
 
 Per the 2026-09-22 operator sequencing override, GitHub Codex review is the **last pre-merge review gate** after repository-side implementation and exact-head automated verification are green. Real Vercel/root/browser/Admin Test Mode verification is intentionally post-merge on `main`; it remains required before the final Plan 6 completion phrase may be used.
 

@@ -4,9 +4,9 @@
 alter table public.prayer_settings
   add column if not exists applied_timezone text;
 
-update public.prayer_settings
-set applied_timezone = timezone
-where applied_timezone is null;
+update public.prayer_settings as p
+set applied_timezone = p.timezone
+where p.applied_timezone is null;
 
 alter table public.prayer_settings
   alter column applied_timezone set not null;

@@ -131,92 +131,60 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 ## CI / security evidence
 
 Current pre-merge Plan 6 implementation HEAD:
-`494e7815e9497a5ca8c7c02e7eed21809bd59e75`
+`7cfed5144be6a7c238fc27117b9dca0451a0b321`
 
 Fresh exact-head pre-merge evidence:
 
-- Root CI `35687117983`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
-- Masjid Display Verification `35687117886`: **SUCCESS**, including TV package verification and two-app integration.
-- Plan 3 Display Feed Verification `35687117864`: **SUCCESS**.
-- Security Scanners `35687117863`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
-- Android TWA `35687117958`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
+- Root CI `35697531505`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
+- Masjid Display Verification `35697531490`: **SUCCESS**, including TV package verification and two-app integration.
+- Plan 3 Display Feed Verification `35697531487`: **SUCCESS**.
+- Security Scanners `35697531497`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
+- Android TWA `35697531488`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
+- unresolved inline PR review threads after replying to the latest Codex findings: **0**.
 
-### Final Codex P1 — prayer event identity follows the resolved delivery instant
+### Final Codex review loop — prayer-event identity and timezone rollout
 
-The final pre-merge Codex review on HEAD `4549d21b6de468918da09014ac210d7563a9e2b3` identified a legitimate P1: prayer event IDs were derived from the stored wall-clock prayer value but not the configured timezone/resolved instant. A timezone change could therefore move an alarm while preserving its ID, causing the native delivery ledger to reject the replacement schedule and allowing server push deduplication to conflate differently timed events.
+The first final pre-merge Codex review on `4549d21b6de468918da09014ac210d7563a9e2b3` identified a legitimate P1: prayer-event identity did not include the resolved delivery instant. That finding was fixed with matching Java/TypeScript `p3/v3` identities containing `dueAtMs`, plus deterministic legacy `p2` aliases for rollout compatibility.
 
-RED evidence:
-- Root CI `35686407427` on test-only HEAD `deb4ad9e373cf4519e4a13f4e48e99ddb35a53cd`: **FAILURE**, with exactly the intended server failures proving a changed resolved instant kept the same `p2` ID and `p3` receipts were rejected.
-- Android TWA `35686407428` on the same RED head: **FAILURE**, 103 tests executed with exactly two intended failures: timezone changes did not change the event ID and the receipt queue rejected `p3`.
-- Root CI `35686613434` on compatibility RED HEAD `5ae3a5cd717a8c9a4466c86a8a1e455bdb1ba9bd`: **FAILURE**, additionally proving the server lacked a legacy `p2` receipt alias during rollout.
+The next exact-head Codex re-review identified three additional legitimate P1 rollout/correctness gaps:
 
-Fix:
-- current canonical event IDs are versioned `p3` and include the resolved `dueAtMs`, binding identity to the actual delivery instant in matching Java and TypeScript implementations;
-- Android receipt persistence accepts both `p2` and `p3` during migration;
-- server receipt ingestion accepts both versions;
-- server fallback receipt lookup queries both the current `p3` ID and the deterministic legacy `p2` alias, preventing duplicate fallback pushes from older clients during rollout;
-- simulated prayer push IDs also bind to their due instant.
+1. the native receipt API accepted `p3` event IDs while the database receipt CHECK still allowed only `p2`;
+2. a stale legacy `p2` receipt could suppress fallback at a newly resolved due instant after a timezone change;
+3. pending Admin timezone edits were being used immediately by live scheduling consumers before schedule recalculation committed them.
 
-GREEN evidence on `494e7815e9497a5ca8c7c02e7eed21809bd59e75`:
-- Root CI `35687117983`: **SUCCESS**.
-- Masjid Display Verification `35687117886`: **SUCCESS**.
-- Plan 3 Display Feed Verification `35687117864`: **SUCCESS**.
-- Security Scanners `35687117863`: **SUCCESS**.
-- Android TWA `35687117958`: **SUCCESS**, including API 23 and API 37 instrumentation.
+TDD RED evidence on test-only HEAD `596d8026e5c52ecce5280b175f8d595a327ddc30`:
+- Root CI `35689276038`: **FAILURE** at `npm test`.
+- Three test files failed with exactly six intended failures:
+  - `android-prayer-event-v3-migration.test.ts`: missing additive p2/p3 database migration;
+  - `android-legacy-receipt-due-instant.test.ts`: missing legacy receipt/due-instant compatibility guard;
+  - `plan6-applied-timezone-authority.test.ts`: missing applied-timezone persistence/runtime separation.
+- Plan 3 `35689276034` also failed typecheck on the intentionally incomplete RED state.
 
-The corresponding Codex review thread remains open only until this evidence-only documentation HEAD is reverified and the finding is replied to/resolved.
+Fixes now present on the current implementation:
+- migration `20260922060000_prayer_event_v3.sql` replaces the receipt CHECK with `^p[23]:[0-9a-f]{64}$`, preserving legacy p2 while allowing current p3;
+- receipt lookup selects `delivered_at`; `legacyReceiptMatchesDueInstant` accepts a p2 alias only when delivery occurred within the bounded tolerance of the current `dueAtMs`, while p3 remains due-instant-bound by identity;
+- `prayer_settings.applied_timezone` records the timezone associated with the applied schedule;
+- runtime scheduling consumers use `getRuntimePrayerSettings()`, so pending Admin timezone edits do not move existing prayer instants;
+- `commit_prayer_schedule_recalculation` promotes `applied_timezone = timezone` atomically only after a full future schedule recalculation is committed;
+- CI restores the final migration head after historical migration certification before later reconciliation/schema assertions, and the duplicated CI workflow tail exposed during this proof cycle was removed.
 
+GREEN evidence is the exact-head five-workflow set above. The three P1 review threads were replied to with implementation/run evidence and resolved.
+
+A fresh Codex re-review on the resulting final documentation HEAD is still required before pre-merge repository certification can be called review-clean.
 
 ### Deployed-production DAST timeout resilience
 
-Fresh verification on documentation HEAD `598ebbffdbe449843b74732878bc97fbcbeb1ce4` exposed a repeatable deployed-production DAST false negative: the open-redirect probe timed out after a single 10-second request even though the same production URL returned HTTP 200 through Vercel inspection.
-
-Evidence and TDD cycle:
-
-- Security run `35681727445`: deployed-production DAST failed twice on the same `TimeoutError` at the open-redirect probe.
-- Direct Vercel fetch of `/?next=https%3A%2F%2Fattacker.invalid%2Fescape`: **200 OK**, with no external redirect.
-- RED Root CI `35682162164` on `69f61b11785daa7e5ea1050ac19de805b1326e19`: exactly one intended regression failure, with 883 tests passing, proving the scanner lacked bounded timeout retry behavior.
-- Fix: `safe-dast.mjs` keeps the existing 10-second per-attempt timeout and all security assertions, but retries exactly once only when the thrown error is a `TimeoutError`. Arbitrary failures are not retried.
-- GREEN Root CI `35682351271`: **SUCCESS**.
-- GREEN Security Scanners `35682351321`: **SUCCESS**, including deployed-production DAST.
-
-This change does not weaken the security boundary or accept a failing HTTP result; it only prevents one transient transport timeout from becoming a false security regression.
+The deployed-production DAST previously exposed a repeatable transport-timeout false negative while the same production URL returned HTTP 200 through Vercel inspection. The scanner keeps the 10-second per-attempt timeout and all security assertions, and retries exactly once only for `TimeoutError`. Arbitrary HTTP/security failures are not retried.
 
 ### Android SDK setup blocker closed during Plan 6 implementation
 
-The previously recorded Android failure was an infrastructure defect in the pinned `android-actions/setup-android` versions: their default package list still requested Google's removed `tools` package.
-
-RED / diagnosis:
-- Android TWA `35563120667` on RED HEAD `2b3a7db5faf95b2b3af0b18cf08fe90ba61381ba`: **FAILURE** at `Set up Android SDK`, with `sdkmanager tools` → `Failed to find package 'tools'`.
-- Focused source assertion also failed because both setup-android steps relied on the obsolete default.
-
-Fix:
-- every setup-android step now explicitly sets `packages: "platform-tools"`, avoiding the removed package while preserving the pinned action commits.
-
-The first post-fix Android run `35563210983` progressed past SDK setup and exposed a stale Plan 6 unit test that still referenced removed `NativeConfig.ZONE`. That test was corrected to assert the server-provided `Asia/Tokyo` zone through `config.zone`, rather than a Berlin constant.
-
-GREEN:
-- Android TWA `35563381888`: **SUCCESS**, including instrumentation on API 23 and API 37.
-- Root CI `35563381900`: **SUCCESS**, including the workflow regression contract.
+The pinned setup-android action previously requested Google's removed `tools` package. Both setup paths now explicitly request `platform-tools`, preserving pinned action commits. Android unit/lint/build and API 23/API 37 instrumentation are green in the exact-head run above.
 
 ### Security finding closed during Plan 6 implementation
 
-GitHub Advanced Security reported a CodeQL `Potential file system race condition` in the Plan 6 Java source-tree test helper, where directory enumeration was followed by a separate `statSync` call.
+The earlier CodeQL file-system-race finding in the Plan 6 source-tree test helper was fixed by using `readdirSync(..., { withFileTypes: true })` and eliminating the separate `statSync` check. Current Security Scanners remain green.
 
-TDD evidence:
-
-- RED Root CI `35557966896`: the new regression failed because the helper did not use `withFileTypes` and still contained `statSync`.
-- Fix: directory type information now comes directly from `readdirSync(..., { withFileTypes: true })`; the separate stat check is removed.
-- GREEN Root CI `35558147818`: **SUCCESS**.
-- GREEN Security Scanners `35558147841`: **SUCCESS**, including CodeQL.
-- PR inline review threads after the fix: **0 unresolved**.
-
-Earlier timezone-authority RED→GREEN evidence remains historical implementation evidence:
-
-- RED Root CI `35552740003`: seven intended failures exposed Berlin-default behavior in non-Berlin prayer runtime/cutoff paths.
-- GREEN Root CI `35553536449`: root tests/typecheck/build and repository certification passed after persisted timezone propagation.
-
-Per the 2026-09-22 operator sequencing override, GitHub Codex review is the **last pre-merge review gate** after all repository-side implementation and exact-head automated verification are green. The first final review produced the prayer-event-identity P1 documented above; that finding is fixed and green on implementation HEAD `494e7815e9497a5ca8c7c02e7eed21809bd59e75`. A fresh exact-head re-review of the resulting documentation head is still required before merge authorization. The post-merge Vercel/browser/Admin Test Mode checks remain required for eventual Plan 6 completion but no longer precede the pre-merge Codex gate.
+Per the 2026-09-22 operator sequencing override, GitHub Codex review is the **last pre-merge review gate** after repository-side implementation and exact-head automated verification are green. Real Vercel/root/browser/Admin Test Mode verification is intentionally post-merge on `main`; it remains required before the final Plan 6 completion phrase may be used.
 
 ## Deferred operational follow-up / Plan 7
 

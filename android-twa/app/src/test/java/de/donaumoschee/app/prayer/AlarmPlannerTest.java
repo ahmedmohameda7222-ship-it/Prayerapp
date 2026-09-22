@@ -77,6 +77,24 @@ public final class AlarmPlannerTest {
     }
 
     @Test
+    public void eventIdentityChangesWhenTimezoneMovesResolvedInstant() throws Exception {
+        Instant now = Instant.parse("2026-08-22T00:00:00Z");
+        List<AlarmEvent> berlin = AlarmPlanner.plan(
+                configInZone("berlin", "2026-08-22", "13:30", "dhuhr", true, 0, "abdul-basit-cairo", "Europe/Berlin", now),
+                now
+        );
+        List<AlarmEvent> tokyo = AlarmPlanner.plan(
+                configInZone("tokyo", "2026-08-22", "13:30", "dhuhr", true, 0, "abdul-basit-cairo", "Asia/Tokyo", now),
+                now
+        );
+
+        assertEquals(1, berlin.size());
+        assertEquals(1, tokyo.size());
+        assertNotEquals(berlin.get(0).dueAt, tokyo.get(0).dueAt);
+        assertNotEquals(berlin.get(0).eventId, tokyo.get(0).eventId);
+    }
+
+    @Test
     public void usesConfiguredIanaTimezoneForPrayerInstants() throws Exception {
         Instant now = Instant.parse("2026-08-22T00:00:00Z");
         List<AlarmEvent> events = AlarmPlanner.plan(

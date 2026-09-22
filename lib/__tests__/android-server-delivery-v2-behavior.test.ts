@@ -37,6 +37,21 @@ describe("Android server delivery v2 behavior", () => {
     })).toBe("p2:6fa4dff45f7b483f0357290c2dc6687d3be77997649150b2d2840813351237ce");
   });
 
+  it("changes the canonical event ID when the resolved delivery instant changes", () => {
+    const common = {
+      scheduleId: "123e4567-e89b-12d3-a456-426614174000",
+      scheduleRevision: "13:30",
+      date: "2026-08-23",
+      prayer: "dhuhr",
+      kind: "adhan" as const,
+      leadMinutes: 0,
+    };
+    const berlin = { ...common, dueAtMs: Date.parse("2026-08-23T11:30:00.000Z") };
+    const tokyo = { ...common, dueAtMs: Date.parse("2026-08-23T04:30:00.000Z") };
+
+    expect(prayerEventId(berlin)).not.toBe(prayerEventId(tokyo));
+  });
+
   it("changes the canonical event ID when delivery identity changes", () => {
     const common = {
       scheduleId: "123e4567-e89b-12d3-a456-426614174000",

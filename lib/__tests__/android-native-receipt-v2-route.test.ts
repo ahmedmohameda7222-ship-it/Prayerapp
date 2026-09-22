@@ -56,9 +56,9 @@ function request(body: Record<string, unknown>, headers: Record<string, string> 
   });
 }
 
-function validBody(accountGeneration = 3) {
+function validBody(accountGeneration = 3, canonicalEventId = eventId) {
   return {
-    eventId,
+    eventId: canonicalEventId,
     kind: "reminder",
     deliveredAt: "2026-08-23T12:00:00.000Z",
     accountGeneration,
@@ -106,6 +106,30 @@ describe("native delivery receipt v2 ingestion", () => {
       kind: "reminder",
       account_generation: 3,
       delivered_at: "2026-08-23T12:00:00.000Z",
+    }));
+  });
+
+  it("accepts the new resolved-instant event identity while preserving legacy p2 receipts", async () => {
+    const currentEventId = `p3:${"2".repeat(64)}`;
+    const lookup = query({
+      data: {
+        authority_id: authorityId,
+        credential_hash: credentialHash,
+        user_id: userId,
+        account_generation: 3,
+        receipt_v2: true,
+      },
+      error: null,
+    });
+    const insert = query({ data: { event_id: currentEventId }, error: null });
+    mocks.client = { from: vi.fn().mockReturnValueOnce(lookup).mockReturnValueOnce(insert) };
+
+    const response = await RECEIPT(request(validBody(3, currentEventId)));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true });
+    expect(insert.upserts[0]).toEqual(expect.objectContaining({
+      event_id: currentEventId,
     }));
   });
 

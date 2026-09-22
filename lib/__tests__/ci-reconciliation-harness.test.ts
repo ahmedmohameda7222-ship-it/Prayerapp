@@ -27,4 +27,11 @@ describe("CI historical reconciliation harness", () => {
     expect(bridge).toContain("supabase db reset --local --no-seed");
   });
 
+  it("has one clean Supabase shutdown step with no duplicated workflow tail", () => {
+    const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
+    expect(workflow.match(/- name: Stop local Supabase/g)?.length).toBe(1);
+    expect(workflow).toContain("run: supabase stop --no-backup || true");
+    expect(workflow).not.toContain("run: supabase stop --no-backup || true);");
+  });
+
 });

@@ -223,6 +223,40 @@ describe("buildMasjidDisplayFeed", () => {
     );
   });
 
+  it("keeps pending timezone edits out of the live Feed until recalculation applies them", async () => {
+    const source = deps();
+    source.getPrayerSettings.mockResolvedValue({
+      timezone: "Asia/Tokyo",
+      iqamaDelays: { fajr: 20, dhuhr: 15, asr: 15, maghrib: 10, isha: 15 },
+    } as never);
+    const runtimeSettings = {
+      timezone: "America/New_York",
+      iqamaDelays: { fajr: 20, dhuhr: 15, asr: 15, maghrib: 10, isha: 15 },
+    };
+    Object.assign(source, {
+      getRuntimePrayerSettings: vi.fn(async () => runtimeSettings),
+      getRuntimePrayerSettingsForDisplay: vi.fn(async () => ({
+        value: runtimeSettings,
+        sourceUpdatedAt: "2026-09-14T22:00:00.000Z",
+      })),
+    });
+    source.getPrayerTimes.mockResolvedValue(
+      prayerRows("2026-09-13", "2026-10-19"),
+    );
+
+    const feed = await buildMasjidDisplayFeed(
+      new Date("2026-09-15T02:00:00.000Z"),
+      source as never,
+    );
+
+    expect(feed.timezone).toBe("America/New_York");
+    expect(source.getPrayerTimes).toHaveBeenCalledWith(
+      true,
+      "2026-09-13",
+      "2026-10-19",
+    );
+  });
+
   it("uses fresh database-bounded readers for feed source reads", async () => {
     const source = deps();
     await buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never);

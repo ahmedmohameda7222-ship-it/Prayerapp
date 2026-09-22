@@ -41,7 +41,7 @@ The CodeQL file-system-race finding introduced by the Plan 6 source-tree regress
 
 Those automated results complete the current repository-side pre-merge verification but do not satisfy the remaining Plan 6 live-preview requirements. Under the 2026-09-22 sequencing override, no candidate-branch TV project will be created. After merge to `main`, the dedicated `donaumoschee-tv` project will be created against the real root production origin and the browser/Admin Test Mode evidence will be recorded.
 
-The final exact-head Codex review is the last pre-merge gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
+A final exact-head Codex re-review after the documented P1 fix is the remaining pre-merge review gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
 
 
 ## Evidence table

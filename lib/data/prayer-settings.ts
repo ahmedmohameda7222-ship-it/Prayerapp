@@ -5,6 +5,7 @@ import { validatePrayerCalculationSettings } from "@/lib/prayer-engine/validate-
 
 type PrayerSettingsRow = {
   settings: PrayerCalculationSettings;
+  appliedTimezone: string;
   rowRevision: number;
   sourceUpdatedAt: string;
 };
@@ -79,6 +80,7 @@ export function prayerSettingsInsertValues(
     id: "1",
     ...mutablePrayerSettingsValues(settings),
     applied_calculation_revision: 0,
+    applied_timezone: settings.timezone,
   };
 }
 
@@ -132,8 +134,15 @@ async function loadPrayerSettingsRow(): Promise<PrayerSettingsRow | null> {
     throw new Error("Invalid prayer settings row revision");
   }
 
+  const settings = mapFromDb(record);
+  const appliedTimezone = String(record.applied_timezone || "");
+  if (!appliedTimezone) {
+    throw new Error("Invalid applied prayer settings timezone");
+  }
+
   return {
-    settings: mapFromDb(record),
+    settings,
+    appliedTimezone,
     rowRevision,
     sourceUpdatedAt: String(record.updated_at),
   };
@@ -143,12 +152,36 @@ export async function getPrayerSettings(): Promise<PrayerCalculationSettings | n
   return (await loadPrayerSettingsRow())?.settings ?? null;
 }
 
+export async function getRuntimePrayerSettings(): Promise<PrayerCalculationSettings | null> {
+  const row = await loadPrayerSettingsRow();
+  if (!row) return null;
+  return validatePrayerCalculationSettings({
+    ...row.settings,
+    timezone: row.appliedTimezone,
+  });
+}
+
 export async function getPrayerSettingsForDisplay(): Promise<{
   value: PrayerCalculationSettings;
   sourceUpdatedAt: string;
 } | null> {
   const row = await loadPrayerSettingsRow();
   return row ? { value: row.settings, sourceUpdatedAt: row.sourceUpdatedAt } : null;
+}
+
+export async function getRuntimePrayerSettingsForDisplay(): Promise<{
+  value: PrayerCalculationSettings;
+  sourceUpdatedAt: string;
+} | null> {
+  const row = await loadPrayerSettingsRow();
+  if (!row) return null;
+  return {
+    value: validatePrayerCalculationSettings({
+      ...row.settings,
+      timezone: row.appliedTimezone,
+    }),
+    sourceUpdatedAt: row.sourceUpdatedAt,
+  };
 }
 
 export async function savePrayerSettings(

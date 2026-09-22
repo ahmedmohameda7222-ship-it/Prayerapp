@@ -379,6 +379,186 @@ jobs:
           {
             cat <<'SQL'
           begin;
+          -- Exercise the 2026-09-02 reconciliation at its own schema boundary.
+          -- The final schema has the later additive p3 receipt constraint; restore
+          -- the historical p2 constraint only inside this transaction, then rollback.
+          alter table public.native_prayer_delivery_receipts
+            drop constraint if exists native_prayer_delivery_receipts_event_id_check;
+          alter table public.native_prayer_delivery_receipts
+            add constraint native_prayer_delivery_receipts_event_id_check
+            check (event_id ~ '^p2:[0-9a-f]{64}
+          values (
+            '00000000-0000-4000-8000-000000000212'::uuid,
+            'authenticated',
+            'authenticated',
+            now(),
+            now()
+          );
+          insert into public.native_prayer_installations (
+            installation_id, user_id, credential_hash
+          ) values (
+            '00000000-0000-4000-8000-000000000211'::uuid,
+            '00000000-0000-4000-8000-000000000212'::uuid,
+            repeat('a', 64)
+          );
+          SQL
+            cat supabase/migrations/20260902211847_prelaunch_schema_reconciliation.sql
+            cat supabase/migrations/20260902211847_prelaunch_schema_reconciliation.sql
+            cat <<'SQL'
+          do $$
+          begin
+            if not exists (
+              select 1
+              from public.native_prayer_installations
+              where installation_id = '00000000-0000-4000-8000-000000000211'::uuid
+                and user_id = '00000000-0000-4000-8000-000000000212'::uuid
+                and credential_hash = repeat('a', 64)
+                and receipt_v2 = false
+                and account_generation = 0
+            ) then
+              raise exception 'synthetic native installation row was not preserved';
+            end if;
+          end
+          $$;
+          rollback;
+          SQL
+          } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1
+      - name: Verify reconciliation rejects incompatible partial schemas
+        run: |
+          DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
+          test -n "$DB_CONTAINER"
+
+          set +e
+          receipt_output="$({
+            cat <<'SQL'
+          begin;
+          drop table public.native_prayer_delivery_receipts;
+          alter table public.native_prayer_installations drop column receipt_v2;
+          alter table public.native_prayer_installations drop column account_generation;
+          alter table public.native_prayer_installations
+            add column receipt_v2 boolean not null default false;
+          alter table public.native_prayer_installations
+            add constraint synthetic_incompatible_receipt_v2_check check (receipt_v2 = true);
+          SQL
+            cat supabase/migrations/20260902211847_prelaunch_schema_reconciliation.sql
+          } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1)"
+          receipt_status=$?
+          set -e
+          if [ "$receipt_status" -eq 0 ] || ! grep -Fq 'incompatible pre-existing receipt_v2 constraint' <<<"$receipt_output"; then
+            echo 'incompatible receipt_v2 constraint was not rejected'
+            printf '%s\n' "$receipt_output"
+            exit 1
+          fi
+
+          set +e
+          generation_output="$({
+            cat <<'SQL'
+          begin;
+          drop table public.native_prayer_delivery_receipts;
+          alter table public.native_prayer_installations drop column receipt_v2;
+          alter table public.native_prayer_installations drop column account_generation;
+          alter table public.native_prayer_installations
+            add column account_generation integer not null default 0;
+          alter table public.native_prayer_installations
+            add constraint synthetic_incompatible_account_generation_check check (account_generation > 0);
+          SQL
+            cat supabase/migrations/20260902211847_prelaunch_schema_reconciliation.sql
+          } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1)"
+          generation_status=$?
+          set -e
+          if [ "$generation_status" -eq 0 ] || ! grep -Fq 'incompatible pre-existing account_generation constraint' <<<"$generation_output"; then
+            echo 'incompatible account_generation constraint was not rejected'
+            printf '%s\n' "$generation_output"
+            exit 1
+          fi
+      - name: Verify admin audit idempotence and data preservation
+        run: |
+          DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
+          test -n "$DB_CONTAINER"
+          {
+            cat <<'SQL'
+          begin;
+          select public.append_admin_audit_event(
+            '00000000-0000-4000-8000-000000000601'::uuid,
+            'security-test@local.invalid',
+            'security.audit.idempotence',
+            'audit_logs',
+            'synthetic-local-row',
+            'attempt',
+            '{"source":"ci","safe":true}'::jsonb,
+            'ci-admin-audit-idempotence'
+          );
+          SQL
+            cat supabase/migrations/20260902223939_admin_audit_hardening.sql
+            cat supabase/migrations/20260902223939_admin_audit_hardening.sql
+            cat <<'SQL'
+          do $$
+          begin
+            if (
+              select count(*)
+              from public.audit_logs
+              where actor_user_id = '00000000-0000-4000-8000-000000000601'::uuid
+                and actor = 'security-test@local.invalid'
+                and action = 'security.audit.idempotence'
+                and entity_type = 'audit_logs'
+                and entity_id = 'synthetic-local-row'
+                and outcome = 'attempt'
+                and metadata = '{"source":"ci","safe":true}'::jsonb
+                and request_id = 'ci-admin-audit-idempotence'
+            ) <> 1 then
+              raise exception 'synthetic admin audit row was not preserved';
+            end if;
+          end
+          $$;
+          rollback;
+          SQL
+          } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1
+
+          docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            < scripts/security/verify-production-schema.sql
+      - name: Verify admin audit rejects non-empty legacy state
+        run: |
+          DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
+          test -n "$DB_CONTAINER"
+
+          set +e
+          legacy_output="$({
+            cat <<'SQL'
+          begin;
+          insert into public.audit_logs (
+            actor, action, entity_type, entity_id, actor_user_id, outcome, metadata, request_id
+          ) values (
+            'legacy-test@local.invalid',
+            'security.audit.legacy',
+            'audit_logs',
+            'synthetic-legacy-row',
+            '00000000-0000-4000-8000-000000000602'::uuid,
+            'attempt',
+            '{}'::jsonb,
+            'ci-admin-audit-legacy'
+          );
+          alter table public.audit_logs drop column actor_user_id;
+          alter table public.audit_logs drop column outcome;
+          alter table public.audit_logs drop column metadata;
+          alter table public.audit_logs drop column request_id;
+          SQL
+            cat supabase/migrations/20260902223939_admin_audit_hardening.sql
+          } | docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1)"
+          legacy_status=$?
+          set -e
+          if [ "$legacy_status" -eq 0 ] || ! grep -Fq 'cannot add actor_user_id to non-empty audit_logs without truthful historical actor evidence' <<<"$legacy_output"; then
+            echo 'non-empty legacy audit state was not rejected'
+            printf '%s\n' "$legacy_output"
+            exit 1
+          fi
+
+          docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            < scripts/security/verify-production-schema.sql
+      - run: npm run build
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true);
+
           insert into auth.users (id, aud, role, created_at, updated_at)
           values (
             '00000000-0000-4000-8000-000000000212'::uuid,

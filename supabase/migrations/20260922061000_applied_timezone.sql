@@ -4,6 +4,19 @@
 alter table public.prayer_settings
   add column if not exists applied_timezone text;
 
+do $
+begin
+  if exists (
+    select 1
+    from public.prayer_settings
+    where applied_timezone is null
+      and calculation_revision <> applied_calculation_revision
+  ) then
+    raise exception 'cannot infer applied timezone while prayer settings have unapplied calculation changes';
+  end if;
+end
+$;
+
 update public.prayer_settings as p
 set applied_timezone = p.timezone
 where p.applied_timezone is null;

@@ -1,6 +1,6 @@
 # Masjid Display — Plan 6 Live Preview Verification
 
-Status: BLOCKED — LIVE ROOT ENDPOINTS / TV DEPLOYMENT NOT YET AVAILABLE
+Status: PRE-MERGE REPOSITORY CERTIFICATION GREEN — POST-MERGE MAIN LIVE VERIFICATION PENDING
 
 Plan 6 implementation starting point: `01dd070474a17a5f27eb472a58c5122cb092f315`
 
@@ -9,6 +9,23 @@ Approved design:
 
 Approved implementation plan:
 `docs/superpowers/plans/2026-09-21-masjid-display-plan-6-live-preview.md`
+
+## Operator sequencing override — 2026-09-22
+
+The approved Plan 6 design/plan originally ordered the dedicated TV preview and live browser/Admin Test Mode verification before the final Codex review and before merge.
+
+The operator has explicitly changed **execution sequencing only**:
+
+- do not create/deploy a candidate-branch Vercel TV project;
+- finish all repository-side implementation, automated CI/security certification, and the final exact-head Codex review on `feat/masjid-display`;
+- keep PR #108 Draft/open/unmerged during that pre-merge certification;
+- after the operator authorizes and performs the merge to `main`, use the deployed root `main` application as the real upstream;
+- then create/configure `donaumoschee-tv` with server-only `PRAYERAPP_ORIGIN=https://donaumoschee.vercel.app`;
+- execute the real Feed/Test Control/browser/Admin Test Mode verification against the deployed `main` system;
+- if that live verification finds a defect, fix it from `main` through a normal hotfix branch/PR rather than silently rewriting production.
+
+This sequencing override does **not** relax the Plan 6 live-verification completion criteria. Plan 6 must not be called complete until the post-merge live evidence exists.
+
 
 ## Prayer Engine operational policy
 
@@ -82,7 +99,7 @@ Direct authenticated Vercel fetches against the required root production origin 
 
 The current root production deployment remains from `main` (latest observed production SHA `dbe635a92e0e72ea8373831ae35502fe136a0f24`), and no `feat/masjid-display` preview deployment is present on the root project. Plan 5/6 endpoints remain in Draft PR #108. Plan 6 does **not** authorize silently publishing the entire unmerged root branch to the public production project.
 
-Consequences until the root endpoint prerequisite and TV project are actually deployed:
+Under the 2026-09-22 operator sequencing override, the following checks are intentionally deferred until after the approved branch is merged to `main` and the dedicated TV project is created:
 
 - live TV Feed proxy: **NOT VERIFIED**;
 - live Test Control proxy: **NOT VERIFIED**;
@@ -113,16 +130,18 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 
 ## CI / security evidence
 
-Current Plan 6 implementation HEAD:
-`3af36168524d2092745ca1546bcfeea76db91adc`
+Current pre-merge Plan 6 repository HEAD:
+`21642266b2dfeaa0ac7e441d68b4d54f77836b31`
 
-Fresh exact-head evidence:
+Fresh exact-head pre-merge evidence:
 
-- Root CI `35563381900`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, Supabase bootstrap/migration/reconciliation/admin-audit certification, and root build completed successfully.
-- Masjid Display Verification `35563381982`: **SUCCESS**, including TV package verification and live two-app integration.
-- Plan 3 Display Feed Verification `35563381833`: **SUCCESS**.
-- Security Scanners `35563381848`: **SUCCESS**.
-- Android TWA `35563381888`: **SUCCESS** — Android SDK setup, API 37 installation, Gradle wrapper validation, debug/release unit tests, lint, APK/AAB builds, unsigned candidate artifacts, and instrumentation on API 23 and API 37 all completed successfully. The isolated signing job was intentionally skipped because this was a pull-request verification run, not an authorized signing dispatch.
+- Root CI `35564129368`: **SUCCESS**.
+- Masjid Display Verification `35564129322`: **SUCCESS**, including TV package verification and two-app integration.
+- Plan 3 Display Feed Verification `35564129162`: **SUCCESS**.
+- Security Scanners `35564129214`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
+- Android TWA `35564129218`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
+
+PR #108 had **0 unresolved inline review threads** when this snapshot was recorded.
 
 ### Android SDK setup blocker closed during Plan 6 implementation
 
@@ -158,7 +177,7 @@ Earlier timezone-authority RED→GREEN evidence remains historical implementatio
 - RED Root CI `35552740003`: seven intended failures exposed Berlin-default behavior in non-Berlin prayer runtime/cutoff paths.
 - GREEN Root CI `35553536449`: root tests/typecheck/build and repository certification passed after persisted timezone propagation.
 
-Per operator instruction, **no further GitHub Codex review is requested during implementation**. Codex review is reserved for the final step only, after all non-review Plan 6 implementation/live-verification work is complete. If final review returns legitimate findings, they must be fixed and reverified before Plan 6 can be marked complete.
+Per the 2026-09-22 operator sequencing override, the final GitHub Codex review is the **last pre-merge gate** after all repository-side implementation and exact-head automated verification are green. The post-merge Vercel/browser/Admin Test Mode checks remain required for eventual Plan 6 completion but no longer precede the pre-merge Codex review. Any legitimate Critical/Important/security/correctness finding from that review must be fixed with regression coverage and exact-head verification before merge authorization.
 
 ## Deferred operational follow-up / Plan 7
 
@@ -176,6 +195,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PLAN 6 BLOCKED — live root Feed/Test Control endpoints and dedicated READY TV deployment are not yet available. Final Codex review is intentionally deferred until those implementation/live gates are complete.**
+**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: GREEN AUTOMATED GATES; FINAL CODEX REVIEW PENDING.**
 
-Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until the required live Vercel/root/browser/Test Mode evidence is actually recorded.
+The real Vercel/root/browser/Admin Test Mode verification is intentionally scheduled for post-merge `main` under the operator sequencing override. Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until that post-merge evidence is actually recorded.

@@ -290,6 +290,8 @@ begin
         row_revision = row_revision + 1,
         updated_at = now()
     where id = '1';
+
+    perform public.assert_masjid_display_dynamic_content_budget();
   end if;
 
   return v_count;

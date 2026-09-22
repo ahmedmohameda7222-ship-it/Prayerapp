@@ -315,11 +315,17 @@ export async function buildMasjidDisplayFeed(
   now = new Date(),
   dependencies: FeedDependencies = defaultDependencies,
 ): Promise<MasjidDisplayFeedBodyV1> {
-  const prayerSettingsSource = dependencies.getPrayerSettingsForDisplay
-    ? await dependencies.getPrayerSettingsForDisplay()
-    : await dependencies.getPrayerSettings().then((value) =>
-        value ? { value, sourceUpdatedAt: undefined as string | undefined } : null
-      );
+  const prayerSettingsSource = dependencies.getRuntimePrayerSettingsForDisplay
+    ? await dependencies.getRuntimePrayerSettingsForDisplay()
+    : dependencies.getRuntimePrayerSettings
+      ? await dependencies.getRuntimePrayerSettings().then((value) =>
+          value ? { value, sourceUpdatedAt: undefined as string | undefined } : null
+        )
+      : dependencies.getPrayerSettingsForDisplay
+        ? await dependencies.getPrayerSettingsForDisplay()
+        : await dependencies.getPrayerSettings().then((value) =>
+            value ? { value, sourceUpdatedAt: undefined as string | undefined } : null
+          );
   if (!prayerSettingsSource) {
     throw new DisplayFeedBuildError("Prayer settings are required for the display feed");
   }

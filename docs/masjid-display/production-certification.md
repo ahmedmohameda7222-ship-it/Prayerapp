@@ -5,6 +5,10 @@ Status: BLOCKED
 Plan 5 is a production-readiness evidence gate. Software/certification-framework completion does not convert missing religious, real-target, physical, or soak evidence into PASS.
 
 
+## Plan 6 sequencing note — 2026-09-22
+
+The operator explicitly moved Plan 6 real Vercel/browser/Admin Test Mode verification to **after the approved branch is merged to `main`**. Pre-merge certification therefore finishes repository implementation, exact-head CI/security/Android verification, and final Codex review first. This is a sequencing change only: the post-merge live checks remain required before Plan 6 may be called complete.
+
 ## Plan 6 policy note — 2026-09-21
 
 This document preserves the Plan 5 certification result and evidence table below as historical release evidence. The approved Plan 6 policy changes what blocks **Plan 6 completion** without rewriting those historical rows:
@@ -19,21 +23,21 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Current Plan 6 implementation HEAD `3af36168524d2092745ca1546bcfeea76db91adc` has the following fresh automated evidence:
+Current pre-merge Plan 6 repository HEAD `21642266b2dfeaa0ac7e441d68b4d54f77836b31` has the following fresh automated evidence:
 
-- Root CI `35563381900`: **SUCCESS**.
-- Masjid Display Verification `35563381982`: **SUCCESS**, including live two-app integration.
-- Plan 3 Display Feed Verification `35563381833`: **SUCCESS**.
-- Security Scanners `35563381848`: **SUCCESS**.
-- Android TWA `35563381888`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37. Pull-request verification intentionally did not enter the protected signing job.
+- Root CI `35564129368`: **SUCCESS**.
+- Masjid Display Verification `35564129322`: **SUCCESS**, including two-app integration.
+- Plan 3 Display Feed Verification `35564129162`: **SUCCESS**.
+- Security Scanners `35564129214`: **SUCCESS**.
+- Android TWA `35564129218`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37. Pull-request verification intentionally did not enter the protected signing job.
 
 The prior Android SDK setup blocker was closed in Plan 6 by explicitly setting setup-android's package input to `platform-tools`, avoiding Google's removed `tools` package while retaining pinned action commits. RED Android run `35563120667` failed at the obsolete package request; the first post-fix run then exposed and led to correction of a stale `NativeConfig.ZONE` Berlin test. Final Android run `35563381888` is green.
 
 The CodeQL file-system-race finding introduced by the Plan 6 source-tree regression helper was closed with RED Root CI `35557966896` and GREEN Root CI/Security evidence already recorded in the Plan 6 verification document.
 
-Those automated results do not satisfy the remaining Plan 6 live-preview requirements. Rechecked Vercel evidence still shows no dedicated `donaumoschee-tv` project, no root-project preview deployment for `feat/masjid-display`, and the canonical root production deployment remains on `main`. No Vercel READY TV deployment, browser viewport verification, or real Admin Test Mode → deployed TV evidence is claimed.
+Those automated results complete the current repository-side pre-merge verification but do not satisfy the remaining Plan 6 live-preview requirements. Under the 2026-09-22 sequencing override, no candidate-branch TV project will be created. After merge to `main`, the dedicated `donaumoschee-tv` project will be created against the real root production origin and the browser/Admin Test Mode evidence will be recorded.
 
-Per operator instruction, Codex review is deferred until all other Plan 6 implementation/live-verification work is complete. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
+The final exact-head Codex review is the last pre-merge gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
 
 
 ## Evidence table

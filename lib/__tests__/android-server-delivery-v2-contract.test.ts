@@ -73,6 +73,15 @@ describe("Android server delivery v2 contract", () => {
     expect(cron).not.toContain("note_tr, updated_at");
   });
 
+  it("keeps legacy p2 receipt aliases during the resolved-instant identity rollout", () => {
+    const identity = source("lib/android/prayer-event-id.ts");
+    const cron = source("app/api/cron/prayer-reminders/route.ts");
+
+    expect(identity).toContain("legacyPrayerEventIdV2");
+    expect(cron).toContain("legacyPrayerEventIdV2");
+    expect(cron).toContain(".in(\"event_id\", eventIds)");
+  });
+
   it("drops stale prayer fallback pushes before showing them", () => {
     const sw = source("public/sw.js");
     expect(sw).toContain("expiresAt");

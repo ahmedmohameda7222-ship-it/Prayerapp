@@ -48,3 +48,18 @@ export function legacyPrayerEventIdV2(identity: LegacyPrayerEventIdentity) {
   ].join("|");
   return sha256EventId("p2:", canonical);
 }
+
+const LEGACY_RECEIPT_DUE_TOLERANCE_MS = 5 * 60 * 1000;
+
+export function legacyReceiptMatchesDueInstant(
+  eventId: string,
+  deliveredAt: string,
+  dueAtMs: number,
+): boolean {
+  if (eventId.startsWith("p3:")) return true;
+  if (!eventId.startsWith("p2:")) return false;
+
+  const deliveredAtMs = Date.parse(deliveredAt);
+  if (!Number.isFinite(deliveredAtMs) || !Number.isFinite(dueAtMs)) return false;
+  return Math.abs(deliveredAtMs - dueAtMs) <= LEGACY_RECEIPT_DUE_TOLERANCE_MS;
+}

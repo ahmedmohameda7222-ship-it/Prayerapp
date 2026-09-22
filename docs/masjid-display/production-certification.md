@@ -23,38 +23,30 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Certified pre-merge Plan 6 implementation HEAD `0e021520058a73a1407c488ae2cee4d19f69692b` has the following fresh automated evidence:
+Certified pre-merge Plan 6 implementation HEAD `89cfece9635ef9601e9e36eede5ec1f98c668bd7` has the following exact-head automated evidence:
 
-- Root CI `35761167100`: **SUCCESS**.
-- Masjid Display Verification `35761167195`: **SUCCESS**, including two-app integration.
-- Plan 3 Display Feed Verification `35761167151`: **SUCCESS**.
-- Security Scanners `35761167067`: **SUCCESS**.
-- Android TWA `35761167078`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37; protected signing was intentionally skipped for this PR verification run.
+- Root CI `35767472510`: **SUCCESS**.
+- Masjid Display Verification `35767472504`: **SUCCESS**, including two-app integration.
+- Plan 3 Display Feed Verification `35767472590`: **SUCCESS**.
+- Security Scanners `35767472515`: **SUCCESS**.
+- Android TWA `35767472472`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37; protected signing was intentionally skipped for this PR verification run.
 
-The final pre-merge Codex loop has produced six legitimate correctness P1 findings so far:
+The final pre-merge Codex loop has produced ten legitimate correctness findings so far: nine P1 findings and one P2 finding. The earlier six findings covered due-instant-bound prayer-event identity, additive p2/p3 receipt schema support, legacy-receipt due-instant compatibility, pending-vs-applied timezone authority, dynamic-budget timezone authority, and public event-filter timezone authority.
 
-1. canonical prayer-event identity did not include the resolved delivery instant;
-2. the receipt API accepted p3 while the database CHECK still allowed only p2;
-3. a stale legacy p2 receipt could suppress fallback at a newly resolved due instant;
-4. a pending timezone edit could affect live scheduling before recalculation promoted it;
-5. the database dynamic-content capacity gate used the Berlin calendar date instead of the applied prayer timezone;
-6. Home and `/events` event filtering could still use Berlin across an applied-timezone date boundary.
+The latest four findings were exposed together by `plan6-final-review-runtime-safety.test.ts`. RED test-only HEAD `8e8b9c4e7ec68fbcc5c57534fd82cf0c6d60c632` produced Root CI `35765586800` with exactly four intended failures:
 
-The first four were already closed with p3/v3 `dueAtMs` identity, additive p2/p3 receipt schema support, due-instant compatibility checks for legacy receipts, and persisted `applied_timezone` runtime authority.
-
-For findings 5–6, test-only HEAD `426990220da06a9d48f912df9afdcd0c4a2ba97f` produced Root CI `35760200228` with exactly three intended failures:
-- one in `plan6-dynamic-budget-timezone-authority.test.ts`;
-- two in `plan6-event-timezone-authority.test.ts`.
+1. current p3 Android deliveries were not queued for server receipt acknowledgement;
+2. recalculation cutoffs used the pending timezone instead of the applied timezone;
+3. `applied_timezone` promotion did not recheck dynamic Feed capacity in the same transaction;
+4. the serialized-byte budget redefinition did not preflight existing rows.
 
 The fixes now:
-- redefine `assert_masjid_display_dynamic_content_budget()` after the applied-timezone migration so its date window comes from `prayer_settings.applied_timezone`;
-- keep the database aggregate budget aligned with the runtime Feed's applied calendar authority;
-- make `isUpcomingEvent` timezone-aware;
-- pass `getRuntimePrayerSettings().timezone` through Home and `/events` event filtering.
+- queue p3 and p2 native delivery receipts and cover p3 persistence with Android instrumentation;
+- derive future recalculation safety boundaries from `getRuntimePrayerSettings()`;
+- recheck `assert_masjid_display_dynamic_content_budget()` immediately after timezone promotion in the atomic recalculation RPC;
+- execute the redefined serialized-byte budget assertion during migration before completion.
 
-The exact implementation-head five-workflow set above is green after all six correctness fixes.
-
-The latest Codex pass also raised a documentation/certification P1 because the prior checked-in snapshot still cited an older implementation SHA and run set. This snapshot corrects that mismatch by recording implementation HEAD `0e021520058a73a1407c488ae2cee4d19f69692b` and its five workflow IDs.
+Exact implementation HEAD `89cfece9635ef9601e9e36eede5ec1f98c668bd7` is green across all five workflow families after these fixes, and all current inline review threads are resolved.
 
 Committing this evidence creates a newer documentation-only HEAD. Fresh exact documentation-HEAD workflows and the final Codex re-review are recorded in PR #108 metadata rather than recursively rewriting this document with its own future SHA/run IDs.
 

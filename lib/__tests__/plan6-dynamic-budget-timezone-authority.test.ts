@@ -35,7 +35,7 @@ describe("Plan 6 dynamic-content budget timezone authority", () => {
 
     expect(fn).toContain("applied_timezone");
     expect(fn).toContain("from public.prayer_settings");
-    expect(fn).toContain("where id = '1'");
+    expect(fn).toMatch(/where\s+(?:p\.)?id\s*=\s*\'1\'/);
     expect(fn).toContain("at time zone v_time_zone");
     expect(fn).not.toContain("at time zone 'europe/berlin'");
   });

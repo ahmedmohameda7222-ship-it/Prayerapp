@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
 import { getPrayerSettings } from "@/lib/data/prayer-settings";
 import { logFallbackActivation } from "@/lib/android/delivery-diagnostics";
-import { legacyPrayerEventIdV2, prayerEventId } from "@/lib/android/prayer-event-id";
+import { legacyPrayerEventIdV2, legacyReceiptMatchesDueInstant, prayerEventId } from "@/lib/android/prayer-event-id";
 import {
   NATIVE_DELIVERY_GRACE_MS,
   nativeDeliveryCapability,
@@ -51,6 +51,8 @@ type PrayerScheduleRow = {
 type NativeReceiptRow = {
   installation_id: string;
   account_generation: number;
+  event_id: string;
+  delivered_at: string;
 };
 
 function normalizeLeadMinutes(value: number | null): ReminderLeadMinutes {
@@ -118,7 +120,7 @@ async function fallbackTargetsForEvent({
 
     const { data, error } = await client
       .from("native_prayer_delivery_receipts")
-      .select("installation_id, account_generation")
+      .select("installation_id, account_generation, event_id, delivered_at")
       .in("event_id", eventIds)
       .gt("expires_at", now.toISOString())
       .in("installation_id", installationIds);
@@ -128,7 +130,10 @@ async function fallbackTargetsForEvent({
       console.warn("[prayer reminder cron] native receipt lookup failed open", error.message);
     } else {
       for (const receipt of (data || []) as NativeReceiptRow[]) {
-        if (expectedGeneration.get(receipt.installation_id) === receipt.account_generation) {
+        if (
+          expectedGeneration.get(receipt.installation_id) === receipt.account_generation
+          && legacyReceiptMatchesDueInstant(receipt.event_id, receipt.delivered_at, dueAtMs)
+        ) {
           receiptInstallationIds.add(receipt.installation_id);
         }
       }

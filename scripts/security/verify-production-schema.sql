@@ -142,7 +142,7 @@ begin
     or not exists (
       select 1 from pg_constraint c
       where c.conrelid = v_receipt_rel and c.contype = 'c'
-        and pg_get_constraintdef(c.oid, true) ~ 'event_id.*p2:.*0-9a-f.*64'
+        and pg_get_constraintdef(c.oid, true) like '%p[23]:[0-9a-f]{64}%'
     )
     or not exists (
       select 1 from pg_constraint c

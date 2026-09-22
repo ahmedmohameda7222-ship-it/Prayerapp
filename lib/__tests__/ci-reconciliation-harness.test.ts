@@ -16,4 +16,15 @@ describe("CI historical reconciliation harness", () => {
     expect(block.match(/20260902211847_prelaunch_schema_reconciliation\.sql/g)?.length).toBe(2);
     expect(block).toContain("rollback;");
   });
+  it("restores the final migration head after historical Masjid Display migration certification", () => {
+    const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
+    const start = workflow.indexOf("- name: Certify Masjid Display legacy-Iqama migration safety");
+    const end = workflow.indexOf("- name: Verify reconciliation idempotence and data preservation");
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+
+    const bridge = workflow.slice(start, end);
+    expect(bridge).toContain("supabase db reset --local --no-seed");
+  });
+
 });

@@ -23,13 +23,15 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Current pre-merge Plan 6 repository HEAD `21642266b2dfeaa0ac7e441d68b4d54f77836b31` has the following fresh automated evidence:
+Current pre-merge Plan 6 implementation HEAD `1be40eb0d47b58166ad71e5e727b65e550c41551` has the following fresh automated evidence:
 
-- Root CI `35564129368`: **SUCCESS**.
-- Masjid Display Verification `35564129322`: **SUCCESS**, including two-app integration.
-- Plan 3 Display Feed Verification `35564129162`: **SUCCESS**.
-- Security Scanners `35564129214`: **SUCCESS**.
-- Android TWA `35564129218`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37. Pull-request verification intentionally did not enter the protected signing job.
+- Root CI `35682351271`: **SUCCESS**.
+- Masjid Display Verification `35682351501`: **SUCCESS**, including two-app integration.
+- Plan 3 Display Feed Verification `35682351363`: **SUCCESS**.
+- Security Scanners `35682351321`: **SUCCESS**, including the deployed-production DAST after bounded TimeoutError retry hardening.
+- Android TWA `35682351286`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37. Pull-request verification intentionally did not enter the protected signing job.
+
+The deployed-production DAST also received a bounded resilience fix after exact documentation HEAD `598ebbffdbe449843b74732878bc97fbcbeb1ce4` repeatedly timed out on the open-redirect probe while the same production URL returned HTTP 200 through Vercel inspection. RED Root CI `35682162164` proved the missing retry contract; the scanner now retries exactly once only for `TimeoutError` while preserving the 10-second per-attempt timeout and all existing security assertions. GREEN Root CI `35682351271` and Security Scanners `35682351321` are both SUCCESS.
 
 The prior Android SDK setup blocker was closed in Plan 6 by explicitly setting setup-android's package input to `platform-tools`, avoiding Google's removed `tools` package while retaining pinned action commits. RED Android run `35563120667` failed at the obsolete package request; the first post-fix run then exposed and led to correction of a stale `NativeConfig.ZONE` Berlin test. Final Android run `35563381888` is green.
 

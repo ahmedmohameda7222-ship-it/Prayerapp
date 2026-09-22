@@ -37,7 +37,7 @@ export default async function HomePage() {
   const jumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
   const events = eventsResult.status === "fulfilled"
     ? eventsResult.value
-      .filter((event) => isUpcomingEvent(event, now))
+      .filter((event) => isUpcomingEvent(event, now, prayerTimezone ?? undefined))
       .sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`))
     : [];
   const donationSettings = donationSettingsResult.status === "fulfilled" ? donationSettingsResult.value : undefined;

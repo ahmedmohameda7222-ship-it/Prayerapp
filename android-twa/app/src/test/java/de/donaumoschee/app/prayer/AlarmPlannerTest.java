@@ -35,8 +35,8 @@ public final class AlarmPlannerTest {
     public void canonicalIdsMatchServerFixtures() throws Exception {
         Instant now = Instant.parse("2026-08-22T08:00:00Z");
         List<AlarmEvent> events = AlarmPlanner.plan(config("r1", "2026-08-22", "13:30", "dhuhr", true, 10, "abdul-basit-cairo", now), now);
-        assertEquals("p2:0584c612d12435d851678d6af6c3d49f0a89f05a5ca6f0a8c7869809a67d9c09", events.get(0).eventId);
-        assertEquals("p2:b396d3b4a4a3a5cf644623ae0a287dc3a94df80a765614b143e57da2fe7ce13b", events.get(1).eventId);
+        assertEquals("p3:f85f1c9e113eab99f1a364601d5f68449a18eb3f884d9fa7d82b5a9d125476e5", events.get(0).eventId);
+        assertEquals("p3:3b4c2074ea5b9d9a0a080df5e9550a48e76b0b0d12a241f136ac449ed80a1b8b", events.get(1).eventId);
     }
 
     @Test

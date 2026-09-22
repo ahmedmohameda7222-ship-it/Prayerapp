@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public final class DeliveryReceiptQueue {
-    private static final Pattern EVENT_ID = Pattern.compile("^p2:[0-9a-f]{64}$");
+    private static final Pattern EVENT_ID = Pattern.compile("^p[23]:[0-9a-f]{64}$");
     private static final int VERSION = 1;
 
     private final int capacity;

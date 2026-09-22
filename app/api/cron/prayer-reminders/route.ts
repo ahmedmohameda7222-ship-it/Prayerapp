@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
 import { getPrayerSettings } from "@/lib/data/prayer-settings";
 import { logFallbackActivation } from "@/lib/android/delivery-diagnostics";
-import { prayerEventId } from "@/lib/android/prayer-event-id";
+import { legacyPrayerEventIdV2, prayerEventId } from "@/lib/android/prayer-event-id";
 import {
   NATIVE_DELIVERY_GRACE_MS,
   nativeDeliveryCapability,
@@ -78,7 +78,7 @@ async function fallbackTargetsForEvent({
   targets,
   leasesByPushId,
   kind,
-  eventId,
+  eventIds,
   dueAtMs,
   now,
   nativeLeaseLookupFailed,
@@ -87,7 +87,7 @@ async function fallbackTargetsForEvent({
   targets: PushSubscriptionRecord[];
   leasesByPushId: Map<string, NativeAuthorityLease[]>;
   kind: NativeDeliveryKind;
-  eventId: string;
+  eventIds: string[];
   dueAtMs: number;
   now: Date;
   nativeLeaseLookupFailed: boolean;
@@ -119,7 +119,7 @@ async function fallbackTargetsForEvent({
     const { data, error } = await client
       .from("native_prayer_delivery_receipts")
       .select("installation_id, account_generation")
-      .eq("event_id", eventId)
+      .in("event_id", eventIds)
       .gt("expires_at", now.toISOString())
       .in("installation_id", installationIds);
 
@@ -306,20 +306,23 @@ export async function GET(request: Request) {
         if (matching.length === 0) continue;
         due += matching.length;
 
-        const eventId = prayerEventId({
+        const eventIdentity = {
           scheduleId: schedule.id,
           scheduleRevision: time,
           date: schedule.date,
           prayer,
-          kind: "reminder",
+          kind: "reminder" as const,
           leadMinutes,
-        });
+          dueAtMs: prePrayerAt,
+        };
+        const eventId = prayerEventId(eventIdentity);
+        const legacyEventId = legacyPrayerEventIdV2(eventIdentity);
         const fallback = await fallbackTargetsForEvent({
           client,
           targets: matching,
           leasesByPushId,
           kind: "reminder",
-          eventId,
+          eventIds: [eventId, legacyEventId],
           dueAtMs: prePrayerAt,
           now,
           nativeLeaseLookupFailed,
@@ -350,20 +353,23 @@ export async function GET(request: Request) {
       if (matching.length === 0) continue;
       due += matching.length;
 
-      const eventId = prayerEventId({
+      const eventIdentity = {
         scheduleId: schedule.id,
         scheduleRevision: time,
         date: schedule.date,
         prayer,
-        kind: "adhan",
-        leadMinutes: 0,
-      });
+        kind: "adhan" as const,
+        leadMinutes: 0 as const,
+        dueAtMs: adhanAt,
+      };
+      const eventId = prayerEventId(eventIdentity);
+      const legacyEventId = legacyPrayerEventIdV2(eventIdentity);
       const fallback = await fallbackTargetsForEvent({
         client,
         targets: matching,
         leasesByPushId,
         kind: "adhan",
-        eventId,
+        eventIds: [eventId, legacyEventId],
         dueAtMs: adhanAt,
         now,
         nativeLeaseLookupFailed,

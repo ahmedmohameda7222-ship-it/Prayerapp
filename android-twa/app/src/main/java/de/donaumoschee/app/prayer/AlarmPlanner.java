@@ -55,7 +55,8 @@ public final class AlarmPlanner {
                     row.date,
                     prayer,
                     kind,
-                    leadMinutes
+                    leadMinutes,
+                    dueAt.toEpochMilli()
             );
         }
         events.add(new AlarmEvent(eventId, prayer, kind, dueAt, leadMinutes, reminder.adhanSoundId));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { prayerEventId } from "@/lib/android/prayer-event-id";
+import { legacyPrayerEventIdV2, prayerEventId } from "@/lib/android/prayer-event-id";
 import * as authority from "@/lib/android/native-authority";
 import type { NativeAuthorityLease } from "@/lib/android/native-authority";
 
@@ -34,7 +34,8 @@ describe("Android server delivery v2 behavior", () => {
       prayer: "fajr",
       kind: "reminder",
       leadMinutes: 15,
-    })).toBe("p2:6fa4dff45f7b483f0357290c2dc6687d3be77997649150b2d2840813351237ce");
+      dueAtMs: Date.parse("2026-08-23T08:45:00.000Z"),
+    })).toBe("p3:688bd6e2b91e582b937c7e6e31f6364a64d8646315a79cd3a8fee50950b58657");
   });
 
   it("changes the canonical event ID when the resolved delivery instant changes", () => {
@@ -52,6 +53,17 @@ describe("Android server delivery v2 behavior", () => {
     expect(prayerEventId(berlin)).not.toBe(prayerEventId(tokyo));
   });
 
+  it("preserves the legacy p2 identity for old-client receipt matching", () => {
+    expect(legacyPrayerEventIdV2({
+      scheduleId: "123e4567-e89b-12d3-a456-426614174000",
+      scheduleRevision: "2026-08-23T10:00:00.000Z",
+      date: "2026-08-23",
+      prayer: "fajr",
+      kind: "reminder",
+      leadMinutes: 15,
+    })).toBe("p2:6fa4dff45f7b483f0357290c2dc6687d3be77997649150b2d2840813351237ce");
+  });
+
   it("changes the canonical event ID when delivery identity changes", () => {
     const common = {
       scheduleId: "123e4567-e89b-12d3-a456-426614174000",
@@ -59,8 +71,18 @@ describe("Android server delivery v2 behavior", () => {
       date: "2026-08-23",
       prayer: "fajr",
     } as const;
-    const reminder = prayerEventId({ ...common, kind: "reminder", leadMinutes: 15 });
-    const adhan = prayerEventId({ ...common, kind: "adhan", leadMinutes: 0 });
+    const reminder = prayerEventId({
+      ...common,
+      kind: "reminder",
+      leadMinutes: 15,
+      dueAtMs: Date.parse("2026-08-23T08:45:00.000Z"),
+    });
+    const adhan = prayerEventId({
+      ...common,
+      kind: "adhan",
+      leadMinutes: 0,
+      dueAtMs: Date.parse("2026-08-23T09:00:00.000Z"),
+    });
     expect(adhan).not.toBe(reminder);
   });
 

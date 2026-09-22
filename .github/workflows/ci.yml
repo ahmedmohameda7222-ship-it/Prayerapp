@@ -153,7 +153,7 @@ jobs:
               select 1 from pg_constraint c
               where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
                 and c.contype = 'c'
-                and pg_get_constraintdef(c.oid, true) ~ 'event_id.*p2:.*0-9a-f.*64'
+                and pg_get_constraintdef(c.oid, true) like '%p[23]:[0-9a-f]{64}%'
             ) or not exists (
               select 1 from pg_constraint c
               where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass

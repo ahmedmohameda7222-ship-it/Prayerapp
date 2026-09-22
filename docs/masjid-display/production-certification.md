@@ -23,25 +23,28 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Current pre-merge Plan 6 implementation HEAD `494e7815e9497a5ca8c7c02e7eed21809bd59e75` has the following fresh automated evidence:
+Current pre-merge Plan 6 implementation HEAD `7cfed5144be6a7c238fc27117b9dca0451a0b321` has the following fresh automated evidence:
 
-- Root CI `35687117983`: **SUCCESS**.
-- Masjid Display Verification `35687117886`: **SUCCESS**, including two-app integration.
-- Plan 3 Display Feed Verification `35687117864`: **SUCCESS**.
-- Security Scanners `35687117863`: **SUCCESS**.
-- Android TWA `35687117958`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37. Pull-request verification intentionally did not enter the protected signing job.
+- Root CI `35697531505`: **SUCCESS**.
+- Masjid Display Verification `35697531490`: **SUCCESS**, including two-app integration.
+- Plan 3 Display Feed Verification `35697531487`: **SUCCESS**.
+- Security Scanners `35697531497`: **SUCCESS**.
+- Android TWA `35697531488`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37; protected signing was intentionally skipped for this PR verification run.
+- unresolved inline review threads after resolving the latest Codex findings: **0**.
 
-The final pre-merge Codex review on `4549d21b6de468918da09014ac210d7563a9e2b3` found a legitimate P1 in prayer event identity: a timezone change could move the actual alarm instant while preserving the old event ID. RED Root CI `35686407427` and Android TWA `35686407428` proved the defect; compatibility RED Root CI `35686613434` proved that a version bump also needed legacy receipt matching. The fixed `p3` identity now includes resolved `dueAtMs` in matching Java/server implementations, while receipt ingestion/lookup preserves deterministic `p2` compatibility during rollout. All five workflows above are GREEN after the fix.
+The final pre-merge Codex loop has so far produced four legitimate P1 correctness findings. The first required prayer-event IDs to follow the resolved delivery instant; canonical `p3/v3` IDs now include `dueAtMs` in matching server/native implementations while deterministic `p2` aliases support rollout compatibility.
 
-The deployed-production DAST also received a bounded resilience fix after exact documentation HEAD `598ebbffdbe449843b74732878bc97fbcbeb1ce4` repeatedly timed out on the open-redirect probe while the same production URL returned HTTP 200 through Vercel inspection. RED Root CI `35682162164` proved the missing retry contract; the scanner now retries exactly once only for `TimeoutError` while preserving the 10-second per-attempt timeout and all existing security assertions. GREEN Root CI `35682351271` and Security Scanners `35682351321` are both SUCCESS.
+The subsequent re-review exposed three rollout gaps. Test-only HEAD `596d8026e5c52ecce5280b175f8d595a327ddc30` produced Root CI `35689276038` with exactly six intended failures across the p3 database migration, legacy-receipt due-instant guard, and applied-timezone authority tests. The fixes now:
+- allow both p2 and p3 native receipt IDs in the final database CHECK;
+- require a legacy p2 receipt's `delivered_at` to be compatible with the current resolved due instant before suppressing fallback;
+- separate pending `timezone` from runtime `applied_timezone`, promoting the applied timezone atomically only with a full future schedule recalculation;
+- keep all live scheduling consumers on the applied runtime timezone until that promotion occurs.
 
-The prior Android SDK setup blocker was closed in Plan 6 by explicitly setting setup-android's package input to `platform-tools`, avoiding Google's removed `tools` package while retaining pinned action commits. RED Android run `35563120667` failed at the obsolete package request; the first post-fix run then exposed and led to correction of a stale `NativeConfig.ZONE` Berlin test. Final Android run `35563381888` is green.
+During the same proof cycle, CI was hardened to restore the final migration head after historical migration certification before later reconciliation checks, and a duplicated CI workflow tail was removed. The exact-head five-workflow set above is green after all of these changes.
 
-The CodeQL file-system-race finding introduced by the Plan 6 source-tree regression helper was closed with RED Root CI `35557966896` and GREEN Root CI/Security evidence already recorded in the Plan 6 verification document.
+Those automated results complete the current repository-side pre-merge implementation/verification cycle but do not satisfy the remaining Plan 6 live-preview requirements. Under the 2026-09-22 sequencing override, no candidate-branch TV project will be created. After the approved branch is merged to `main`, the dedicated `donaumoschee-tv` project will be created against the real root production origin and the browser/Admin Test Mode evidence will be recorded.
 
-Those automated results complete the current repository-side pre-merge verification but do not satisfy the remaining Plan 6 live-preview requirements. Under the 2026-09-22 sequencing override, no candidate-branch TV project will be created. After merge to `main`, the dedicated `donaumoschee-tv` project will be created against the real root production origin and the browser/Admin Test Mode evidence will be recorded.
-
-A final exact-head Codex re-review after the documented P1 fix is the remaining pre-merge review gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
+A fresh exact-head Codex re-review after this final evidence update remains the last pre-merge review gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
 
 
 ## Evidence table

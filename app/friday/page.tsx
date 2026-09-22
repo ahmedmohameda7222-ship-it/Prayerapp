@@ -4,7 +4,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { getFridayKhutbahByDate } from "@/lib/data/friday-khutbahs";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
-import { getPrayerSettings } from "@/lib/data/prayer-settings";
+import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
 import { addDaysIso, todayIso } from "@/lib/date-utils";
 import { resolveUpcomingFridaySchedule } from "@/lib/friday";
 import type { FridayKhutbah, JumuahTime, PrayerTime } from "@/lib/types";
@@ -12,7 +12,7 @@ import type { FridayKhutbah, JumuahTime, PrayerTime } from "@/lib/types";
 export default async function FridayPage() {
   const initialNow = new Date().toISOString();
   const now = new Date(initialNow);
-  const prayerSettings = await getPrayerSettings().catch(() => null);
+  const prayerSettings = await getRuntimePrayerSettings().catch(() => null);
   const timezone = prayerSettings?.timezone ?? null;
   const today = timezone ? todayIso(now, timezone) : null;
   const endDate = today ? addDaysIso(today, 35) : null;

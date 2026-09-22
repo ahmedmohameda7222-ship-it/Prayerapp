@@ -239,7 +239,9 @@ integrationDescribe("live Prayerapp + Masjid Display integration", () => {
         () => expect(screen.queryByTestId("test-mode-badge")).not.toBeInTheDocument(),
         { timeout: 7_000 },
       );
-      expect(screen.queryByTestId("prayer-state-prayer-approaching")).not.toBeInTheDocument();
+      // The real Feed may legitimately also be in prayer-approaching state
+      // near a prayer time; the badge/LKG/public URL assertions distinguish
+      // Test Mode from the restored production runtime without wall-clock assumptions.
       expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
       expect(screen.getByTestId("runtime-public-app-url")).toHaveTextContent(
         PRODUCTION_PUBLIC_APP_URL,

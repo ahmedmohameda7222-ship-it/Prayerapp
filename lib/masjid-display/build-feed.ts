@@ -10,7 +10,7 @@ import { getJumuahTimesForDisplayWindow } from "@/lib/data/jumuah";
 import { getMasjidDisplayGeneratedAt } from "@/lib/data/masjid-display-generated-at";
 import { getMasjidDisplaySettings, getMasjidDisplaySettingsForDisplay } from "@/lib/data/masjid-display-settings";
 import { getMosqueSettings, getMosqueSettingsForDisplay } from "@/lib/data/mosque-settings";
-import { getPrayerSettings, getPrayerSettingsForDisplay } from "@/lib/data/prayer-settings";
+import { getPrayerSettings, getPrayerSettingsForDisplay, getRuntimePrayerSettings, getRuntimePrayerSettingsForDisplay } from "@/lib/data/prayer-settings";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import type { Announcement, DonationCampaign, Event, PrayerTime } from "@/lib/types";
 import {
@@ -43,6 +43,8 @@ type FeedDependencies = {
   getPrayerTimes: typeof getPrayerTimes;
   getPrayerSettings: typeof getPrayerSettings;
   getPrayerSettingsForDisplay?: typeof getPrayerSettingsForDisplay;
+  getRuntimePrayerSettings?: typeof getRuntimePrayerSettings;
+  getRuntimePrayerSettingsForDisplay?: typeof getRuntimePrayerSettingsForDisplay;
   getJumuahTimesForDisplayWindow: typeof getJumuahTimesForDisplayWindow;
   getAnnouncementsForDisplayWindow: typeof getAnnouncementsForDisplayWindow;
   getEventsForDisplayWindow: typeof getEventsForDisplayWindow;
@@ -59,6 +61,8 @@ const defaultDependencies: FeedDependencies = {
   getPrayerTimes,
   getPrayerSettings,
   getPrayerSettingsForDisplay,
+  getRuntimePrayerSettings,
+  getRuntimePrayerSettingsForDisplay,
   getJumuahTimesForDisplayWindow,
   getAnnouncementsForDisplayWindow,
   getEventsForDisplayWindow,

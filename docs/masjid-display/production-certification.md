@@ -23,13 +23,15 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Current pre-merge Plan 6 implementation HEAD `1be40eb0d47b58166ad71e5e727b65e550c41551` has the following fresh automated evidence:
+Current pre-merge Plan 6 implementation HEAD `494e7815e9497a5ca8c7c02e7eed21809bd59e75` has the following fresh automated evidence:
 
-- Root CI `35682351271`: **SUCCESS**.
-- Masjid Display Verification `35682351501`: **SUCCESS**, including two-app integration.
-- Plan 3 Display Feed Verification `35682351363`: **SUCCESS**.
-- Security Scanners `35682351321`: **SUCCESS**, including the deployed-production DAST after bounded TimeoutError retry hardening.
-- Android TWA `35682351286`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37. Pull-request verification intentionally did not enter the protected signing job.
+- Root CI `35687117983`: **SUCCESS**.
+- Masjid Display Verification `35687117886`: **SUCCESS**, including two-app integration.
+- Plan 3 Display Feed Verification `35687117864`: **SUCCESS**.
+- Security Scanners `35687117863`: **SUCCESS**.
+- Android TWA `35687117958`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37. Pull-request verification intentionally did not enter the protected signing job.
+
+The final pre-merge Codex review on `4549d21b6de468918da09014ac210d7563a9e2b3` found a legitimate P1 in prayer event identity: a timezone change could move the actual alarm instant while preserving the old event ID. RED Root CI `35686407427` and Android TWA `35686407428` proved the defect; compatibility RED Root CI `35686613434` proved that a version bump also needed legacy receipt matching. The fixed `p3` identity now includes resolved `dueAtMs` in matching Java/server implementations, while receipt ingestion/lookup preserves deterministic `p2` compatibility during rollout. All five workflows above are GREEN after the fix.
 
 The deployed-production DAST also received a bounded resilience fix after exact documentation HEAD `598ebbffdbe449843b74732878bc97fbcbeb1ce4` repeatedly timed out on the open-redirect probe while the same production URL returned HTTP 200 through Vercel inspection. RED Root CI `35682162164` proved the missing retry contract; the scanner now retries exactly once only for `TimeoutError` while preserving the 10-second per-attempt timeout and all existing security assertions. GREEN Root CI `35682351271` and Security Scanners `35682351321` are both SUCCESS.
 

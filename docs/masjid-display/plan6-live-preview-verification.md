@@ -131,17 +131,41 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 ## CI / security evidence
 
 Current pre-merge Plan 6 implementation HEAD:
-`1be40eb0d47b58166ad71e5e727b65e550c41551`
+`494e7815e9497a5ca8c7c02e7eed21809bd59e75`
 
 Fresh exact-head pre-merge evidence:
 
-- Root CI `35682351271`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
-- Masjid Display Verification `35682351501`: **SUCCESS**, including TV package verification and two-app integration.
-- Plan 3 Display Feed Verification `35682351363`: **SUCCESS**.
-- Security Scanners `35682351321`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
-- Android TWA `35682351286`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
+- Root CI `35687117983`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
+- Masjid Display Verification `35687117886`: **SUCCESS**, including TV package verification and two-app integration.
+- Plan 3 Display Feed Verification `35687117864`: **SUCCESS**.
+- Security Scanners `35687117863`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
+- Android TWA `35687117958`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
 
-PR #108 had **0 unresolved inline review threads** before the final pre-merge Codex request.
+### Final Codex P1 — prayer event identity follows the resolved delivery instant
+
+The final pre-merge Codex review on HEAD `4549d21b6de468918da09014ac210d7563a9e2b3` identified a legitimate P1: prayer event IDs were derived from the stored wall-clock prayer value but not the configured timezone/resolved instant. A timezone change could therefore move an alarm while preserving its ID, causing the native delivery ledger to reject the replacement schedule and allowing server push deduplication to conflate differently timed events.
+
+RED evidence:
+- Root CI `35686407427` on test-only HEAD `deb4ad9e373cf4519e4a13f4e48e99ddb35a53cd`: **FAILURE**, with exactly the intended server failures proving a changed resolved instant kept the same `p2` ID and `p3` receipts were rejected.
+- Android TWA `35686407428` on the same RED head: **FAILURE**, 103 tests executed with exactly two intended failures: timezone changes did not change the event ID and the receipt queue rejected `p3`.
+- Root CI `35686613434` on compatibility RED HEAD `5ae3a5cd717a8c9a4466c86a8a1e455bdb1ba9bd`: **FAILURE**, additionally proving the server lacked a legacy `p2` receipt alias during rollout.
+
+Fix:
+- current canonical event IDs are versioned `p3` and include the resolved `dueAtMs`, binding identity to the actual delivery instant in matching Java and TypeScript implementations;
+- Android receipt persistence accepts both `p2` and `p3` during migration;
+- server receipt ingestion accepts both versions;
+- server fallback receipt lookup queries both the current `p3` ID and the deterministic legacy `p2` alias, preventing duplicate fallback pushes from older clients during rollout;
+- simulated prayer push IDs also bind to their due instant.
+
+GREEN evidence on `494e7815e9497a5ca8c7c02e7eed21809bd59e75`:
+- Root CI `35687117983`: **SUCCESS**.
+- Masjid Display Verification `35687117886`: **SUCCESS**.
+- Plan 3 Display Feed Verification `35687117864`: **SUCCESS**.
+- Security Scanners `35687117863`: **SUCCESS**.
+- Android TWA `35687117958`: **SUCCESS**, including API 23 and API 37 instrumentation.
+
+The corresponding Codex review thread remains open only until this evidence-only documentation HEAD is reverified and the finding is replied to/resolved.
+
 
 ### Deployed-production DAST timeout resilience
 

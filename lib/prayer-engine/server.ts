@@ -1,5 +1,5 @@
 import "server-only";
-import { getPrayerSettings } from "@/lib/data/prayer-settings";
+import { getPrayerSettings, getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
 import { invalidateCachePrefix } from "@/lib/data/cache";
 import { clearPersistentCachePrefix } from "@/lib/data/persistent-public-cache";
 import { todayIso } from "@/lib/date-utils";
@@ -26,6 +26,7 @@ interface RpcResult {
 
 export interface PrayerEngineServerDependencies {
   getSettings: () => Promise<PrayerCalculationSettings | null>;
+  getRuntimeSettings?: () => Promise<PrayerCalculationSettings | null>;
   getPrayerTimes: (
     includeUnpublished?: boolean,
     startDate?: string,
@@ -82,6 +83,7 @@ async function getPrayerTimesForEngine(
 function defaultDependencies(): PrayerEngineServerDependencies {
   return {
     getSettings: getPrayerSettings,
+    getRuntimeSettings: getRuntimePrayerSettings,
     getPrayerTimes: getPrayerTimesForEngine,
     rpc: async (name, args) => {
       const client = createServerClient();
@@ -280,7 +282,10 @@ export async function previewFutureRecalculation(
   dependencies: PrayerEngineServerDependencies = defaultDependencies(),
 ): Promise<PrayerScheduleDiff> {
   const settings = requireSettings(await dependencies.getSettings());
-  if (startDate < dependencies.today(settings.timezone)) {
+  const runtimeSettings = requireSettings(
+    await (dependencies.getRuntimeSettings ?? dependencies.getSettings)(),
+  );
+  if (startDate < dependencies.today(runtimeSettings.timezone)) {
     throw new Error("Future recalculation cannot start before mosque-local today");
   }
   const existing = await loadPrayerTimesRange(startDate, endDate, dependencies);
@@ -297,7 +302,10 @@ export async function commitFutureRecalculation(
   dependencies: PrayerEngineServerDependencies = defaultDependencies(),
 ): Promise<number> {
   const settings = requireSettings(await dependencies.getSettings());
-  const today = dependencies.today(settings.timezone);
+  const runtimeSettings = requireSettings(
+    await (dependencies.getRuntimeSettings ?? dependencies.getSettings)(),
+  );
+  const today = dependencies.today(runtimeSettings.timezone);
   if (preview.startDate < today) {
     throw new Error("Future recalculation cannot change past dates");
   }

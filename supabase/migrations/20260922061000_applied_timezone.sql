@@ -12,7 +12,7 @@ begin
     where applied_timezone is null
       and calculation_revision <> applied_calculation_revision
   ) then
-    raise exception 'cannot infer applied timezone while prayer settings have unapplied calculation changes';
+    raise exception 'cannot infer applied timezone while prayer settings have pending calculation revision';
   end if;
 end
 $;

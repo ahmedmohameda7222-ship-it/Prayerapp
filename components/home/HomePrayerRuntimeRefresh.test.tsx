@@ -22,7 +22,7 @@ describe("Home live prayer runtime refresh", () => {
 
     const action = source("app/home-prayer-runtime.ts");
     expect(action).toContain('"use server";');
-    expect(action).toContain("getPrayerSettings()");
+    expect(action).toContain("getRuntimePrayerSettings()");
     expect(action).toContain("getPrayerTimes(false, startDate, endDate)");
     expect(action).toContain("todayIso(new Date(), prayerSettings.timezone)");
     expect(action).toContain("iqamaDelays: prayerSettings.iqamaDelays");

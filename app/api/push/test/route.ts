@@ -129,6 +129,7 @@ export async function POST(request: Request) {
     prayer,
     kind: mode,
     leadMinutes,
+    dueAtMs: due.getTime(),
   });
   const dueAt = due.toISOString();
   const expiresAt = new Date(due.getTime() + TEST_PUSH_TTL_MS).toISOString();

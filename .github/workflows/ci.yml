@@ -372,6 +372,8 @@ jobs:
             < scripts/security/verify-production-schema.sql
       - name: Certify Masjid Display legacy-Iqama migration safety
         run: bash scripts/verify-masjid-display-migration.sh
+      - name: Restore final Supabase migration head after historical certification
+        run: supabase db reset --local --no-seed
       - name: Verify reconciliation idempotence and data preservation
         run: |
           DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"

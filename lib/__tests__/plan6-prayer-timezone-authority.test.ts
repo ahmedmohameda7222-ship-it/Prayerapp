@@ -75,8 +75,9 @@ describe("Plan 6 prayer timezone authority", () => {
 
   it("exports Android prayer schedule timezone from persisted Prayer Engine settings", () => {
     const route = source("app/api/android/prayer-schedule/route.ts");
-    expect(route).toContain('import { getPrayerSettings } from "@/lib/data/prayer-settings";');
+    expect(route).toContain('import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";');
     expect(route).toContain("timeZone: prayerSettings.timezone");
+    expect(route).toContain("getRuntimePrayerSettings");
     expect(route).not.toContain('timeZone: "Europe/Berlin"');
   });
 });

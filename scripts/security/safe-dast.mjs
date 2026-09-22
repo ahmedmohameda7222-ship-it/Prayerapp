@@ -7,6 +7,7 @@ const baseUrl = process.env.BASE_URL || "http://127.0.0.1:3000";
 const strictCsp = process.env.EXPECT_STRICT_CSP === "1";
 const baseHostname = new URL(baseUrl).hostname;
 const isolatedLocalRuntime = baseHostname === "127.0.0.1" || baseHostname === "localhost";
+const SAFE_DAST_PROBE_ATTEMPTS = 2;
 
 const failures = [];
 const evidence = [];
@@ -20,12 +21,21 @@ function record(name, value) {
 }
 
 async function probe(path, init = {}) {
-  const response = await fetch(new URL(path, baseUrl), {
-    redirect: "manual",
-    signal: AbortSignal.timeout(10_000),
-    ...init,
-  });
-  return response;
+  for (let attempt = 1; attempt <= SAFE_DAST_PROBE_ATTEMPTS; attempt += 1) {
+    try {
+      return await fetch(new URL(path, baseUrl), {
+        redirect: "manual",
+        signal: AbortSignal.timeout(10_000),
+        ...init,
+      });
+    } catch (error) {
+      const timedOut = error instanceof DOMException && error.name === "TimeoutError";
+      if (!timedOut || attempt === SAFE_DAST_PROBE_ATTEMPTS) throw error;
+      record(`retry ${path}`, `timeout attempt ${attempt}`);
+    }
+  }
+
+  throw new Error("safe DAST probe exhausted attempts");
 }
 
 async function rawMethodProbe(path, method) {

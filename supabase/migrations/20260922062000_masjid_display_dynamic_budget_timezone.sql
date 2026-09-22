@@ -156,3 +156,5 @@ $$;
 
 revoke all on function public.assert_masjid_display_dynamic_content_budget() from public, anon, authenticated;
 grant execute on function public.assert_masjid_display_dynamic_content_budget() to service_role;
+
+select public.assert_masjid_display_dynamic_content_budget();

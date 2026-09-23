@@ -54,7 +54,7 @@ describe("logic hardening", () => {
   it("fetches Prayer Times by the active range instead of a fixed 90-day window", () => {
     const browser = source("components/prayer/PrayerTimesBrowser.tsx");
     expect(browser).toContain('const rangeKey = `${range.start}:${range.end}`');
-    expect(browser).toContain("getPrayerTimes(false, range.start, range.end)");
+    expect(browser).toContain("loadPrayerScheduleRuntime(range.start, range.end)");
     expect(browser).not.toContain("addDaysIso(today, 90)");
   });
 

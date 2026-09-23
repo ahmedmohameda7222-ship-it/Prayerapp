@@ -52,4 +52,24 @@ describe("Plan 6 final-review cache and religious-clock regressions", () => {
     expect(routine).toContain("smartAzkarCategory(now, timezone ?? undefined)");
     expect(routine).toContain("localDateKey(new Date(), timezone)");
   });
+
+  it("uses the applied runtime timezone for Admin operational schedule dates", () => {
+    const runtimeDateAction = source("app/admin/runtime-date.ts");
+    expect(runtimeDateAction).toContain("getRuntimePrayerTimezone");
+    expect(runtimeDateAction).toContain("todayIso(new Date(), timezone)");
+
+    for (const path of [
+      "app/admin/page.tsx",
+      "app/admin/prayer-times/page.tsx",
+      "app/admin/jumuah/page.tsx",
+    ]) {
+      const page = source(path);
+      expect(page).toContain("loadAdminRuntimeDateAction");
+      expect(page).not.toContain("todayIso()");
+    }
+
+    const readiness = source("app/api/admin/launch-readiness/route.ts");
+    expect(readiness).toContain("getRuntimePrayerTimezone");
+    expect(readiness).toContain("todayIso(new Date(), timezone)");
+  });
 });

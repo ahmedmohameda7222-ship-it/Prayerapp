@@ -10,6 +10,7 @@ import {
   calibratePrayerEngineAction,
   commitPrayerRecalculationAction,
   commitPrayerScheduleExtensionAction,
+  loadPrayerEngineSettingsAction,
   previewPrayerRecalculationAction,
   previewPrayerScheduleExtensionAction,
   savePrayerEngineSettingsAction,
@@ -163,6 +164,16 @@ export function PrayerEngineAdmin({ initialSettings, token = "" }: Props) {
       const result = await commitPrayerRecalculationAction(token, recalcPreview);
       if (!result.success) { setError(result.error || "Recalculation failed"); return; }
       setRecalcPreview(null);
+
+      const refreshed = await loadPrayerEngineSettingsAction(token);
+      if (!refreshed.success || !refreshed.data) {
+        setError(refreshed.error || "Recalculation applied, but Prayer Engine settings could not be refreshed.");
+        setMessage(`Recalculated ${result.data ?? 0} future row(s). Reload this page before extending the schedule.`);
+        return;
+      }
+
+      setSettings(refreshed.data);
+      setForm(settingsToForm(refreshed.data));
       setMessage(`Recalculated ${result.data ?? 0} future row(s).`);
     });
   }

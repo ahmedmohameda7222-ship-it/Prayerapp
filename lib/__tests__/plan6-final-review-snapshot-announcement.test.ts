@@ -59,4 +59,12 @@ describe("Plan 6 final review snapshot and announcement regressions", () => {
     expect(client).toContain("formatDateTimeLocalInput(item.displayFrom, timezone)");
     expect(client).toContain("formatDateTimeLocalInput(item.displayUntil, timezone)");
   });
+  it("rejects stale announcement wall-clock forms after the applied timezone changes", () => {
+    const actions = source("app/admin/announcements/actions.ts");
+    const client = source("components/admin/AdminAnnouncementsPageClient.tsx");
+
+    expect(client).toContain("formTimezone: timezone");
+    expect(actions).toContain("data.formTimezone !== timezone");
+  });
+
 });

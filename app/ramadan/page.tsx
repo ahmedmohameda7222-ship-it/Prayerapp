@@ -6,6 +6,7 @@ import { AnnouncementCard } from "@/components/news/AnnouncementCard";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { getRamadanDays } from "@/lib/data/ramadan";
 import { getAnnouncements } from "@/lib/data/announcements";
+import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
 import { getServerLocale, getTranslation } from "@/lib/i18n/server-translation";
 import { formatShortDate, todayIso } from "@/lib/date-utils";
@@ -13,14 +14,15 @@ import { formatShortDate, todayIso } from "@/lib/date-utils";
 export default async function RamadanPage() {
   const locale = await getServerLocale();
   const { t } = getTranslation(locale);
-  const [days, announcements] = await Promise.all([
+  const [days, announcements, prayerSettings] = await Promise.all([
     getRamadanDays(),
     getAnnouncements(),
+    getRuntimePrayerSettings().catch(() => null),
   ]);
   const filteredAnnouncements = announcements.filter(
     (item) => item.type === "Ramadan" || item.type === "Eid"
   );
-  const today = todayIso();
+  const today = todayIso(new Date(), prayerSettings?.timezone);
   const day =
     days.find((item) => item.date === today) ||
     days.find((item) => item.date > today) ||

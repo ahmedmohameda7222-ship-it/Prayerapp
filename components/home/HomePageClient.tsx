@@ -115,7 +115,7 @@ export function HomePageClient({
         const latest = await refreshHomePrayerRuntime();
         if (active) {
           setSchedule(latest.schedule);
-          setLiveIqamaDelays(latest.iqamaDelays);
+          if (latest.iqamaDelays !== undefined) setLiveIqamaDelays(latest.iqamaDelays);
           setLiveTimezone(latest.timezone);
         }
       } catch {

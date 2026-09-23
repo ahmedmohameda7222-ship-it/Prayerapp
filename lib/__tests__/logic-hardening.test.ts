@@ -79,13 +79,14 @@ describe("logic hardening", () => {
     expect(push).toContain('row?.status === "sent"');
   });
 
-  it("uses Europe/Berlin for Azkar daily state while keeping Azkar hard-coded and read-only", () => {
+  it("uses the applied runtime timezone for Azkar daily state while keeping Azkar hard-coded and read-only", () => {
     const routine = source("components/azkar/AzkarRoutine.tsx");
     const routineSelection = source("lib/azkar-routine.ts");
     const azkarData = source("lib/data/azkar.ts");
-    expect(routineSelection).toContain("APP_TIME_ZONE");
-    expect(routine).toContain("smartAzkarCategory(now)");
-    expect(routine).toContain("todayIso(date)");
+    expect(routineSelection).toContain("timeZone = APP_TIME_ZONE");
+    expect(routine).toContain("smartAzkarCategory(now, timezone ?? undefined)");
+    expect(routine).toContain("todayIso(date, timezone ?? undefined)");
+    expect(routine).toContain("[categories, timezone]");
     expect(azkarData).toContain("hardcodedAzkarCategories");
     expect(azkarData).toContain("hardcodedAzkarItems");
     expect(azkarData).not.toContain("createAzkarItem");

@@ -56,8 +56,45 @@ Committing this evidence creates a newer documentation-only HEAD. Fresh exact do
 
 Those automated results complete the current repository-side implementation/verification cycle but do not satisfy the remaining Plan 6 live-preview requirements. Under the 2026-09-22 sequencing override, no candidate-branch TV project will be created. After the approved branch is merged to `main`, the dedicated `donaumoschee-tv` project will be created against the real root production origin and the browser/Admin Test Mode evidence will be recorded.
 
-A clean final exact-head Codex re-review remains the last pre-merge review gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
+Per the operator's 2026-09-23 direction, the final pre-merge code review was completed directly rather than waiting for Codex as a gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
 
+
+
+## Plan 6 final pre-merge self-review addendum — 2026-09-23
+
+This addendum supersedes the older Plan 6 review-count snapshot above. It does **not** change the historical Plan 5 BLOCKED result or promote any missing physical/religious/real-target evidence.
+
+At the operator's direction, the final Plan 6 pre-merge review was performed directly against the implementation instead of waiting for Codex as the final gate.
+
+- Total legitimate Codex findings returned across the Plan 6 review loop: **21** (**16 P1, 5 P2**).
+- Additional findings from the direct final review: **3** correctness/availability findings.
+- All returned Codex review threads are resolved; unresolved inline review threads after final closure: **0**.
+
+The later Codex findings beyond the 16-count snapshot above were:
+- preserve legacy canonical prayers before the first `prayer_settings` save;
+- read applied timezone + published rows from one atomic snapshot for Android/Feed/reminder runtime;
+- parse and format announcement display windows in the applied timezone;
+- preserve the legacy schedule during Home periodic/focus refresh;
+- use the same atomic snapshot for Home refresh.
+
+The direct final review additionally fixed:
+- stale announcement forms across applied-timezone promotion;
+- `/times` shell hard failure when the snapshot RPC is temporarily unavailable;
+- coupling of a valid atomic prayer snapshot to an optional settings read failure, including preservation of last verified Home Iqama delays.
+
+Exact implementation HEAD:
+`73c78076c0166acde1ecbbe892fa8c16da571a2e`
+
+Exact implementation-head automated evidence:
+- Root CI `35821366976`: **SUCCESS**.
+- Masjid Display Verification `35821367015`: **SUCCESS**.
+- Plan 3 Display Feed Verification `35821366984`: **SUCCESS**.
+- Security Scanners `35821367008`: **SUCCESS**.
+- Android TWA `35821366982`: **SUCCESS**, including instrumentation on API 23 and API 37; protected signing was intentionally skipped for the PR verification run.
+
+No Critical/P1/P2 repository blocker remained in the direct final Plan 6 review after these fixes.
+
+The remaining Plan 6 Vercel/root/browser/Admin Test Mode verification is still intentionally post-merge `main`. Therefore this addendum records **pre-merge repository certification**, not final live-preview completion and not a change to the historical production-certification BLOCKED result below.
 
 ## Evidence table
 

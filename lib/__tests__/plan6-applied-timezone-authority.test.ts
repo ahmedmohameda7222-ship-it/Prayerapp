@@ -26,17 +26,22 @@ describe("Plan 6 applied timezone authority", () => {
     expect(persistence).toContain("applied_timezone");
   });
 
-  it("uses the applied runtime timezone in public scheduling consumers", () => {
+  it("uses applied runtime authority in public scheduling consumers", () => {
     for (const path of [
-      "lib/masjid-display/build-feed.ts",
       "app/page.tsx",
       "app/times/page.tsx",
       "app/friday/page.tsx",
-      "app/home-prayer-runtime.ts",
+    ]) {
+      expect(source(path)).toContain("getRuntimePrayerTimezone");
+    }
+
+    expect(source("app/home-prayer-runtime.ts")).toContain("getRuntimePrayerSettings");
+    for (const path of [
+      "lib/masjid-display/build-feed.ts",
       "app/api/cron/prayer-reminders/route.ts",
       "app/api/android/prayer-schedule/route.ts",
     ]) {
-      expect(source(path)).toContain("getRuntimePrayerSettings");
+      expect(source(path)).toContain("getPublishedPrayerScheduleSnapshot");
     }
   });
 });

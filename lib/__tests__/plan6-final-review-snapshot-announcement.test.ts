@@ -67,4 +67,24 @@ describe("Plan 6 final review snapshot and announcement regressions", () => {
     expect(actions).toContain("data.formTimezone !== timezone");
   });
 
+  it("keeps public prayer readers on atomic timezone-row snapshots", () => {
+    for (const path of [
+      "app/page.tsx",
+      "app/home-prayer-runtime.ts",
+      "app/friday/page.tsx",
+    ]) {
+      expect(source(path)).toContain("getPublishedPrayerScheduleSnapshot");
+    }
+
+    const homeRuntime = source("app/home-prayer-runtime.ts");
+    expect(homeRuntime).not.toContain("schedule: [], iqamaDelays: null, timezone: null");
+
+    const timesPage = source("app/times/page.tsx");
+    expect(timesPage).toContain("getPublishedPrayerScheduleSnapshot");
+
+    const browser = source("components/prayer/PrayerTimesBrowser.tsx");
+    expect(browser).toContain("loadPrayerScheduleRuntime");
+    expect(browser).not.toContain("getPrayerTimes(false");
+  });
+
 });

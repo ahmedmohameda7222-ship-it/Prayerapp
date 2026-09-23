@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
-import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
+import { zonedDateTime } from "@/lib/date-utils";
+import { getPublishedPrayerScheduleSnapshot } from "@/lib/data/prayer-schedule-snapshot";
 import { logFallbackActivation } from "@/lib/android/delivery-diagnostics";
 import { legacyPrayerEventIdV2, legacyReceiptMatchesDueInstant, prayerEventId } from "@/lib/android/prayer-event-id";
 import {
@@ -33,20 +33,6 @@ type ReminderPreferenceRow = {
   lead_minutes: ReminderLeadMinutes | null;
 };
 
-type PrayerScheduleRow = {
-  id: string;
-  date: string;
-  fajr: string;
-  dhuhr: string;
-  asr: string;
-  maghrib: string;
-  isha: string;
-  note: string | null;
-  note_ar: string | null;
-  note_en: string | null;
-  note_de: string | null;
-  note_tr: string | null;
-};
 
 type NativeReceiptRow = {
   installation_id: string;
@@ -204,12 +190,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const prayerSettings = await getRuntimePrayerSettings().catch(() => null);
-  if (!prayerSettings) {
-    return NextResponse.json({ error: "Prayer settings are unavailable" }, { status: 503 });
-  }
-
   const now = new Date();
+  let prayerSnapshot;
+  try {
+    prayerSnapshot = await getPublishedPrayerScheduleSnapshot({
+      now,
+      daysAfter: 1,
+    });
+  } catch (error) {
+    console.error("[prayer reminder cron] schedule snapshot failed", error instanceof Error ? error.message : "unknown");
+    return NextResponse.json({ error: "Prayer schedule is unavailable" }, { status: 503 });
+  }
   const { error: receiptCleanupError } = await client
     .from("native_prayer_delivery_receipts")
     .delete()
@@ -219,23 +210,15 @@ export async function GET(request: Request) {
   }
 
   const nowMs = now.getTime();
-  const today = todayIso(now, prayerSettings.timezone);
-  const tomorrow = addDaysIso(today, 1);
-  const [{ data: reminders, error: remindersError }, { data: schedules, error: schedulesError }] = await Promise.all([
-    client
-      .from("user_prayer_reminders")
-      .select("user_id, prayer, lead_minutes")
-      .eq("enabled", true),
-    client
-      .from("prayer_times")
-      .select("id, date, fajr, dhuhr, asr, maghrib, isha, note, note_ar, note_en, note_de, note_tr")
-      .eq("published", true)
-      .gte("date", today)
-      .lte("date", tomorrow),
-  ]);
+  const today = prayerSnapshot.from;
+  const tomorrow = prayerSnapshot.through;
+  const { data: reminders, error: remindersError } = await client
+    .from("user_prayer_reminders")
+    .select("user_id, prayer, lead_minutes")
+    .eq("enabled", true);
 
-  if (remindersError || schedulesError) {
-    console.error("[prayer reminder cron] query failed", remindersError?.message || schedulesError?.message);
+  if (remindersError) {
+    console.error("[prayer reminder cron] query failed", remindersError.message);
     return NextResponse.json({ error: "Could not load reminder data" }, { status: 500 });
   }
 
@@ -278,7 +261,7 @@ export async function GET(request: Request) {
   }
 
   const leasesByPushId = groupNativeLeasesByPushId(nativeLeases);
-  const prayerSchedules = ((schedules || []) as PrayerScheduleRow[])
+  const prayerSchedules = prayerSnapshot.rows
     .filter((schedule) => !isPrayerScheduleQaRow(schedule));
   let due = 0;
   let sent = 0;
@@ -291,7 +274,7 @@ export async function GET(request: Request) {
   for (const schedule of prayerSchedules) {
     for (const prayer of Object.keys(prayerNames) as ReminderPrayer[]) {
       const time = schedule[prayer];
-      const adhanAt = zonedDateTime(schedule.date, time, prayerSettings.timezone).getTime();
+      const adhanAt = zonedDateTime(schedule.date, time, prayerSnapshot.timezone).getTime();
       const prayerPreferences = enabledReminders.filter((item) => item.prayer === prayer);
       if (prayerPreferences.length === 0) continue;
 

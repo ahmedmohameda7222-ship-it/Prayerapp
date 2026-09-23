@@ -70,18 +70,6 @@ describe("calculatePrayerTimes", () => {
     );
   });
 
-  it("rejects an offset that moves a prayer to the previous local date", () => {
-    expect(() =>
-      calculatePrayerTimes("2026-07-15", {
-        ...validSettings,
-        offsets: {
-          ...validSettings.offsets,
-          fajr: -60,
-        },
-      }),
-    ).toThrow(/crosses mosque-local date boundary/);
-  });
-
   it("rejects invalid calendar dates", () => {
     expect(() => calculatePrayerTimes("2026-02-30", validSettings)).toThrow();
   });

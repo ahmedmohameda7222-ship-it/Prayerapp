@@ -37,6 +37,18 @@ public final class SchedulerV2AuthoritySourceContractTest {
     }
 
     @Test
+    public void rescheduleValidatesPersistedConfigBeforeCancellingInstalledAlarms() throws IOException {
+        String scheduler = javaSource("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        int loadConfig = scheduler.indexOf("NativeConfig config = store.loadConfig(Instant.now());");
+        int cancelStored = scheduler.indexOf("if (!cancelStored(context, store, generation)) return false;");
+
+        assertTrue(loadConfig >= 0);
+        assertTrue(cancelStored > loadConfig);
+        assertTrue(scheduler.contains("alarm.schedule preserve-existing reason=config-unavailable"));
+        assertTrue(scheduler.contains("scheduleCurrentGeneration(context, store, generation, config)"));
+    }
+
+    @Test
     public void nativeStatusAdvertisesReceiptV2AndCurrentGeneration() throws IOException {
         String status = javaSource("de/donaumoschee/app/prayer/NativeStatus.java");
         assertTrue(status.contains("delivery-receipt-v2"));

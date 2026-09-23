@@ -131,33 +131,33 @@ Live E2E is still required by Plan 6 and is not inferred from these automated te
 
 ## CI / security evidence
 
-Certified pre-merge Plan 6 implementation HEAD:
-`869118ff81a0754faa555e3b94d16eb0d5bfaf71`
+Certified pre-merge Plan 6 repository HEAD:
+`5fb5d03ca6891ead259da097d180a9ccff9b7d96`
 
-Fresh exact-implementation-head evidence:
+Fresh exact-head evidence:
 
-- Root CI `35801802512`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
-- Masjid Display Verification `35801802531`: **SUCCESS**, including TV package verification and two-app integration.
-- Plan 3 Display Feed Verification `35801802481`: **SUCCESS**.
-- Security Scanners `35801802457`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
-- Android TWA `35801802441`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
+- Root CI `35806268092`: **SUCCESS** — root lint/tests/typecheck, Feed contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root build.
+- Masjid Display Verification `35806268096`: **SUCCESS**, including TV package verification and two-app integration.
+- Plan 3 Display Feed Verification `35806268112`: **SUCCESS**.
+- Security Scanners `35806268100`: **SUCCESS**, including CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
+- Android TWA `35806268167`: **SUCCESS** — verify/build plus instrumentation on API 23 and API 37. The protected signing job was intentionally skipped because this was a pull-request verification run.
 
 ### Final Codex review loop — all legitimate findings fixed to date
 
-The pre-merge Codex loop has produced **fourteen legitimate correctness findings in total: twelve P1 findings and two P2 findings**.
+The pre-merge Codex loop has produced **sixteen legitimate correctness findings in total: thirteen P1 findings and three P2 findings**.
 
-The earlier six P1 findings covered:
-1. prayer-event identity missing the resolved delivery instant;
-2. database receipt schema rejecting p3 identities;
-3. stale legacy p2 receipts suppressing fallback at a newly resolved due instant;
-4. pending timezone edits affecting live scheduling before recalculation promotion;
-5. the database dynamic-content budget using a Berlin date instead of the applied runtime timezone;
-6. Home and `/events` event filtering using Berlin across applied-timezone date boundaries.
+Findings 1–6:
+1. **P1:** prayer-event identity omitted the resolved delivery instant;
+2. **P1:** database receipt schema rejected p3 identities;
+3. **P1:** stale legacy p2 receipts could suppress fallback at a newly resolved due instant;
+4. **P1:** pending timezone edits could affect live scheduling before recalculation promotion;
+5. **P1:** dynamic-content budget date authority remained Berlin instead of the applied runtime timezone;
+6. **P1:** Home and `/events` event filtering retained Berlin date authority.
 
-The next four findings covered:
+Findings 7–10:
 7. **P1:** current p3 Android deliveries were not queued into the delivery-receipt upload queue;
-8. **P1:** future-recalculation cutoff dates were still derived from pending calculation timezone instead of the applied runtime timezone;
-9. **P1:** promoting `applied_timezone` could expand the Feed capacity window without rechecking the dynamic-content budget in the same transaction;
+8. **P1:** future-recalculation cutoff dates were derived from pending calculation timezone instead of applied runtime timezone;
+9. **P1:** `applied_timezone` promotion could expand the Feed capacity window without rechecking the dynamic-content budget in the same transaction;
 10. **P2:** the redefined serialized-byte budget function was not preflighted against existing rows during migration.
 
 TDD evidence for findings 7–10:
@@ -165,31 +165,43 @@ TDD evidence for findings 7–10:
 - Root CI `35765586800`: **FAILURE** with exactly four intended failures in `plan6-final-review-runtime-safety.test.ts`;
 - fixes: `015fe09e1d92043d783657c81d7fbb7d3416dfd1`, `90342d09d75542c3e63284e3c1545b1b2bd17574`, `3f32f4f32ee699750b87886f57cadbcdc904d9de`, and `4f88b587b97d29173d4d24294927162994a4eaa3`.
 
-The latest exact-head Codex pass then identified four additional legitimate transition/DST findings:
-11. **P1:** the first-ever non-Berlin settings save could initialize `applied_timezone` to the pending zone and reinterpret existing canonical rows before recalculation;
-12. **P1:** while a timezone change was pending, a partial recalculation range could write pending-zone wall-clock rows into a schedule still interpreted in the applied zone;
+Findings 11–14:
+11. **P1:** first-ever non-Berlin settings save could initialize `applied_timezone` to the pending zone and reinterpret existing canonical rows before recalculation;
+12. **P1:** a partial recalculation during a pending timezone change could write pending-zone wall-clock rows into a schedule still interpreted in the applied zone;
 13. **P1:** a westward timezone change could be promoted while applied and pending zones were on different local dates, activating an unrecalculated newly-current date;
 14. **P2:** Android resolved repeated fall-back wall times with the earlier offset while the server uses the later offset, producing different due instants/p3 identities.
 
 TDD RED evidence for findings 11–14:
 - Root regression HEAD `9d456116bdde1532a561a0d5229922f9604701d6`, followed by combined RED HEAD `d0e308e9b75ad8d6b2be944ffb274f773b92c1dc`;
-- Root CI `35801295772`: **FAILURE** with exactly four intended failures in `plan6-final-review-runtime-safety.test.ts`: first-save applied timezone, partial canonical writes, cross-local-date recalculation, and the atomic SQL transition guard;
-- Android TWA `35801295782`: **FAILURE** with one intended unit-test failure: `AlarmPlannerTest.resolvesRepeatedWallClockTimeWithServerLaterOffsetPolicy` (104 tests, 1 failed).
+- Root CI `35801295772`: **FAILURE** with four intended runtime-safety regression failures;
+- Android TWA `35801295782`: **FAILURE** with `AlarmPlannerTest.resolvesRepeatedWallClockTimeWithServerLaterOffsetPolicy` as the sole Android unit-test failure (104 tests, 1 failed);
+- fixes: `0999374b02ff818733f000a928c3696339128798`, `699c81462cc135dea99d2a35a1e9749626435b85`, `1c953a4afd2c3136e4b4135574e39aa459541cea`, `e2e19a0822dd37c696ed703da8925c7287937278`, and syntax correction `869118ff81a0754faa555e3b94d16eb0d5bfaf71`.
 
-Fixes for findings 11–14:
-- `0999374b02ff818733f000a928c3696339128798`: the first settings insert keeps `applied_timezone` at the legacy canonical schedule authority until recalculation;
-- `699c81462cc135dea99d2a35a1e9749626435b85`: pending timezone recalculation requires the applied and pending zones to resolve to the same local date;
-- `1c953a4afd2c3136e4b4135574e39aa459541cea`: server and atomic SQL RPC reject partial timezone-transition ranges before canonical writes;
-- `e2e19a0822dd37c696ed703da8925c7287937278` plus syntax correction `869118ff81a0754faa555e3b94d16eb0d5bfaf71`: Android applies `withLaterOffsetAtOverlap()`, matching the server overlap policy before resolving `dueAtMs`.
+The next exact-head Codex pass identified two additional legitimate findings:
+15. **P1:** Android prayer-schedule responses were still shared-cacheable for five minutes, so a worker refreshing immediately after timezone promotion could install stale pre-promotion alarms until its next periodic refresh;
+16. **P2:** remaining religious clocks — Home header date, Ramadan current-day selection, Azkar category selection, and Azkar daily-progress date — still defaulted to Berlin instead of applied runtime timezone.
 
-GREEN evidence after all fourteen fixes:
-- Root CI `35801802512`: **SUCCESS**;
-- Android TWA `35801802441`: **SUCCESS**, including API 23 and API 37 instrumentation;
-- Masjid Display Verification `35801802531`: **SUCCESS**;
-- Security Scanners `35801802457`: **SUCCESS**;
-- Plan 3 Display Feed Verification `35801802481`: **SUCCESS**.
+TDD RED evidence for findings 15–16:
+- test-only HEAD `887c806194392bb54ad13d4146e018e125a9b898`;
+- Root CI `35805587968`: **FAILURE** with five intended regressions in `plan6-final-review-cache-religious-clock.test.ts`: transition-sensitive Android schedule cache, Azkar category timezone, Home religious header timezone, Ramadan day timezone, and Azkar daily-progress timezone;
+- Plan 3 Display Feed Verification `35805587956`: **FAILURE** at TypeScript because the new Azkar regression intentionally exercised the not-yet-implemented timezone argument.
 
-All inline review threads are resolved; unresolved count before the evidence refresh: **0**.
+Fixes for findings 15–16:
+- `e9add95cfa6ca7320651b7c716d87011f0414146`: Android prayer-schedule response is `Cache-Control: no-store`;
+- `397b56ec26f5b16ba54ed45f74b783a9d8e76e3e`: Azkar smart clock accepts runtime timezone;
+- `480c9fbcf81df3a1a53c9dd523b0fc4d331e49cc` and `75127435b8cc941b4dd418341dacfc173f01a245`: applied timezone propagates to the Home header date;
+- `a69caf14be90aa5a9c676d5918e85a6e02514c67`: Ramadan current-day selection uses applied runtime timezone;
+- `98bea478808085e6a14c795e8c2cb10805356d5a` and `c83467a94b46488a5778f6086069be17f56550ad`: Azkar page/routine use applied timezone for category and daily-progress date authority;
+- `5fb5d03ca6891ead259da097d180a9ccff9b7d96`: updates the older hardening contract so it asserts the new applied-timezone behavior rather than the obsolete Berlin-only call shape.
+
+GREEN evidence after all sixteen fixes:
+- Root CI `35806268092`: **SUCCESS**;
+- Android TWA `35806268167`: **SUCCESS**, including API 23 and API 37 instrumentation;
+- Masjid Display Verification `35806268096`: **SUCCESS**;
+- Security Scanners `35806268100`: **SUCCESS**;
+- Plan 3 Display Feed Verification `35806268112`: **SUCCESS**.
+
+All sixteen inline correctness findings have implementation/run evidence and their review threads are resolved. Unresolved inline review threads before this evidence refresh: **0**.
 
 Committing this evidence creates a newer documentation-only HEAD without changing implementation. Fresh exact documentation-HEAD workflow verification is recorded in PR #108 metadata rather than recursively rewriting this document with its own future SHA/run IDs.
 
@@ -211,6 +223,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: IMPLEMENTATION GREEN; FOURTEEN LEGITIMATE CODEX CORRECTNESS FINDINGS FIXED; FINAL EVIDENCE-HEAD VERIFICATION + EXACT-HEAD CODEX RE-REVIEW PENDING.**
+**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: IMPLEMENTATION GREEN; SIXTEEN LEGITIMATE CODEX CORRECTNESS FINDINGS FIXED; FINAL EVIDENCE-HEAD VERIFICATION + EXACT-HEAD CODEX RE-REVIEW PENDING.**
 
 The real Vercel/root/browser/Admin Test Mode verification is intentionally scheduled for post-merge `main` under the operator sequencing override. Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until that post-merge evidence is actually recorded.

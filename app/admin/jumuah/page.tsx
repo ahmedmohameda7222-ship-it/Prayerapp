@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
-import { addDaysIso, todayIso } from "@/lib/date-utils";
+import { addDaysIso } from "@/lib/date-utils";
 import { isFridayIso } from "@/lib/friday";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
@@ -18,6 +18,7 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import type { JumuahTime, PrayerTime } from "@/lib/types";
 import type { Locale } from "@/lib/i18n/types";
 import { createJumuahAction, deleteJumuahAction, togglePublishJumuahAction, updateJumuahAction } from "./actions";
+import { loadAdminRuntimeDateAction } from "../runtime-date";
 
 const COPY: Record<Locale, {
   friday: string;
@@ -81,12 +82,24 @@ export default function AdminJumuahPage() {
   const [success, setSuccess] = useState("");
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
+  const accessToken = session?.access_token || "";
 
   useEffect(() => {
-    const start = todayIso();
-    const end = addDaysIso(start, 180);
-    Promise.all([getPrayerTimes(true, start, end), getJumuahTimes(true)])
-      .then(([prayers, jumuah]) => {
+    if (!accessToken) return;
+    let active = true;
+    void (async () => {
+      try {
+        const runtimeDate = await loadAdminRuntimeDateAction(accessToken);
+        if (!runtimeDate.success || !runtimeDate.data) {
+          throw new Error(runtimeDate.error || "Unable to load mosque runtime date");
+        }
+        const start = runtimeDate.data.today;
+        const end = addDaysIso(start, 180);
+        const [prayers, jumuah] = await Promise.all([
+          getPrayerTimes(true, start, end),
+          getJumuahTimes(true),
+        ]);
+        if (!active) return;
         const futureFridays = prayers
           .filter((prayer) => prayer.date >= start && isFridayIso(prayer.date))
           .sort((a, b) => a.date.localeCompare(b.date));
@@ -95,9 +108,12 @@ export default function AdminJumuahPage() {
         const firstFriday = futureFridays[0]?.date || "";
         setSelectedFriday((current) => current || firstFriday);
         setForm((current) => ({ ...current, date: current.date || firstFriday }));
-      })
-      .catch(() => setError(t("common.dataLoadFailed")));
-  }, [t]);
+      } catch {
+        if (active) setError(t("common.dataLoadFailed"));
+      }
+    })();
+    return () => { active = false; };
+  }, [accessToken, t]);
 
   const selectedPrayer = useMemo(
     () => fridayPrayers.find((prayer) => prayer.date === selectedFriday),

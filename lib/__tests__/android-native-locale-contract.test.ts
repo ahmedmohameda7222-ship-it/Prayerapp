@@ -36,12 +36,17 @@ describe("Android app-selected locale contract", () => {
     expect(adhan).toContain("AppLocale.localizedContext");
   });
 
-  it("refreshes notification channel labels when app locale changes", () => {
+  it("refreshes notification channel labels after the new locale is saved atomically", () => {
+    const scheduler = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/PrayerScheduler.java");
     const bridge = source("android-twa/app/src/main/java/de/donaumoschee/app/bridge/BridgeHandler.java");
-    const saveIndex = bridge.indexOf("store.saveConfig(payload, Instant.now())");
-    const refreshIndex = bridge.indexOf("PrayerNotifications.createChannels(context)", saveIndex);
+    const saveIndex = scheduler.indexOf("store.saveConfigIfGeneration(config.source, now, generation)");
+    const refreshIndex = scheduler.indexOf("PrayerNotifications.createChannels(context)", saveIndex);
+    const cancelIndex = scheduler.indexOf("cancelStored(context, store, generation)", refreshIndex);
 
     expect(saveIndex).toBeGreaterThanOrEqual(0);
     expect(refreshIndex).toBeGreaterThan(saveIndex);
+    expect(cancelIndex).toBeGreaterThan(refreshIndex);
+    expect(bridge).toContain("PrayerScheduler.replaceConfigAndReschedule(context, payload, Instant.now())");
+    expect(bridge).not.toContain("store.saveConfig(payload");
   });
 });

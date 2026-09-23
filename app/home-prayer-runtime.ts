@@ -6,7 +6,7 @@ import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
 export async function loadPrayerScheduleRuntime(from: string, through: string) {
   const [snapshot, prayerSettings] = await Promise.all([
     getPublishedPrayerScheduleSnapshot({ from, through }),
-    getRuntimePrayerSettings(),
+    getRuntimePrayerSettings().catch(() => null),
   ]);
 
   return {
@@ -24,7 +24,7 @@ export async function refreshHomePrayerRuntime() {
       daysBefore: 1,
       daysAfter: 30,
     }),
-    getRuntimePrayerSettings(),
+    getRuntimePrayerSettings().catch(() => null),
   ]);
 
   return {

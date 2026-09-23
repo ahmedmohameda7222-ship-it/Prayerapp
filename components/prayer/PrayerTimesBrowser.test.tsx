@@ -1,8 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { PrayerTimesBrowser } from "./PrayerTimesBrowser";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
+
+vi.mock("@/app/home-prayer-runtime", () => ({
+  loadPrayerScheduleRuntime: vi.fn(async () => ({
+    schedule: [],
+    iqamaDelays: null,
+    timezone: "Europe/Berlin",
+  })),
+}));
 
 describe("PrayerTimesBrowser", () => {
   it("keeps range controls usable without synthesizing prayer data", async () => {

@@ -44,7 +44,7 @@ export function AdminAnnouncementsPageClient({ timezone }: { timezone: string })
   const { session } = useAdminAuth();
   const { t, locale } = useTranslation();
   const [items, setItems] = useState<Announcement[]>([]);
-  const [form, setForm] = useState<Record<string, string>>({ ...emptyForm });
+  const [form, setForm] = useState<Record<string, string>>({ ...emptyForm, formTimezone: timezone });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -56,7 +56,7 @@ export function AdminAnnouncementsPageClient({ timezone }: { timezone: string })
   }, [t]);
 
   function resetForm() {
-    setForm({ ...emptyForm });
+    setForm({ ...emptyForm, formTimezone: timezone });
     setEditingId(null);
     setError("");
   }
@@ -77,6 +77,7 @@ export function AdminAnnouncementsPageClient({ timezone }: { timezone: string })
       displayStyle: item.displayStyle || "normal",
       displayFrom: formatDateTimeLocalInput(item.displayFrom, timezone),
       displayUntil: formatDateTimeLocalInput(item.displayUntil, timezone),
+      formTimezone: timezone,
     });
     setEditingId(item.id);
     setError("");

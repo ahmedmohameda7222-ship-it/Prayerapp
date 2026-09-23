@@ -1,13 +1,15 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PrayerTimesBrowser } from "@/components/prayer/PrayerTimesBrowser";
-import { getRuntimePrayerSettings, getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";
+import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
+import { getPublishedPrayerScheduleSnapshot } from "@/lib/data/prayer-schedule-snapshot";
 
 export default async function TimesPage() {
-  const [settings, timezone] = await Promise.all([
+  const [settings, snapshot] = await Promise.all([
     getRuntimePrayerSettings().catch(() => null),
-    getRuntimePrayerTimezone(),
+    getPublishedPrayerScheduleSnapshot({ now: new Date(), daysAfter: 0 }),
   ]);
+  const timezone = snapshot.timezone;
   return (
     <AppShell>
       <PageHeader titleKey="times.title" arch backHref={null} />

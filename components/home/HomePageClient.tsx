@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { refreshHomePrayerRuntime } from "@/app/home-prayer-runtime";
 import { HomeSectionTitle } from "@/components/home/HomeSectionTitle";
 import { HomeEmptyState } from "@/components/home/HomeEmptyState";
@@ -73,6 +74,7 @@ export function HomePageClient({
   donationReport,
   initialNow,
 }: HomePageClientProps) {
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const [now, setNow] = useState(() => new Date(initialNow));
   const [schedule, setSchedule] = useState<PrayerTime[]>(initialPrayerTimes || EMPTY_SCHEDULE);
@@ -117,6 +119,7 @@ export function HomePageClient({
           setSchedule(latest.schedule);
           if (latest.iqamaDelays !== undefined) setLiveIqamaDelays(latest.iqamaDelays);
           setLiveTimezone(latest.timezone);
+          if (latest.timezone !== timezone) router.refresh();
         }
       } catch {
         // Keep the last verified schedule and Iqama-delay snapshot together.
@@ -135,7 +138,7 @@ export function HomePageClient({
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [router, timezone]);
 
   const hasBankDetails = Boolean(
     donationSettings && (

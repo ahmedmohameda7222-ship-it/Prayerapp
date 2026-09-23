@@ -1,13 +1,13 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { getPrayerTimes } from "@/lib/data/prayer-times";
-import { getRuntimePrayerSettings, getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";
+import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
+import { getPublishedPrayerScheduleSnapshot } from "@/lib/data/prayer-schedule-snapshot";
 import { getUrgentAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns, getDonationReport, getDonationSettings } from "@/lib/data/donations";
 import { getEvents } from "@/lib/data/events";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { getMosqueSettings } from "@/lib/data/mosque-settings";
-import { todayIso, addDaysIso } from "@/lib/date-utils";
+import { APP_TIME_ZONE } from "@/lib/date-utils";
 import { isUpcomingEvent } from "@/lib/event-utils";
 import { HomePageClient } from "@/components/home/HomePageClient";
 
@@ -16,15 +16,9 @@ const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 export default async function HomePage() {
   const initialNow = new Date().toISOString();
   const now = new Date(initialNow);
-  const [prayerSettings, prayerTimezone] = await Promise.all([
-    getRuntimePrayerSettings().catch(() => null),
-    getRuntimePrayerTimezone(),
-  ]);
-  const today = todayIso(now, prayerTimezone);
-  const startDate = addDaysIso(today, -1);
-  const endDate = addDaysIso(today, 30);
-  const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
-    getPrayerTimes(false, startDate, endDate),
+  const [prayerSnapshotResult, prayerSettingsResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
+    getPublishedPrayerScheduleSnapshot({ now, daysBefore: 1, daysAfter: 30 }),
+    getRuntimePrayerSettings(),
     getUrgentAnnouncements(),
     getJumuahTimes(),
     getEvents(),
@@ -34,7 +28,10 @@ export default async function HomePage() {
     getMosqueSettings(),
   ]);
 
-  const prayerTimes = prayerTimesResult.status === "fulfilled" ? prayerTimesResult.value : [];
+  const prayerSnapshot = prayerSnapshotResult.status === "fulfilled" ? prayerSnapshotResult.value : null;
+  const prayerSettings = prayerSettingsResult.status === "fulfilled" ? prayerSettingsResult.value : null;
+  const prayerTimezone = prayerSnapshot?.timezone ?? prayerSettings?.timezone ?? APP_TIME_ZONE;
+  const prayerTimes = prayerSnapshot?.rows ?? [];
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
   const jumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
   const events = eventsResult.status === "fulfilled"

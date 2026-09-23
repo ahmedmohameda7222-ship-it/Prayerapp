@@ -9,25 +9,29 @@ function source(file: string) {
 describe("Masjid Display content Admin", () => {
   it("exposes announcement display style and optional bounded schedule", () => {
     const page = source("app/admin/announcements/page.tsx");
+    const client = source("components/admin/AdminAnnouncementsPageClient.tsx");
     const actions = source("app/admin/announcements/actions.ts");
-    expect(page).toContain("displayStyle");
-    expect(page).toContain("displayFrom");
-    expect(page).toContain("displayUntil");
-    expect(page).toContain('value="normal"');
-    expect(page).toContain('value="special"');
+    expect(page).toContain("getRuntimePrayerTimezone");
+    expect(client).toContain("displayStyle");
+    expect(client).toContain("displayFrom");
+    expect(client).toContain("displayUntil");
+    expect(client).toContain('value="normal"');
+    expect(client).toContain('value="special"');
     expect(actions).toContain('throw new Error("Invalid display window")');
   });
 
   it("parses timezone-less announcement windows as mosque-local instants", () => {
     const actions = source("app/admin/announcements/actions.ts");
     expect(actions).not.toContain("const instant = new Date(value)");
-    expect(actions).toContain("zonedDateTime(date, time)");
+    expect(actions).toContain("parseDateTimeLocalInput");
+    expect(actions).toContain("getRuntimePrayerTimezone");
   });
 
   it("formats stored announcement instants as mosque-local datetime-local values", () => {
-    const page = source("app/admin/announcements/page.tsx");
-    expect(page).toContain("formatDateTimeLocalInput");
-    expect(page).not.toContain("value.slice(0, 16)");
+    const client = source("components/admin/AdminAnnouncementsPageClient.tsx");
+    expect(client).toContain("formatDateTimeLocalInput(item.displayFrom, timezone)");
+    expect(client).toContain("formatDateTimeLocalInput(item.displayUntil, timezone)");
+    expect(client).not.toContain("value.slice(0, 16)");
   });
 
   it("invalidates dynamic display-feed caches after admin mutations", () => {

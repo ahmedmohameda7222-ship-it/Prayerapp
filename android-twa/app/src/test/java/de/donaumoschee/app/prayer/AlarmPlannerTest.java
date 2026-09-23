@@ -106,6 +106,19 @@ public final class AlarmPlannerTest {
     }
 
     @Test
+    public void resolvesRepeatedWallClockTimeWithServerLaterOffsetPolicy() throws Exception {
+        Instant now = Instant.parse("2026-10-24T00:00:00Z");
+        List<AlarmEvent> events = AlarmPlanner.plan(
+                config("overlap", "2026-10-25", "02:30", "dhuhr", true, 0, "abdul-basit-cairo", now),
+                now
+        );
+
+        assertEquals(1, events.size());
+        assertEquals(Instant.parse("2026-10-25T01:30:00Z"), events.get(0).dueAt);
+        assertEquals("p3:6cdcfc1f710ec1b232a3ef500c4d9e3d00635f51e0f5ce5c54ed7a86fa397821", events.get(0).eventId);
+    }
+
+    @Test
     public void usesEuropeBerlinAcrossDstTransitions() throws Exception {
         Instant springNow = Instant.parse("2026-03-28T00:00:00Z");
         List<AlarmEvent> spring = AlarmPlanner.plan(config("spring", "2026-03-29", "13:30", "dhuhr", true, 0, "abdul-basit-cairo", springNow), springNow);

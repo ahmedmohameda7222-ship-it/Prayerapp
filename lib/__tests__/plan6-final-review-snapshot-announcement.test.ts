@@ -63,7 +63,7 @@ describe("Plan 6 final review snapshot and announcement regressions", () => {
     const actions = source("app/admin/announcements/actions.ts");
     const client = source("components/admin/AdminAnnouncementsPageClient.tsx");
 
-    expect(client).toContain("formTimezone: timezone");
+    expect(client.match(/formTimezone: timezone/g) ?? []).toHaveLength(3);
     expect(actions).toContain("data.formTimezone !== timezone");
   });
 

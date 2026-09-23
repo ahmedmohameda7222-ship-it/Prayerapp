@@ -48,7 +48,7 @@ export default async function HomePage() {
 
   return (
     <AppShell surface="home">
-      <AppHeader whatsappLink={mosqueSettings?.whatsappLink} googleMapsLink={mosqueSettings?.googleMapsLink} />
+      <AppHeader timezone={prayerTimezone} whatsappLink={mosqueSettings?.whatsappLink} googleMapsLink={mosqueSettings?.googleMapsLink} />
       <HomePageClient
         initialPrayerTimes={prayerTimes}
         iqamaDelays={prayerSettings?.iqamaDelays ?? null}

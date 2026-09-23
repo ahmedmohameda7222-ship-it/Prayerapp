@@ -51,25 +51,27 @@ describe("Plan 6 prayer timezone authority", () => {
     expect(browser).toContain("todayIso(new Date(), effectiveTimezone)");
   });
 
-  it("keeps web and native Android prayer scheduling on the server-provided IANA timezone", () => {
+  it("keeps Android scheduling on server-authoritative resolved instants", () => {
     const provider = source("components/providers/NativeAndroidProvider.tsx");
     const config = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/NativeConfig.java");
     const planner = source("android-twa/app/src/main/java/de/donaumoschee/app/prayer/AlarmPlanner.java");
     const worker = source("android-twa/app/src/main/java/de/donaumoschee/app/workers/NativeRefreshWorker.java");
     const nativeMain = sourceTree("android-twa/app/src/main/java");
 
-    expect(provider).not.toContain('schedule.timeZone !== "Europe/Berlin"');
     expect(provider).toContain('addDaysIso(todayIso(new Date(), "UTC"), -1)');
-    expect(provider).toContain('timeZone: schedule.timeZone');
-    expect(provider).toContain('zonedDateTime(addDaysIso(schedule.through, 1), "00:00", schedule.timeZone)');
+    expect(provider).toContain("scheduleValidUntil: schedule.scheduleValidUntil");
+    expect(provider).not.toContain("zonedDateTime(addDaysIso(schedule.through");
 
-    expect(config).toContain("public final ZoneId zone;");
-    expect(config).toContain('ZoneId.of(object.getString("timeZone"))');
-    expect(planner).toContain("config.zone");
+    expect(config).toContain("public final String timeZone;");
+    expect(config).toContain('Instant.parse(row.getString(prayer.key + "At"))');
+    expect(config).not.toContain('ZoneId.of(object.getString("timeZone"))');
+    expect(planner).toContain("Instant adhanAt = row.instant(prayer);");
+    expect(planner).not.toContain("ZonedDateTime.of");
 
-    expect(worker).toContain('LocalDate.now(ZoneId.of("UTC")).minusDays(1)');
-    expect(worker).toContain('ZoneId zone = ZoneId.of(response.getString("timeZone"))');
-    expect(worker).toContain('config.put("timeZone", zone.getId())');
+    expect(worker).toContain('LocalDate.now(ZoneOffset.UTC).minusDays(1)');
+    expect(worker).toContain('Instant.parse(response.getString("scheduleValidUntil"))');
+    expect(worker).toContain('config.put("timeZone", timeZone)');
+    expect(worker).not.toContain('ZoneId.of(response.getString("timeZone"))');
 
     expect(nativeMain).not.toContain("NativeConfig.ZONE");
     expect(nativeMain).not.toContain('ZoneId.of("Europe/Berlin")');
@@ -80,6 +82,9 @@ describe("Plan 6 prayer timezone authority", () => {
     const route = source("app/api/android/prayer-schedule/route.ts");
     expect(route).toContain("getPublishedPrayerScheduleSnapshot");
     expect(route).toContain("timeZone: snapshot.timezone");
+    expect(route).toContain("scheduleValidUntil");
+    expect(route).toContain("fajrAt: zonedDateTime(row.date, row.fajr, snapshot.timezone).toISOString()");
+    expect(route).toContain("ishaAt: zonedDateTime(row.date, row.isha, snapshot.timezone).toISOString()");
     expect(route).not.toContain("getRuntimePrayerSettings");
     expect(route).not.toContain('timeZone: "Europe/Berlin"');
   });

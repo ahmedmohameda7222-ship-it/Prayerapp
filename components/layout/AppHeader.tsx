@@ -18,12 +18,13 @@ type AppHeaderProps = {
   title?: string;
   whatsappLink?: string;
   googleMapsLink?: string;
+  timezone?: string | null;
 };
 
-export function AppHeader({ title, whatsappLink, googleMapsLink }: AppHeaderProps) {
+export function AppHeader({ title, whatsappLink, googleMapsLink, timezone }: AppHeaderProps) {
   const { t, locale } = useTranslation();
   const { user } = usePublicAuth();
-  const currentDateIso = todayIso();
+  const currentDateIso = todayIso(new Date(), timezone ?? undefined);
   const currentDate = formatLongDate(currentDateIso, locale);
   const mosqueName = title || APP_NAMES[locale];
   const useArabicBrandLogo = !title && locale === "ar";

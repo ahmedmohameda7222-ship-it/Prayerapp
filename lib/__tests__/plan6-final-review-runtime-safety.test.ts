@@ -154,7 +154,7 @@ describe("Plan 6 final-review runtime safety regressions", () => {
       "if v_settings.timezone <> v_settings.applied_timezone",
     );
     const outsideRangeGuard = sql.indexOf(
-      "date >= p_today",
+      "date >= v_applied_today",
       timezoneGuard,
     );
     const pendingLocalDate = sql.indexOf(

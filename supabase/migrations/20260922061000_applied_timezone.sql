@@ -239,6 +239,23 @@ begin
     raise exception 'prayer schedule changed since preview';
   end if;
 
+  if v_settings.timezone <> v_settings.applied_timezone then
+    if (statement_timestamp() at time zone v_settings.timezone)::date
+       is distinct from
+       (statement_timestamp() at time zone v_settings.applied_timezone)::date then
+      raise exception 'timezone change requires applied and pending timezones to share the same local date';
+    end if;
+
+    if exists (
+      select 1
+      from public.prayer_times
+      where date >= p_today
+        and (date < p_start_date or date > p_end_date)
+    ) then
+      raise exception 'timezone change requires full future recalculation';
+    end if;
+  end if;
+
   insert into public.prayer_times (
     date,
     fajr,

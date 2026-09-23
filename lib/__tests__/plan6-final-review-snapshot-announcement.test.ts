@@ -91,4 +91,10 @@ describe("Plan 6 final review snapshot and announcement regressions", () => {
     expect(browser).not.toContain("getPrayerTimes(false");
   });
 
+  it("keeps the Times shell available when the snapshot RPC fails", () => {
+    const page = source("app/times/page.tsx");
+    expect(page).toContain("getPublishedPrayerScheduleSnapshot({ now: new Date(), daysAfter: 0 }).catch(() => null)");
+    expect(page).toContain("snapshot?.timezone ?? settings?.timezone ?? APP_TIME_ZONE");
+  });
+
 });

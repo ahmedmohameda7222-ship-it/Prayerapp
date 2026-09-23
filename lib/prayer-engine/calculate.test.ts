@@ -57,6 +57,31 @@ describe("calculatePrayerTimes", () => {
     expect(forwardMinuteDelta(ninety.maghrib, ninety.isha)).toBe(90);
   });
 
+  it("rejects a calculated prayer that crosses the mosque-local row date", () => {
+    expect(() =>
+      calculatePrayerTimes("2026-07-15", {
+        ...validSettings,
+        ishaRule: "fixed_minutes",
+        ishaAngle: null,
+        ishaMinutesAfterMaghrib: 240,
+      }),
+    ).toThrow(
+      "Calculated isha crosses mosque-local date boundary for 2026-07-15",
+    );
+  });
+
+  it("rejects an offset that moves a prayer to the previous local date", () => {
+    expect(() =>
+      calculatePrayerTimes("2026-07-15", {
+        ...validSettings,
+        offsets: {
+          ...validSettings.offsets,
+          fajr: -60,
+        },
+      }),
+    ).toThrow(/crosses mosque-local date boundary/);
+  });
+
   it("rejects invalid calendar dates", () => {
     expect(() => calculatePrayerTimes("2026-02-30", validSettings)).toThrow();
   });

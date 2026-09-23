@@ -16,7 +16,7 @@ describe("Home live prayer runtime refresh", () => {
     expect(client).toContain("const [liveIqamaDelays, setLiveIqamaDelays]");
     expect(client).toContain("const [liveTimezone, setLiveTimezone]");
     expect(client).toContain("await refreshHomePrayerRuntime(");
-    expect(client).toContain("setLiveIqamaDelays(latest.iqamaDelays);");
+    expect(client).toContain("if (latest.iqamaDelays !== undefined) setLiveIqamaDelays(latest.iqamaDelays);");
     expect(client).toContain("setLiveTimezone(latest.timezone);");
     expect(client).toContain("derivePrayerIqamaTimes(item, liveIqamaDelays, liveTimezone)");
 
@@ -27,7 +27,7 @@ describe("Home live prayer runtime refresh", () => {
     expect(action).toContain("daysBefore: 1");
     expect(action).toContain("daysAfter: 30");
     expect(action).toContain("schedule: snapshot.rows");
-    expect(action).toContain("iqamaDelays: prayerSettings?.iqamaDelays ?? null");
+    expect(action).toContain("iqamaDelays: prayerSettings === undefined ? undefined : prayerSettings?.iqamaDelays ?? null");
     expect(action).toContain("timezone: snapshot.timezone");
     expect(action).not.toContain("fajrAngle");
     expect(action).not.toContain("latitude");

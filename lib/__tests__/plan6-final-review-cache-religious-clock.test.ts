@@ -29,6 +29,16 @@ describe("Plan 6 final-review cache and religious-clock regressions", () => {
     expect(header).toContain("todayIso(new Date(), timezone ?? undefined)");
   });
 
+  it("refreshes the Home route when the applied timezone changes live", () => {
+    const client = source("components/home/HomePageClient.tsx");
+
+    expect(client).toContain('import { useRouter } from "next/navigation";');
+    expect(client).toContain("const router = useRouter()");
+    expect(client).toContain("latest.timezone !== timezone");
+    expect(client).toContain("router.refresh()");
+    expect(client).toContain("[router, timezone]");
+  });
+
   it("selects and highlights Ramadan days in the applied runtime timezone", () => {
     const page = source("app/ramadan/page.tsx");
 

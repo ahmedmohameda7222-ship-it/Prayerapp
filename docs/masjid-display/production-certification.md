@@ -56,7 +56,7 @@ Committing this evidence creates a newer documentation-only HEAD. Fresh exact do
 
 Those automated results complete the current repository-side implementation/verification cycle but do not satisfy the remaining Plan 6 live-preview requirements. Under the 2026-09-22 sequencing override, no candidate-branch TV project will be created. After the approved branch is merged to `main`, the dedicated `donaumoschee-tv` project will be created against the real root production origin and the browser/Admin Test Mode evidence will be recorded.
 
-Per the operator's 2026-09-23 direction, the final pre-merge code review was completed directly rather than waiting for Codex as a gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
+The direct 2026-09-23 pre-merge self-review was supplemental; the exact-head Codex loop remained the required final review gate. The Plan 5 evidence table below remains historical and is not rewritten by this Plan 6 snapshot.
 
 
 
@@ -101,6 +101,39 @@ Exact implementation-head automated evidence:
 Finding 22 is fixed in the repository. Final exact-head workflow evidence, review-thread closure, and the clean follow-up Codex result are recorded in PR #108 metadata rather than recursively rewriting this historical certification document.
 
 The remaining Plan 6 Vercel/root/browser/Admin Test Mode verification is still intentionally post-merge `main`. Therefore this addendum records **pre-merge repository certification**, not final live-preview completion and not a change to the historical production-certification BLOCKED result below.
+
+
+## Plan 6 exact-head Codex continuation addendum — findings 23–29 — 2026-09-23
+
+This addendum supersedes the earlier Plan 6 finding-count snapshots above. It does **not** alter the historical Plan 5 `BLOCKED` result or promote any unexecuted real-target/physical/religious evidence.
+
+The complete Plan 6 Codex review loop has now returned **29 legitimate correctness findings: 17 P1 and 12 P2**, plus **3 additional manual-review correctness/availability findings**.
+
+Findings 23–29 extended the final review into these areas:
+
+- cross-platform DST fall-back overlap and spring-forward gap resolution now follows one explicit policy across root/server, Android, and TV, including western IANA zones;
+- Prayer Engine Admin reloads canonical settings after a successful recalculation so a promoted applied revision is reflected immediately;
+- future-only recalculation rechecks the applied mosque-local day inside the locked database transaction;
+- the final recalculation implementation uses moving `clock_timestamp()` checks around the canonical write so lock waits or midnight transitions cannot make a stale day valid;
+- schedule extension derives and rechecks the authoritative applied local day around its write rather than trusting a pre-midnight caller date;
+- Prayer Engine generation preserves the rounded mosque-local date and rejects any prayer that would cross the canonical row date, preventing a next-day instant from being serialized as same-day `HH:mm`.
+
+The final P1 cross-midnight regression remains explicitly covered by a fixed-Isha 240-minute case. The shared synthetic test fixture was corrected to a row-representable test profile so full-year generation tests exercise valid fixture data without weakening that safety rejection.
+
+Exact implementation HEAD after finding 29 and fixture correction:
+`54a977d045bb8e0df20d9467962a8b3d9234ee4f`
+
+Exact implementation-head automated evidence:
+
+- Root CI `35848713516`: **SUCCESS**;
+- Masjid Display Verification `35848713685`: **SUCCESS**;
+- Plan 3 Display Feed Verification `35848713515`: **SUCCESS**;
+- Security Scanners `35848713538`: **SUCCESS**;
+- Android TWA `35848713493`: **SUCCESS**, including API 23 and API 37 instrumentation; protected signing intentionally skipped for pull-request verification.
+
+All returned inline Codex threads through finding 29 are resolved. A fresh review is still required on the final documentation HEAD produced by this evidence refresh; its exact workflow evidence and clean Codex closure belong in PR #108 metadata to avoid recursively changing this evidence document.
+
+The remaining Plan 6 Vercel/root/browser/Admin Test Mode verification is intentionally post-merge on `main` under the operator sequencing override. Therefore this is pre-merge repository certification evidence only, not final live-preview completion.
 
 
 ## Evidence table

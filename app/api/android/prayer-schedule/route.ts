@@ -32,5 +32,5 @@ export async function GET(request: Request) {
     through: range.through,
     generatedAt: new Date().toISOString(),
     rows: data || [],
-  }, { headers: { "Cache-Control": "public, max-age=60, s-maxage=300" } });
+  }, { headers: { "Cache-Control": "no-store" } });
 }

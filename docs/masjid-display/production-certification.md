@@ -23,32 +23,37 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Certified pre-merge Plan 6 implementation HEAD `89cfece9635ef9601e9e36eede5ec1f98c668bd7` has the following exact-head automated evidence:
+Certified pre-merge Plan 6 implementation HEAD `869118ff81a0754faa555e3b94d16eb0d5bfaf71` has the following exact-head automated evidence:
 
-- Root CI `35767472510`: **SUCCESS**.
-- Masjid Display Verification `35767472504`: **SUCCESS**, including two-app integration.
-- Plan 3 Display Feed Verification `35767472590`: **SUCCESS**.
-- Security Scanners `35767472515`: **SUCCESS**.
-- Android TWA `35767472472`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37; protected signing was intentionally skipped for this PR verification run.
+- Root CI `35801802512`: **SUCCESS**.
+- Masjid Display Verification `35801802531`: **SUCCESS**, including two-app integration.
+- Plan 3 Display Feed Verification `35801802481`: **SUCCESS**.
+- Security Scanners `35801802457`: **SUCCESS**.
+- Android TWA `35801802441`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37; protected signing was intentionally skipped for this PR verification run.
 
-The final pre-merge Codex loop has produced ten legitimate correctness findings so far: nine P1 findings and one P2 finding. The earlier six findings covered due-instant-bound prayer-event identity, additive p2/p3 receipt schema support, legacy-receipt due-instant compatibility, pending-vs-applied timezone authority, dynamic-budget timezone authority, and public event-filter timezone authority.
+The final pre-merge Codex loop has produced **fourteen legitimate correctness findings so far: twelve P1 findings and two P2 findings**. All fourteen have been fixed and their inline review threads resolved.
 
-The latest four findings were exposed together by `plan6-final-review-runtime-safety.test.ts`. RED test-only HEAD `8e8b9c4e7ec68fbcc5c57534fd82cf0c6d60c632` produced Root CI `35765586800` with exactly four intended failures:
+The first ten findings covered due-instant-bound prayer-event identity, additive p2/p3 receipt schema support, legacy-receipt due-instant compatibility, pending-vs-applied timezone authority, dynamic-budget timezone authority, public event-filter timezone authority, current p3 receipt queuing, applied-timezone recalculation cutoffs, dynamic-budget recheck during timezone promotion, and serialized-byte migration preflight.
 
-1. current p3 Android deliveries were not queued for server receipt acknowledgement;
-2. recalculation cutoffs used the pending timezone instead of the applied timezone;
-3. `applied_timezone` promotion did not recheck dynamic Feed capacity in the same transaction;
-4. the serialized-byte budget redefinition did not preflight existing rows.
+The latest four findings were:
+1. first-save pending timezone incorrectly becoming the applied runtime timezone;
+2. partial canonical schedule writes being possible during a pending timezone transition;
+3. cross-local-date timezone promotion activating an unrecalculated newly-current date;
+4. Android/server disagreement over fall-back DST overlap resolution.
 
-The fixes now:
-- queue p3 and p2 native delivery receipts and cover p3 persistence with Android instrumentation;
-- derive future recalculation safety boundaries from `getRuntimePrayerSettings()`;
-- recheck `assert_masjid_display_dynamic_content_budget()` immediately after timezone promotion in the atomic recalculation RPC;
-- execute the redefined serialized-byte budget assertion during migration before completion.
+RED evidence:
+- Root CI `35801295772` on combined RED HEAD `d0e308e9b75ad8d6b2be944ffb274f773b92c1dc`: **FAILURE** with exactly four intended Plan 6 runtime-safety regression failures.
+- Android TWA `35801295782`: **FAILURE** with the intended repeated-wall-time overlap unit test as the sole Android unit-test failure (104 tests, 1 failed).
 
-Exact implementation HEAD `89cfece9635ef9601e9e36eede5ec1f98c668bd7` is green across all five workflow families after these fixes, and all current inline review threads are resolved.
+Fix commits:
+- `0999374b02ff818733f000a928c3696339128798` — first saved timezone remains pending;
+- `699c81462cc135dea99d2a35a1e9749626435b85` — cross-date pending/applied timezone recalculation guard;
+- `1c953a4afd2c3136e4b4135574e39aa459541cea` — atomic/full-range timezone schedule transition enforcement;
+- `e2e19a0822dd37c696ed703da8925c7287937278` and `869118ff81a0754faa555e3b94d16eb0d5bfaf71` — native later-offset DST overlap policy aligned with the server.
 
-Committing this evidence creates a newer documentation-only HEAD. Fresh exact documentation-HEAD workflows and the final Codex re-review are recorded in PR #108 metadata rather than recursively rewriting this document with its own future SHA/run IDs.
+GREEN exact implementation evidence is the five-run set above. Current unresolved inline review threads before this evidence refresh: **0**.
+
+Committing this evidence creates a newer documentation-only HEAD. Fresh exact documentation-HEAD workflows and the final exact-head Codex re-review are recorded in PR #108 metadata rather than recursively rewriting this document with its own future SHA/run IDs.
 
 Those automated results complete the current repository-side implementation/verification cycle but do not satisfy the remaining Plan 6 live-preview requirements. Under the 2026-09-22 sequencing override, no candidate-branch TV project will be created. After the approved branch is merged to `main`, the dedicated `donaumoschee-tv` project will be created against the real root production origin and the browser/Admin Test Mode evidence will be recorded.
 

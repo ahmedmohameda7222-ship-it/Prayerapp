@@ -39,12 +39,14 @@ describe("Plan 6 prayer timezone authority", () => {
     const timesPage = source("app/times/page.tsx");
     const browser = source("components/prayer/PrayerTimesBrowser.tsx");
 
-    expect(home).toContain("prayerSettings?.timezone");
+    expect(home).toContain("getRuntimePrayerTimezone");
+    expect(home).toContain("timezone={prayerTimezone}");
     expect(client).toContain("liveTimezone");
     expect(client).toContain("todayIso(now, liveTimezone)");
     expect(countdown).toContain("timezone");
     expect(countdown).toContain("getNextPrayerFromSchedule(schedule, now, timezone)");
-    expect(timesPage).toContain("timezone={settings?.timezone ?? null}");
+    expect(timesPage).toContain("getRuntimePrayerTimezone");
+    expect(timesPage).toContain("timezone={timezone}");
     expect(browser).toContain("todayIso(new Date(), timezone)");
   });
 
@@ -73,11 +75,11 @@ describe("Plan 6 prayer timezone authority", () => {
     expect(nativeMain).not.toContain('"Europe/Berlin".equals');
   });
 
-  it("exports Android prayer schedule timezone from persisted Prayer Engine settings", () => {
+  it("exports Android prayer schedule timezone from the same atomic snapshot as its rows", () => {
     const route = source("app/api/android/prayer-schedule/route.ts");
-    expect(route).toContain('import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";');
-    expect(route).toContain("timeZone: prayerSettings.timezone");
-    expect(route).toContain("getRuntimePrayerSettings");
+    expect(route).toContain("getPublishedPrayerScheduleSnapshot");
+    expect(route).toContain("timeZone: snapshot.timezone");
+    expect(route).not.toContain("getRuntimePrayerSettings");
     expect(route).not.toContain('timeZone: "Europe/Berlin"');
   });
 });

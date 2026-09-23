@@ -97,37 +97,6 @@ No Critical/P1/P2 repository blocker remained in the direct final Plan 6 review 
 The remaining Plan 6 Vercel/root/browser/Admin Test Mode verification is still intentionally post-merge `main`. Therefore this addendum records **pre-merge repository certification**, not final live-preview completion and not a change to the historical production-certification BLOCKED result below.
 
 
-## Plan 6 final pre-merge review continuation — 2026-09-23
-
-The earlier Plan 6 snapshot above stopped at sixteen legitimate Codex findings. Review continued after that point.
-
-The cumulative final pre-merge review record is now:
-- **21 legitimate Codex correctness findings** fixed;
-- **1 additional manual-review correctness finding** fixed;
-- unresolved inline review threads: **0** at the documentation refresh point.
-
-The five later Codex findings covered:
-- preserving canonical legacy Berlin prayer rows before first `prayer_settings` initialization;
-- atomically pairing applied timezone + published prayer rows for Android/display/reminder readers;
-- applied-timezone parsing/formatting for Admin announcement windows;
-- preserving the legacy Home schedule during 60-second/focus refresh;
-- moving Home live refresh onto the same atomic schedule snapshot.
-
-The manual finding covered a stale open announcement form surviving an applied-timezone promotion and later reinterpreting its wall-clock display window under the new timezone. Create/update now reject display-window submissions whose form-timezone authority is stale.
-
-Latest reviewed implementation HEAD before this documentation refresh:
-`86941b68559b013a2f878ac6bd50f8266e62fe3a`.
-
-Implementation-head automated evidence:
-- Root CI `35820205388`: **SUCCESS**.
-- Masjid Display Verification `35820205386`: **SUCCESS**.
-- Plan 3 Display Feed Verification `35820205354`: **SUCCESS**.
-- Security Scanners `35820205396`: **SUCCESS**.
-- Android TWA `35820205269`: overall **CANCELLED**; build/unit/lint candidate verification **SUCCESS**, API 23 instrumentation **SUCCESS**, API 37 instrumentation cancelled during execution. This does **not** count as a green Android gate.
-
-The documentation commits created after that implementation review must themselves receive a fresh exact-head five-workflow green run set before repository-side pre-merge certification can be considered finished. This note does not alter the historical Plan 5 BLOCKED result or any unexecuted physical/live gate below.
-
-
 ## Evidence table
 
 | Gate | Required | Current status | Evidence / blocker |

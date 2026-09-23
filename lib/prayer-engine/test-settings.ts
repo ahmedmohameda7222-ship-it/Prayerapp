@@ -3,6 +3,10 @@ import type { PrayerCalculationSettings } from "./types";
 /**
  * Synthetic settings for unit tests only.
  * These values are not an approved mosque calculation profile and must never be seeded.
+ *
+ * Keep this fixture representable by the canonical row model (one mosque-local
+ * date plus HH:mm fields) across the calendar dates exercised by generation
+ * tests. Cross-midnight behavior has dedicated rejection coverage.
  */
 export const validSettings: PrayerCalculationSettings = {
   latitude: 48,
@@ -10,7 +14,7 @@ export const validSettings: PrayerCalculationSettings = {
   timezone: "Europe/Berlin",
   fajrAngle: 18,
   ishaRule: "angle",
-  ishaAngle: 17,
+  ishaAngle: 12,
   ishaMinutesAfterMaghrib: null,
   asrShadowFactor: 1,
   highLatitudeRule: "middle_of_night",

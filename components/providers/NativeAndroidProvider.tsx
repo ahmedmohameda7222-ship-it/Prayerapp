@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
 import { useLocale } from "@/lib/i18n/context";
-import { addDaysIso, todayIso, zonedDateTime } from "@/lib/date-utils";
+import { addDaysIso, todayIso } from "@/lib/date-utils";
 import type { AdhanPrayer, AdhanSoundId } from "@/lib/adhan-audio";
 import type { NativePermissionDiagnosticKey } from "@/lib/android/native-status";
 import {
@@ -272,10 +272,19 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
         schemaVersion: number;
         timeZone: string;
         through: string;
+        scheduleValidUntil: string;
         rows: Array<Record<string, unknown>>;
       };
       const catalog = await catalogResponse.json() as { schemaVersion: number; sounds: Array<Record<string, unknown>> };
-      if (schedule.schemaVersion !== 1 || typeof schedule.timeZone !== "string" || !schedule.timeZone || !Array.isArray(schedule.rows) || schedule.rows.length === 0) return;
+      if (
+        schedule.schemaVersion !== 1
+        || typeof schedule.timeZone !== "string"
+        || !schedule.timeZone
+        || typeof schedule.scheduleValidUntil !== "string"
+        || !Number.isFinite(Date.parse(schedule.scheduleValidUntil))
+        || !Array.isArray(schedule.rows)
+        || schedule.rows.length === 0
+      ) return;
       if (
         accountTransitioningRef.current
         || syncGeneration !== syncGenerationRef.current
@@ -285,7 +294,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
         const updated = typeof row.updated_at === "string" ? row.updated_at : "";
         return updated > latest ? updated : latest;
       }, "");
-      const scheduleValidUntil = zonedDateTime(addDaysIso(schedule.through, 1), "00:00", schedule.timeZone).toISOString();
+      const scheduleValidUntil = schedule.scheduleValidUntil;
       if (accountTransitioningRef.current || syncGeneration !== syncGenerationRef.current) return;
       send("web.configure", {
         schemaVersion: 1,

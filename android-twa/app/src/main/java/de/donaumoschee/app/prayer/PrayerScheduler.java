@@ -101,6 +101,8 @@ public final class PrayerScheduler {
             return new ConfigInstallResult(false, false);
         }
         if (store.accountGeneration() != generation) return new ConfigInstallResult(false, false);
+        PrayerNotifications.createChannels(context);
+        if (store.accountGeneration() != generation) return new ConfigInstallResult(false, false);
         if (!cancelStored(context, store, generation)) {
             return new ConfigInstallResult(true, false);
         }

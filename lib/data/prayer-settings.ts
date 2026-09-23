@@ -129,7 +129,13 @@ async function loadPrayerSettingsRow(): Promise<PrayerSettingsRow | null> {
     .eq("id", "1")
     .maybeSingle();
 
-  if (error) throw new Error("Unable to load prayer settings");
+  if (error) {
+    const code = typeof error === "object" && error && "code" in error
+      ? String((error as { code?: unknown }).code || "")
+      : "";
+    if (code === "42P01" || code === "PGRST205") return null;
+    throw new Error("Unable to load prayer settings");
+  }
   if (!data) return null;
 
   const record = data as Record<string, unknown>;
@@ -163,6 +169,11 @@ export async function getRuntimePrayerSettings(): Promise<PrayerCalculationSetti
     ...row.settings,
     timezone: row.appliedTimezone,
   });
+}
+
+export async function getRuntimePrayerTimezone(): Promise<string> {
+  const row = await loadPrayerSettingsRow();
+  return row?.appliedTimezone ?? APP_TIME_ZONE;
 }
 
 export async function getPrayerSettingsForDisplay(): Promise<{

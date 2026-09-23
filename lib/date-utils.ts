@@ -70,13 +70,13 @@ export function todayIso(now = new Date(), timeZone = APP_TIME_ZONE) {
   return `${value.year}-${value.month}-${value.day}`;
 }
 
-export function formatDateTimeLocalInput(value?: string) {
+export function formatDateTimeLocalInput(value?: string, timeZone = APP_TIME_ZONE) {
   if (!value) return "";
   const instant = new Date(value);
   if (Number.isNaN(instant.getTime())) return "";
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-CA", {
-      timeZone: APP_TIME_ZONE,
+      timeZone,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -88,6 +88,30 @@ export function formatDateTimeLocalInput(value?: string) {
       .map((part) => [part.type, part.value]),
   );
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+export function parseDateTimeLocalInput(value: string, timeZone = APP_TIME_ZONE) {
+  const trimmed = value.trim();
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/.exec(trimmed);
+  if (!match) throw new Error("Invalid datetime-local value");
+  const [, date, time] = match;
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  const calendarCheck = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  if (
+    calendarCheck.getUTCFullYear() !== year ||
+    calendarCheck.getUTCMonth() !== month - 1 ||
+    calendarCheck.getUTCDate() !== day ||
+    hour > 23 ||
+    minute > 59
+  ) {
+    throw new Error("Invalid datetime-local value");
+  }
+  const instant = zonedDateTime(date, time, timeZone);
+  if (formatDateTimeLocalInput(instant.toISOString(), timeZone) !== trimmed) {
+    throw new Error("Invalid or nonexistent datetime-local value");
+  }
+  return instant.toISOString();
 }
 
 export function addDaysIso(date: string, days: number) {

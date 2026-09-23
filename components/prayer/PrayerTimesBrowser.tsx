@@ -56,7 +56,7 @@ function PrayerTimesBrowserReady({
   );
   const effectivePrayerTimes = runtime?.schedule || [];
   const effectiveTimezone = runtime?.timezone ?? timezone;
-  const effectiveIqamaDelays = runtime?.iqamaDelays ?? iqamaDelays;
+  const effectiveIqamaDelays = runtime?.iqamaDelays === undefined ? iqamaDelays : runtime.iqamaDelays;
   const today = todayIso(new Date(), effectiveTimezone);
 
   const tabs = useMemo(

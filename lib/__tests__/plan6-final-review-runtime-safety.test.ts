@@ -43,7 +43,7 @@ describe("Plan 6 final-review runtime safety regressions", () => {
   it("rejects partial canonical writes while a timezone change is pending", async () => {
     const pendingSettings = {
       ...validSettings,
-      timezone: "Asia/Tokyo",
+      timezone: "Europe/Paris",
       calculationRevision: validSettings.calculationRevision + 1,
     };
     const appliedSettings = {

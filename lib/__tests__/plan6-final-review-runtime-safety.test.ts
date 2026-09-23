@@ -118,6 +118,33 @@ describe("Plan 6 final-review runtime safety regressions", () => {
     ).rejects.toThrow("share the same local date");
   });
 
+  it("rechecks mosque-local today inside the atomic recalculation RPC after locking settings", () => {
+    const sql = source(
+      "supabase/migrations/20260922061000_applied_timezone.sql",
+    ).toLowerCase();
+    const settingsLock = sql.indexOf("for update;");
+    const appliedToday = sql.indexOf(
+      "v_applied_today := (\n    statement_timestamp() at time zone v_settings.applied_timezone",
+      settingsLock,
+    );
+    const staleTodayGuard = sql.indexOf(
+      "if p_today is distinct from v_applied_today",
+      appliedToday,
+    );
+    const futureOnlyGuard = sql.indexOf(
+      "if p_start_date < v_applied_today",
+      staleTodayGuard,
+    );
+    const insert = sql.indexOf("insert into public.prayer_times");
+
+    expect(settingsLock).toBeGreaterThan(-1);
+    expect(appliedToday).toBeGreaterThan(settingsLock);
+    expect(staleTodayGuard).toBeGreaterThan(appliedToday);
+    expect(futureOnlyGuard).toBeGreaterThan(staleTodayGuard);
+    expect(futureOnlyGuard).toBeLessThan(insert);
+    expect(sql).toContain("where date >= v_applied_today");
+  });
+
   it("defends timezone transitions inside the atomic recalculation RPC before canonical writes", () => {
     const sql = source(
       "supabase/migrations/20260922061000_applied_timezone.sql",

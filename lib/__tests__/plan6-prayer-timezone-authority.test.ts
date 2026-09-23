@@ -39,15 +39,16 @@ describe("Plan 6 prayer timezone authority", () => {
     const timesPage = source("app/times/page.tsx");
     const browser = source("components/prayer/PrayerTimesBrowser.tsx");
 
-    expect(home).toContain("getRuntimePrayerTimezone");
+    expect(home).toContain("getPublishedPrayerScheduleSnapshot");
     expect(home).toContain("timezone={prayerTimezone}");
     expect(client).toContain("liveTimezone");
     expect(client).toContain("todayIso(now, liveTimezone)");
     expect(countdown).toContain("timezone");
     expect(countdown).toContain("getNextPrayerFromSchedule(schedule, now, timezone)");
-    expect(timesPage).toContain("getRuntimePrayerTimezone");
+    expect(timesPage).toContain("getPublishedPrayerScheduleSnapshot");
     expect(timesPage).toContain("timezone={timezone}");
-    expect(browser).toContain("todayIso(new Date(), timezone)");
+    expect(browser).toContain("loadPrayerScheduleRuntime");
+    expect(browser).toContain("todayIso(new Date(), effectiveTimezone)");
   });
 
   it("keeps web and native Android prayer scheduling on the server-provided IANA timezone", () => {

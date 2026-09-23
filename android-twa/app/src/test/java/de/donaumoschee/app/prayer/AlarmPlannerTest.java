@@ -4,6 +4,10 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -16,11 +20,7 @@ public final class AlarmPlannerTest {
     @Test
     public void plansDeterministicReminderAndAdhanWithoutSunrise() throws Exception {
         Instant now = Instant.parse("2026-08-22T08:00:00Z");
-        NativeConfig config = NativeConfig.parse(new JSONObject("{"
-                + "\"schemaVersion\":1,\"revision\":\"r1\",\"timeZone\":\"Europe/Berlin\","
-                + "\"scheduleValidUntil\":\"2026-08-25T00:00:00Z\","
-                + "\"rows\":[{\"id\":\"" + SCHEDULE_ID + "\",\"date\":\"2026-08-22\",\"fajr\":\"05:00\",\"sunrise\":\"06:30\",\"dhuhr\":\"13:30\",\"asr\":\"17:30\",\"maghrib\":\"20:30\",\"isha\":\"22:00\"}],"
-                + "\"reminders\":[{\"prayer\":\"dhuhr\",\"enabled\":true,\"leadMinutes\":10,\"adhanSoundId\":\"abdul-basit-cairo\"}]}"), now);
+        NativeConfig config = config("r1", "2026-08-22", "13:30", "dhuhr", true, 10, "abdul-basit-cairo", now);
 
         List<AlarmEvent> first = AlarmPlanner.plan(config, now);
         List<AlarmEvent> second = AlarmPlanner.plan(config, now);
@@ -161,7 +161,20 @@ public final class AlarmPlannerTest {
         return NativeConfig.parse(new JSONObject("{"
                 + "\"schemaVersion\":1,\"revision\":\"" + revision + "\",\"timeZone\":\"" + timeZone + "\","
                 + "\"scheduleValidUntil\":\"" + now.plusSeconds(30L * 24 * 60 * 60) + "\","
-                + "\"rows\":[{\"id\":\"" + SCHEDULE_ID + "\",\"date\":\"" + date + "\",\"fajr\":\"05:00\",\"sunrise\":\"06:30\",\"dhuhr\":\"" + dhuhrTime + "\",\"asr\":\"17:30\",\"maghrib\":\"20:30\",\"isha\":\"22:00\"}],"
+                + "\"rows\":[{\"id\":\"" + SCHEDULE_ID + "\",\"date\":\"" + date + "\","
+                + "\"fajr\":\"05:00\",\"fajrAt\":\"" + resolvedAt(date, "05:00", timeZone) + "\","
+                + "\"sunrise\":\"06:30\",\"sunriseAt\":\"" + resolvedAt(date, "06:30", timeZone) + "\","
+                + "\"dhuhr\":\"" + dhuhrTime + "\",\"dhuhrAt\":\"" + resolvedAt(date, dhuhrTime, timeZone) + "\","
+                + "\"asr\":\"17:30\",\"asrAt\":\"" + resolvedAt(date, "17:30", timeZone) + "\","
+                + "\"maghrib\":\"20:30\",\"maghribAt\":\"" + resolvedAt(date, "20:30", timeZone) + "\","
+                + "\"isha\":\"22:00\",\"ishaAt\":\"" + resolvedAt(date, "22:00", timeZone) + "\"}],"
                 + "\"reminders\":[{\"prayer\":\"" + prayer + "\",\"enabled\":" + enabled + ",\"leadMinutes\":" + lead + ",\"adhanSoundId\":\"" + sound + "\"}]}"), now);
+    }
+
+    private static String resolvedAt(String date, String time, String timeZone) {
+        return ZonedDateTime.of(LocalDate.parse(date), LocalTime.parse(time), ZoneId.of(timeZone))
+                .withLaterOffsetAtOverlap()
+                .toInstant()
+                .toString();
     }
 }

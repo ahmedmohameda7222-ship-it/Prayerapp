@@ -38,6 +38,7 @@ set search_path = pg_catalog, public
 as $$
 declare
   v_settings public.prayer_settings%rowtype;
+  v_applied_today date;
   v_count integer;
   v_payload_count integer;
   v_distinct_count integer;
@@ -55,9 +56,6 @@ begin
      or p_expected_revision is null then
     raise exception 'invalid recalculation basis';
   end if;
-  if p_start_date < p_today then
-    raise exception 'recalculation cannot change dates before mosque-local today';
-  end if;
   if p_end_date < p_start_date then
     raise exception 'invalid recalculation range';
   end if;
@@ -72,6 +70,22 @@ begin
   from public.prayer_settings
   where id = '1'
   for update;
+
+  -- Re-derive the authoritative applied local day inside the write statement
+  -- after serializing on prayer_settings. A client preview/commit can cross
+  -- midnight between calculating p_today and entering this RPC; never allow
+  -- that stale date to weaken the future-only write boundary.
+  v_applied_today := (
+    statement_timestamp() at time zone v_settings.applied_timezone
+  )::date;
+
+  if p_today is distinct from v_applied_today then
+    raise exception 'mosque-local today changed; preview again';
+  end if;
+
+  if p_start_date < v_applied_today then
+    raise exception 'recalculation cannot change dates before mosque-local today';
+  end if;
 
   if v_settings.calculation_revision <> p_expected_revision then
     raise exception 'calculation revision mismatch';
@@ -249,7 +263,7 @@ begin
     if exists (
       select 1
       from public.prayer_times
-      where date >= p_today
+      where date >= v_applied_today
         and (date < p_start_date or date > p_end_date)
     ) then
       raise exception 'timezone change requires full future recalculation';
@@ -298,7 +312,7 @@ begin
   if not exists (
     select 1
     from public.prayer_times
-    where date >= p_today
+    where date >= v_applied_today
       and (date < p_start_date or date > p_end_date)
   ) then
     update public.prayer_settings

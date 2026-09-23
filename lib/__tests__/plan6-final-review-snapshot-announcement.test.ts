@@ -97,4 +97,9 @@ describe("Plan 6 final review snapshot and announcement regressions", () => {
     expect(page).toContain("snapshot?.timezone ?? settings?.timezone ?? APP_TIME_ZONE");
   });
 
+  it("keeps atomic prayer rows available when optional runtime settings fail", () => {
+    const runtime = source("app/home-prayer-runtime.ts");
+    expect(runtime.match(/getRuntimePrayerSettings\(\)\.catch\(\(\) => null\)/g) ?? []).toHaveLength(2);
+  });
+
 });

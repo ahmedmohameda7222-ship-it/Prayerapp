@@ -130,9 +130,7 @@ async function loadPrayerSettingsRow(): Promise<PrayerSettingsRow | null> {
     .maybeSingle();
 
   if (error) {
-    const code = typeof error === "object" && error && "code" in error
-      ? String((error as { code?: unknown }).code || "")
-      : "";
+    const code = String(error.code || "");
     if (code === "42P01" || code === "PGRST205") return null;
     throw new Error("Unable to load prayer settings");
   }

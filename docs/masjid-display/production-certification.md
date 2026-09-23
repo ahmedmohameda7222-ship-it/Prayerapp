@@ -23,33 +23,32 @@ Plan 6 still requires live Vercel TV deployment, real root proxy/Test Control ve
 
 ### Plan 6 implementation evidence snapshot
 
-Certified pre-merge Plan 6 implementation HEAD `869118ff81a0754faa555e3b94d16eb0d5bfaf71` has the following exact-head automated evidence:
+Certified pre-merge Plan 6 repository HEAD `5fb5d03ca6891ead259da097d180a9ccff9b7d96` has the following exact-head automated evidence:
 
-- Root CI `35801802512`: **SUCCESS**.
-- Masjid Display Verification `35801802531`: **SUCCESS**, including two-app integration.
-- Plan 3 Display Feed Verification `35801802481`: **SUCCESS**.
-- Security Scanners `35801802457`: **SUCCESS**.
-- Android TWA `35801802441`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37; protected signing was intentionally skipped for this PR verification run.
+- Root CI `35806268092`: **SUCCESS**.
+- Masjid Display Verification `35806268096`: **SUCCESS**, including two-app integration.
+- Plan 3 Display Feed Verification `35806268112`: **SUCCESS**.
+- Security Scanners `35806268100`: **SUCCESS**.
+- Android TWA `35806268167`: **SUCCESS**, including Android unit/lint/build verification and instrumentation on API 23 and API 37; protected signing was intentionally skipped for this PR verification run.
 
-The final pre-merge Codex loop has produced **fourteen legitimate correctness findings so far: twelve P1 findings and two P2 findings**. All fourteen have been fixed and their inline review threads resolved.
+The final pre-merge Codex loop has produced **sixteen legitimate correctness findings so far: thirteen P1 findings and three P2 findings**. All sixteen have been fixed and their inline review threads resolved.
 
-The first ten findings covered due-instant-bound prayer-event identity, additive p2/p3 receipt schema support, legacy-receipt due-instant compatibility, pending-vs-applied timezone authority, dynamic-budget timezone authority, public event-filter timezone authority, current p3 receipt queuing, applied-timezone recalculation cutoffs, dynamic-budget recheck during timezone promotion, and serialized-byte migration preflight.
-
-The latest four findings were:
-1. first-save pending timezone incorrectly becoming the applied runtime timezone;
-2. partial canonical schedule writes being possible during a pending timezone transition;
-3. cross-local-date timezone promotion activating an unrecalculated newly-current date;
-4. Android/server disagreement over fall-back DST overlap resolution.
+The latest two findings were:
+1. **P1:** the Android prayer-schedule endpoint remained shared-cacheable for five minutes, allowing a native refresh immediately after timezone promotion to install stale pre-promotion schedule/timezone data;
+2. **P2:** remaining user-facing religious clocks — Home header date, Ramadan current day, Azkar category selection, and Azkar daily progress — still used Berlin rather than the applied runtime timezone.
 
 RED evidence:
-- Root CI `35801295772` on combined RED HEAD `d0e308e9b75ad8d6b2be944ffb274f773b92c1dc`: **FAILURE** with exactly four intended Plan 6 runtime-safety regression failures.
-- Android TWA `35801295782`: **FAILURE** with the intended repeated-wall-time overlap unit test as the sole Android unit-test failure (104 tests, 1 failed).
+- test-only HEAD `887c806194392bb54ad13d4146e018e125a9b898`;
+- Root CI `35805587968`: **FAILURE** with five intended failures in `plan6-final-review-cache-religious-clock.test.ts`;
+- Plan 3 Display Feed Verification `35805587956`: **FAILURE** at the not-yet-implemented Azkar timezone argument.
 
-Fix commits:
-- `0999374b02ff818733f000a928c3696339128798` — first saved timezone remains pending;
-- `699c81462cc135dea99d2a35a1e9749626435b85` — cross-date pending/applied timezone recalculation guard;
-- `1c953a4afd2c3136e4b4135574e39aa459541cea` — atomic/full-range timezone schedule transition enforcement;
-- `e2e19a0822dd37c696ed703da8925c7287937278` and `869118ff81a0754faa555e3b94d16eb0d5bfaf71` — native later-offset DST overlap policy aligned with the server.
+Fixes:
+- `e9add95cfa6ca7320651b7c716d87011f0414146` — Android schedule endpoint uses `Cache-Control: no-store`;
+- `397b56ec26f5b16ba54ed45f74b783a9d8e76e3e` — Azkar smart clock accepts timezone;
+- `480c9fbcf81df3a1a53c9dd523b0fc4d331e49cc` and `75127435b8cc941b4dd418341dacfc173f01a245` — applied timezone reaches the Home header;
+- `a69caf14be90aa5a9c676d5918e85a6e02514c67` — Ramadan day selection uses applied runtime timezone;
+- `98bea478808085e6a14c795e8c2cb10805356d5a` and `c83467a94b46488a5778f6086069be17f56550ad` — Azkar page/routine use applied runtime timezone;
+- `5fb5d03ca6891ead259da097d180a9ccff9b7d96` — legacy hardening assertion updated to the new authority.
 
 GREEN exact implementation evidence is the five-run set above. Current unresolved inline review threads before this evidence refresh: **0**.
 

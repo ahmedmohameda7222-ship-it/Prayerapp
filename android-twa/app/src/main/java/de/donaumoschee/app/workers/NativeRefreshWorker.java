@@ -48,10 +48,10 @@ public final class NativeRefreshWorker extends Worker {
         }
         if (!scheduleRefreshed) {
             DeliveryDiagnostics.emit("schedule_refresh_failure", "refresh-failed");
+            PrayerScheduler.reschedule(getApplicationContext(), generation);
         }
 
         Log.i(TAG, "schedule.refresh success=" + scheduleRefreshed + " generation=" + generation);
-        PrayerScheduler.reschedule(getApplicationContext(), generation);
         if (store.accountGeneration() != generation) {
             Log.i(TAG, "schedule.refresh stale-after-reschedule generation=" + generation);
             return Result.success();
@@ -74,7 +74,14 @@ public final class NativeRefreshWorker extends Worker {
             config.put("timeZone", timeZone);
             config.put("rows", rows);
             config.put("scheduleValidUntil", validUntil.toString());
-            return store.saveConfigIfGeneration(config, Instant.now(), generation);
+            PrayerScheduler.ConfigInstallResult replacement =
+                    PrayerScheduler.replaceConfigAndReschedule(
+                            getApplicationContext(),
+                            config,
+                            Instant.now(),
+                            generation
+                    );
+            return replacement.configSaved;
         } catch (IOException | JSONException | RuntimeException error) {
             return false;
         }

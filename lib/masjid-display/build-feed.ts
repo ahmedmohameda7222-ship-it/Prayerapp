@@ -12,6 +12,7 @@ import { getMasjidDisplaySettings, getMasjidDisplaySettingsForDisplay } from "@/
 import { getMosqueSettings, getMosqueSettingsForDisplay } from "@/lib/data/mosque-settings";
 import { getPrayerSettings, getPrayerSettingsForDisplay, getRuntimePrayerSettings, getRuntimePrayerSettingsForDisplay } from "@/lib/data/prayer-settings";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
+import { getPublishedPrayerScheduleSnapshot } from "@/lib/data/prayer-schedule-snapshot";
 import type { Announcement, DonationCampaign, Event, PrayerTime } from "@/lib/types";
 import {
   displayAzkarSerializedBytes,
@@ -41,6 +42,7 @@ export class DisplayFeedBuildError extends Error {
 
 type FeedDependencies = {
   getPrayerTimes: typeof getPrayerTimes;
+  getPublishedPrayerScheduleSnapshot?: typeof getPublishedPrayerScheduleSnapshot;
   getPrayerSettings: typeof getPrayerSettings;
   getPrayerSettingsForDisplay?: typeof getPrayerSettingsForDisplay;
   getRuntimePrayerSettings?: typeof getRuntimePrayerSettings;
@@ -59,6 +61,7 @@ type FeedDependencies = {
 
 const defaultDependencies: FeedDependencies = {
   getPrayerTimes,
+  getPublishedPrayerScheduleSnapshot,
   getPrayerSettings,
   getPrayerSettingsForDisplay,
   getRuntimePrayerSettings,
@@ -331,7 +334,14 @@ export async function buildMasjidDisplayFeed(
   }
 
   const prayerSettings = prayerSettingsSource.value;
-  const timezone = prayerSettings.timezone;
+  const prayerSnapshot = dependencies.getPublishedPrayerScheduleSnapshot
+    ? await dependencies.getPublishedPrayerScheduleSnapshot({
+        now,
+        daysBefore: 1,
+        daysAfter: 35,
+      })
+    : null;
+  const timezone = prayerSnapshot?.timezone ?? prayerSettings.timezone;
   const today = todayIso(now, timezone);
   const startDate = addDaysIso(today, -1);
   const endDate = addDaysIso(today, 35);
@@ -359,7 +369,9 @@ export async function buildMasjidDisplayFeed(
     displaySettingsSource,
     azkarItems,
   ] = await Promise.all([
-    dependencies.getPrayerTimes(true, startDate, endDate),
+    prayerSnapshot
+      ? Promise.resolve(prayerSnapshot.rows)
+      : dependencies.getPrayerTimes(true, startDate, endDate),
     dependencies.getJumuahTimesForDisplayWindow(startDate, endDate),
     dependencies.getAnnouncementsForDisplayWindow(now.toISOString(), horizonEnd.toISOString()),
     dependencies.getEventsForDisplayWindow(today, endDate),

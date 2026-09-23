@@ -11,17 +11,26 @@ import { getAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns } from "@/lib/data/donations";
 import { getJumuahTimes } from "@/lib/data/jumuah";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
-import { todayIso, addDaysIso } from "@/lib/date-utils";
+import { addDaysIso } from "@/lib/date-utils";
 import { getMissingPublishedPrayerDates } from "@/lib/prayer-coverage";
+import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
+import { loadAdminRuntimeDateAction } from "./runtime-date";
 import { useTranslation } from "@/lib/i18n/use-translation";
 
 export default function AdminDashboardPage() {
   const { t } = useTranslation();
-  const { data, loading, error, reload } = useAsyncData(loadDashboard);
-  const today = todayIso();
-  const nextWeekStart = addDaysIso(today, 1);
-  const nextWeekMissing = data ? getMissingPublishedPrayerDates(data.prayerTimes, nextWeekStart, 7).length > 0 : false;
+  const { session } = useAdminAuth();
+  const accessToken = session?.access_token || "";
+  const { data, loading, error, reload } = useAsyncData(
+    () => accessToken ? loadDashboard(accessToken) : Promise.resolve(null),
+    accessToken,
+  );
+  const today = data?.today ?? "";
+  const nextWeekStart = today ? addDaysIso(today, 1) : "";
+  const nextWeekMissing = data && today
+    ? getMissingPublishedPrayerDates(data.prayerTimes, nextWeekStart, 7).length > 0
+    : false;
 
   return (
     <AdminShell titleKey="admin.dashboard">
@@ -54,9 +63,20 @@ export default function AdminDashboardPage() {
   );
 }
 
-async function loadDashboard() {
+async function loadDashboard(token: string) {
+  const runtimeDate = await loadAdminRuntimeDateAction(token);
+  if (!runtimeDate.success || !runtimeDate.data) {
+    throw new Error(runtimeDate.error || "Unable to load mosque runtime date");
+  }
   const [prayerTimes, jumuah, campaigns, announcements] = await Promise.all([
     getPrayerTimes(true), getJumuahTimes(true), getDonationCampaigns(true), getAnnouncements(true),
   ]);
-  return { prayerTimes, jumuah, campaigns, announcements };
+  return {
+    prayerTimes,
+    jumuah,
+    campaigns,
+    announcements,
+    today: runtimeDate.data.today,
+    timezone: runtimeDate.data.timezone,
+  };
 }

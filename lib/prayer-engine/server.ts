@@ -285,8 +285,17 @@ export async function previewFutureRecalculation(
   const runtimeSettings = requireSettings(
     await (dependencies.getRuntimeSettings ?? dependencies.getSettings)(),
   );
-  if (startDate < dependencies.today(runtimeSettings.timezone)) {
+  const appliedToday = dependencies.today(runtimeSettings.timezone);
+  if (startDate < appliedToday) {
     throw new Error("Future recalculation cannot start before mosque-local today");
+  }
+  if (settings.timezone !== runtimeSettings.timezone) {
+    const pendingToday = dependencies.today(settings.timezone);
+    if (pendingToday !== appliedToday) {
+      throw new Error(
+        "Timezone change requires applied and pending timezones to share the same local date",
+      );
+    }
   }
   const existing = await loadPrayerTimesRange(startDate, endDate, dependencies);
   return buildRecalculationPreview(
@@ -308,6 +317,33 @@ export async function commitFutureRecalculation(
   const today = dependencies.today(runtimeSettings.timezone);
   if (preview.startDate < today) {
     throw new Error("Future recalculation cannot change past dates");
+  }
+  if (settings.timezone !== runtimeSettings.timezone) {
+    const pendingToday = dependencies.today(settings.timezone);
+    if (pendingToday !== today) {
+      throw new Error(
+        "Timezone change requires applied and pending timezones to share the same local date",
+      );
+    }
+
+    const beforeRange =
+      preview.startDate > today
+        ? await dependencies.getPrayerTimes(
+            true,
+            today,
+            addIsoDays(preview.startDate, -1),
+            1,
+          )
+        : [];
+    const afterRange = await dependencies.getPrayerTimes(
+      true,
+      addIsoDays(preview.endDate, 1),
+      undefined,
+      1,
+    );
+    if (beforeRange.length > 0 || afterRange.length > 0) {
+      throw new Error("Timezone change requires full future recalculation");
+    }
   }
   if (settings.calculationRevision !== preview.settingsRevision) {
     throw new Error("Prayer calculation revision changed; preview again");

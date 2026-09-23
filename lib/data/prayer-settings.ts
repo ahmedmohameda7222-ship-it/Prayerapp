@@ -1,4 +1,5 @@
 import "server-only";
+import { APP_TIME_ZONE } from "@/lib/date-utils";
 import { createServerClient } from "@/lib/supabase/server";
 import type { PrayerCalculationSettings } from "@/lib/prayer-engine/types";
 import { validatePrayerCalculationSettings } from "@/lib/prayer-engine/validate-settings";
@@ -80,7 +81,10 @@ export function prayerSettingsInsertValues(
     id: "1",
     ...mutablePrayerSettingsValues(settings),
     applied_calculation_revision: 0,
-    applied_timezone: settings.timezone,
+    // Existing canonical prayer_times rows were historically authored under
+    // the application timezone. A first settings save must therefore keep a
+    // different timezone pending until a full recalculation promotes it.
+    applied_timezone: APP_TIME_ZONE,
   };
 }
 

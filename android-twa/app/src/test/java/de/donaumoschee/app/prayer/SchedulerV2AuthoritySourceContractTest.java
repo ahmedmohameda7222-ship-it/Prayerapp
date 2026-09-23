@@ -49,6 +49,22 @@ public final class SchedulerV2AuthoritySourceContractTest {
     }
 
     @Test
+    public void configReplacementAndAlarmInstallationShareOneSchedulerLock() throws IOException {
+        String scheduler = javaSource("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        String bridge = javaSource("de/donaumoschee/app/bridge/BridgeHandler.java");
+        String worker = javaSource("de/donaumoschee/app/workers/NativeRefreshWorker.java");
+
+        assertTrue(scheduler.contains("private static final Object SCHEDULE_LOCK = new Object();"));
+        assertTrue(scheduler.contains("replaceConfigAndReschedule("));
+        assertTrue(scheduler.contains("synchronized (SCHEDULE_LOCK)"));
+        assertTrue(scheduler.contains("store.saveConfigIfGeneration(config.source, now, generation)"));
+        assertTrue(bridge.contains("PrayerScheduler.replaceConfigAndReschedule(context, payload, Instant.now())"));
+        assertTrue(!bridge.contains("store.saveConfig(payload"));
+        assertTrue(worker.contains("PrayerScheduler.replaceConfigAndReschedule("));
+        assertTrue(!worker.contains("store.saveConfigIfGeneration(config"));
+    }
+
+    @Test
     public void nativeStatusAdvertisesReceiptV2AndCurrentGeneration() throws IOException {
         String status = javaSource("de/donaumoschee/app/prayer/NativeStatus.java");
         assertTrue(status.contains("delivery-receipt-v2"));

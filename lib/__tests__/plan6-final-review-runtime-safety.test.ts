@@ -118,38 +118,87 @@ describe("Plan 6 final-review runtime safety regressions", () => {
     ).rejects.toThrow("share the same local date");
   });
 
-  it("rechecks mosque-local today inside the atomic recalculation RPC after locking settings", () => {
+  it("uses a moving mosque-local clock around atomic recalculation writes", () => {
     const sql = source(
-      "supabase/migrations/20260922061000_applied_timezone.sql",
+      "supabase/migrations/20260923100000_prayer_schedule_midnight_write_guards.sql",
     ).toLowerCase();
-    const settingsLock = sql.indexOf("for update;");
-    const appliedToday = sql.indexOf(
-      "v_applied_today := (\n    statement_timestamp() at time zone v_settings.applied_timezone",
+    const functionStart = sql.indexOf(
+      "create or replace function public.commit_prayer_schedule_recalculation",
+    );
+    const settingsLock = sql.indexOf("for update;", functionStart);
+    const firstClock = sql.indexOf(
+      "clock_timestamp() at time zone v_settings.applied_timezone",
       settingsLock,
     );
-    const staleTodayGuard = sql.indexOf(
+    const firstStaleGuard = sql.indexOf(
       "if p_today is distinct from v_applied_today",
-      appliedToday,
+      firstClock,
     );
-    const futureOnlyGuard = sql.indexOf(
-      "if p_start_date < v_applied_today",
-      staleTodayGuard,
+    const insert = sql.indexOf("insert into public.prayer_times", firstStaleGuard);
+    const prewriteClock = sql.lastIndexOf(
+      "clock_timestamp() at time zone v_settings.applied_timezone",
+      insert,
     );
-    const insert = sql.indexOf("insert into public.prayer_times");
+    const postwriteClock = sql.indexOf(
+      "clock_timestamp() at time zone v_settings.applied_timezone",
+      insert,
+    );
+
+    expect(settingsLock).toBeGreaterThan(functionStart);
+    expect(firstClock).toBeGreaterThan(settingsLock);
+    expect(firstStaleGuard).toBeGreaterThan(firstClock);
+    expect(prewriteClock).toBeGreaterThan(firstStaleGuard);
+    expect(prewriteClock).toBeLessThan(insert);
+    expect(postwriteClock).toBeGreaterThan(insert);
+    expect(sql.slice(functionStart)).not.toContain("statement_timestamp()");
+  });
+
+  it("rechecks the moving applied local day around atomic schedule extension writes", () => {
+    const sql = source(
+      "supabase/migrations/20260923100000_prayer_schedule_midnight_write_guards.sql",
+    ).toLowerCase();
+    const functionStart = sql.indexOf(
+      "create or replace function public.commit_prayer_schedule_extension",
+    );
+    const functionEnd = sql.indexOf(
+      "create or replace function public.commit_prayer_schedule_recalculation",
+      functionStart,
+    );
+    const extension = sql.slice(functionStart, functionEnd);
+    const settingsLock = extension.indexOf("for update;");
+    const insert = extension.indexOf("insert into public.prayer_times");
+    const firstClock = extension.indexOf(
+      "clock_timestamp() at time zone v_settings.applied_timezone",
+      settingsLock,
+    );
+    const prewriteClock = extension.lastIndexOf(
+      "clock_timestamp() at time zone v_settings.applied_timezone",
+      insert,
+    );
+    const postwriteClock = extension.indexOf(
+      "clock_timestamp() at time zone v_settings.applied_timezone",
+      insert,
+    );
 
     expect(settingsLock).toBeGreaterThan(-1);
-    expect(appliedToday).toBeGreaterThan(settingsLock);
-    expect(staleTodayGuard).toBeGreaterThan(appliedToday);
-    expect(futureOnlyGuard).toBeGreaterThan(staleTodayGuard);
-    expect(futureOnlyGuard).toBeLessThan(insert);
-    expect(sql).toContain("where date >= v_applied_today");
+    expect(firstClock).toBeGreaterThan(settingsLock);
+    expect(extension).toContain("p_today is distinct from v_applied_today");
+    expect(extension).toContain(
+      "p_expected_first_missing < v_applied_today",
+    );
+    expect(extension).toContain(
+      "generate_series(v_applied_today, v_applied_today + interval '10 years'",
+    );
+    expect(prewriteClock).toBeGreaterThan(firstClock);
+    expect(prewriteClock).toBeLessThan(insert);
+    expect(postwriteClock).toBeGreaterThan(insert);
   });
 
   it("defends timezone transitions inside the atomic recalculation RPC before canonical writes", () => {
     const sql = source(
-      "supabase/migrations/20260922061000_applied_timezone.sql",
+      "supabase/migrations/20260923100000_prayer_schedule_midnight_write_guards.sql",
     ).toLowerCase();
-    const insert = sql.indexOf("insert into public.prayer_times");
+    const insert = sql.indexOf("insert into public.prayer_times", sql.indexOf("create or replace function public.commit_prayer_schedule_recalculation"));
     const timezoneGuard = sql.indexOf(
       "if v_settings.timezone <> v_settings.applied_timezone",
     );

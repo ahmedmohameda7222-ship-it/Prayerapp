@@ -207,6 +207,54 @@ Committing this evidence creates a newer documentation-only HEAD without changin
 
 Per the 2026-09-22 operator sequencing override, a fresh exact-head GitHub Codex review is the **last pre-merge review gate** after this evidence refresh and exact-head automated verification. Real Vercel/root/browser/Admin Test Mode verification remains intentionally post-merge on `main` and remains required before the final Plan 6 completion phrase may be used.
 
+
+## Final pre-merge self-review addendum — 2026-09-23
+
+This section supersedes the older pre-merge finding count and the earlier statement that another Codex pass was required.
+
+At the operator's direction, the final pre-merge review was completed directly against the full Plan 6 delta rather than waiting for Codex to act as the final gate.
+
+### Codex findings through the last returned review
+
+The complete Codex review history for Plan 6 contains **21 legitimate correctness findings: 16 P1 findings and 5 P2 findings**.
+
+In addition to findings 1–16 documented above, the later reviews identified:
+
+17. **P1:** canonical legacy prayer rows could disappear from Home/Times/Friday before the first `prayer_settings` save;
+18. **P1:** Android schedule, Masjid Display Feed, and reminder cron could pair applied timezone authority with prayer rows from a different database snapshot;
+19. **P2:** announcement `datetime-local` windows were parsed/formatted in Berlin instead of the applied runtime timezone;
+20. **P1:** Home's 60-second/focus refresh could erase the legacy Berlin schedule when `prayer_settings` was absent;
+21. **P2:** Home refresh still used a split settings/schedule read and could install mismatched timezone + wall-clock rows.
+
+All 21 Codex findings are fixed. The final two Home threads were closed against exact implementation HEAD
+`73c78076c0166acde1ecbbe892fa8c16da571a2e`.
+Unresolved inline review threads after closure: **0**.
+
+### Additional manual final-review findings
+
+The direct final review found and fixed three additional correctness/availability issues that are **not counted as Codex findings**:
+
+1. an announcement form opened under one applied timezone could be submitted after timezone promotion and reinterpret unchanged wall-clock display windows; the form now carries its rendered timezone and server actions reject stale timed forms;
+2. the `/times` server shell could hard-fail when the new snapshot RPC was temporarily unavailable; the shell now remains renderable and lets the range loader surface a recoverable data error;
+3. an optional runtime-settings read failure could discard an otherwise valid atomic prayer schedule snapshot; schedule/timezone authority now remains available, and Home preserves the last verified Iqama delays when only that optional settings read fails.
+
+The manual review also extended atomic schedule/timezone consumption across Home initial render, Home refresh, Friday, and Times range loading so public readers do not recreate the split-read race.
+
+### Exact implementation-HEAD evidence
+
+Certified implementation HEAD:
+`73c78076c0166acde1ecbbe892fa8c16da571a2e`
+
+- Root CI `35821366976`: **SUCCESS** — lint, 925-test suite, typecheck, Feed/TV contract checks, clean Supabase bootstrap, legacy-Iqama migration certification, reconciliation/admin-audit checks, and production build.
+- Masjid Display Verification `35821367015`: **SUCCESS** — TV package plus live two-app integration.
+- Plan 3 Display Feed Verification `35821366984`: **SUCCESS**.
+- Security Scanners `35821367008`: **SUCCESS** — CodeQL, OSV, Gitleaks, SBOM, authenticated local DAST, exact-head runtime DAST, and deployed-production DAST.
+- Android TWA `35821366982`: **SUCCESS** — Android verify/build plus instrumentation on API 23 and API 37; protected signing was intentionally skipped for the pull-request verification run.
+
+No Critical/P1/P2 blocker remained in the direct final Plan 6 code review after these fixes.
+
+Real Vercel/root/browser/Admin Test Mode verification remains intentionally **post-merge on `main`** under the operator sequencing override. This addendum therefore certifies the pre-merge repository state only; it does not claim Plan 6 live-preview completion.
+
 ## Deferred operational follow-up / Plan 7
 
 The following are truthfully **NOT EXECUTED** and do not by themselves block Plan 6:
@@ -223,6 +271,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: IMPLEMENTATION GREEN; SIXTEEN LEGITIMATE CODEX CORRECTNESS FINDINGS FIXED; FINAL EVIDENCE-HEAD VERIFICATION + EXACT-HEAD CODEX RE-REVIEW PENDING.**
+**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: IMPLEMENTATION GREEN; 21 LEGITIMATE CODEX FINDINGS + 3 ADDITIONAL MANUAL-REVIEW FINDINGS FIXED; EXACT IMPLEMENTATION-HEAD CI/SECURITY/ANDROID VERIFICATION GREEN; POST-MERGE LIVE VERIFICATION PENDING.**
 
 The real Vercel/root/browser/Admin Test Mode verification is intentionally scheduled for post-merge `main` under the operator sequencing override. Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until that post-merge evidence is actually recorded.

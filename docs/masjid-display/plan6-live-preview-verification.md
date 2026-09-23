@@ -288,6 +288,32 @@ Exact implementation-head verification:
 All inline threads returned through finding 26 are resolved. A fresh Codex review remains required on the final exact documentation HEAD created by this evidence update. Final exact-head run IDs and Codex closure are recorded in PR #108 metadata to avoid recursively creating another evidence-only commit.
 
 
+## Final exact-head Codex continuation addendum — findings 27–29 — 2026-09-23
+
+This section supersedes the 26-finding count above for the continuing required exact-head Codex loop.
+
+The complete Plan 6 Codex history now contains **29 legitimate correctness findings: 17 P1 findings and 12 P2 findings**.
+
+After finding 26, Codex identified and the branch fixed three further correctness issues:
+
+27. **P2:** the first recalculation midnight guard used `statement_timestamp()`, which is fixed at SQL statement start. An RPC that started before mosque-local midnight and waited on the settings lock could still write against yesterday after acquiring the lock. The effective final RPC uses `clock_timestamp()` after the lock, rechecks immediately before the canonical upsert, and rechecks after the upsert so a midnight transition raises and rolls the transaction back;
+28. **P2:** schedule extension trusted caller-derived `p_today`/first-missing across a possible midnight transition. The effective final extension RPC derives the authoritative local day from the locked `applied_timezone` with a moving clock, validates the caller payload before the write, and rechecks after insertion so a transition cannot create a now-past row;
+29. **P1:** Prayer Engine generation formatted only `HH:mm` and discarded the calculated mosque-local date, so an allowed profile that moved a prayer across midnight could store a next-day prayer nearly 24 hours early. `calculatePrayerTimes()` now retains the rounded local date and rejects any prayer whose local date differs from the canonical row date. Dedicated regression coverage keeps the 240-minute fixed-Isha crossing case rejected. The shared synthetic test fixture was also corrected to an all-year row-representable angle profile; this does not weaken the cross-midnight guard.
+
+Exact implementation HEAD after finding 29 and the regression-fixture correction:
+`54a977d045bb8e0df20d9467962a8b3d9234ee4f`
+
+Exact implementation-head verification:
+
+- Root CI `35848713516`: **SUCCESS** — lint, 933-test suite, typecheck, Feed/TV contract, TV tests/lint/typecheck/build, clean Supabase bootstrap, migration/reconciliation/admin-audit certification, and root production build;
+- Masjid Display Verification `35848713685`: **SUCCESS**, including TV package verification and two-app integration;
+- Plan 3 Display Feed Verification `35848713515`: **SUCCESS**;
+- Security Scanners `35848713538`: **SUCCESS**;
+- Android TWA `35848713493`: **SUCCESS**, including API 23 and API 37 instrumentation; protected signing was intentionally skipped for this pull-request verification run.
+
+All returned inline review threads through finding 29 are resolved. A fresh Codex review remains required on the final documentation HEAD created by this evidence update. Final exact-head workflow IDs and clean Codex closure are recorded in PR #108 metadata to avoid recursively creating another evidence-only commit.
+
+
 ## Deferred operational follow-up / Plan 7
 
 The following are truthfully **NOT EXECUTED** and do not by themselves block Plan 6:
@@ -304,6 +330,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: 26 LEGITIMATE CODEX FINDINGS + 3 ADDITIONAL MANUAL-REVIEW FINDINGS FIXED; FINAL EXACT-HEAD CI/SECURITY/ANDROID + CODEX CLOSURE MUST BE VERIFIED IN PR #108 METADATA; POST-MERGE LIVE VERIFICATION PENDING.**
+**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: 29 LEGITIMATE CODEX FINDINGS + 3 ADDITIONAL MANUAL-REVIEW FINDINGS FIXED; FINAL EXACT-HEAD CI/SECURITY/ANDROID + CODEX CLOSURE MUST BE VERIFIED IN PR #108 METADATA; POST-MERGE LIVE VERIFICATION PENDING.**
 
 The real Vercel/root/browser/Admin Test Mode verification is intentionally scheduled for post-merge `main` under the operator sequencing override. Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until that post-merge evidence is actually recorded.

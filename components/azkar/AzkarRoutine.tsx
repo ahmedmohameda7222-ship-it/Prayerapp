@@ -21,18 +21,18 @@ type StoredProgress = {
   counts: Record<string, number>;
 };
 
-function localDateKey(date: Date) {
-  return todayIso(date);
+function localDateKey(date: Date, timezone?: string | null) {
+  return todayIso(date, timezone ?? undefined);
 }
 
 function isCategory(value: unknown, categories: AzkarCategory[]): value is AzkarCategory {
   return typeof value === "string" && categories.includes(value as AzkarCategory);
 }
 
-function readStoredProgress(categories: AzkarCategory[]): StoredProgress {
+function readStoredProgress(categories: AzkarCategory[], timezone?: string | null): StoredProgress {
   const now = new Date();
-  const today = localDateKey(now);
-  const fallbackCategory = smartAzkarCategory(now);
+  const today = localDateKey(now, timezone);
+  const fallbackCategory = smartAzkarCategory(now, timezone ?? undefined);
 
   try {
     const raw = window.localStorage.getItem(PROGRESS_KEY);
@@ -60,7 +60,7 @@ function readRequestedTab(categories: AzkarCategory[]): AzkarTab | undefined {
   return isCategory(requested, categories) ? requested : undefined;
 }
 
-export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[]; items: AzkarItem[] }) {
+export function AzkarRoutine({ categories, items, timezone }: { categories: AzkarCategory[]; items: AzkarItem[]; timezone?: string | null }) {
   const { t } = useTranslation();
   const [selectedTab, setSelectedTab] = useState<AzkarTab>("Morning");
   const [lastRealCategory, setLastRealCategory] = useState<AzkarCategory>("Morning");
@@ -72,20 +72,20 @@ export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[
 
   /* eslint-disable react-hooks/set-state-in-effect -- localStorage is only available after mount. */
   useEffect(() => {
-    const stored = readStoredProgress(categories);
+    const stored = readStoredProgress(categories, timezone);
     const requestedTab = readRequestedTab(categories);
     const initialTab = requestedTab || stored.lastSelectedCategory;
     setSelectedTab(initialTab);
     if (initialTab !== "Favorites") setLastRealCategory(initialTab);
     setCounts(stored.counts);
     setHydrated(true);
-  }, [categories]);
+  }, [categories, timezone]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!hydrated) return;
     const progress: StoredProgress = {
-      date: localDateKey(new Date()),
+      date: localDateKey(new Date(), timezone),
       lastSelectedCategory: lastRealCategory,
       counts,
     };
@@ -94,7 +94,7 @@ export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[
     } catch {
       // Daily counting remains usable even if local storage is unavailable.
     }
-  }, [counts, hydrated, lastRealCategory]);
+  }, [counts, hydrated, lastRealCategory, timezone]);
 
   useEffect(() => {
     if (!hydrated || !favoritesLoaded || !user) return;

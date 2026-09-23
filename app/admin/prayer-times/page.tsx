@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { invalidateCachePrefix } from "@/lib/data/cache";
-import { addDaysIso, todayIso } from "@/lib/date-utils";
+import { addDaysIso } from "@/lib/date-utils";
 import { getMissingPublishedPrayerDates } from "@/lib/prayer-coverage";
 import { createClient } from "@/lib/supabase/client";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
@@ -21,6 +21,7 @@ import {
   togglePublishPrayerTimeAction,
   updatePrayerTimeAction,
 } from "./actions";
+import { loadAdminRuntimeDateAction } from "../runtime-date";
 
 const emptyForm = {
   date: "",
@@ -43,6 +44,7 @@ export default function AdminPrayerTimesPage() {
   const { t } = useTranslation();
   const [items, setItems] = useState<PrayerTime[]>([]);
   const [itemsLoaded, setItemsLoaded] = useState(false);
+  const [runtimeToday, setRuntimeToday] = useState<string | null>(null);
   const [form, setForm] = useState<Record<string, string>>({ ...emptyForm });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -50,8 +52,10 @@ export default function AdminPrayerTimesPage() {
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
   const accessToken = session?.access_token || "";
-  const nextWeekStart = addDaysIso(todayIso(), 1);
-  const nextWeekMissing = getMissingPublishedPrayerDates(items, nextWeekStart, 7).length > 0;
+  const nextWeekStart = runtimeToday ? addDaysIso(runtimeToday, 1) : null;
+  const nextWeekMissing = nextWeekStart
+    ? getMissingPublishedPrayerDates(items, nextWeekStart, 7).length > 0
+    : false;
 
   const refreshItems = useCallback(async () => {
     invalidateCachePrefix("prayer_times");
@@ -60,11 +64,19 @@ export default function AdminPrayerTimesPage() {
   }, []);
 
   useEffect(() => {
+    if (!accessToken) return;
     let active = true;
-    getPrayerTimes(true)
-      .then((data) => {
+    Promise.all([
+      getPrayerTimes(true),
+      loadAdminRuntimeDateAction(accessToken),
+    ])
+      .then(([data, runtimeDate]) => {
         if (!active) return;
+        if (!runtimeDate.success || !runtimeDate.data) {
+          throw new Error(runtimeDate.error || "Unable to load mosque runtime date");
+        }
         setItems(data);
+        setRuntimeToday(runtimeDate.data.today);
         setItemsLoaded(true);
       })
       .catch(() => {
@@ -73,7 +85,7 @@ export default function AdminPrayerTimesPage() {
         setError(t("common.dataLoadFailed"));
       });
     return () => { active = false; };
-  }, [t]);
+  }, [accessToken, t]);
 
   function resetForm() {
     setForm({ ...emptyForm });

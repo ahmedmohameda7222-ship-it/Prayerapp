@@ -256,48 +256,6 @@ No Critical/P1/P2 blocker remained in the direct final Plan 6 code review after 
 Real Vercel/root/browser/Admin Test Mode verification remains intentionally **post-merge on `main`** under the operator sequencing override. This addendum therefore certifies the pre-merge repository state only; it does not claim Plan 6 live-preview completion.
 
 
-## Final manual exact-head review continuation — 2026-09-23
-
-After the sixteen-finding evidence snapshot above, the final review loop continued rather than treating the earlier Codex pass as the end of review.
-
-Five additional legitimate Codex correctness findings were identified and fixed:
-
-17. **P1:** canonical legacy Berlin prayer rows could disappear on public pages before the first `prayer_settings` save;
-18. **P1:** Android schedule, display Feed, and reminder readers could pair applied timezone authority with prayer rows from a different database snapshot;
-19. **P2:** Admin announcement `datetime-local` values were still parsed/formatted using Berlin instead of the applied runtime timezone;
-20. **P1:** Home's periodic/focus prayer refresh could clear the valid legacy schedule when `prayer_settings` did not yet exist;
-21. **P2:** Home's periodic/focus refresh still read runtime settings and prayer rows separately, allowing a promotion/cache race to install mismatched timezone + wall-clock rows.
-
-The final manual review then found one additional correctness race not supplied by Codex:
-
-22. **Manual review:** an announcement form rendered under one applied timezone could remain open across a timezone promotion and later reinterpret its existing wall-clock display window under the newly applied timezone. The form now carries the timezone it was rendered with, and create/update rejects a display-window submission when that authority is stale.
-
-The prayer-read fixes now use `getPublishedPrayerScheduleSnapshot` for Home initial data, Home live refresh, Friday, Times range loading, Android schedule, reminder scheduling, and Masjid Display Feed where canonical prayer rows and timezone authority must stay paired. Legacy pre-settings authority remains Europe/Berlin inside the same database snapshot. Iqama delays are loaded separately because they do not reinterpret canonical prayer wall-clock rows.
-
-Regression coverage for these final findings includes:
-- `lib/__tests__/plan6-final-review-snapshot-announcement.test.ts`;
-- `lib/__tests__/plan6-prayer-timezone-authority.test.ts`;
-- `lib/__tests__/plan6-applied-timezone-authority.test.ts`;
-- `components/home/HomePrayerRuntimeRefresh.test.tsx`;
-- `components/friday/FridayPageContract.test.tsx`;
-- `components/prayer/PrayerTimesBrowser.test.tsx`;
-- `lib/__tests__/logic-hardening.test.ts`.
-
-Latest reviewed implementation HEAD before this documentation refresh:
-`86941b68559b013a2f878ac6bd50f8266e62fe3a`.
-
-Exact implementation-head workflow evidence:
-- Root CI `35820205388`: **SUCCESS**.
-- Masjid Display Verification `35820205386`: **SUCCESS**.
-- Plan 3 Display Feed Verification `35820205354`: **SUCCESS**.
-- Security Scanners `35820205396`: **SUCCESS**.
-- Android TWA `35820205269`: workflow conclusion **CANCELLED**, but the repository build/unit/lint candidate job was **SUCCESS** and API 23 instrumentation was **SUCCESS**; only API 37 instrumentation was cancelled during execution. This is not recorded as a green Android gate.
-
-At the time of this documentation refresh, unresolved inline review threads are **0**.
-
-Because this documentation update creates a newer exact HEAD, final pre-merge certification still requires all five workflow families to complete successfully on that newer documentation HEAD. The Android API 37 cancellation above is therefore historical implementation-head evidence only and is not waived.
-
-
 ## Deferred operational follow-up / Plan 7
 
 The following are truthfully **NOT EXECUTED** and do not by themselves block Plan 6:

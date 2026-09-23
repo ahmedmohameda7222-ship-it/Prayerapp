@@ -33,7 +33,40 @@ export function zonedDateTime(date: string, time: string, timeZone: string): Dat
       ) - timestamp
     );
   };
+  const matchesDesiredWallTime = (timestamp: number) => {
+    const parts = dateParts(new Date(timestamp), timeZone);
+    return (
+      Number(parts.year) === year &&
+      Number(parts.month) === month &&
+      Number(parts.day) === day &&
+      Number(parts.hour) === hour &&
+      Number(parts.minute) === minute
+    );
+  };
 
+  // Match the root Prayerapp and Android policy for every accepted IANA zone:
+  // when a fall-back overlap produces two valid instants, choose the later
+  // instant. This is equivalent to java.time's withLaterOffsetAtOverlap().
+  const probeDeltas = [-48, -24, 0, 24, 48].map((hours) => hours * 60 * 60 * 1000);
+  const offsets = new Set(probeDeltas.map((delta) => offsetAt(desiredUtc + delta)));
+  const exactCandidates = Array.from(offsets)
+    .map((offset) => desiredUtc - offset)
+    .filter(matchesDesiredWallTime);
+
+  if (exactCandidates.length > 0) {
+    return new Date(Math.max(...exactCandidates));
+  }
+
+  // For a spring-forward gap, match java.time ZonedDateTime.of by shifting
+  // the nonexistent wall time forward by the gap (resolve with pre-gap offset).
+  const beforeOffset = offsetAt(desiredUtc - 48 * 60 * 60 * 1000);
+  const afterOffset = offsetAt(desiredUtc + 48 * 60 * 60 * 1000);
+  if (afterOffset > beforeOffset) {
+    return new Date(desiredUtc - beforeOffset);
+  }
+
+  // Defensive fallback for unusual historical transitions not captured by
+  // the probes above.
   let timestamp = desiredUtc - offsetAt(desiredUtc);
   timestamp = desiredUtc - offsetAt(timestamp);
   return new Date(timestamp);

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
-import { getPrayerTimes } from "@/lib/data/prayer-times";
+import { loadPrayerScheduleRuntime } from "@/app/home-prayer-runtime";
 import { addDaysIso, addMonthsIso, formatDateRange, monthBoundsIso, startOfWeekIso, todayIso } from "@/lib/date-utils";
 import { derivePrayerIqamaTimes, getPrayerForDate } from "@/lib/prayer-utils";
 import type { PrayerIqamaDelays } from "@/lib/prayer-engine/types";
@@ -36,9 +36,9 @@ function PrayerTimesBrowserReady({
   timezone: string;
 }) {
   const { t, locale } = useTranslation();
-  const today = todayIso(new Date(), timezone);
+  const initialToday = todayIso(new Date(), timezone);
   const [tab, setTab] = useState<RangeTab>("week");
-  const [cursor, setCursor] = useState(today);
+  const [cursor, setCursor] = useState(initialToday);
 
   const range = useMemo(() => {
     if (tab === "today") return { start: cursor, end: cursor };
@@ -50,11 +50,14 @@ function PrayerTimesBrowserReady({
   }, [cursor, tab]);
 
   const rangeKey = `${range.start}:${range.end}`;
-  const { data: prayerTimes, error, loading, reload } = useAsyncData(
-    () => getPrayerTimes(false, range.start, range.end),
+  const { data: runtime, error, loading, reload } = useAsyncData(
+    () => loadPrayerScheduleRuntime(range.start, range.end),
     rangeKey,
   );
-  const effectivePrayerTimes = prayerTimes || [];
+  const effectivePrayerTimes = runtime?.schedule || [];
+  const effectiveTimezone = runtime?.timezone ?? timezone;
+  const effectiveIqamaDelays = runtime?.iqamaDelays ?? iqamaDelays;
+  const today = todayIso(new Date(), effectiveTimezone);
 
   const tabs = useMemo(
     () => [
@@ -73,9 +76,9 @@ function PrayerTimesBrowserReady({
   const iqamaByDate = useMemo(() => Object.fromEntries(
     effectivePrayerTimes.map((item) => [
       item.date,
-      iqamaDelays ? derivePrayerIqamaTimes(item, iqamaDelays, timezone) : {},
+      effectiveIqamaDelays ? derivePrayerIqamaTimes(item, effectiveIqamaDelays, effectiveTimezone) : {},
     ]),
-  ), [effectivePrayerTimes, iqamaDelays, timezone]);
+  ), [effectivePrayerTimes, effectiveIqamaDelays, effectiveTimezone]);
 
   function moveRange(direction: -1 | 1) {
     setCursor((current) => {

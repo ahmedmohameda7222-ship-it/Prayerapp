@@ -59,7 +59,7 @@ describe("Plan 6 prayer timezone authority", () => {
     const nativeMain = sourceTree("android-twa/app/src/main/java");
 
     expect(provider).toContain('addDaysIso(todayIso(new Date(), "UTC"), -1)');
-    expect(provider).toContain("scheduleValidUntil: schedule.scheduleValidUntil");
+    expect(provider).toContain("const scheduleValidUntil = schedule.scheduleValidUntil;");
     expect(provider).not.toContain("zonedDateTime(addDaysIso(schedule.through");
 
     expect(config).toContain("public final String timeZone;");

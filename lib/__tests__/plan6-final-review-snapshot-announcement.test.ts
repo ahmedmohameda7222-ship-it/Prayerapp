@@ -9,9 +9,13 @@ describe("Plan 6 final review snapshot and announcement regressions", () => {
     expect(settings).toContain("getRuntimePrayerTimezone");
     expect(settings).toContain("APP_TIME_ZONE");
 
-    for (const path of ["app/page.tsx", "app/times/page.tsx", "app/friday/page.tsx"]) {
-      const page = source(path);
-      expect(page).toContain("getRuntimePrayerTimezone");
+    for (const path of [
+      "app/page.tsx",
+      "app/times/page.tsx",
+      "app/friday/page.tsx",
+      "app/home-prayer-runtime.ts",
+    ]) {
+      expect(source(path)).toContain("getPublishedPrayerScheduleSnapshot");
     }
   });
 

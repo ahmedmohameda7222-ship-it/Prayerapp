@@ -2,7 +2,6 @@ package de.donaumoschee.app.prayer;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -20,9 +19,7 @@ public final class AlarmPlanner {
             for (Prayer prayer : Prayer.values()) {
                 NativeConfig.Reminder reminder = config.reminders.get(prayer);
                 if (reminder == null || !reminder.enabled) continue;
-                Instant adhanAt = ZonedDateTime.of(row.date, row.time(prayer), config.zone)
-                        .withLaterOffsetAtOverlap()
-                        .toInstant();
+                Instant adhanAt = row.instant(prayer);
                 addIfFuture(events, config, row, prayer, reminder, AlarmEvent.Kind.ADHAN, adhanAt, 0, now, through);
                 if (reminder.leadMinutes > 0) {
                     addIfFuture(events, config, row, prayer, reminder, AlarmEvent.Kind.REMINDER,

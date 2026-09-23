@@ -19,7 +19,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Map;
 
 public final class NativeRefreshWorker extends Worker {
@@ -63,15 +63,15 @@ public final class NativeRefreshWorker extends Worker {
 
     private boolean refreshSchedule(NativeStore store, JSONObject config, int generation) {
         try {
-            String today = LocalDate.now(ZoneId.of("UTC")).minusDays(1).toString();
+            String today = LocalDate.now(ZoneOffset.UTC).minusDays(1).toString();
             JSONObject response = NativeHttp.get(ORIGIN + "/api/android/prayer-schedule?from=" + today + "&days=31");
             if (store.accountGeneration() != generation) return false;
             if (response.optInt("schemaVersion", -1) != 1) return false;
-            ZoneId zone = ZoneId.of(response.getString("timeZone"));
+            String timeZone = response.optString("timeZone", "").trim();
+            if (timeZone.isEmpty() || timeZone.length() > 128) return false;
             JSONArray rows = response.getJSONArray("rows");
-            String through = response.getString("through");
-            Instant validUntil = LocalDate.parse(through).plusDays(1).atStartOfDay(zone).toInstant();
-            config.put("timeZone", zone.getId());
+            Instant validUntil = Instant.parse(response.getString("scheduleValidUntil"));
+            config.put("timeZone", timeZone);
             config.put("rows", rows);
             config.put("scheduleValidUntil", validUntil.toString());
             return store.saveConfigIfGeneration(config, Instant.now(), generation);

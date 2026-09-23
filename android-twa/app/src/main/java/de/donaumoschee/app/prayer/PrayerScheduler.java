@@ -30,23 +30,33 @@ public final class PrayerScheduler {
     public static boolean reschedule(Context context) {
         NativeStore store = new NativeStore(context);
         int generation = store.accountGeneration();
+        NativeConfig config = store.loadConfig(Instant.now());
+        if (config == null) {
+            Log.w(TAG, "alarm.schedule preserve-existing reason=config-unavailable generation=" + generation);
+            return false;
+        }
         if (!cancelStored(context, store, generation)) return false;
-        return scheduleCurrentGeneration(context, store, generation);
+        return scheduleCurrentGeneration(context, store, generation, config);
     }
 
     public static boolean reschedule(Context context, int expectedGeneration) {
         NativeStore store = new NativeStore(context);
         if (store.accountGeneration() != expectedGeneration) return false;
+        NativeConfig config = store.loadConfig(Instant.now());
+        if (config == null) {
+            Log.w(TAG, "alarm.schedule preserve-existing reason=config-unavailable generation=" + expectedGeneration);
+            return false;
+        }
+        if (store.accountGeneration() != expectedGeneration) return false;
         if (!cancelStored(context, store, expectedGeneration)) return false;
         if (store.accountGeneration() != expectedGeneration) return false;
-        return scheduleCurrentGeneration(context, store, expectedGeneration);
+        return scheduleCurrentGeneration(context, store, expectedGeneration, config);
     }
 
-    private static boolean scheduleCurrentGeneration(Context context, NativeStore store, int generation) {
+    private static boolean scheduleCurrentGeneration(Context context, NativeStore store, int generation, NativeConfig config) {
         if (store.accountGeneration() != generation) return false;
-        NativeConfig config = store.loadConfig(Instant.now());
-        if (config == null || !NativeStatus.hasExactAlarmPermission(context)) {
-            Log.w(TAG, "alarm.schedule skipped config=" + (config != null) + " exact=" + NativeStatus.hasExactAlarmPermission(context));
+        if (!NativeStatus.hasExactAlarmPermission(context)) {
+            Log.w(TAG, "alarm.schedule skipped config=true exact=false");
             store.markScheduleFailureIfGeneration("alarm-schedule-unavailable", generation);
             return false;
         }

@@ -261,6 +261,33 @@ No Critical/P1/P2 blocker remained in the direct final Plan 6 code review after 
 Real Vercel/root/browser/Admin Test Mode verification remains intentionally **post-merge on `main`** under the operator sequencing override. This addendum therefore certifies the pre-merge repository state only; it does not claim Plan 6 live-preview completion.
 
 
+## Final exact-head Codex continuation addendum — 2026-09-23
+
+This section supersedes the 22-finding count above for the continuing required exact-head Codex loop.
+
+The complete Plan 6 Codex history now contains **26 legitimate correctness findings: 16 P1 findings and 10 P2 findings**.
+
+After finding 22, the exact-head review loop identified and fixed four further P2 correctness issues:
+
+23. **P2:** server and Android fall-back overlap resolution could disagree for accepted western IANA timezones such as `America/New_York`, producing different delivery instants and p3 identities. Root/server and Android now use one explicit later-instant overlap policy, with matching spring-forward gap behavior and eastern/western timezone regression coverage;
+24. **P2:** the TV wall-time resolver still used an iterative overlap policy that could select the earlier instant while root/Android selected the later one. TV now uses the same explicit overlap/gap policy and has Berlin/New York overlap plus New York gap coverage;
+25. **P2:** after a successful full recalculation promoted the applied calculation revision, Prayer Engine Admin retained stale client-side settings and kept schedule-extension controls disabled until manual reload. The successful commit path now reloads canonical settings and updates local form/settings state immediately;
+26. **P2:** a recalculation commit could cross mosque-local midnight between preview/client `p_today` calculation and the atomic write, weakening the future-only boundary. The database RPC now locks `prayer_settings`, re-derives the applied local date from `statement_timestamp()`, rejects stale `p_today`, and checks `p_start_date` against the server-derived date before any canonical write.
+
+Finding 26 is fixed on implementation HEAD:
+`06006e2d303836e8dedf8024222bc63f5287d8b9`
+
+Exact implementation-head verification:
+
+- Root CI `35843118143`: **SUCCESS**
+- Masjid Display Verification `35843118142`: **SUCCESS**
+- Plan 3 Display Feed Verification `35843118131`: **SUCCESS**
+- Security Scanners `35843118104`: **SUCCESS**
+- Android TWA `35843118147`: **SUCCESS**, including API 23 and API 37 instrumentation
+
+All inline threads returned through finding 26 are resolved. A fresh Codex review remains required on the final exact documentation HEAD created by this evidence update. Final exact-head run IDs and Codex closure are recorded in PR #108 metadata to avoid recursively creating another evidence-only commit.
+
+
 ## Deferred operational follow-up / Plan 7
 
 The following are truthfully **NOT EXECUTED** and do not by themselves block Plan 6:
@@ -277,6 +304,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: 22 LEGITIMATE CODEX FINDINGS + 3 ADDITIONAL MANUAL-REVIEW FINDINGS FIXED; FINAL EXACT-HEAD CI/SECURITY/ANDROID + CODEX CLOSURE MUST BE VERIFIED IN PR #108 METADATA; POST-MERGE LIVE VERIFICATION PENDING.**
+**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: 26 LEGITIMATE CODEX FINDINGS + 3 ADDITIONAL MANUAL-REVIEW FINDINGS FIXED; FINAL EXACT-HEAD CI/SECURITY/ANDROID + CODEX CLOSURE MUST BE VERIFIED IN PR #108 METADATA; POST-MERGE LIVE VERIFICATION PENDING.**
 
 The real Vercel/root/browser/Admin Test Mode verification is intentionally scheduled for post-merge `main` under the operator sequencing override. Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until that post-merge evidence is actually recorded.

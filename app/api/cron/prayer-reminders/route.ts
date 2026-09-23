@@ -210,8 +210,6 @@ export async function GET(request: Request) {
   }
 
   const nowMs = now.getTime();
-  const today = prayerSnapshot.from;
-  const tomorrow = prayerSnapshot.through;
   const { data: reminders, error: remindersError } = await client
     .from("user_prayer_reminders")
     .select("user_id, prayer, lead_minutes")

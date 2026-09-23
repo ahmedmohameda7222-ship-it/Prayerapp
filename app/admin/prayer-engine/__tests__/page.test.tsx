@@ -1,9 +1,26 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const actionMocks = vi.hoisted(() => ({
+  calibratePrayerEngineAction: vi.fn(),
+  commitPrayerRecalculationAction: vi.fn(),
+  commitPrayerScheduleExtensionAction: vi.fn(),
+  loadPrayerEngineSettingsAction: vi.fn(),
+  previewPrayerRecalculationAction: vi.fn(),
+  previewPrayerScheduleExtensionAction: vi.fn(),
+  savePrayerEngineSettingsAction: vi.fn(),
+}));
+
+vi.mock("../actions", () => actionMocks);
+
 import { PrayerEngineAdmin } from "../PrayerEngineAdmin";
 import { validSettings as SYNTHETIC_TEST_PRAYER_SETTINGS } from "@/lib/prayer-engine/test-settings";
 
 describe("Prayer Engine Admin", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("shows explicit settings and blocks extension while revisions differ", () => {
     render(
       <PrayerEngineAdmin
@@ -27,5 +44,66 @@ describe("Prayer Engine Admin", () => {
     expect(screen.queryByText(/Production calculation profile is not approved/i)).not.toBeInTheDocument();
     expect(screen.getByText(/historical timetable comparison is optional reference/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Commit Recalculation/i })).toBeDisabled();
+  });
+
+  it("reloads applied settings after a successful recalculation commit", async () => {
+    const pendingSettings = {
+      ...SYNTHETIC_TEST_PRAYER_SETTINGS,
+      calculationRevision: 2,
+      appliedCalculationRevision: 1,
+    };
+    const appliedSettings = {
+      ...pendingSettings,
+      appliedCalculationRevision: 2,
+    };
+
+    actionMocks.previewPrayerRecalculationAction.mockResolvedValue({
+      success: true,
+      data: {
+        startDate: "2026-09-24",
+        endDate: "2026-09-24",
+        settingsRevision: 2,
+        changedRowCount: 1,
+        changedPrayerCount: 1,
+        rows: [],
+      },
+    });
+    actionMocks.commitPrayerRecalculationAction.mockResolvedValue({
+      success: true,
+      data: 1,
+    });
+    actionMocks.loadPrayerEngineSettingsAction.mockResolvedValue({
+      success: true,
+      data: appliedSettings,
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(
+      <PrayerEngineAdmin
+        initialSettings={pendingSettings}
+        token="test-token"
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/Recalculation start/i), {
+      target: { value: "2026-09-24" },
+    });
+    fireEvent.change(screen.getByLabelText(/Recalculation end/i), {
+      target: { value: "2026-09-24" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Preview Recalculation/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Commit Recalculation/i })).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Commit Recalculation/i }));
+
+    await waitFor(() => {
+      expect(actionMocks.loadPrayerEngineSettingsAction).toHaveBeenCalledWith("test-token");
+      expect(screen.getByText(/Calculation revision 2; applied 2\./i)).toBeInTheDocument();
+      expect(screen.getByText(/Calculation revision applied/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Preview Extend Schedule \+1 Year/i })).toBeEnabled();
+    });
   });
 });

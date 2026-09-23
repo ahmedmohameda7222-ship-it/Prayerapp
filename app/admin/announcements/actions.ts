@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { APP_TIME_ZONE, zonedDateTime } from "@/lib/date-utils";
+import { parseDateTimeLocalInput } from "@/lib/date-utils";
+import { getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";
 import { invalidateAnnouncementCaches } from "@/lib/data/announcements";
 import { createServerClient } from "@/lib/supabase/server";
 import type { AnnouncementDisplayStyle, AnnouncementType } from "@/lib/types";
@@ -45,33 +46,27 @@ async function notifyUrgentAnnouncement(row: AnnouncementPushRow) {
   } catch (error) { console.error("[announcement push] delivery failed", error); }
 }
 
-function parseOptionalDisplayInstant(value: string | undefined, field: string): string | null {
+function parseOptionalDisplayInstant(
+  value: string | undefined,
+  field: string,
+  timezone: string,
+): string | null {
   const trimmed = value?.trim();
   if (!trimmed) return null;
-  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/.exec(trimmed);
-  if (!match) throw new Error(`Invalid ${field}`);
-  const [, date, time] = match;
-  const [year, month, day] = date.split("-").map(Number);
-  const [hour, minute] = time.split(":").map(Number);
-  const calendarCheck = new Date(Date.UTC(year, month - 1, day, hour, minute));
-  if (calendarCheck.getUTCFullYear() !== year || calendarCheck.getUTCMonth() !== month - 1 || calendarCheck.getUTCDate() !== day || hour > 23 || minute > 59) {
+  try {
+    return parseDateTimeLocalInput(trimmed, timezone);
+  } catch {
     throw new Error(`Invalid ${field}`);
   }
-  const instant = zonedDateTime(date, time);
-  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
-    timeZone: APP_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-  }).formatToParts(instant).map((part) => [part.type, part.value]));
-  if (`${parts.year}-${parts.month}-${parts.day}` !== date || `${parts.hour}:${parts.minute}` !== time) throw new Error(`Invalid ${field}`);
-  return instant.toISOString();
 }
 
 function validateAnnouncementPublishability(parsed: ReturnType<typeof parseAnnouncement>): string | null {
   return validateDisplayAdminPublishableContent("announcement", parsed)[0] ?? null;
 }
 
-function parseAnnouncement(data: Record<string, string>) {
-  const displayFrom = parseOptionalDisplayInstant(data.displayFrom, "displayFrom");
-  const displayUntil = parseOptionalDisplayInstant(data.displayUntil, "displayUntil");
+function parseAnnouncement(data: Record<string, string>, timezone: string) {
+  const displayFrom = parseOptionalDisplayInstant(data.displayFrom, "displayFrom", timezone);
+  const displayUntil = parseOptionalDisplayInstant(data.displayUntil, "displayUntil", timezone);
   if (displayFrom && displayUntil && displayUntil <= displayFrom) throw new Error("Invalid display window");
   return {
     titleAr: parseAdminText(data.titleAr, { field: "titleAr", max: 200, required: true }),
@@ -101,7 +96,8 @@ function announcementDb(parsed: ReturnType<typeof parseAnnouncement>) {
 
 export async function createAnnouncementAction(token: string, data: Record<string, string>) {
   return runAuditedAction(token, { action: "announcement.create", entityType: "announcement", metadata: { requestedType: data.type || null } }, async () => {
-    let parsed; try { parsed = parseAnnouncement(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    const timezone = await getRuntimePrayerTimezone();
+    let parsed; try { parsed = parseAnnouncement(data, timezone); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
     const publishabilityError = validateAnnouncementPublishability(parsed); if (publishabilityError) return { success: false, error: publishabilityError };
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { data: result, error } = await client.from("announcements").insert(announcementDb(parsed)).select().single();
@@ -116,7 +112,8 @@ export async function createAnnouncementAction(token: string, data: Record<strin
 export async function updateAnnouncementAction(token: string, id: string, data: Record<string, string>) {
   let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
   return runAuditedAction(token, { action: "announcement.update", entityType: "announcement", entityId }, async () => {
-    let parsed; try { parsed = parseAnnouncement(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    const timezone = await getRuntimePrayerTimezone();
+    let parsed; try { parsed = parseAnnouncement(data, timezone); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
     const publishabilityError = validateAnnouncementPublishability(parsed); if (publishabilityError) return { success: false, error: publishabilityError };
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { data: previous } = await client.from("announcements").select("is_urgent, published").eq("id", entityId).maybeSingle();

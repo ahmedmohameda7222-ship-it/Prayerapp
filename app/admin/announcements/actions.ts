@@ -64,6 +64,16 @@ function validateAnnouncementPublishability(parsed: ReturnType<typeof parseAnnou
   return validateDisplayAdminPublishableContent("announcement", parsed)[0] ?? null;
 }
 
+function assertAnnouncementFormTimezone(
+  data: Record<string, string>,
+  timezone: string,
+): void {
+  const hasDisplayWindow = Boolean(data.displayFrom?.trim() || data.displayUntil?.trim());
+  if (hasDisplayWindow && data.formTimezone !== timezone) {
+    throw new Error("Applied timezone changed; reload the announcement form");
+  }
+}
+
 function parseAnnouncement(data: Record<string, string>, timezone: string) {
   const displayFrom = parseOptionalDisplayInstant(data.displayFrom, "displayFrom", timezone);
   const displayUntil = parseOptionalDisplayInstant(data.displayUntil, "displayUntil", timezone);
@@ -97,7 +107,7 @@ function announcementDb(parsed: ReturnType<typeof parseAnnouncement>) {
 export async function createAnnouncementAction(token: string, data: Record<string, string>) {
   return runAuditedAction(token, { action: "announcement.create", entityType: "announcement", metadata: { requestedType: data.type || null } }, async () => {
     const timezone = await getRuntimePrayerTimezone();
-    let parsed; try { parsed = parseAnnouncement(data, timezone); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    let parsed; try { assertAnnouncementFormTimezone(data, timezone); parsed = parseAnnouncement(data, timezone); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
     const publishabilityError = validateAnnouncementPublishability(parsed); if (publishabilityError) return { success: false, error: publishabilityError };
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { data: result, error } = await client.from("announcements").insert(announcementDb(parsed)).select().single();
@@ -113,7 +123,7 @@ export async function updateAnnouncementAction(token: string, id: string, data: 
   let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
   return runAuditedAction(token, { action: "announcement.update", entityType: "announcement", entityId }, async () => {
     const timezone = await getRuntimePrayerTimezone();
-    let parsed; try { parsed = parseAnnouncement(data, timezone); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    let parsed; try { assertAnnouncementFormTimezone(data, timezone); parsed = parseAnnouncement(data, timezone); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
     const publishabilityError = validateAnnouncementPublishability(parsed); if (publishabilityError) return { success: false, error: publishabilityError };
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { data: previous } = await client.from("announcements").select("is_urgent, published").eq("id", entityId).maybeSingle();

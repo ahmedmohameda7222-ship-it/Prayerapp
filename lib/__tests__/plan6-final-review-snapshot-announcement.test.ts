@@ -38,6 +38,14 @@ describe("Plan 6 final review snapshot and announcement regressions", () => {
     }
   });
 
+  it("keeps the snapshot refactor free of CodeQL-reported dead conditions and variables", () => {
+    const settings = source("lib/data/prayer-settings.ts");
+    const cron = source("app/api/cron/prayer-reminders/route.ts");
+    expect(settings).not.toContain('typeof error === "object" && error');
+    expect(cron).not.toContain("const today = prayerSnapshot.from");
+    expect(cron).not.toContain("const tomorrow = prayerSnapshot.through");
+  });
+
   it("parses and formats announcement datetime-local values in the applied runtime timezone", () => {
     const actions = source("app/admin/announcements/actions.ts");
     expect(actions).toContain("getRuntimePrayerTimezone");

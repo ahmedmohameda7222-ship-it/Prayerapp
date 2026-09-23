@@ -6,12 +6,12 @@ import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
 export async function loadPrayerScheduleRuntime(from: string, through: string) {
   const [snapshot, prayerSettings] = await Promise.all([
     getPublishedPrayerScheduleSnapshot({ from, through }),
-    getRuntimePrayerSettings().catch(() => null),
+    getRuntimePrayerSettings().catch(() => undefined),
   ]);
 
   return {
     schedule: snapshot.rows,
-    iqamaDelays: prayerSettings?.iqamaDelays ?? null,
+    iqamaDelays: prayerSettings === undefined ? undefined : prayerSettings?.iqamaDelays ?? null,
     timezone: snapshot.timezone,
   };
 }
@@ -24,12 +24,12 @@ export async function refreshHomePrayerRuntime() {
       daysBefore: 1,
       daysAfter: 30,
     }),
-    getRuntimePrayerSettings().catch(() => null),
+    getRuntimePrayerSettings().catch(() => undefined),
   ]);
 
   return {
     schedule: snapshot.rows,
-    iqamaDelays: prayerSettings?.iqamaDelays ?? null,
+    iqamaDelays: prayerSettings === undefined ? undefined : prayerSettings?.iqamaDelays ?? null,
     timezone: snapshot.timezone,
   };
 }

@@ -119,6 +119,30 @@ public final class AlarmPlannerTest {
     }
 
     @Test
+    public void resolvesWesternRepeatedWallClockTimeWithServerLaterOffsetPolicy() throws Exception {
+        Instant now = Instant.parse("2026-10-31T00:00:00Z");
+        List<AlarmEvent> events = AlarmPlanner.plan(
+                configInZone("ny-overlap", "2026-11-01", "01:30", "dhuhr", true, 0, "abdul-basit-cairo", "America/New_York", now),
+                now
+        );
+
+        assertEquals(1, events.size());
+        assertEquals(Instant.parse("2026-11-01T06:30:00Z"), events.get(0).dueAt);
+    }
+
+    @Test
+    public void shiftsWesternNonexistentWallClockTimeForwardLikeServerPolicy() throws Exception {
+        Instant now = Instant.parse("2026-03-07T00:00:00Z");
+        List<AlarmEvent> events = AlarmPlanner.plan(
+                configInZone("ny-gap", "2026-03-08", "02:30", "dhuhr", true, 0, "abdul-basit-cairo", "America/New_York", now),
+                now
+        );
+
+        assertEquals(1, events.size());
+        assertEquals(Instant.parse("2026-03-08T07:30:00Z"), events.get(0).dueAt);
+    }
+
+    @Test
     public void usesEuropeBerlinAcrossDstTransitions() throws Exception {
         Instant springNow = Instant.parse("2026-03-28T00:00:00Z");
         List<AlarmEvent> spring = AlarmPlanner.plan(config("spring", "2026-03-29", "13:30", "dhuhr", true, 0, "abdul-basit-cairo", springNow), springNow);

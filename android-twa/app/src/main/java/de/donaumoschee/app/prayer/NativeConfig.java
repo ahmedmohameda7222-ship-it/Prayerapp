@@ -10,7 +10,6 @@ import org.json.JSONObject;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -19,7 +18,7 @@ import java.util.Map;
 
 public final class NativeConfig {
     public final String revision;
-    public final ZoneId zone;
+    public final String timeZone;
     public final String locale;
     public final Instant scheduleValidUntil;
     public final List<ScheduleRow> rows;
@@ -29,7 +28,7 @@ public final class NativeConfig {
     private NativeConfig(
             String revision,
             String locale,
-            ZoneId zone,
+            String timeZone,
             Instant scheduleValidUntil,
             List<ScheduleRow> rows,
             Map<Prayer, Reminder> reminders,
@@ -37,7 +36,7 @@ public final class NativeConfig {
     ) {
         this.revision = revision;
         this.locale = locale;
-        this.zone = zone;
+        this.timeZone = timeZone;
         this.scheduleValidUntil = scheduleValidUntil;
         this.rows = Collections.unmodifiableList(rows);
         this.reminders = Collections.unmodifiableMap(reminders);
@@ -46,12 +45,8 @@ public final class NativeConfig {
 
     public static NativeConfig parse(JSONObject object, Instant now) throws JSONException {
         if (object == null || object.optInt("schemaVersion", -1) != 1) throw new JSONException("Invalid config schema");
-        ZoneId zone;
-        try {
-            zone = ZoneId.of(object.getString("timeZone"));
-        } catch (RuntimeException error) {
-            throw new JSONException("Invalid time zone");
-        }
+        String timeZone = object.optString("timeZone", "").trim();
+        if (timeZone.isEmpty() || timeZone.length() > 128) throw new JSONException("Invalid time zone");
         String revision = object.optString("revision", "");
         if (revision.length() == 0 || revision.length() > 128) throw new JSONException("Invalid revision");
         String locale = AppLocale.normalize(object.optString("locale", "en"));
@@ -82,17 +77,19 @@ public final class NativeConfig {
             String scheduleId = row.optString("id", "");
             if (scheduleId.length() > 128) throw new JSONException("Invalid prayer schedule id");
             EnumMap<Prayer, LocalTime> times = new EnumMap<>(Prayer.class);
+            EnumMap<Prayer, Instant> instants = new EnumMap<>(Prayer.class);
             EnumMap<Prayer, String> revisions = new EnumMap<>(Prayer.class);
             for (Prayer prayer : Prayer.values()) {
                 try {
                     String rawTime = row.getString(prayer.key);
                     times.put(prayer, LocalTime.parse(rawTime));
+                    instants.put(prayer, Instant.parse(row.getString(prayer.key + "At")));
                     revisions.put(prayer, rawTime);
                 } catch (RuntimeException error) {
                     throw new JSONException("Invalid prayer time");
                 }
             }
-            rows.add(new ScheduleRow(scheduleId, date, times, revisions));
+            rows.add(new ScheduleRow(scheduleId, date, times, instants, revisions));
         }
 
         EnumMap<Prayer, Reminder> reminders = new EnumMap<>(Prayer.class);
@@ -118,25 +115,37 @@ public final class NativeConfig {
         }
         JSONObject source = new JSONObject(object.toString())
                 .put("locale", locale)
-                .put("timeZone", zone.getId());
-        return new NativeConfig(revision, locale, zone, validUntil, rows, reminders, source);
+                .put("timeZone", timeZone);
+        return new NativeConfig(revision, locale, timeZone, validUntil, rows, reminders, source);
     }
 
     public static final class ScheduleRow {
         public final String id;
         public final LocalDate date;
         private final Map<Prayer, LocalTime> times;
+        private final Map<Prayer, Instant> instants;
         private final Map<Prayer, String> revisions;
 
-        private ScheduleRow(String id, LocalDate date, Map<Prayer, LocalTime> times, Map<Prayer, String> revisions) {
+        private ScheduleRow(
+                String id,
+                LocalDate date,
+                Map<Prayer, LocalTime> times,
+                Map<Prayer, Instant> instants,
+                Map<Prayer, String> revisions
+        ) {
             this.id = id;
             this.date = date;
             this.times = times;
+            this.instants = instants;
             this.revisions = revisions;
         }
 
         public LocalTime time(Prayer prayer) {
             return times.get(prayer);
+        }
+
+        public Instant instant(Prayer prayer) {
+            return instants.get(prayer);
         }
 
         public String prayerRevision(Prayer prayer) {

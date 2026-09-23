@@ -64,9 +64,9 @@ Per the operator's 2026-09-23 direction, the final pre-merge code review was com
 
 This addendum supersedes the older Plan 6 review-count snapshot above. It does **not** change the historical Plan 5 BLOCKED result or promote any missing physical/religious/real-target evidence.
 
-At the operator's direction, the final Plan 6 pre-merge review was performed directly against the implementation instead of waiting for Codex as the final gate.
+The direct Plan 6 pre-merge self-review was supplemental. A fresh exact-head Codex review remained the required final review gate and later returned one additional P2 finding.
 
-- Total legitimate Codex findings returned across the Plan 6 review loop: **21** (**16 P1, 5 P2**).
+- Total legitimate Codex findings returned across the Plan 6 review loop: **22** (**16 P1, 6 P2**).
 - Additional findings from the direct final review: **3** correctness/availability findings.
 - All returned Codex review threads are resolved; unresolved inline review threads after final closure: **0**.
 
@@ -75,15 +75,21 @@ The later Codex findings beyond the 16-count snapshot above were:
 - read applied timezone + published rows from one atomic snapshot for Android/Feed/reminder runtime;
 - parse and format announcement display windows in the applied timezone;
 - preserve the legacy schedule during Home periodic/focus refresh;
-- use the same atomic snapshot for Home refresh.
+- use the same atomic snapshot for Home refresh;
+- use the applied runtime timezone for Admin Jumuah/Prayer Times/dashboard operational dates and the launch-readiness coverage window.
+
+Finding 22 was returned on exact documentation HEAD `f28adda7490a0c366a688223adfe35e5d13b2676` and fixed through implementation HEAD `b158072e0408f1d91187167f13e7d9e3bad39e51` with authenticated server-only runtime-date wiring and regression coverage.
 
 The direct final review additionally fixed:
 - stale announcement forms across applied-timezone promotion;
 - `/times` shell hard failure when the snapshot RPC is temporarily unavailable;
 - coupling of a valid atomic prayer snapshot to an optional settings read failure, including preservation of last verified Home Iqama delays.
 
-Exact implementation HEAD:
+Earlier certified implementation HEAD:
 `73c78076c0166acde1ecbbe892fa8c16da571a2e`
+
+Latest implementation HEAD after final Codex finding 22:
+`b158072e0408f1d91187167f13e7d9e3bad39e51`
 
 Exact implementation-head automated evidence:
 - Root CI `35821366976`: **SUCCESS**.
@@ -92,7 +98,7 @@ Exact implementation-head automated evidence:
 - Security Scanners `35821367008`: **SUCCESS**.
 - Android TWA `35821366982`: **SUCCESS**, including instrumentation on API 23 and API 37; protected signing was intentionally skipped for the PR verification run.
 
-No Critical/P1/P2 repository blocker remained in the direct final Plan 6 review after these fixes.
+Finding 22 is fixed in the repository. Final exact-head workflow evidence, review-thread closure, and the clean follow-up Codex result are recorded in PR #108 metadata rather than recursively rewriting this historical certification document.
 
 The remaining Plan 6 Vercel/root/browser/Admin Test Mode verification is still intentionally post-merge `main`. Therefore this addendum records **pre-merge repository certification**, not final live-preview completion and not a change to the historical production-certification BLOCKED result below.
 

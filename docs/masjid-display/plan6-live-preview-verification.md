@@ -212,11 +212,11 @@ Per the 2026-09-22 operator sequencing override, a fresh exact-head GitHub Codex
 
 This section supersedes the older pre-merge finding count and the earlier statement that another Codex pass was required.
 
-At the operator's direction, the final pre-merge review was completed directly against the full Plan 6 delta rather than waiting for Codex to act as the final gate.
+The direct final self-review was supplemental. A fresh exact-head Codex review remained the required final pre-merge review gate and subsequently returned finding 22 below.
 
 ### Codex findings through the last returned review
 
-The complete Codex review history for Plan 6 contains **21 legitimate correctness findings: 16 P1 findings and 5 P2 findings**.
+The complete Codex review history for Plan 6 now contains **22 legitimate correctness findings: 16 P1 findings and 6 P2 findings**.
 
 In addition to findings 1–16 documented above, the later reviews identified:
 
@@ -224,11 +224,16 @@ In addition to findings 1–16 documented above, the later reviews identified:
 18. **P1:** Android schedule, Masjid Display Feed, and reminder cron could pair applied timezone authority with prayer rows from a different database snapshot;
 19. **P2:** announcement `datetime-local` windows were parsed/formatted in Berlin instead of the applied runtime timezone;
 20. **P1:** Home's 60-second/focus refresh could erase the legacy Berlin schedule when `prayer_settings` was absent;
-21. **P2:** Home refresh still used a split settings/schedule read and could install mismatched timezone + wall-clock rows.
+21. **P2:** Home refresh still used a split settings/schedule read and could install mismatched timezone + wall-clock rows;
+22. **P2:** Admin Jumuah, Prayer Times coverage/status, Admin dashboard status, and launch-readiness coverage still derived their operational calendar date from the Berlin default instead of the applied runtime timezone.
 
-All 21 Codex findings are fixed. The final two Home threads were closed against exact implementation HEAD
+Findings 1–21 were fixed through implementation HEAD
 `73c78076c0166acde1ecbbe892fa8c16da571a2e`.
-Unresolved inline review threads after closure: **0**.
+Finding 22 was returned by the required fresh exact-head Codex review on documentation HEAD `f28adda7490a0c366a688223adfe35e5d13b2676` and fixed through implementation HEAD
+`b158072e0408f1d91187167f13e7d9e3bad39e51`.
+The fix adds an authenticated server-only Admin runtime-date action backed by `getRuntimePrayerTimezone()`, wires the Admin operational schedule surfaces to that applied date, and makes launch readiness calculate its window in the applied timezone. Regression coverage is in `lib/__tests__/plan6-final-review-cache-religious-clock.test.ts`.
+
+Finding 22 thread closure and final exact-head run IDs are tracked in PR #108 metadata after verification, avoiding a recursive documentation-only evidence commit.
 
 ### Additional manual final-review findings
 
@@ -272,6 +277,6 @@ No destructive production migration was executed in Plan 6.
 
 ## Current Plan 6 result
 
-**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: IMPLEMENTATION GREEN; 21 LEGITIMATE CODEX FINDINGS + 3 ADDITIONAL MANUAL-REVIEW FINDINGS FIXED; EXACT IMPLEMENTATION-HEAD CI/SECURITY/ANDROID VERIFICATION GREEN; POST-MERGE LIVE VERIFICATION PENDING.**
+**PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: 22 LEGITIMATE CODEX FINDINGS + 3 ADDITIONAL MANUAL-REVIEW FINDINGS FIXED; FINAL EXACT-HEAD CI/SECURITY/ANDROID + CODEX CLOSURE MUST BE VERIFIED IN PR #108 METADATA; POST-MERGE LIVE VERIFICATION PENDING.**
 
 The real Vercel/root/browser/Admin Test Mode verification is intentionally scheduled for post-merge `main` under the operator sequencing override. Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until that post-merge evidence is actually recorded.

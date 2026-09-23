@@ -149,10 +149,57 @@ export function zonedDateTime(date: string, time: string, timeZone = APP_TIME_ZO
     year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
     hourCycle: "h23",
   });
+  const partsAt = (timestamp: number) =>
+    Object.fromEntries(
+      formatter.formatToParts(new Date(timestamp)).map((part) => [part.type, part.value]),
+    );
   const offsetAt = (timestamp: number) => {
-    const parts = Object.fromEntries(formatter.formatToParts(new Date(timestamp)).map((part) => [part.type, part.value]));
-    return Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second)) - timestamp;
+    const parts = partsAt(timestamp);
+    return Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+      Number(parts.second),
+    ) - timestamp;
   };
+  const matchesDesiredWallTime = (timestamp: number) => {
+    const parts = partsAt(timestamp);
+    return (
+      Number(parts.year) === year &&
+      Number(parts.month) === month &&
+      Number(parts.day) === day &&
+      Number(parts.hour) === hour &&
+      Number(parts.minute) === minute
+    );
+  };
+
+  // Collect the offsets on both sides of any nearby transition. For an
+  // overlap there are two valid instants for the same wall time; Android uses
+  // ZonedDateTime.withLaterOffsetAtOverlap(), so choose the later instant here
+  // as well for every accepted IANA timezone.
+  const probeDeltas = [-48, -24, 0, 24, 48].map((hours) => hours * 60 * 60 * 1000);
+  const offsets = new Set(probeDeltas.map((delta) => offsetAt(desiredUtc + delta)));
+  const exactCandidates = Array.from(offsets)
+    .map((offset) => desiredUtc - offset)
+    .filter(matchesDesiredWallTime);
+
+  if (exactCandidates.length > 0) {
+    return new Date(Math.max(...exactCandidates));
+  }
+
+  // A nonexistent wall time is a forward DST gap. Match java.time's
+  // ZonedDateTime.of behavior by shifting it forward by the gap, which is
+  // equivalent to resolving the requested wall time with the pre-gap offset.
+  const beforeOffset = offsetAt(desiredUtc - 48 * 60 * 60 * 1000);
+  const afterOffset = offsetAt(desiredUtc + 48 * 60 * 60 * 1000);
+  if (afterOffset > beforeOffset) {
+    return new Date(desiredUtc - beforeOffset);
+  }
+
+  // Defensive fallback for unusual historical transitions not captured by
+  // the probes above. Preserve the previous iterative resolver semantics.
   let timestamp = desiredUtc - offsetAt(desiredUtc);
   timestamp = desiredUtc - offsetAt(timestamp);
   return new Date(timestamp);

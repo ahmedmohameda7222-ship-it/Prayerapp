@@ -55,6 +55,7 @@ describe("Plan 6 final-review cache and religious-clock regressions", () => {
 
   it("uses the applied runtime timezone for Admin operational schedule dates", () => {
     const runtimeDateAction = source("app/admin/runtime-date.ts");
+    expect(runtimeDateAction).toContain("requireAllowedAdminIdentity");
     expect(runtimeDateAction).toContain("getRuntimePrayerTimezone");
     expect(runtimeDateAction).toContain("todayIso(new Date(), timezone)");
 
@@ -71,5 +72,6 @@ describe("Plan 6 final-review cache and religious-clock regressions", () => {
     const readiness = source("app/api/admin/launch-readiness/route.ts");
     expect(readiness).toContain("getRuntimePrayerTimezone");
     expect(readiness).toContain("todayIso(new Date(), timezone)");
+    expect(readiness).not.toContain("todayIso(),");
   });
 });

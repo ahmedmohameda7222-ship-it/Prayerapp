@@ -6,7 +6,7 @@ import {
   PrayerTimes,
   Rounding,
 } from "adhan";
-import { ceilInstantToLocalMinute } from "./rounding";
+import { ceilInstantToLocalMinuteWithDate } from "./rounding";
 import type {
   PrayerCalculationResult,
   PrayerCalculationSettings,
@@ -77,7 +77,16 @@ export function calculatePrayerTimes(
     const adjusted = new Date(
       rawInstant.getTime() + settings.offsets[key] * 60_000,
     );
-    result[key] = ceilInstantToLocalMinute(adjusted, settings.timezone);
+    const local = ceilInstantToLocalMinuteWithDate(
+      adjusted,
+      settings.timezone,
+    );
+    if (local.date !== date) {
+      throw new Error(
+        `Calculated ${key} crosses mosque-local date boundary for ${date}`,
+      );
+    }
+    result[key] = local.time;
   }
 
   return result;

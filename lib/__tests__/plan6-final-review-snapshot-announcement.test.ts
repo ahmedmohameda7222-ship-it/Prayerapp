@@ -99,7 +99,11 @@ describe("Plan 6 final review snapshot and announcement regressions", () => {
 
   it("keeps atomic prayer rows available when optional runtime settings fail", () => {
     const runtime = source("app/home-prayer-runtime.ts");
-    expect(runtime.match(/getRuntimePrayerSettings\(\)\.catch\(\(\) => null\)/g) ?? []).toHaveLength(2);
+    expect(runtime.match(/getRuntimePrayerSettings\(\)\.catch\(\(\) => undefined\)/g) ?? []).toHaveLength(2);
+    expect(runtime).toContain("prayerSettings === undefined ? undefined : prayerSettings?.iqamaDelays ?? null");
+
+    const home = source("components/home/HomePageClient.tsx");
+    expect(home).toContain("if (latest.iqamaDelays !== undefined)");
   });
 
 });

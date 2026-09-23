@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
-import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
+import { getRuntimePrayerSettings, getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";
 import { getUrgentAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns, getDonationReport, getDonationSettings } from "@/lib/data/donations";
 import { getEvents } from "@/lib/data/events";
@@ -16,13 +16,15 @@ const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 export default async function HomePage() {
   const initialNow = new Date().toISOString();
   const now = new Date(initialNow);
-  const prayerSettings = await getRuntimePrayerSettings().catch(() => null);
-  const prayerTimezone = prayerSettings?.timezone ?? null;
-  const today = prayerTimezone ? todayIso(now, prayerTimezone) : null;
-  const startDate = today ? addDaysIso(today, -1) : null;
-  const endDate = today ? addDaysIso(today, 30) : null;
+  const [prayerSettings, prayerTimezone] = await Promise.all([
+    getRuntimePrayerSettings().catch(() => null),
+    getRuntimePrayerTimezone(),
+  ]);
+  const today = todayIso(now, prayerTimezone);
+  const startDate = addDaysIso(today, -1);
+  const endDate = addDaysIso(today, 30);
   const [prayerTimesResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
-    startDate && endDate ? getPrayerTimes(false, startDate, endDate) : Promise.resolve([]),
+    getPrayerTimes(false, startDate, endDate),
     getUrgentAnnouncements(),
     getJumuahTimes(),
     getEvents(),
@@ -37,7 +39,7 @@ export default async function HomePage() {
   const jumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
   const events = eventsResult.status === "fulfilled"
     ? eventsResult.value
-      .filter((event) => isUpcomingEvent(event, now, prayerTimezone ?? undefined))
+      .filter((event) => isUpcomingEvent(event, now, prayerTimezone))
       .sort((a, b) => `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`))
     : [];
   const donationSettings = donationSettingsResult.status === "fulfilled" ? donationSettingsResult.value : undefined;
@@ -52,7 +54,7 @@ export default async function HomePage() {
       <HomePageClient
         initialPrayerTimes={prayerTimes}
         iqamaDelays={prayerSettings?.iqamaDelays ?? null}
-        timezone={prayerSettings?.timezone ?? null}
+        timezone={prayerTimezone}
         urgentAnnouncements={urgentAnnouncements}
         jumuahTimes={jumuahTimes}
         allowAnyFutureJumuah={allowAnyFutureJumuah}

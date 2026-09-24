@@ -22,6 +22,16 @@ describe("prayer settings persistence mapping", () => {
     ).not.toHaveProperty("applied_calculation_revision");
   });
 
+  it("marks a calculation profile configured only after an operator saves valid settings", () => {
+    expect(prayerSettingsInsertValues(validSettings).profile_configured).toBe(true);
+    expect(prayerSettingsUpdateValues(validSettings).profile_configured).toBe(true);
+
+    const source = readFileSync("lib/data/prayer-settings.ts", "utf8");
+    expect(source).toContain("profileConfigured ? mapFromDb(record) : null");
+    expect(source).toContain("export async function getPrayerRuntimeAuthority()");
+    expect(source).toContain("iqamaDelays: row.iqamaDelays");
+  });
+
   it("versions every settings save independently of calculation revision", () => {
     const source = readFileSync("lib/data/prayer-settings.ts", "utf8");
     const schema = readFileSync(

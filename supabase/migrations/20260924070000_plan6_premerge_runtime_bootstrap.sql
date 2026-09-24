@@ -39,6 +39,55 @@ alter table public.prayer_settings
   alter column asr_shadow_factor drop not null,
   alter column high_latitude_rule drop not null;
 
+-- The original table-level Isha consistency check assumed that every row
+-- already had a configured calculation profile. Plan 6 now permits exactly
+-- one explicit setup-incomplete singleton, so replace that historical check
+-- with one that remains strict for configured profiles and intentionally
+-- permits the bootstrap row.
+alter table public.prayer_settings
+  drop constraint if exists prayer_settings_check;
+
+alter table public.prayer_settings
+  drop constraint if exists prayer_settings_profile_isha_consistency;
+
+alter table public.prayer_settings
+  add constraint prayer_settings_profile_isha_consistency
+  check (
+    (
+      profile_configured is false
+      and latitude is null
+      and longitude is null
+      and fajr_angle is null
+      and isha_rule is null
+      and isha_angle is null
+      and isha_minutes_after_maghrib is null
+      and asr_shadow_factor is null
+      and high_latitude_rule is null
+    )
+    or
+    (
+      profile_configured is true
+      and latitude is not null
+      and longitude is not null
+      and fajr_angle is not null
+      and asr_shadow_factor is not null
+      and high_latitude_rule is not null
+      and (
+        (
+          isha_rule = 'angle'
+          and isha_angle is not null
+          and isha_minutes_after_maghrib is null
+        )
+        or
+        (
+          isha_rule = 'fixed_minutes'
+          and isha_angle is null
+          and isha_minutes_after_maghrib is not null
+        )
+      )
+    )
+  );
+
 -- Bootstrap runtime authority only when no row exists.
 --
 -- Europe/Berlin is the approved existing application/applied schedule timezone.

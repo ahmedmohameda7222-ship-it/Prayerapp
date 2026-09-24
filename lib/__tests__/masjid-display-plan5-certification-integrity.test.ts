@@ -5,7 +5,7 @@ describe("Plan 6 migration certification integrity", () => {
   it("keeps migration certification documentation aligned with the non-destructive full chain", () => {
     const doc = readFileSync("docs/masjid-display/migration-certification.md", "utf8");
 
-    expect(doc).toContain("full non-destructive production-like chain");
+    expect(doc).toContain("Full non-destructive production-like chain");
     expect(doc).toContain("81");
     expect(doc).toContain("3");
     expect(doc).toContain("20260902223939");

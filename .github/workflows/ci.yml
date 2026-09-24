@@ -73,8 +73,79 @@ jobs:
           DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
           test -n "$DB_CONTAINER"
           docker exec "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
-          do $$
+          do $
           begin
+            if (
+              select count(*)
+              from information_schema.columns
+              where table_schema = 'public'
+                and table_name = 'prayer_times'
+                and column_name in (
+                  'fajr_iqama',
+                  'dhuhr_iqama',
+                  'asr_iqama',
+                  'maghrib_iqama',
+                  'isha_iqama'
+                )
+            ) <> 5 then
+              raise exception 'Plan 6 clean bootstrap must retain all five legacy absolute-Iqama columns';
+            end if;
+            if to_regclass('public.prayer_settings') is null then
+              raise exception 'prayer_settings missing after clean migration reset';
+            end if;
+            if to_regclass('public.masjid_display_settings') is null then
+              raise exception 'masjid_display_settings missing after clean migration reset';
+            end if;
+            if to_regclass('public.masjid_display_test_state') is null then
+              raise exception 'masjid_display_test_state missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1
+              from public.prayer_settings
+              where id = '1'
+                and calculation_revision = 1
+                and applied_calculation_revision = 0
+                and row_revision = 1
+                and timezone = 'Europe/Berlin'
+                and applied_timezone = 'Europe/Berlin'
+                and fajr_iqama_delay_minutes = 20
+                and dhuhr_iqama_delay_minutes = 15
+                and asr_iqama_delay_minutes = 15
+                and maghrib_iqama_delay_minutes = 5
+                and isha_iqama_delay_minutes = 10
+            ) then
+              raise exception 'Plan 6 prayer_settings bootstrap contract missing';
+            end if;
+            if not exists (
+              select 1
+              from public.masjid_display_settings
+              where id = '1'
+                and fajr_prayer_duration_minutes = 10
+                and dhuhr_prayer_duration_minutes = 10
+                and asr_prayer_duration_minutes = 10
+                and maghrib_prayer_duration_minutes = 10
+                and isha_prayer_duration_minutes = 10
+                and cardinality(azkar_playlist_ids) = 0
+            ) then
+              raise exception 'Plan 6 Masjid Display settings bootstrap contract missing';
+            end if;
+            if not exists (
+              select 1
+              from public.mosque_settings
+              where id = '1'
+                and public_app_url = 'https://donaumoschee.vercel.app'
+            ) then
+              raise exception 'Plan 6 public Prayerapp URL bootstrap contract missing';
+            end if;
+            if not exists (
+              select 1
+              from pg_proc p
+              join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public'
+                and p.proname = 'get_published_prayer_schedule_snapshot'
+            ) then
+              raise exception 'published prayer schedule snapshot RPC missing after clean migration reset';
+            end if;
             if to_regclass('public.user_saved_azkar') is null then
               raise exception 'user_saved_azkar missing after clean migration reset';
             end if;

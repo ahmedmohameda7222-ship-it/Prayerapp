@@ -64,7 +64,6 @@ public final class SchedulerV2AuthoritySourceContractTest {
         assertTrue(!worker.contains("store.saveConfigIfGeneration(config"));
     }
 
-
     @Test
     public void workerRejectsStaleConfigSnapshotsBeforeReplacingAlarms() throws IOException {
         String scheduler = javaSource("de/donaumoschee/app/prayer/PrayerScheduler.java");
@@ -78,6 +77,18 @@ public final class SchedulerV2AuthoritySourceContractTest {
         assertTrue(scheduler.contains("String expectedConfigSnapshot"));
         assertTrue(scheduler.contains("String currentConfigSnapshot = store.rawConfigSnapshot();"));
         assertTrue(scheduler.contains("expectedConfigSnapshot.equals(currentConfigSnapshot)"));
+    }
+
+    @Test
+    public void staleWorkerSnapshotPreservesLatestHealthyScheduleReadiness() throws IOException {
+        String scheduler = javaSource("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        String worker = javaSource("de/donaumoschee/app/workers/NativeRefreshWorker.java");
+
+        assertTrue(scheduler.contains("public final boolean staleConfigSnapshot;"));
+        assertTrue(scheduler.contains("new ConfigInstallResult(false, false, true)"));
+        assertTrue(worker.contains("replacement.staleConfigSnapshot"));
+        assertTrue(worker.contains("scheduleRefreshed = PrayerScheduler.reschedule(getApplicationContext(), generation);"));
+        assertTrue(worker.contains("sendHeartbeat(store, scheduleRefreshed, generation);"));
     }
 
     @Test

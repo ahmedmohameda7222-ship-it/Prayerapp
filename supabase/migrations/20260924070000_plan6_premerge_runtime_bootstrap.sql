@@ -223,7 +223,9 @@ begin
     raise exception 'Plan 6 Masjid Display settings singleton bootstrap is incomplete';
   end if;
 
-  if not exists (
+  if exists (
+    select 1 from public.mosque_settings where id = '1'
+  ) and not exists (
     select 1
     from public.mosque_settings
     where id = '1'

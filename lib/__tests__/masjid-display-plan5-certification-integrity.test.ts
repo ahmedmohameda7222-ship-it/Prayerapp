@@ -133,9 +133,18 @@ describe("Plan 6 migration certification integrity", () => {
     expect(source).toContain('[ "$before_transition_legacy_hash" != "$after_transition_legacy_hash" ]');
     expect(source).toContain('[ "$legacy_columns_after_transition" != "5" ]');
 
-    expect(deferred).not.toContain("drop column");
+    const deferredExecutable = deferred
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("--"))
+      .join("\n");
+    const guardExecutable = guard
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("--"))
+      .join("\n");
+
+    expect(deferredExecutable).not.toMatch(/\bdrop\s+column\b/u);
     expect(deferred).toContain("explicit deferred cutover");
-    expect(guard).not.toContain("rename column");
+    expect(guardExecutable).not.toMatch(/\brename\s+column\b/u);
     expect(repair).toContain("rename column");
     expect(repair).toContain("add column");
   });

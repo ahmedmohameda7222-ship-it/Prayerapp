@@ -22,12 +22,12 @@ describe("Home live prayer runtime refresh", () => {
 
     const action = source("app/home-prayer-runtime.ts");
     expect(action).toContain('"use server";');
-    expect(action).toContain("getRuntimePrayerSettings()");
+    expect(action).toContain("getPrayerRuntimeAuthority()");
     expect(action).toContain("getPublishedPrayerScheduleSnapshot");
     expect(action).toContain("daysBefore: 1");
     expect(action).toContain("daysAfter: 30");
     expect(action).toContain("schedule: snapshot.rows");
-    expect(action).toContain("iqamaDelays: prayerSettings === undefined ? undefined : prayerSettings?.iqamaDelays ?? null");
+    expect(action).toContain("iqamaDelays: prayerAuthority === undefined ? undefined : prayerAuthority?.iqamaDelays ?? null");
     expect(action).toContain("timezone: snapshot.timezone");
     expect(action).not.toContain("fajrAngle");
     expect(action).not.toContain("latitude");

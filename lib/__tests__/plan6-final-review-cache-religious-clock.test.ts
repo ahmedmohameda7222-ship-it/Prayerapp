@@ -52,10 +52,11 @@ describe("Plan 6 final-review cache and religious-clock regressions", () => {
     const page = source("app/ramadan/page.tsx");
 
     expect(page).toContain(
-      'import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";',
+      'import { getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";',
     );
-    expect(page).toContain("prayerSettings?.timezone");
-    expect(page).toContain("todayIso(new Date(), prayerSettings?.timezone)");
+    expect(page).toContain("getRuntimePrayerTimezone()");
+    expect(page).toContain("todayIso(new Date(), prayerTimezone)");
+    expect(page).not.toContain("getRuntimePrayerSettings().catch");
   });
 
   it("uses the applied runtime timezone for Azkar category and daily progress clocks", () => {
@@ -63,13 +64,28 @@ describe("Plan 6 final-review cache and religious-clock regressions", () => {
     const routine = source("components/azkar/AzkarRoutine.tsx");
 
     expect(page).toContain(
-      'import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";',
+      'import { getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";',
     );
-    expect(page).toContain("timezone={prayerSettings?.timezone ?? null}");
+    expect(page).toContain("getRuntimePrayerTimezone()");
+    expect(page).toContain("timezone={prayerTimezone}");
+    expect(page).not.toContain("getRuntimePrayerSettings().catch");
     expect(routine).toContain("timezone?: string | null");
     expect(routine).toContain("localDateKey(now, timezone)");
     expect(routine).toContain("smartAzkarCategory(now, timezone ?? undefined)");
     expect(routine).toContain("localDateKey(new Date(), timezone)");
+  });
+
+  it("does not downgrade runtime-timezone lookup failures to Berlin on public religious clocks", () => {
+    for (const path of [
+      "app/events/page.tsx",
+      "app/ramadan/page.tsx",
+      "app/azkar/page.tsx",
+    ]) {
+      const page = source(path);
+      expect(page).toContain("getRuntimePrayerTimezone()");
+      expect(page).not.toContain("getRuntimePrayerSettings().catch");
+      expect(page).not.toContain(".catch(() => null)");
+    }
   });
 
   it("uses the applied runtime timezone for Admin operational schedule dates", () => {

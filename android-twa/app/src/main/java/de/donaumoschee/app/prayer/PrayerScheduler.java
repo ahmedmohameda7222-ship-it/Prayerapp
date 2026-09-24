@@ -88,6 +88,27 @@ public final class PrayerScheduler {
         }
     }
 
+    public static ConfigInstallResult replaceConfigAndReschedule(
+            Context context,
+            JSONObject object,
+            Instant now,
+            int expectedGeneration,
+            String expectedConfigSnapshot
+    ) throws JSONException {
+        synchronized (SCHEDULE_LOCK) {
+            NativeStore store = new NativeStore(context);
+            if (store.accountGeneration() != expectedGeneration) {
+                return new ConfigInstallResult(false, false);
+            }
+            String currentConfigSnapshot = store.rawConfigSnapshot();
+            if (expectedConfigSnapshot == null || !expectedConfigSnapshot.equals(currentConfigSnapshot)) {
+                Log.i(TAG, "alarm.schedule reject-stale-config generation=" + expectedGeneration);
+                return new ConfigInstallResult(false, false);
+            }
+            return replaceConfigAndRescheduleLocked(context, store, object, now, expectedGeneration);
+        }
+    }
+
     private static ConfigInstallResult replaceConfigAndRescheduleLocked(
             Context context,
             NativeStore store,

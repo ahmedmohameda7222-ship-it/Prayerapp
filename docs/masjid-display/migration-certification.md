@@ -73,23 +73,30 @@ represented by the existing 81-prayer / 3-Jumuah production-like fixture.
 
 ## Plan 6 sequencing remediation
 
-### Historical migration version retained, destructive action removed
+### Historical destructive migration remains immutable
 
-The repository keeps the historical migration path:
+The repository retains the original historical migration unchanged:
 
 `20260915223000_remove_absolute_iqama_columns.sql`
 
-but its Plan 6 implementation is intentionally **non-destructive**.
+It still contains the original five `DROP COLUMN` statements. Plan 6 does not
+rewrite that already-certified migration version.
 
-At that historical boundary it:
+Instead, Plan 6 adds two explicit compatibility migrations around it:
 
-- requires all five legacy absolute-Iqama columns to still exist;
-- performs no `DROP COLUMN`;
-- labels those fields as physical compatibility data only;
-- explicitly states that they are not runtime Iqama authority.
+- `20260915222500_plan6_preserve_legacy_iqama_columns.sql` renames the five
+  legacy columns to transitional names before the historical migration runs;
+- the unchanged historical migration then has no matching legacy columns to
+  drop and therefore performs no destructive data loss;
+- `20260915223500_plan6_restore_legacy_iqama_columns.sql` immediately renames
+  the transitional columns back to their original names, preserving every
+  production value byte-for-byte.
 
-This avoids renumbering/reordering already reviewed migration history while
-honoring the Plan 6 production boundary.
+For environments that had already executed the old destructive migration
+before these shims existed, the restore/bootstrap compatibility path recreates
+the nullable compatibility fields but does not invent lost historical values.
+This keeps migration history explicit and unambiguous while making the real
+Plan 6 production path non-destructive.
 
 ### Explicit compatibility/bootstrap migration
 
@@ -148,19 +155,21 @@ The harness applies, in repository order:
 1. `20260915220000_masjid_display_prayer_settings.sql`
 2. `20260915221000_prayer_schedule_atomic_generation.sql`
 3. `20260915222000_masjid_display_admin_schema.sql`
-4. `20260915223000_remove_absolute_iqama_columns.sql` — Plan 6 non-destructive form
-5. `20260917041000_masjid_display_feed_revision.sql`
-6. `20260917233500_masjid_display_bounded_generated_at.sql`
-7. `20260918001500_masjid_display_semantic_source_timestamps.sql`
-8. `20260918015000_masjid_display_snapshot_window_readers.sql`
-9. `20260919023000_masjid_display_feed_bounds.sql`
-10. `20260922060000_prayer_event_v3.sql`
-11. `20260922061000_applied_timezone.sql`
-12. `20260922062000_masjid_display_dynamic_budget_timezone.sql`
-13. `20260923030000_published_prayer_schedule_snapshot.sql`
-14. `20260923100000_prayer_schedule_midnight_write_guards.sql`
-15. `20260924060000_certified_prayer_timezones.sql`
-16. `20260924070000_plan6_premerge_runtime_bootstrap.sql`
+4. `20260915222500_plan6_preserve_legacy_iqama_columns.sql`
+5. `20260915223000_remove_absolute_iqama_columns.sql` — unchanged historical destructive migration, safely bypassed by the preservation shim
+6. `20260915223500_plan6_restore_legacy_iqama_columns.sql`
+7. `20260917041000_masjid_display_feed_revision.sql`
+8. `20260917233500_masjid_display_bounded_generated_at.sql`
+9. `20260918001500_masjid_display_semantic_source_timestamps.sql`
+10. `20260918015000_masjid_display_snapshot_window_readers.sql`
+11. `20260919023000_masjid_display_feed_bounds.sql`
+12. `20260922060000_prayer_event_v3.sql`
+13. `20260922061000_applied_timezone.sql`
+14. `20260922062000_masjid_display_dynamic_budget_timezone.sql`
+15. `20260923030000_published_prayer_schedule_snapshot.sql`
+16. `20260923100000_prayer_schedule_midnight_write_guards.sql`
+17. `20260924060000_certified_prayer_timezones.sql`
+18. `20260924070000_plan6_premerge_runtime_bootstrap.sql`
 
 Required harness success markers:
 

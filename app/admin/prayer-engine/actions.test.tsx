@@ -19,6 +19,7 @@ vi.mock("@/lib/auth/admin-server", () => ({
   requireAllowedAdminIdentity: vi.fn(),
 }));
 vi.mock("@/lib/data/prayer-settings", () => ({
+  getPrayerRuntimeAuthority: vi.fn(),
   getPrayerSettings: vi.fn(),
   savePrayerSettings: mocks.saveSettings,
 }));

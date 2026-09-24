@@ -155,6 +155,7 @@ jobs:
             calculation_revision,
             applied_calculation_revision,
             row_revision,
+            profile_configured,
             updated_at
           ) values (
             '1',
@@ -173,6 +174,7 @@ jobs:
             1,
             1,
             1,
+            true,
             now()
           )
           on conflict (id) do update set
@@ -200,6 +202,7 @@ jobs:
             calculation_revision = excluded.calculation_revision,
             applied_calculation_revision = excluded.applied_calculation_revision,
             row_revision = excluded.row_revision,
+            profile_configured = true,
             updated_at = excluded.updated_at;
 
           insert into public.mosque_settings (

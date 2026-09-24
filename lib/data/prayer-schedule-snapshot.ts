@@ -1,6 +1,10 @@
 import "server-only";
 
 import { createServerClient } from "@/lib/supabase/server";
+import {
+  hasCertifiedPrayerTimezoneRules,
+  isCertifiedPrayerTimezone,
+} from "@/lib/prayer-engine/certified-timezones";
 import type { PrayerTime } from "@/lib/types";
 
 type SnapshotOptions = {
@@ -70,9 +74,7 @@ function mapPrayerRow(value: unknown): PrayerTime {
 
 function assertTimezone(value: unknown): string {
   const timezone = requiredString(value, "timezone");
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date(0));
-  } catch {
+  if (!isCertifiedPrayerTimezone(timezone) || !hasCertifiedPrayerTimezoneRules(timezone)) {
     throw new Error("Invalid prayer schedule snapshot timezone");
   }
   return timezone;

@@ -103,7 +103,7 @@ public final class PrayerScheduler {
             String currentConfigSnapshot = store.rawConfigSnapshot();
             if (expectedConfigSnapshot == null || !expectedConfigSnapshot.equals(currentConfigSnapshot)) {
                 Log.i(TAG, "alarm.schedule reject-stale-config generation=" + expectedGeneration);
-                return new ConfigInstallResult(false, false);
+                return new ConfigInstallResult(false, false, true);
             }
             return replaceConfigAndRescheduleLocked(context, store, object, now, expectedGeneration);
         }
@@ -323,10 +323,20 @@ public final class PrayerScheduler {
     public static final class ConfigInstallResult {
         public final boolean configSaved;
         public final boolean scheduleInstalled;
+        public final boolean staleConfigSnapshot;
 
         private ConfigInstallResult(boolean configSaved, boolean scheduleInstalled) {
+            this(configSaved, scheduleInstalled, false);
+        }
+
+        private ConfigInstallResult(
+                boolean configSaved,
+                boolean scheduleInstalled,
+                boolean staleConfigSnapshot
+        ) {
             this.configSaved = configSaved;
             this.scheduleInstalled = scheduleInstalled;
+            this.staleConfigSnapshot = staleConfigSnapshot;
         }
     }
 

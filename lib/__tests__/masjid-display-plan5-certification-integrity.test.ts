@@ -112,17 +112,17 @@ describe("Plan 6 migration certification integrity", () => {
     expect(source).toContain("PLAN6_MIGRATION_DRY_RUN=PASS");
   });
 
-  it("keeps the historical cutover immutable and certifies preservation shims around it", () => {
+  it("certifies the destructive cutover is explicitly deferred with no compatibility window", () => {
     const source = readFileSync("scripts/verify-masjid-display-migration.sh", "utf8");
-    const historical = readFileSync(
+    const deferred = readFileSync(
       "supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql",
       "utf8",
     ).toLowerCase();
-    const preserve = readFileSync(
+    const guard = readFileSync(
       "supabase/migrations/20260915222500_plan6_preserve_legacy_iqama_columns.sql",
       "utf8",
     ).toLowerCase();
-    const restore = readFileSync(
+    const repair = readFileSync(
       "supabase/migrations/20260915223500_plan6_restore_legacy_iqama_columns.sql",
       "utf8",
     ).toLowerCase();
@@ -133,19 +133,11 @@ describe("Plan 6 migration certification integrity", () => {
     expect(source).toContain('[ "$before_transition_legacy_hash" != "$after_transition_legacy_hash" ]');
     expect(source).toContain('[ "$legacy_columns_after_transition" != "5" ]');
 
-    for (const column of [
-      "fajr_iqama",
-      "dhuhr_iqama",
-      "asr_iqama",
-      "maghrib_iqama",
-      "isha_iqama",
-    ]) {
-      expect(historical).toContain(`drop column if exists ${column}`);
-      expect(preserve).toContain(column);
-      expect(restore).toContain(column);
-    }
-    expect(preserve).toContain("rename column");
-    expect(restore).toContain("rename column");
+    expect(deferred).not.toContain("drop column");
+    expect(deferred).toContain("explicit deferred cutover");
+    expect(guard).not.toContain("rename column");
+    expect(repair).toContain("rename column");
+    expect(repair).toContain("add column");
   });
 
   it("requires the bootstrap to leave calculation parameters pending while making runtime data complete", () => {

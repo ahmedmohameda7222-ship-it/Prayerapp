@@ -39,6 +39,27 @@ describe("Prayer Engine Admin", () => {
     expect(screen.getByRole("button", { name: /^Extend Schedule \+1 Year$/i })).toBeDisabled();
   });
 
+  it("preserves safe runtime Iqama values while the calculation profile is unconfigured", () => {
+    render(
+      <PrayerEngineAdmin
+        initialSettings={null}
+        initialRuntimeAuthority={{
+          timezone: "Europe/Berlin",
+          iqamaDelays: { fajr: 20, dhuhr: 15, asr: 15, maghrib: 5, isha: 10 },
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText(/Timezone/i)).toHaveValue("Europe/Berlin");
+    expect(screen.getByLabelText(/Fajr Iqama delay/i)).toHaveValue(20);
+    expect(screen.getByLabelText(/Dhuhr Iqama delay/i)).toHaveValue(15);
+    expect(screen.getByLabelText(/Asr Iqama delay/i)).toHaveValue(15);
+    expect(screen.getByLabelText(/Maghrib Iqama delay/i)).toHaveValue(5);
+    expect(screen.getByLabelText(/Isha Iqama delay/i)).toHaveValue(10);
+    expect(screen.getByLabelText(/Latitude/i)).toHaveValue(null);
+    expect(screen.getByLabelText(/Fajr angle/i)).toHaveValue(null);
+  });
+
   it("treats historical calibration as optional operator reference instead of a production blocker", () => {
     render(<PrayerEngineAdmin initialSettings={SYNTHETIC_TEST_PRAYER_SETTINGS} />);
     expect(screen.queryByText(/Production calculation profile is not approved/i)).not.toBeInTheDocument();

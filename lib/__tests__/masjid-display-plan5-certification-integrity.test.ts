@@ -219,4 +219,14 @@ describe("Plan 6 migration certification integrity", () => {
       expect(source).toContain(field);
     }
   });
+  it("wires runtime-only prayer authority into the production Feed dependencies", () => {
+    const source = readFileSync("lib/masjid-display/build-feed.ts", "utf8");
+    const start = source.indexOf("const defaultDependencies");
+    const end = source.indexOf("export const MAX_MASJID_DISPLAY_FEED_BYTES", start);
+    const defaults = source.slice(start, end);
+
+    expect(defaults).toContain("getPrayerRuntimeAuthority,");
+    expect(defaults).toContain("getPrayerRuntimeAuthorityForDisplay,");
+  });
+
 });

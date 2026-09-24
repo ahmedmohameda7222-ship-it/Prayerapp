@@ -1,42 +1,99 @@
 # Absolute Iqama Cutover Checklist
 
-This checklist governs the destructive removal of the five legacy absolute daily Iqama columns from `public.prayer_times`.
+Status: **DEFERRED TO PLAN 7 — NOT AUTHORIZED IN PLAN 6**
 
-## Application cutover gate
+This checklist records the destructive removal boundary for the five legacy
+absolute daily Iqama columns in `public.prayer_times`.
 
-Before considering the destructive migration deployable:
+## Plan 6 boundary
 
-1. Confirm the root application has no active reads or writes of the exact legacy fields `fajr_iqama`, `dhuhr_iqama`, `asr_iqama`, `maghrib_iqama`, `isha_iqama` or their camel-case equivalents.
-2. Preserve the canonical shared delay fields in `public.prayer_settings`; names such as `fajr_iqama_delay_minutes` are not legacy absolute fields.
-3. Run the complete test suite and production build.
-4. Run `supabase db reset` against the local disposable database and confirm all migrations apply from zero.
+During Plan 6:
 
-## Target-environment destructive deployment gate
+1. The root application, Feed, TV runtime, Admin runtime, and Android runtime
+   must not read or write the exact legacy fields
+   `fajr_iqama`, `dhuhr_iqama`, `asr_iqama`, `maghrib_iqama`,
+   `isha_iqama` or their camel-case equivalents.
+2. Runtime Iqama authority is exclusively:
+   `final canonical prayer start + configured shared delay`.
+3. The five legacy absolute-Iqama columns **must remain physically present** in
+   the real production database for the Plan 6 merge.
+4. Existing production values in those columns must be preserved byte-for-byte
+   through the Plan 6 production migration chain.
+5. Their continued physical presence is compatibility only; they are **not runtime authority**.
+6. Plan 6 must not execute a `DROP COLUMN` for any of the five fields.
 
-Read the target environment before applying `20260915223000_remove_absolute_iqama_columns.sql`. The target must contain exactly one `public.prayer_settings` singleton row and all five delay columns are non-null. A delay value of `0` is valid.
+The historical repository migration version
+`20260915223000_remove_absolute_iqama_columns.sql` is retained for migration
+history/order compatibility, but its Plan 6 form is intentionally
+non-destructive.
 
-Required read-only evidence should establish:
+`20260924070000_plan6_premerge_runtime_bootstrap.sql` normalizes environments
+that may already have executed the older destructive form by re-adding missing
+legacy columns as compatibility-only nullable fields. It does not overwrite
+existing production values.
 
-```sql
-select
-  id,
-  fajr_iqama_delay_minutes,
-  dhuhr_iqama_delay_minutes,
-  asr_iqama_delay_minutes,
-  maghrib_iqama_delay_minutes,
-  isha_iqama_delay_minutes
-from public.prayer_settings
-where id = '1';
-```
+## Plan 6 production preflight evidence — 2026-09-24
 
-Deployment readiness is **BLOCKED** if that row is missing, if any delay is null, or if the target query cannot be executed and reviewed.
+Prayerapp production Supabase project/ref:
 
-### Current target evidence — 2026-09-16
+`dbqbzvkleqzbgufllgca`
 
-A read-only target query confirmed `public.prayer_times` exists but `public.prayer_settings` does not exist. A separate read of `public.mosque_settings` identified the target as the Deggendorf mosque project. Therefore the target deployment gate is **BLOCKED**. No destructive target migration was applied.
+Read-only preflight established:
 
-Do not apply the destructive migration to the target environment while this gate is BLOCKED. Creating and validating the migration locally does not authorize a production database write.
+- `prayer_times`: 81 rows;
+- `jumuah_times`: 3 rows;
+- all five legacy absolute-Iqama columns exist;
+- each legacy Iqama column has 11 non-null values;
+- retained prayer-row hash:
+  `a611e20d391dc7c306fc0f2a41a66b67`;
+- Jumuah hash:
+  `aabc1b96fe44f8ca8c29ff2e0b087764`;
+- legacy absolute-Iqama hash:
+  `6f3fde0064cea4ffffd760ca4a96193b`;
+- `prayer_settings`: absent before remediation;
+- `masjid_display_settings`: absent before remediation;
+- `get_published_prayer_schedule_snapshot(...)`: absent before remediation;
+- production migration history ends at
+  `20260902223939_admin_audit_hardening`.
 
-## Data preserved by the migration
+This evidence is the preservation baseline for the authorized non-destructive
+Plan 6 production migration work.
 
-The migration drops only the five legacy absolute daily Iqama columns. It must preserve the six prayer start-time fields, all shared delay settings, notes, publication state, and all Maghrib Program metadata including `maghrib_combined_isha_time`.
+## Runtime settings bootstrap
+
+The Plan 6 pre-merge bootstrap may create the missing runtime singletons, but it
+must not reinterpret or rewrite existing canonical `prayer_times`.
+
+Prayer Engine bootstrap rules:
+
+- applied timezone remains `Europe/Berlin`, matching the existing application
+  and canonical schedule authority;
+- shared Iqama delays are `20,15,15,5,10`, matching the already-certified
+  migration prerequisite and the most recent populated legacy production rows;
+- calculation fields use the repository's existing editable migration-harness
+  bootstrap profile only to make the Admin row structurally valid;
+- that calculation profile remains explicitly pending with
+  `calculation_revision = 1` and `applied_calculation_revision = 0`;
+- no generated/recalculated schedule row is committed by the bootstrap;
+- an operator must review a future recalculation preview before those
+  calculation parameters can become applied schedule authority.
+
+Masjid Display bootstrap rules:
+
+- five prayer-in-progress durations use the existing Admin default of 10
+  minutes;
+- Azkar playlist starts empty;
+- the canonical production Prayerapp URL is
+  `https://donaumoschee.vercel.app`;
+- no synthetic content rows are inserted into prayer/content tables.
+
+## Future destructive gate
+
+The actual destructive removal of the five legacy columns is reserved for an
+explicitly approved **Plan 7 or later**.
+
+A later destructive plan must independently re-verify data preservation,
+runtime cutover, backups/rollback, and target authorization before adding or
+executing any `DROP COLUMN`.
+
+Plan 6 approval or merge does **not** authorize that future destructive action.

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { PrayerScheduleDiff, PrayerSchedulePreview } from "@/lib/prayer-engine/generate";
 import type { PrayerCalculationSettings, PrayerKey } from "@/lib/prayer-engine/types";
+import type { PrayerRuntimeAuthority } from "@/lib/data/prayer-settings";
 import { CERTIFIED_PRAYER_TIMEZONES } from "@/lib/prayer-engine/certified-timezones";
 import { PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY } from "@/lib/prayer-engine/production-approval";
 import {
@@ -24,6 +25,7 @@ type NumericForm = Record<string, string>;
 
 type Props = {
   initialSettings: PrayerCalculationSettings | null;
+  initialRuntimeAuthority?: PrayerRuntimeAuthority | null;
   token?: string;
 };
 
@@ -31,11 +33,14 @@ function inputClass() {
   return "min-h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-base text-[var(--color-text)]";
 }
 
-function settingsToForm(settings: PrayerCalculationSettings | null): NumericForm {
+function settingsToForm(
+  settings: PrayerCalculationSettings | null,
+  runtimeAuthority?: PrayerRuntimeAuthority | null,
+): NumericForm {
   const form: NumericForm = {
     latitude: settings ? String(settings.latitude) : "",
     longitude: settings ? String(settings.longitude) : "",
-    timezone: settings?.timezone ?? "Europe/Berlin",
+    timezone: settings?.timezone ?? runtimeAuthority?.timezone ?? "Europe/Berlin",
     fajrAngle: settings ? String(settings.fajrAngle) : "",
     ishaRule: settings?.ishaRule ?? "angle",
     ishaAngle: settings?.ishaAngle == null ? "" : String(settings.ishaAngle),
@@ -44,7 +49,13 @@ function settingsToForm(settings: PrayerCalculationSettings | null): NumericForm
     highLatitudeRule: settings?.highLatitudeRule ?? "middle_of_night",
   };
   for (const prayer of PRAYERS) form[`offset_${prayer}`] = settings ? String(settings.offsets[prayer]) : "";
-  for (const prayer of IQAMA_PRAYERS) form[`iqama_${prayer}`] = settings ? String(settings.iqamaDelays[prayer]) : "";
+  for (const prayer of IQAMA_PRAYERS) {
+    form[`iqama_${prayer}`] = settings
+      ? String(settings.iqamaDelays[prayer])
+      : runtimeAuthority
+        ? String(runtimeAuthority.iqamaDelays[prayer])
+        : "";
+  }
   return form;
 }
 
@@ -74,9 +85,15 @@ function buildSettings(form: NumericForm, current: PrayerCalculationSettings | n
   };
 }
 
-export function PrayerEngineAdmin({ initialSettings, token = "" }: Props) {
+export function PrayerEngineAdmin({
+  initialSettings,
+  initialRuntimeAuthority = null,
+  token = "",
+}: Props) {
   const [settings, setSettings] = useState(initialSettings);
-  const [form, setForm] = useState<NumericForm>(() => settingsToForm(initialSettings));
+  const [form, setForm] = useState<NumericForm>(() =>
+    settingsToForm(initialSettings, initialRuntimeAuthority)
+  );
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [extensionPreview, setExtensionPreview] = useState<PrayerSchedulePreview | null>(null);

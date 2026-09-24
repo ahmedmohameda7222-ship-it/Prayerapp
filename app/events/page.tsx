@@ -11,8 +11,7 @@ export default async function EventsPage() {
   const locale = await getServerLocale();
   const { t } = getTranslation(locale);
   const now = new Date();
-  const prayerSettings = await getRuntimePrayerSettings().catch(() => null);
-  const prayerTimezone = prayerSettings?.timezone;
+  const prayerTimezone = await getRuntimePrayerTimezone();
   const events = (await getEvents()).filter((event) =>
     isUpcomingEvent(event, now, prayerTimezone),
   );

@@ -28,7 +28,9 @@ describe("Plan 6 event timezone authority", () => {
     const eventsPage = source("app/events/page.tsx");
 
     expect(home).toContain("isUpcomingEvent(event, now, prayerTimezone");
-    expect(eventsPage).toContain("getRuntimePrayerSettings");
-    expect(eventsPage).toMatch(/isUpcomingEvent\(event, now, [^)]+timezone/i);
+    expect(eventsPage).toContain("getRuntimePrayerTimezone");
+    expect(eventsPage).toContain("const prayerTimezone = await getRuntimePrayerTimezone()");
+    expect(eventsPage).toContain("isUpcomingEvent(event, now, prayerTimezone)");
+    expect(eventsPage).not.toContain(".catch(() => null)");
   });
 });

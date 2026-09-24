@@ -17,8 +17,6 @@ import {
   getPrayerSettingsForDisplay,
   getRuntimePrayerSettings,
   getRuntimePrayerSettingsForDisplay,
-  getPrayerRuntimeAuthority,
-  getPrayerRuntimeAuthorityForDisplay,
 } from "@/lib/data/prayer-settings";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { getPublishedPrayerScheduleSnapshot } from "@/lib/data/prayer-schedule-snapshot";

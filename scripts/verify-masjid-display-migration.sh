@@ -8,7 +8,9 @@ pending_migrations=(
   "20260915220000_masjid_display_prayer_settings.sql"
   "20260915221000_prayer_schedule_atomic_generation.sql"
   "20260915222000_masjid_display_admin_schema.sql"
+  "20260915222500_plan6_preserve_legacy_iqama_columns.sql"
   "20260915223000_remove_absolute_iqama_columns.sql"
+  "20260915223500_plan6_restore_legacy_iqama_columns.sql"
   "20260917041000_masjid_display_feed_revision.sql"
   "20260917233500_masjid_display_bounded_generated_at.sql"
   "20260918001500_masjid_display_semantic_source_timestamps.sql"
@@ -97,12 +99,12 @@ where table_schema='public'
   and column_name in ('fajr_iqama','dhuhr_iqama','asr_iqama','maghrib_iqama','isha_iqama');
 "
 
-# Plan 6 sequencing gate: the historical migration version remains in order,
-# but it must be non-destructive. Preserve both physical columns and their
-# production-like values through that boundary.
+# Plan 6 sequencing gate: keep the historical destructive migration immutable.
+# The preservation shim moves legacy columns out of its DROP path, and the
+# restoration shim returns the same columns and values immediately afterward.
 reset_to_reviewed_cutoff
 before_transition_legacy_hash="$(query_scalar "$legacy_iqama_hash_sql")"
-for migration_index in 0 1 2 3; do
+for migration_index in 0 1 2 3 4 5; do
   apply_sql_file "supabase/migrations/${pending_migrations[$migration_index]}"
 done
 after_transition_legacy_hash="$(query_scalar "$legacy_iqama_hash_sql")"
@@ -117,12 +119,12 @@ if [ "$before_transition_legacy_hash" != "$after_transition_legacy_hash" ]; then
   exit 1
 fi
 
-echo "PLAN6_IQAMA_TRANSITION=PASS legacy columns and values preserved at historical cutover version"
+echo "PLAN6_IQAMA_TRANSITION=PASS immutable historical cutover safely bypassed; legacy columns and values preserved"
 
 # Existing-content capacity preflight: exercise the Feed bounds migration at
 # its own historical boundary before the later Plan 6 bootstrap exists.
 reset_to_reviewed_cutoff
-for migration_index in 0 1 2 3 4 5 6 7; do
+for migration_index in 0 1 2 3 4 5 6 7 8 9; do
   apply_sql_file "supabase/migrations/${pending_migrations[$migration_index]}"
 done
 
@@ -146,7 +148,7 @@ from generate_series(1, 8);
 SQL
 
 set +e
-capacity_preflight_output="$(apply_sql_file "supabase/migrations/${pending_migrations[8]}" 2>&1)"
+capacity_preflight_output="$(apply_sql_file "supabase/migrations/${pending_migrations[10]}" 2>&1)"
 capacity_preflight_status=$?
 set -e
 

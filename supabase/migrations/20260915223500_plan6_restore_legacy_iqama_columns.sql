@@ -1,12 +1,14 @@
--- Plan 6 restoration shim paired with 20260915222500.
+-- Plan 6 compatibility repair / convergence migration.
 --
--- On the real production path, the transitional columns contain the original
--- legacy absolute-Iqama values and are renamed back byte-for-byte after the
--- unchanged historical destructive migration has safely no-op'd.
+-- The real production path never renames or drops the five legacy fields:
+-- 20260915222500 is a non-mutating guard and 20260915223000 is an explicit
+-- Plan 6 no-op. This migration therefore normally leaves production data
+-- untouched.
 --
--- On an environment that had already executed the historical destructive form
--- before these shims existed, re-create the compatibility-only nullable fields
--- so the final Plan 6 schema converges. Lost historical values are not invented.
+-- It also repairs disposable/staging environments that may have executed an
+-- older feature-branch draft: transitional columns are renamed back, or
+-- missing nullable compatibility columns are recreated. Lost values are never
+-- invented.
 do $$
 declare
   v_pair text[];

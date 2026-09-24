@@ -39,6 +39,15 @@ describe("Plan 6 final-review cache and religious-clock regressions", () => {
     expect(client).toContain("[router, timezone]");
   });
 
+  it("discards stale overlapping Home prayer refresh responses", () => {
+    const client = source("components/home/HomePageClient.tsx");
+
+    expect(client).toContain("useRef");
+    expect(client).toContain("refreshGeneration");
+    expect(client).toContain("const generation = ++refreshGeneration.current");
+    expect(client).toContain("generation !== refreshGeneration.current");
+  });
+
   it("selects and highlights Ramadan days in the applied runtime timezone", () => {
     const page = source("app/ramadan/page.tsx");
 

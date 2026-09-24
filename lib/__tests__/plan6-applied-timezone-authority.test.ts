@@ -39,7 +39,7 @@ describe("Plan 6 applied timezone authority", () => {
       expect(source(path)).toContain("getPublishedPrayerScheduleSnapshot");
     }
 
-    expect(source("app/home-prayer-runtime.ts")).toContain("getRuntimePrayerSettings");
+    expect(source("app/home-prayer-runtime.ts")).toContain("getPrayerRuntimeAuthority");
     expect(source("components/prayer/PrayerTimesBrowser.tsx")).toContain("loadPrayerScheduleRuntime");
   });
 });

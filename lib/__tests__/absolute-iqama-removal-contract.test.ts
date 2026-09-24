@@ -55,8 +55,10 @@ describe("Plan 6 deferred absolute-Iqama storage cutover", () => {
       expect(migration).toContain(`add column if not exists ${column} text`);
     }
     expect(migration).not.toContain("drop column");
-    expect(migration).toContain("calculation_revision=1 / applied_calculation_revision=0");
+    expect(migration).toContain("profile_configured boolean not null default true");
+    expect(migration).toContain("parameters remain null/unconfigured");
     expect(migration).toContain("20, 15, 15, 5, 10");
+    expect(migration).toContain("profile_configured is false");
   });
 
   it("documents that destructive production removal is deferred to a later approved plan", () => {

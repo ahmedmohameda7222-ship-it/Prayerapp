@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAllowedAdminIdentity } from "@/lib/auth/admin-server";
-import { getPrayerSettings, savePrayerSettings } from "@/lib/data/prayer-settings";
+import {
+  getPrayerRuntimeAuthority,
+  getPrayerSettings,
+  savePrayerSettings,
+  type PrayerRuntimeAuthority,
+} from "@/lib/data/prayer-settings";
 import {
   calibrateAgainstHistoricalSchedule,
   commitFutureRecalculation,
@@ -31,6 +36,17 @@ export async function loadPrayerEngineSettingsAction(
   try {
     await requireAdmin(token);
     return { success: true, data: await getPrayerSettings() };
+  } catch (error) {
+    return { success: false, error: adminActionError(error, "admin.errors.unauthorized") };
+  }
+}
+
+export async function loadPrayerEngineRuntimeAuthorityAction(
+  token: string,
+): Promise<PrayerEngineActionResult<PrayerRuntimeAuthority | null>> {
+  try {
+    await requireAdmin(token);
+    return { success: true, data: await getPrayerRuntimeAuthority() };
   } catch (error) {
     return { success: false, error: adminActionError(error, "admin.errors.unauthorized") };
   }

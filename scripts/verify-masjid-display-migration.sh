@@ -206,6 +206,7 @@ after_maghrib_program_count="$(query_scalar 'select count(*) from public.prayer_
 legacy_iqama_columns="$(query_scalar "$legacy_column_count_sql")"
 shared_delays="$(query_scalar "select concat_ws(',',fajr_iqama_delay_minutes,dhuhr_iqama_delay_minutes,asr_iqama_delay_minutes,maghrib_iqama_delay_minutes,isha_iqama_delay_minutes) from public.prayer_settings where id='1';")"
 revision_state="$(query_scalar "select concat_ws(',',calculation_revision,applied_calculation_revision,row_revision) from public.prayer_settings where id='1';")"
+profile_state="$(query_scalar "select concat_ws(',',profile_configured::text,(latitude is null)::text,(longitude is null)::text,(fajr_angle is null)::text,(isha_rule is null)::text,(asr_shadow_factor is null)::text,(high_latitude_rule is null)::text) from public.prayer_settings where id='1';")"
 timezone_state="$(query_scalar "select concat_ws(',',timezone,applied_timezone) from public.prayer_settings where id='1';")"
 display_state="$(query_scalar "select concat_ws(',',fajr_prayer_duration_minutes,dhuhr_prayer_duration_minutes,asr_prayer_duration_minutes,maghrib_prayer_duration_minutes,isha_prayer_duration_minutes,cardinality(azkar_playlist_ids)) from public.masjid_display_settings where id='1';")"
 public_app_url="$(query_scalar "select public_app_url from public.mosque_settings where id='1';")"
@@ -243,7 +244,11 @@ if [ "$shared_delays" != "20,15,15,5,10" ]; then
   exit 1
 fi
 if [ "$revision_state" != "1,0,1" ]; then
-  echo "Plan 6 bootstrap calculation profile is not safely pending" >&2
+  echo "Plan 6 bootstrap calculation revision state is not safely pending" >&2
+  exit 1
+fi
+if [ "$profile_state" != "false,true,true,true,true,true,true" ]; then
+  echo "Plan 6 bootstrap invented or configured a mosque calculation profile" >&2
   exit 1
 fi
 if [ "$timezone_state" != "Europe/Berlin,Europe/Berlin" ]; then
@@ -276,6 +281,7 @@ echo "PLAN6_CHAIN_AFTER legacy_iqama_coverage=$after_legacy_coverage"
 echo "PLAN6_CHAIN_AFTER maghrib_program_enabled_count=$after_maghrib_program_count"
 echo "PLAN6_CHAIN_AFTER shared_delays=$shared_delays"
 echo "PLAN6_CHAIN_AFTER revision_state=$revision_state"
+echo "PLAN6_CHAIN_AFTER profile_state=$profile_state"
 echo "PLAN6_CHAIN_AFTER timezone_state=$timezone_state"
 echo "PLAN6_CHAIN_AFTER display_state=$display_state"
 echo "PLAN6_CHAIN_AFTER legacy_iqama_columns=$legacy_iqama_columns"

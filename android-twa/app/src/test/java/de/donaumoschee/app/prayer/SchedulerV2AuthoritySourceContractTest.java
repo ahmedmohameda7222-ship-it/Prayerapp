@@ -71,7 +71,7 @@ public final class SchedulerV2AuthoritySourceContractTest {
         String worker = javaSource("de/donaumoschee/app/workers/NativeRefreshWorker.java");
         String store = javaSource("de/donaumoschee/app/storage/NativeStore.java");
 
-        assertTrue(store.contains("String rawConfigSnapshot()") || store.contains("String rawConfigSnapshot()"));
+        assertTrue(store.contains("public String rawConfigSnapshot()"));
         assertTrue(worker.contains("String configSnapshot = store.rawConfigSnapshot();"));
         assertTrue(worker.contains("new JSONObject(configSnapshot)"));
         assertTrue(worker.contains("configSnapshot,"));

@@ -72,7 +72,9 @@ describe("Plan 6 migration certification integrity", () => {
       "20260915220000_masjid_display_prayer_settings.sql",
       "20260915221000_prayer_schedule_atomic_generation.sql",
       "20260915222000_masjid_display_admin_schema.sql",
+      "20260915222500_plan6_preserve_legacy_iqama_columns.sql",
       "20260915223000_remove_absolute_iqama_columns.sql",
+      "20260915223500_plan6_restore_legacy_iqama_columns.sql",
       "20260917041000_masjid_display_feed_revision.sql",
       "20260917233500_masjid_display_bounded_generated_at.sql",
       "20260918001500_masjid_display_semantic_source_timestamps.sql",
@@ -110,10 +112,18 @@ describe("Plan 6 migration certification integrity", () => {
     expect(source).toContain("PLAN6_MIGRATION_DRY_RUN=PASS");
   });
 
-  it("requires the historical cutover version to preserve the five legacy columns and values", () => {
+  it("keeps the historical cutover immutable and certifies preservation shims around it", () => {
     const source = readFileSync("scripts/verify-masjid-display-migration.sh", "utf8");
-    const migration = readFileSync(
+    const historical = readFileSync(
       "supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql",
+      "utf8",
+    ).toLowerCase();
+    const preserve = readFileSync(
+      "supabase/migrations/20260915222500_plan6_preserve_legacy_iqama_columns.sql",
+      "utf8",
+    ).toLowerCase();
+    const restore = readFileSync(
+      "supabase/migrations/20260915223500_plan6_restore_legacy_iqama_columns.sql",
       "utf8",
     ).toLowerCase();
 
@@ -130,9 +140,12 @@ describe("Plan 6 migration certification integrity", () => {
       "maghrib_iqama",
       "isha_iqama",
     ]) {
-      expect(migration).toContain(column);
-      expect(migration).not.toContain(`drop column if exists ${column}`);
+      expect(historical).toContain(`drop column if exists ${column}`);
+      expect(preserve).toContain(column);
+      expect(restore).toContain(column);
     }
+    expect(preserve).toContain("rename column");
+    expect(restore).toContain("rename column");
   });
 
   it("requires the bootstrap to leave calculation parameters pending while making runtime data complete", () => {

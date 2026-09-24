@@ -112,20 +112,23 @@ It performs only additive/idempotent compatibility/bootstrap work:
 5. Initializes shared Iqama delays to
    `20,15,15,5,10`, the already-certified migration prerequisite and the
    values represented by the most recent populated legacy production rows.
-6. Does **not** recalculate or rewrite any canonical `prayer_times` row.
-7. Creates Masjid Display settings only when absent using the existing Admin
+6. Leaves mosque-specific calculation fields unconfigured/`NULL` with
+   `profile_configured=false`; it does not invent latitude, angles, Asr
+   method, or high-latitude policy.
+7. Does **not** recalculate or rewrite any canonical `prayer_times` row.
+8. Creates Masjid Display settings only when absent using the existing Admin
    defaults: five 10-minute prayer-in-progress durations and an empty Azkar
    playlist.
-8. Sets the canonical public Prayerapp URL to
+9. Sets the canonical public Prayerapp URL to
    `https://donaumoschee.vercel.app` only when the singleton value is blank.
-9. Verifies the required singleton/runtime state and all five retained legacy
+10. Verifies the required singleton/runtime state and all five retained legacy
    columns before the migration completes.
 
-The calculation fields used to make the Prayer Engine row structurally valid
-reuse the repository's existing editable migration-harness profile. They are
-**not** promoted to applied calculation authority. An operator must review a
-future recalculation preview and explicitly commit it before those parameters
-can rewrite future schedule rows.
+The bootstrap deliberately contains **no mosque-specific calculation profile**.
+Prayer Engine calculation/generation stays unavailable until an operator saves
+a reviewed profile through Admin. Runtime consumers that only need the applied
+timezone and shared Iqama delays use that narrower authority without requiring
+or inventing calculation parameters.
 
 ## Full non-destructive production-like chain
 
@@ -179,6 +182,7 @@ The completed harness must emit and verify:
 - unchanged legacy-Iqama coverage;
 - `PLAN6_CHAIN_AFTER shared_delays=20,15,15,5,10`;
 - `PLAN6_CHAIN_AFTER revision_state=1,0,1`;
+- `PLAN6_CHAIN_AFTER profile_state=false,true,true,true,true,true,true`;
 - `PLAN6_CHAIN_AFTER timezone_state=Europe/Berlin,Europe/Berlin`;
 - `PLAN6_CHAIN_AFTER display_state=10,10,10,10,10,0`;
 - `PLAN6_CHAIN_AFTER legacy_iqama_columns=5`;

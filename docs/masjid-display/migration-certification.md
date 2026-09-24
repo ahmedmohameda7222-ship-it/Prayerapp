@@ -73,30 +73,42 @@ represented by the existing 81-prayer / 3-Jumuah production-like fixture.
 
 ## Plan 6 sequencing remediation
 
-### Historical destructive migration remains immutable
+### Destructive feature-branch draft explicitly deferred before production
 
-The repository retains the original historical migration unchanged:
+The independent Planner review identified that the real production database
+still serves the currently deployed `main` application, which actively reads
+the five legacy absolute-Iqama column names. A draft strategy that temporarily
+renamed those columns around the old destructive migration would therefore
+create an observable production compatibility window even if the values were
+restored immediately afterward.
 
-`20260915223000_remove_absolute_iqama_columns.sql`
+Before any Plan 6 migration was applied to the real production project, the
+feature-branch migration sequence was corrected explicitly:
 
-It still contains the original five `DROP COLUMN` statements. Plan 6 does not
-rewrite that already-certified migration version.
+- `20260915222500_plan6_preserve_legacy_iqama_columns.sql` is now a
+  non-mutating safety guard and does **not** rename the production columns;
+- `20260915223000_remove_absolute_iqama_columns.sql` retains its migration
+  version/path for deterministic ordering but is an explicit **Plan 6 no-op**;
+  it contains no `DROP COLUMN` statements;
+- destructive removal is deferred to a **new migration version** in an
+  explicitly approved Plan 7 or later;
+- `20260915223500_plan6_restore_legacy_iqama_columns.sql` is
+  compatibility/repair logic only. It can recover an older disposable/staging
+  feature-branch draft that was interrupted after a transitional rename or
+  recreate nullable compatibility columns where an older draft had already
+  removed them. On the real Plan 6 production path it leaves the existing
+  columns and values untouched.
 
-Instead, Plan 6 adds two explicit compatibility migrations around it:
+This is an intentional pre-production migration-history remediation, not a
+silent post-production rewrite: production migration history currently stops at
+`20260902223939_admin_audit_hardening`, so none of the affected Plan 5/6
+migration versions had been applied to the real Prayerapp project when this
+change was made.
 
-- `20260915222500_plan6_preserve_legacy_iqama_columns.sql` renames the five
-  legacy columns to transitional names before the historical migration runs;
-- the unchanged historical migration then has no matching legacy columns to
-  drop and therefore performs no destructive data loss;
-- `20260915223500_plan6_restore_legacy_iqama_columns.sql` immediately renames
-  the transitional columns back to their original names, preserving every
-  production value byte-for-byte.
-
-For environments that had already executed the old destructive migration
-before these shims existed, the restore/bootstrap compatibility path recreates
-the nullable compatibility fields but does not invent lost historical values.
-This keeps migration history explicit and unambiguous while making the real
-Plan 6 production path non-destructive.
+The resulting production path keeps the five legacy column names continuously
+available to the currently deployed `main` runtime while the feature branch is
+being prepared for merge. Their values remain compatibility data only; the new
+branch runtime does not use them as Iqama authority.
 
 ### Explicit compatibility/bootstrap migration
 

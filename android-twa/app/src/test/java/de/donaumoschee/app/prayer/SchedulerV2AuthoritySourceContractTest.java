@@ -76,7 +76,8 @@ public final class SchedulerV2AuthoritySourceContractTest {
         assertTrue(worker.contains("new JSONObject(configSnapshot)"));
         assertTrue(worker.contains("configSnapshot,"));
         assertTrue(scheduler.contains("String expectedConfigSnapshot"));
-        assertTrue(scheduler.contains("expectedConfigSnapshot.equals(store.rawConfigSnapshot())"));
+        assertTrue(scheduler.contains("String currentConfigSnapshot = store.rawConfigSnapshot();"));
+        assertTrue(scheduler.contains("expectedConfigSnapshot.equals(currentConfigSnapshot)"));
     }
 
     @Test

@@ -1,3 +1,4 @@
+import { hasCertifiedPrayerTimezoneRules, isCertifiedPrayerTimezone } from "./certified-timezones";
 import type {
   DisplayAnnouncementDto,
   DisplayAzkarCategory,
@@ -156,10 +157,8 @@ function nullableTimestamp(
 function validTimezone(value: unknown, path: string, issues: FeedValidationIssue[]): string {
   const timezone = requiredString(value, path, issues);
   if (!timezone) return timezone;
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date(0));
-  } catch {
-    addIssue(issues, path, "must be a valid IANA timezone");
+  if (!isCertifiedPrayerTimezone(timezone) || !hasCertifiedPrayerTimezoneRules(timezone)) {
+    addIssue(issues, path, "must be a certified Prayerapp timezone");
   }
   return timezone;
 }

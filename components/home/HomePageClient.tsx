@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { refreshHomePrayerRuntime } from "@/app/home-prayer-runtime";
 import { HomeSectionTitle } from "@/components/home/HomeSectionTitle";
@@ -80,6 +80,7 @@ export function HomePageClient({
   const [schedule, setSchedule] = useState<PrayerTime[]>(initialPrayerTimes || EMPTY_SCHEDULE);
   const [liveIqamaDelays, setLiveIqamaDelays] = useState<PrayerIqamaDelays | null>(iqamaDelays);
   const [liveTimezone, setLiveTimezone] = useState<string | null>(timezone);
+  const refreshGeneration = useRef(0);
   const today = liveTimezone
     ? getPrayerForDate(schedule, todayIso(now, liveTimezone))
     : undefined;
@@ -113,14 +114,14 @@ export function HomePageClient({
   useEffect(() => {
     let active = true;
     const refreshPrayerSchedule = async () => {
+      const generation = ++refreshGeneration.current;
       try {
         const latest = await refreshHomePrayerRuntime();
-        if (active) {
-          setSchedule(latest.schedule);
-          if (latest.iqamaDelays !== undefined) setLiveIqamaDelays(latest.iqamaDelays);
-          setLiveTimezone(latest.timezone);
-          if (latest.timezone !== timezone) router.refresh();
-        }
+        if (!active || generation !== refreshGeneration.current) return;
+        setSchedule(latest.schedule);
+        if (latest.iqamaDelays !== undefined) setLiveIqamaDelays(latest.iqamaDelays);
+        setLiveTimezone(latest.timezone);
+        if (latest.timezone !== timezone) router.refresh();
       } catch {
         // Keep the last verified schedule and Iqama-delay snapshot together.
       }

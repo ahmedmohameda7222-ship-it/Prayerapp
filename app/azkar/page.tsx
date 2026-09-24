@@ -4,10 +4,10 @@ import { getAzkarCategories, getAzkarItems } from "@/lib/data/azkar";
 import { getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";
 
 export default async function AzkarPage() {
-  const [categories, items, prayerSettings] = await Promise.all([
+  const [categories, items, prayerTimezone] = await Promise.all([
     getAzkarCategories(),
     getAzkarItems(),
-    getRuntimePrayerSettings().catch(() => null),
+    getRuntimePrayerTimezone(),
   ]);
 
   return (

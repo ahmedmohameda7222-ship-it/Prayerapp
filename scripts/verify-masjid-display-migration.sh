@@ -91,6 +91,19 @@ select md5(string_agg(
 from public.prayer_times;
 "
 
+mosque_settings_hash_sql="
+select md5(string_agg(
+  concat_ws('|',
+    id, mosque_name, coalesce(mosque_name_ar, ''), coalesce(mosque_name_en, ''),
+    coalesce(mosque_name_de, ''), coalesce(mosque_name_tr, ''), address, phone,
+    email, google_maps_link, whatsapp_link, telegram_link, account_holder,
+    iban, bic, coalesce(updated_at::text, '')
+  ),
+  '|' order by id
+))
+from public.mosque_settings;
+"
+
 legacy_column_count_sql="
 select count(*)
 from information_schema.columns
@@ -180,9 +193,11 @@ before_jumuah_hash="$(query_scalar "$jumuah_hash_sql")"
 before_legacy_iqama_hash="$(query_scalar "$legacy_iqama_hash_sql")"
 before_legacy_coverage="$(query_scalar "select concat_ws(',',count(fajr_iqama),count(dhuhr_iqama),count(asr_iqama),count(maghrib_iqama),count(isha_iqama)) from public.prayer_times;")"
 before_maghrib_program_count="$(query_scalar 'select count(*) from public.prayer_times where maghrib_program_enabled is true;')"
+before_mosque_settings_hash="$(query_scalar "$mosque_settings_hash_sql")"
+before_mosque_settings_count="$(query_scalar "select count(*) from public.mosque_settings where id='1';")"
 
-if [ "$before_prayer_count" != "81" ] || [ "$before_jumuah_count" != "3" ]; then
-  echo "Reviewed Plan 6 fixture counts are not the authorized 81/3 target snapshot" >&2
+if [ "$before_prayer_count" != "81" ] || [ "$before_jumuah_count" != "3" ] || [ "$before_mosque_settings_count" != "1" ]; then
+  echo "Reviewed Plan 6 fixture counts are not the authorized 81/3/1 target snapshot" >&2
   exit 1
 fi
 
@@ -193,6 +208,7 @@ echo "PLAN6_CHAIN_BEFORE jumuah_hash=$before_jumuah_hash"
 echo "PLAN6_CHAIN_BEFORE legacy_iqama_hash=$before_legacy_iqama_hash"
 echo "PLAN6_CHAIN_BEFORE legacy_iqama_coverage=$before_legacy_coverage"
 echo "PLAN6_CHAIN_BEFORE maghrib_program_enabled_count=$before_maghrib_program_count"
+echo "PLAN6_CHAIN_BEFORE mosque_settings_hash=$before_mosque_settings_hash"
 
 for migration_name in "${pending_migrations[@]}"; do
   apply_sql_file "supabase/migrations/$migration_name"
@@ -205,6 +221,7 @@ after_jumuah_hash="$(query_scalar "$jumuah_hash_sql")"
 after_legacy_iqama_hash="$(query_scalar "$legacy_iqama_hash_sql")"
 after_legacy_coverage="$(query_scalar "select concat_ws(',',count(fajr_iqama),count(dhuhr_iqama),count(asr_iqama),count(maghrib_iqama),count(isha_iqama)) from public.prayer_times;")"
 after_maghrib_program_count="$(query_scalar 'select count(*) from public.prayer_times where maghrib_program_enabled is true;')"
+after_mosque_settings_hash="$(query_scalar "$mosque_settings_hash_sql")"
 legacy_iqama_columns="$(query_scalar "$legacy_column_count_sql")"
 shared_delays="$(query_scalar "select concat_ws(',',fajr_iqama_delay_minutes,dhuhr_iqama_delay_minutes,asr_iqama_delay_minutes,maghrib_iqama_delay_minutes,isha_iqama_delay_minutes) from public.prayer_settings where id='1';")"
 revision_state="$(query_scalar "select concat_ws(',',calculation_revision,applied_calculation_revision,row_revision) from public.prayer_settings where id='1';")"
@@ -227,6 +244,10 @@ if [ "$before_jumuah_hash" != "$after_jumuah_hash" ]; then
 fi
 if [ "$before_legacy_iqama_hash" != "$after_legacy_iqama_hash" ]; then
   echo "Plan 6 pending migration chain changed preserved legacy absolute-Iqama values" >&2
+  exit 1
+fi
+if [ "$before_mosque_settings_hash" != "$after_mosque_settings_hash" ]; then
+  echo "Plan 6 pending migration chain changed pre-existing mosque settings fields" >&2
   exit 1
 fi
 if [ "$before_legacy_coverage" != "$after_legacy_coverage" ]; then
@@ -281,6 +302,7 @@ echo "PLAN6_CHAIN_AFTER jumuah_hash=$after_jumuah_hash"
 echo "PLAN6_CHAIN_AFTER legacy_iqama_hash=$after_legacy_iqama_hash"
 echo "PLAN6_CHAIN_AFTER legacy_iqama_coverage=$after_legacy_coverage"
 echo "PLAN6_CHAIN_AFTER maghrib_program_enabled_count=$after_maghrib_program_count"
+echo "PLAN6_CHAIN_AFTER mosque_settings_hash=$after_mosque_settings_hash"
 echo "PLAN6_CHAIN_AFTER shared_delays=$shared_delays"
 echo "PLAN6_CHAIN_AFTER revision_state=$revision_state"
 echo "PLAN6_CHAIN_AFTER profile_state=$profile_state"

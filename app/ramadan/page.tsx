@@ -14,10 +14,10 @@ import { formatShortDate, todayIso } from "@/lib/date-utils";
 export default async function RamadanPage() {
   const locale = await getServerLocale();
   const { t } = getTranslation(locale);
-  const [days, announcements, prayerSettings] = await Promise.all([
+  const [days, announcements, prayerTimezone] = await Promise.all([
     getRamadanDays(),
     getAnnouncements(),
-    getRuntimePrayerSettings().catch(() => null),
+    getRuntimePrayerTimezone(),
   ]);
   const filteredAnnouncements = announcements.filter(
     (item) => item.type === "Ramadan" || item.type === "Eid"

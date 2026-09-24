@@ -31,18 +31,28 @@ describe("Plan 6 deferred absolute-Iqama storage cutover", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("keeps the historical migration version non-destructive during Plan 6", () => {
-    const migration = readFileSync(
+  it("keeps the historical destructive migration immutable and surrounds it with Plan 6 preservation shims", () => {
+    const historical = readFileSync(
       path.join(process.cwd(), "supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql"),
+      "utf8",
+    ).toLowerCase();
+    const preserve = readFileSync(
+      path.join(process.cwd(), "supabase/migrations/20260915222500_plan6_preserve_legacy_iqama_columns.sql"),
+      "utf8",
+    ).toLowerCase();
+    const restore = readFileSync(
+      path.join(process.cwd(), "supabase/migrations/20260915223500_plan6_restore_legacy_iqama_columns.sql"),
       "utf8",
     ).toLowerCase();
 
     for (const column of legacySnake) {
-      expect(migration).toContain(column);
-      expect(migration).not.toContain(`drop column if exists ${column}`);
+      expect(historical).toContain(`drop column if exists ${column}`);
+      expect(preserve).toContain(column);
+      expect(restore).toContain(column);
     }
-    expect(migration).toContain("plan 6");
-    expect(migration).toContain("not runtime iqama authority");
+    expect(preserve).toContain("rename column");
+    expect(restore).toContain("rename column");
+    expect(restore).toContain("lost historical values are not invented");
   });
 
   it("normalizes previously destructive environments without restoring runtime authority", () => {

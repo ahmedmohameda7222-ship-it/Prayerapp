@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { PrayerScheduleDiff, PrayerSchedulePreview } from "@/lib/prayer-engine/generate";
 import type { PrayerCalculationSettings, PrayerKey } from "@/lib/prayer-engine/types";
+import { CERTIFIED_PRAYER_TIMEZONES } from "@/lib/prayer-engine/certified-timezones";
 import { PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY } from "@/lib/prayer-engine/production-approval";
 import {
   calibratePrayerEngineAction,
@@ -199,7 +200,7 @@ export function PrayerEngineAdmin({ initialSettings, token = "" }: Props) {
         <div className="grid gap-3 md:grid-cols-2">
           <label className="grid gap-1 text-sm font-bold">Latitude<input className={inputClass()} value={form.latitude} onChange={(e) => update("latitude", e.target.value)} inputMode="decimal" /></label>
           <label className="grid gap-1 text-sm font-bold">Longitude<input className={inputClass()} value={form.longitude} onChange={(e) => update("longitude", e.target.value)} inputMode="decimal" /></label>
-          <label className="grid gap-1 text-sm font-bold">Timezone<input className={inputClass()} value={form.timezone} onChange={(e) => update("timezone", e.target.value)} /></label>
+          <label className="grid gap-1 text-sm font-bold">Timezone<select className={inputClass()} value={form.timezone} onChange={(e) => update("timezone", e.target.value)}>{CERTIFIED_PRAYER_TIMEZONES.map((timezone) => <option key={timezone} value={timezone}>{timezone}</option>)}</select></label>
           <label className="grid gap-1 text-sm font-bold">Fajr angle<input className={inputClass()} type="number" step="0.1" value={form.fajrAngle} onChange={(e) => update("fajrAngle", e.target.value)} /></label>
           <label className="grid gap-1 text-sm font-bold">Isha rule<select className={inputClass()} value={form.ishaRule} onChange={(e) => update("ishaRule", e.target.value)}><option value="angle">Angle</option><option value="fixed_minutes">Fixed minutes after Maghrib</option></select></label>
           {ishaFixed ? (

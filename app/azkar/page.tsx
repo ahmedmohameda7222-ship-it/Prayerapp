@@ -1,7 +1,7 @@
 import { AzkarRoutine } from "@/components/azkar/AzkarRoutine";
 import { AppShell } from "@/components/layout/AppShell";
 import { getAzkarCategories, getAzkarItems } from "@/lib/data/azkar";
-import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
+import { getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";
 
 export default async function AzkarPage() {
   const [categories, items, prayerSettings] = await Promise.all([
@@ -12,7 +12,7 @@ export default async function AzkarPage() {
 
   return (
     <AppShell>
-      <AzkarRoutine categories={categories} items={items} timezone={prayerSettings?.timezone ?? null} />
+      <AzkarRoutine categories={categories} items={items} timezone={prayerTimezone} />
     </AppShell>
   );
 }

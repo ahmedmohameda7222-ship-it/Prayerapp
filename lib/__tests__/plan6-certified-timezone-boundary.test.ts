@@ -30,6 +30,14 @@ describe("Plan 6 certified cross-runtime prayer timezones", () => {
     expect(validator).toContain("isCertifiedPrayerTimezone(timezone)");
   });
 
+  it("enforces certified timezone rules on atomic published prayer snapshots", () => {
+    const snapshot = source("lib/data/prayer-schedule-snapshot.ts");
+    expect(snapshot).toContain('from "@/lib/prayer-engine/certified-timezones"');
+    expect(snapshot).toContain("isCertifiedPrayerTimezone(timezone)");
+    expect(snapshot).toContain("hasCertifiedPrayerTimezoneRules(timezone)");
+    expect(snapshot).not.toContain('new Intl.DateTimeFormat("en-US", { timeZone: timezone })');
+  });
+
   it("exposes certified timezone choices in Prayer Engine Admin", () => {
     const admin = source("app/admin/prayer-engine/PrayerEngineAdmin.tsx");
     expect(admin).toContain("CERTIFIED_PRAYER_TIMEZONES");

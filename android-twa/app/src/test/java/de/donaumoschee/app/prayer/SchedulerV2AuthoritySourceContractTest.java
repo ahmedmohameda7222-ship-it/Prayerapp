@@ -86,7 +86,7 @@ public final class SchedulerV2AuthoritySourceContractTest {
 
         assertTrue(scheduler.contains("public final boolean staleConfigSnapshot;"));
         assertTrue(scheduler.contains("new ConfigInstallResult(false, false, true)"));
-        assertTrue(worker.contains("replacement.staleConfigSnapshot"));
+        assertTrue(worker.contains("refreshResult.staleConfigSnapshot"));
         assertTrue(worker.contains("scheduleRefreshed = PrayerScheduler.reschedule(getApplicationContext(), generation);"));
         assertTrue(worker.contains("sendHeartbeat(store, scheduleRefreshed, generation);"));
     }

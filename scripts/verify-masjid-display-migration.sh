@@ -112,9 +112,10 @@ where table_schema='public'
   and column_name in ('fajr_iqama','dhuhr_iqama','asr_iqama','maghrib_iqama','isha_iqama');
 "
 
-# Plan 6 sequencing gate: keep the historical destructive migration immutable.
-# The preservation shim moves legacy columns out of its DROP path, and the
-# restoration shim returns the same columns and values immediately afterward.
+# Plan 6 sequencing gate: the destructive feature-branch draft is explicitly
+# deferred before its first production application. No migration may rename or
+# drop the legacy column names used by the currently deployed main runtime.
+# The repair migration exists only for convergence from older disposable/staging drafts.
 reset_to_reviewed_cutoff
 before_transition_legacy_hash="$(query_scalar "$legacy_iqama_hash_sql")"
 for migration_index in 0 1 2 3 4 5; do
@@ -132,7 +133,7 @@ if [ "$before_transition_legacy_hash" != "$after_transition_legacy_hash" ]; then
   exit 1
 fi
 
-echo "PLAN6_IQAMA_TRANSITION=PASS immutable historical cutover safely bypassed; legacy columns and values preserved"
+echo "PLAN6_IQAMA_TRANSITION=PASS destructive cutover deferred; legacy columns and values continuously preserved"
 
 # Existing-content capacity preflight: exercise the Feed bounds migration at
 # its own historical boundary before the later Plan 6 bootstrap exists.

@@ -22,21 +22,28 @@ During Plan 6:
 5. Their continued physical presence is compatibility only; they are **not runtime authority**.
 6. Plan 6 must not execute a `DROP COLUMN` for any of the five fields.
 
-The historical repository migration
-`20260915223000_remove_absolute_iqama_columns.sql` remains unchanged and still
-contains its original destructive SQL. Plan 6 does not rewrite that history.
+The feature-branch migration
+`20260915223000_remove_absolute_iqama_columns.sql` had not been applied to the
+real production project when the Planner identified this sequencing blocker.
+Before first production application, it was explicitly changed into a Plan 6
+no-op and all `DROP COLUMN` statements were removed. Its version/path remains
+in the ordered chain so migration ordering stays deterministic; destructive
+removal must use a new, explicitly approved Plan 7-or-later migration version.
 
-Instead, `20260915222500_plan6_preserve_legacy_iqama_columns.sql` renames the
-five production columns to transitional names immediately before the historical
-migration, and `20260915223500_plan6_restore_legacy_iqama_columns.sql` renames
-them back immediately afterward. The historical DROP therefore has no matching
-columns to remove on the Plan 6 production path, while all values remain
-preserved.
+`20260915222500_plan6_preserve_legacy_iqama_columns.sql` is now a
+non-mutating guard. It does not rename the production columns, because the
+currently deployed `main` application still reads those exact names and even a
+short rename window would be unsafe.
+
+`20260915223500_plan6_restore_legacy_iqama_columns.sql` is convergence-only:
+it repairs an older disposable/staging feature-branch draft if transitional
+columns exist, or recreates missing nullable compatibility fields if an older
+draft already removed them. On the real Plan 6 production path the existing
+column names and values stay continuously present.
 
 `20260924070000_plan6_premerge_runtime_bootstrap.sql` additionally normalizes
-environments that may already have executed the old destructive form by
-re-adding missing compatibility-only nullable fields. It does not overwrite
-existing production values.
+older disposable/staging states with `ADD COLUMN IF NOT EXISTS`. It does not
+overwrite existing production legacy-Iqama values.
 
 ## Plan 6 production preflight evidence — 2026-09-24
 

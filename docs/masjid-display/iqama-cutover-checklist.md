@@ -70,10 +70,9 @@ Prayer Engine bootstrap rules:
   and canonical schedule authority;
 - shared Iqama delays are `20,15,15,5,10`, matching the already-certified
   migration prerequisite and the most recent populated legacy production rows;
-- calculation fields use the repository's existing editable migration-harness
-  bootstrap profile only to make the Admin row structurally valid;
-- that calculation profile remains explicitly pending with
-  `calculation_revision = 1` and `applied_calculation_revision = 0`;
+- mosque-specific calculation fields remain unconfigured/`NULL`;
+- `profile_configured = false`, with `calculation_revision = 1` and
+  `applied_calculation_revision = 0`;
 - no generated/recalculated schedule row is committed by the bootstrap;
 - an operator must review a future recalculation preview before those
   calculation parameters can become applied schedule authority.

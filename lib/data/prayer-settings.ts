@@ -1,11 +1,24 @@
 import "server-only";
 import { APP_TIME_ZONE } from "@/lib/date-utils";
 import { createServerClient } from "@/lib/supabase/server";
-import type { PrayerCalculationSettings } from "@/lib/prayer-engine/types";
+import {
+  hasCertifiedPrayerTimezoneRules,
+  isCertifiedPrayerTimezone,
+} from "@/lib/prayer-engine/certified-timezones";
+import type {
+  PrayerCalculationSettings,
+  PrayerIqamaDelays,
+} from "@/lib/prayer-engine/types";
 import { validatePrayerCalculationSettings } from "@/lib/prayer-engine/validate-settings";
 
+export type PrayerRuntimeAuthority = {
+  timezone: string;
+  iqamaDelays: PrayerIqamaDelays;
+};
+
 type PrayerSettingsRow = {
-  settings: PrayerCalculationSettings;
+  settings: PrayerCalculationSettings | null;
+  iqamaDelays: PrayerIqamaDelays;
   appliedTimezone: string;
   rowRevision: number;
   sourceUpdatedAt: string;
@@ -33,16 +46,36 @@ function mapFromDb(row: Record<string, unknown>): PrayerCalculationSettings {
       maghrib: Number(row.maghrib_offset_minutes),
       isha: Number(row.isha_offset_minutes),
     },
-    iqamaDelays: {
-      fajr: Number(row.fajr_iqama_delay_minutes),
-      dhuhr: Number(row.dhuhr_iqama_delay_minutes),
-      asr: Number(row.asr_iqama_delay_minutes),
-      maghrib: Number(row.maghrib_iqama_delay_minutes),
-      isha: Number(row.isha_iqama_delay_minutes),
-    },
+    iqamaDelays: mapIqamaDelays(row),
     calculationRevision: Number(row.calculation_revision),
     appliedCalculationRevision: Number(row.applied_calculation_revision),
   });
+}
+
+function requiredIqamaDelay(value: unknown, label: string): number {
+  const delay = Number(value);
+  if (!Number.isInteger(delay) || delay < 0 || delay > 180) {
+    throw new Error(`Invalid prayer settings ${label} Iqama delay`);
+  }
+  return delay;
+}
+
+function mapIqamaDelays(row: Record<string, unknown>): PrayerIqamaDelays {
+  return {
+    fajr: requiredIqamaDelay(row.fajr_iqama_delay_minutes, "Fajr"),
+    dhuhr: requiredIqamaDelay(row.dhuhr_iqama_delay_minutes, "Dhuhr"),
+    asr: requiredIqamaDelay(row.asr_iqama_delay_minutes, "Asr"),
+    maghrib: requiredIqamaDelay(row.maghrib_iqama_delay_minutes, "Maghrib"),
+    isha: requiredIqamaDelay(row.isha_iqama_delay_minutes, "Isha"),
+  };
+}
+
+function validateRuntimeTimezone(value: unknown): string {
+  const timezone = String(value || "");
+  if (!isCertifiedPrayerTimezone(timezone) || !hasCertifiedPrayerTimezoneRules(timezone)) {
+    throw new Error("Invalid applied prayer settings timezone");
+  }
+  return timezone;
 }
 
 function mutablePrayerSettingsValues(
@@ -70,6 +103,7 @@ function mutablePrayerSettingsValues(
     maghrib_iqama_delay_minutes: settings.iqamaDelays.maghrib,
     isha_iqama_delay_minutes: settings.iqamaDelays.isha,
     calculation_revision: settings.calculationRevision,
+    profile_configured: true,
     updated_at: new Date().toISOString(),
   };
 }
@@ -142,14 +176,14 @@ async function loadPrayerSettingsRow(): Promise<PrayerSettingsRow | null> {
     throw new Error("Invalid prayer settings row revision");
   }
 
-  const settings = mapFromDb(record);
-  const appliedTimezone = String(record.applied_timezone || "");
-  if (!appliedTimezone) {
-    throw new Error("Invalid applied prayer settings timezone");
-  }
+  const appliedTimezone = validateRuntimeTimezone(record.applied_timezone);
+  const iqamaDelays = mapIqamaDelays(record);
+  const profileConfigured = record.profile_configured === true;
+  const settings = profileConfigured ? mapFromDb(record) : null;
 
   return {
     settings,
+    iqamaDelays,
     appliedTimezone,
     rowRevision,
     sourceUpdatedAt: String(record.updated_at),
@@ -162,11 +196,20 @@ export async function getPrayerSettings(): Promise<PrayerCalculationSettings | n
 
 export async function getRuntimePrayerSettings(): Promise<PrayerCalculationSettings | null> {
   const row = await loadPrayerSettingsRow();
-  if (!row) return null;
+  if (!row?.settings) return null;
   return validatePrayerCalculationSettings({
     ...row.settings,
     timezone: row.appliedTimezone,
   });
+}
+
+export async function getPrayerRuntimeAuthority(): Promise<PrayerRuntimeAuthority | null> {
+  const row = await loadPrayerSettingsRow();
+  if (!row) return null;
+  return {
+    timezone: row.appliedTimezone,
+    iqamaDelays: row.iqamaDelays,
+  };
 }
 
 export async function getRuntimePrayerTimezone(): Promise<string> {
@@ -179,7 +222,9 @@ export async function getPrayerSettingsForDisplay(): Promise<{
   sourceUpdatedAt: string;
 } | null> {
   const row = await loadPrayerSettingsRow();
-  return row ? { value: row.settings, sourceUpdatedAt: row.sourceUpdatedAt } : null;
+  return row?.settings
+    ? { value: row.settings, sourceUpdatedAt: row.sourceUpdatedAt }
+    : null;
 }
 
 export async function getRuntimePrayerSettingsForDisplay(): Promise<{
@@ -187,12 +232,27 @@ export async function getRuntimePrayerSettingsForDisplay(): Promise<{
   sourceUpdatedAt: string;
 } | null> {
   const row = await loadPrayerSettingsRow();
-  if (!row) return null;
+  if (!row?.settings) return null;
   return {
     value: validatePrayerCalculationSettings({
       ...row.settings,
       timezone: row.appliedTimezone,
     }),
+    sourceUpdatedAt: row.sourceUpdatedAt,
+  };
+}
+
+export async function getPrayerRuntimeAuthorityForDisplay(): Promise<{
+  value: PrayerRuntimeAuthority;
+  sourceUpdatedAt: string;
+} | null> {
+  const row = await loadPrayerSettingsRow();
+  if (!row) return null;
+  return {
+    value: {
+      timezone: row.appliedTimezone,
+      iqamaDelays: row.iqamaDelays,
+    },
     sourceUpdatedAt: row.sourceUpdatedAt,
   };
 }

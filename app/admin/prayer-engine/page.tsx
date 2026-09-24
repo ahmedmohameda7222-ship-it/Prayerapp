@@ -5,12 +5,17 @@ import { AdminShell } from "@/components/layout/AdminShell";
 import { Card } from "@/components/ui/Card";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import type { PrayerCalculationSettings } from "@/lib/prayer-engine/types";
+import type { PrayerRuntimeAuthority } from "@/lib/data/prayer-settings";
 import { PrayerEngineAdmin } from "./PrayerEngineAdmin";
-import { loadPrayerEngineSettingsAction } from "./actions";
+import {
+  loadPrayerEngineRuntimeAuthorityAction,
+  loadPrayerEngineSettingsAction,
+} from "./actions";
 
 export default function PrayerEnginePage() {
   const { session, isAdmin, loading } = useAdminAuth();
   const [settings, setSettings] = useState<PrayerCalculationSettings | null>(null);
+  const [runtimeAuthority, setRuntimeAuthority] = useState<PrayerRuntimeAuthority | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
 
@@ -18,10 +23,21 @@ export default function PrayerEnginePage() {
     const token = session?.access_token;
     if (!token || !isAdmin) return;
     let cancelled = false;
-    loadPrayerEngineSettingsAction(token).then((result) => {
+    Promise.all([
+      loadPrayerEngineSettingsAction(token),
+      loadPrayerEngineRuntimeAuthorityAction(token),
+    ]).then(([settingsResult, authorityResult]) => {
       if (cancelled) return;
-      if (!result.success) setError(result.error || "Unable to load Prayer Engine settings");
-      else setSettings(result.data ?? null);
+      if (!settingsResult.success) {
+        setError(settingsResult.error || "Unable to load Prayer Engine settings");
+      } else {
+        setSettings(settingsResult.data ?? null);
+      }
+      if (!authorityResult.success) {
+        setError(authorityResult.error || "Unable to load Prayer runtime authority");
+      } else {
+        setRuntimeAuthority(authorityResult.data ?? null);
+      }
       setLoaded(true);
     });
     return () => { cancelled = true; };
@@ -35,6 +51,7 @@ export default function PrayerEnginePage() {
       {loaded && session && isAdmin ? (
         <PrayerEngineAdmin
           initialSettings={settings}
+          initialRuntimeAuthority={runtimeAuthority}
           token={session.access_token}
         />
       ) : null}

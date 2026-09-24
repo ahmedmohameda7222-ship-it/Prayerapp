@@ -29,7 +29,7 @@ export default async function HomePage() {
   ]);
 
   const prayerSnapshot = prayerSnapshotResult.status === "fulfilled" ? prayerSnapshotResult.value : null;
-  const prayerSettings = prayerAuthorityResult.status === "fulfilled" ? prayerAuthorityResult.value : null;
+  const prayerAuthority = prayerAuthorityResult.status === "fulfilled" ? prayerAuthorityResult.value : null;
   const prayerTimezone = prayerSnapshot?.timezone ?? prayerAuthority?.timezone ?? APP_TIME_ZONE;
   const prayerTimes = prayerSnapshot?.rows ?? [];
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];

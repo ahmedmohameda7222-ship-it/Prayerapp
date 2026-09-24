@@ -31,28 +31,29 @@ describe("Plan 6 deferred absolute-Iqama storage cutover", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("keeps the historical destructive migration immutable and surrounds it with Plan 6 preservation shims", () => {
-    const historical = readFileSync(
-      path.join(process.cwd(), "supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql"),
-      "utf8",
-    ).toLowerCase();
-    const preserve = readFileSync(
+  it("keeps all five legacy column names continuously available during Plan 6 migrations", () => {
+    const guard = readFileSync(
       path.join(process.cwd(), "supabase/migrations/20260915222500_plan6_preserve_legacy_iqama_columns.sql"),
       "utf8",
     ).toLowerCase();
-    const restore = readFileSync(
+    const deferred = readFileSync(
+      path.join(process.cwd(), "supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql"),
+      "utf8",
+    ).toLowerCase();
+    const repair = readFileSync(
       path.join(process.cwd(), "supabase/migrations/20260915223500_plan6_restore_legacy_iqama_columns.sql"),
       "utf8",
     ).toLowerCase();
 
     for (const column of legacySnake) {
-      expect(historical).toContain(`drop column if exists ${column}`);
-      expect(preserve).toContain(column);
-      expect(restore).toContain(column);
+      expect(deferred).not.toContain(`drop column if exists ${column}`);
+      expect(repair).toContain(column);
     }
-    expect(preserve).toContain("rename column");
-    expect(restore).toContain("rename column");
-    expect(restore).toContain("lost historical values are not invented");
+    expect(guard).not.toContain("rename column");
+    expect(deferred).toContain("explicit deferred cutover");
+    expect(deferred).toContain("no destructive sql");
+    expect(repair).toContain("rename column");
+    expect(repair).toContain("lost values are never");
   });
 
   it("normalizes previously destructive environments without restoring runtime authority", () => {

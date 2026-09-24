@@ -85,8 +85,12 @@ public final class NativeStore {
         }
     }
 
+    public String rawConfigSnapshot() {
+        return preferences.getString(CONFIG, null);
+    }
+
     public JSONObject rawConfig() {
-        String value = preferences.getString(CONFIG, null);
+        String value = rawConfigSnapshot();
         if (value == null) return null;
         try {
             return new JSONObject(value);

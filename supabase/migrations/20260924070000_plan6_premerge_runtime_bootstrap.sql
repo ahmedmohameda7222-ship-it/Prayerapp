@@ -27,18 +27,26 @@ comment on column public.prayer_times.maghrib_iqama is
 comment on column public.prayer_times.isha_iqama is
   'Legacy compatibility field retained physically during Plan 6; not runtime Iqama authority.';
 
--- Bootstrap one valid editable Prayer Engine row only when none exists.
---
--- The calculation fields reuse the repository's already-certified migration
--- harness bootstrap profile. They are intentionally PENDING, not applied:
--- calculation_revision=1 / applied_calculation_revision=0. Existing canonical
--- prayer_times therefore remain the live schedule authority until an operator
--- reviews a generated preview and explicitly commits a future recalculation.
+-- Allow one setup-incomplete singleton to carry runtime-safe authority without
+-- inventing a mosque-specific calculation profile. Existing configured rows
+-- are marked configured by the default; only the bootstrap row below is false.
+alter table public.prayer_settings
+  add column if not exists profile_configured boolean not null default true,
+  alter column latitude drop not null,
+  alter column longitude drop not null,
+  alter column fajr_angle drop not null,
+  alter column isha_rule drop not null,
+  alter column asr_shadow_factor drop not null,
+  alter column high_latitude_rule drop not null;
+
+-- Bootstrap runtime authority only when no row exists.
 --
 -- Europe/Berlin is the approved existing application/applied schedule timezone.
 -- Shared Iqama delays 20/15/15/5/10 are the existing certified cutover delays
--- and match the most recent populated legacy production rows. No historical
--- prayer row is rewritten by this bootstrap.
+-- and match the most recent populated legacy production rows. Calculation
+-- parameters remain NULL/unconfigured until an operator explicitly saves a
+-- reviewed profile. Existing canonical prayer_times remain live authority and
+-- no historical prayer row is rewritten by this bootstrap.
 insert into public.prayer_settings (
   id,
   latitude,
@@ -65,25 +73,27 @@ insert into public.prayer_settings (
   applied_calculation_revision,
   row_revision,
   applied_timezone,
+  profile_configured,
   updated_at
 )
 values (
   '1',
-  48.0,
-  12.0,
-  'Europe/Berlin',
-  18,
-  'angle',
-  17,
   null,
-  1,
-  'middle_of_night',
+  null,
+  'Europe/Berlin',
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
   0, 0, 0, 0, 0, 0,
   20, 15, 15, 5, 10,
   1,
   0,
   1,
   'Europe/Berlin',
+  false,
   now()
 )
 on conflict (id) do nothing;
@@ -108,8 +118,7 @@ on conflict (id) do nothing;
 -- and Test Control. Preserve any operator-provided value; fill only a missing
 -- or blank singleton value.
 update public.mosque_settings
-set public_app_url = 'https://donaumoschee.vercel.app',
-    updated_at = now()
+set public_app_url = 'https://donaumoschee.vercel.app'
 where id = '1'
   and coalesce(btrim(public_app_url), '') = '';
 
@@ -139,8 +148,15 @@ begin
     from public.prayer_settings
     where id = '1'
       and applied_timezone = 'Europe/Berlin'
-      and calculation_revision >= 1
-      and applied_calculation_revision >= 0
+      and calculation_revision = 1
+      and applied_calculation_revision = 0
+      and profile_configured is false
+      and latitude is null
+      and longitude is null
+      and fajr_angle is null
+      and isha_rule is null
+      and asr_shadow_factor is null
+      and high_latitude_rule is null
       and fajr_iqama_delay_minutes between 0 and 180
       and dhuhr_iqama_delay_minutes between 0 and 180
       and asr_iqama_delay_minutes between 0 and 180

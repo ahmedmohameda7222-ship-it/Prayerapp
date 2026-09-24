@@ -22,14 +22,20 @@ During Plan 6:
 5. Their continued physical presence is compatibility only; they are **not runtime authority**.
 6. Plan 6 must not execute a `DROP COLUMN` for any of the five fields.
 
-The historical repository migration version
-`20260915223000_remove_absolute_iqama_columns.sql` is retained for migration
-history/order compatibility, but its Plan 6 form is intentionally
-non-destructive.
+The historical repository migration
+`20260915223000_remove_absolute_iqama_columns.sql` remains unchanged and still
+contains its original destructive SQL. Plan 6 does not rewrite that history.
 
-`20260924070000_plan6_premerge_runtime_bootstrap.sql` normalizes environments
-that may already have executed the older destructive form by re-adding missing
-legacy columns as compatibility-only nullable fields. It does not overwrite
+Instead, `20260915222500_plan6_preserve_legacy_iqama_columns.sql` renames the
+five production columns to transitional names immediately before the historical
+migration, and `20260915223500_plan6_restore_legacy_iqama_columns.sql` renames
+them back immediately afterward. The historical DROP therefore has no matching
+columns to remove on the Plan 6 production path, while all values remain
+preserved.
+
+`20260924070000_plan6_premerge_runtime_bootstrap.sql` additionally normalizes
+environments that may already have executed the old destructive form by
+re-adding missing compatibility-only nullable fields. It does not overwrite
 existing production values.
 
 ## Plan 6 production preflight evidence — 2026-09-24

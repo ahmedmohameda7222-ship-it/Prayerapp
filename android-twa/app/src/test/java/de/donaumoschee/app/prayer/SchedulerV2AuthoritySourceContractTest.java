@@ -64,6 +64,21 @@ public final class SchedulerV2AuthoritySourceContractTest {
         assertTrue(!worker.contains("store.saveConfigIfGeneration(config"));
     }
 
+
+    @Test
+    public void workerRejectsStaleConfigSnapshotsBeforeReplacingAlarms() throws IOException {
+        String scheduler = javaSource("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        String worker = javaSource("de/donaumoschee/app/workers/NativeRefreshWorker.java");
+        String store = javaSource("de/donaumoschee/app/storage/NativeStore.java");
+
+        assertTrue(store.contains("String rawConfigSnapshot()") || store.contains("String rawConfigSnapshot()"));
+        assertTrue(worker.contains("String configSnapshot = store.rawConfigSnapshot();"));
+        assertTrue(worker.contains("new JSONObject(configSnapshot)"));
+        assertTrue(worker.contains("configSnapshot,"));
+        assertTrue(scheduler.contains("String expectedConfigSnapshot"));
+        assertTrue(scheduler.contains("expectedConfigSnapshot.equals(store.rawConfigSnapshot())"));
+    }
+
     @Test
     public void nativeStatusAdvertisesReceiptV2AndCurrentGeneration() throws IOException {
         String status = javaSource("de/donaumoschee/app/prayer/NativeStatus.java");

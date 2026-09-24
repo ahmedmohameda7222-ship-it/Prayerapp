@@ -23,7 +23,7 @@ describe("validatePrayerCalculationSettings", () => {
     ).toThrow();
   });
 
-  it("accepts any valid operator-selected IANA timezone", () => {
+  it("accepts a certified operator-selected IANA timezone", () => {
     expect(validSettings.timezone).toBe(APP_TIME_ZONE);
     expect(
       validatePrayerCalculationSettings({
@@ -31,6 +31,15 @@ describe("validatePrayerCalculationSettings", () => {
         timezone: "America/New_York",
       }).timezone,
     ).toBe("America/New_York");
+  });
+
+  it("rejects valid IANA zones outside the certified cross-runtime set", () => {
+    expect(() =>
+      validatePrayerCalculationSettings({
+        ...validSettings,
+        timezone: "Pacific/Chatham",
+      }),
+    ).toThrow(/certified|timezone/i);
   });
 
   it("requires exactly the fields for the selected Isha rule", () => {

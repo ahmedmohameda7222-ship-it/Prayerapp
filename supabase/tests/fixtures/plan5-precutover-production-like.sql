@@ -42,13 +42,54 @@ from jsonb_to_recordset($plan5_jumuah$[{"id":"a7bc27ca-5f70-419e-bdb5-98c8550b57
   notes text,notes_ar text,notes_en text,notes_de text,notes_tr text,published boolean,updated_at timestamptz
 );
 
-do $$
+delete from public.mosque_settings;
+
+insert into public.mosque_settings (
+  id,
+  mosque_name,
+  mosque_name_ar,
+  mosque_name_en,
+  mosque_name_de,
+  mosque_name_tr,
+  address,
+  phone,
+  email,
+  google_maps_link,
+  whatsapp_link,
+  telegram_link,
+  account_holder,
+  iban,
+  bic,
+  updated_at
+) values (
+  '1',
+  'Plan 6 Production-Like Mosque',
+  'مسجد اختبار الخطة السادسة',
+  'Plan 6 Production-Like Mosque',
+  'Plan-6-Produktionsähnliche Moschee',
+  'Plan 6 Uretim Benzeri Cami',
+  'Plan 6 synthetic address',
+  '+49 000 000000',
+  'plan6-fixture@example.invalid',
+  'https://example.invalid/maps',
+  'https://example.invalid/whatsapp',
+  'https://example.invalid/telegram',
+  'Plan 6 Synthetic Account',
+  'DE00 0000 0000 0000 0000 00',
+  'TESTDE00XXX',
+  '2026-08-15 23:29:31.610741+00'
+);
+
+do $
 begin
   if (select count(*) from public.prayer_times) <> 81 then
     raise exception 'Plan 5 fixture prayer_times count mismatch';
   end if;
   if (select count(*) from public.jumuah_times) <> 3 then
     raise exception 'Plan 5 fixture jumuah_times count mismatch';
+  end if;
+  if (select count(*) from public.mosque_settings where id = '1') <> 1 then
+    raise exception 'Plan 5 fixture mosque_settings singleton mismatch';
   end if;
 end
 $$;

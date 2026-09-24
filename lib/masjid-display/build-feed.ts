@@ -75,6 +75,8 @@ const defaultDependencies: FeedDependencies = {
   getPrayerSettingsForDisplay,
   getRuntimePrayerSettings,
   getRuntimePrayerSettingsForDisplay,
+  getPrayerRuntimeAuthority,
+  getPrayerRuntimeAuthorityForDisplay,
   getJumuahTimesForDisplayWindow,
   getAnnouncementsForDisplayWindow,
   getEventsForDisplayWindow,

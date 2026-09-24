@@ -6,7 +6,7 @@ import { AnnouncementCard } from "@/components/news/AnnouncementCard";
 import { FormattedTime } from "@/components/ui/FormattedTime";
 import { getRamadanDays } from "@/lib/data/ramadan";
 import { getAnnouncements } from "@/lib/data/announcements";
-import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
+import { getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";
 import { getLocalizedField } from "@/lib/i18n/localized-content";
 import { getServerLocale, getTranslation } from "@/lib/i18n/server-translation";
 import { formatShortDate, todayIso } from "@/lib/date-utils";
@@ -22,7 +22,7 @@ export default async function RamadanPage() {
   const filteredAnnouncements = announcements.filter(
     (item) => item.type === "Ramadan" || item.type === "Eid"
   );
-  const today = todayIso(new Date(), prayerSettings?.timezone);
+  const today = todayIso(new Date(), prayerTimezone);
   const day =
     days.find((item) => item.date === today) ||
     days.find((item) => item.date > today) ||

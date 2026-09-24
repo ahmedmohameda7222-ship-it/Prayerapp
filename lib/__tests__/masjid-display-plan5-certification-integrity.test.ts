@@ -146,6 +146,7 @@ describe("Plan 6 migration certification integrity", () => {
     expect(migration).toContain("applied_calculation_revision");
     expect(migration).toContain("'Europe/Berlin'");
     expect(source).toContain('revision_state" != "1,0,1"');
+    expect(source).toContain('profile_state" != "false,true,true,true,true,true,true"');
     expect(source).toContain('timezone_state" != "Europe/Berlin,Europe/Berlin"');
     expect(source).toContain('shared_delays" != "20,15,15,5,10"');
     expect(source).toContain('display_state" != "10,10,10,10,10,0"');

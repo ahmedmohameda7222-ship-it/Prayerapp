@@ -80,7 +80,7 @@ insert into public.mosque_settings (
   '2026-08-15 23:29:31.610741+00'
 );
 
-do $
+do $$
 begin
   if (select count(*) from public.prayer_times) <> 81 then
     raise exception 'Plan 5 fixture prayer_times count mismatch';

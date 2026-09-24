@@ -79,19 +79,21 @@ describe("prayer persistence migration", () => {
     expect(persistenceSql()).not.toMatch(/\b(?:fajr|dhuhr|asr|maghrib|isha)_iqama\b/);
   });
 
-  it("fails closed before dropping populated legacy Iqama values without validated shared delays", () => {
+  it("defers the destructive legacy-Iqama cutover entirely during Plan 6", () => {
     const sql = iqamaRemovalSql();
-    expect(sql).toContain("do $$");
-    expect(sql).toContain("from public.prayer_settings");
-    expect(sql).toContain("where id = '1'");
-    expect(sql).toContain("fajr_iqama_delay_minutes");
-    expect(sql).toContain("dhuhr_iqama_delay_minutes");
-    expect(sql).toContain("asr_iqama_delay_minutes");
-    expect(sql).toContain("maghrib_iqama_delay_minutes");
-    expect(sql).toContain("isha_iqama_delay_minutes");
-    expect(sql).toContain("raise exception");
+    const executable = sql
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("--"))
+      .join("\n");
+
+    expect(executable).toContain("do $");
+    expect(executable).toContain("perform 1;");
+    expect(executable).not.toMatch(/\bdrop\s+(?:column|table)\b/u);
+    expect(executable).not.toMatch(/\brename\s+column\b/u);
     for (const prayer of ["fajr", "dhuhr", "asr", "maghrib", "isha"]) {
-      expect(sql).toContain(legacyIqamaColumn(prayer));
+      expect(executable).not.toContain(legacyIqamaColumn(prayer));
     }
+    expect(sql).toContain("plan 6");
+    expect(sql).toContain("deferred cutover");
   });
 });

@@ -33,6 +33,7 @@ function sourceFiles(dir: string): string[] {
     if (IGNORE_PREFIXES.some((prefix) => rel === prefix.slice(0, -1) || rel.startsWith(prefix))) return [];
     const stat = statSync(full);
     if (stat.isDirectory()) return sourceFiles(full);
+    if (/\.(?:test|spec)\.[tj]sx?$/u.test(name)) return [];
     if (!/\.(?:ts|tsx|js|jsx|sql)$/.test(name)) return [];
     return [rel];
   });

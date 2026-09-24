@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { getRuntimePrayerSettings } from "@/lib/data/prayer-settings";
+import { getPrayerRuntimeAuthority } from "@/lib/data/prayer-settings";
 import { getPublishedPrayerScheduleSnapshot } from "@/lib/data/prayer-schedule-snapshot";
 import { getUrgentAnnouncements } from "@/lib/data/announcements";
 import { getDonationCampaigns, getDonationReport, getDonationSettings } from "@/lib/data/donations";
@@ -16,9 +16,9 @@ const QA_MOCK_MARKER = "SUPABASE_QA_MOCK";
 export default async function HomePage() {
   const initialNow = new Date().toISOString();
   const now = new Date(initialNow);
-  const [prayerSnapshotResult, prayerSettingsResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
+  const [prayerSnapshotResult, prayerAuthorityResult, urgentAnnouncementsResult, jumuahTimesResult, eventsResult, donationSettingsResult, donationCampaignsResult, donationReportResult, mosqueSettingsResult] = await Promise.allSettled([
     getPublishedPrayerScheduleSnapshot({ now, daysBefore: 1, daysAfter: 30 }),
-    getRuntimePrayerSettings(),
+    getPrayerRuntimeAuthority(),
     getUrgentAnnouncements(),
     getJumuahTimes(),
     getEvents(),
@@ -29,8 +29,8 @@ export default async function HomePage() {
   ]);
 
   const prayerSnapshot = prayerSnapshotResult.status === "fulfilled" ? prayerSnapshotResult.value : null;
-  const prayerSettings = prayerSettingsResult.status === "fulfilled" ? prayerSettingsResult.value : null;
-  const prayerTimezone = prayerSnapshot?.timezone ?? prayerSettings?.timezone ?? APP_TIME_ZONE;
+  const prayerSettings = prayerAuthorityResult.status === "fulfilled" ? prayerAuthorityResult.value : null;
+  const prayerTimezone = prayerSnapshot?.timezone ?? prayerAuthority?.timezone ?? APP_TIME_ZONE;
   const prayerTimes = prayerSnapshot?.rows ?? [];
   const urgentAnnouncements = urgentAnnouncementsResult.status === "fulfilled" ? urgentAnnouncementsResult.value : [];
   const jumuahTimes = jumuahTimesResult.status === "fulfilled" ? jumuahTimesResult.value : [];
@@ -50,7 +50,7 @@ export default async function HomePage() {
       <AppHeader timezone={prayerTimezone} whatsappLink={mosqueSettings?.whatsappLink} googleMapsLink={mosqueSettings?.googleMapsLink} />
       <HomePageClient
         initialPrayerTimes={prayerTimes}
-        iqamaDelays={prayerSettings?.iqamaDelays ?? null}
+        iqamaDelays={prayerAuthority?.iqamaDelays ?? null}
         timezone={prayerTimezone}
         urgentAnnouncements={urgentAnnouncements}
         jumuahTimes={jumuahTimes}

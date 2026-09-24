@@ -106,6 +106,13 @@ jobs:
                 and calculation_revision = 1
                 and applied_calculation_revision = 0
                 and row_revision = 1
+                and profile_configured is false
+                and latitude is null
+                and longitude is null
+                and fajr_angle is null
+                and isha_rule is null
+                and asr_shadow_factor is null
+                and high_latitude_rule is null
                 and timezone = 'Europe/Berlin'
                 and applied_timezone = 'Europe/Berlin'
                 and fajr_iqama_delay_minutes = 20

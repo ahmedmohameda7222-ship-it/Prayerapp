@@ -5,6 +5,10 @@ import type {
   PrayerKey,
   PrayerOffsets,
 } from "./types";
+import {
+  hasCertifiedPrayerTimezoneRules,
+  isCertifiedPrayerTimezone,
+} from "./certified-timezones";
 
 const PRAYER_KEYS: PrayerKey[] = [
   "fajr",
@@ -72,10 +76,8 @@ function validateTimezone(value: unknown): string {
   if (typeof value !== "string" || value.trim() !== value || !value) {
     throw new Error("Invalid timezone");
   }
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: value }).format(new Date(0));
-  } catch {
-    throw new Error("Invalid timezone");
+  if (!isCertifiedPrayerTimezone(value) || !hasCertifiedPrayerTimezoneRules(value)) {
+    throw new Error("Timezone is not certified across Prayerapp runtimes");
   }
   return value;
 }

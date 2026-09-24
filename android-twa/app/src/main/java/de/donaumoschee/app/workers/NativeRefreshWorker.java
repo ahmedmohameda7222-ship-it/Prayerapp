@@ -35,13 +35,20 @@ public final class NativeRefreshWorker extends Worker {
     public Result doWork() {
         NativeStore store = new NativeStore(getApplicationContext());
         int generation = store.accountGeneration();
-        JSONObject config = store.rawConfig();
-        if (config == null) {
+        String configSnapshot = store.rawConfigSnapshot();
+        if (configSnapshot == null) {
             Log.i(TAG, "schedule.refresh skipped=no-config generation=" + generation);
             return Result.success();
         }
+        JSONObject config;
+        try {
+            config = new JSONObject(configSnapshot);
+        } catch (JSONException error) {
+            Log.w(TAG, "schedule.refresh skipped=invalid-config generation=" + generation);
+            return Result.retry();
+        }
 
-        boolean scheduleRefreshed = refreshSchedule(store, config, generation);
+        boolean scheduleRefreshed = refreshSchedule(store, config, configSnapshot, generation);
         if (store.accountGeneration() != generation) {
             Log.i(TAG, "schedule.refresh stale-before-reschedule generation=" + generation);
             return Result.success();
@@ -61,7 +68,12 @@ public final class NativeRefreshWorker extends Worker {
         return scheduleRefreshed ? Result.success() : Result.retry();
     }
 
-    private boolean refreshSchedule(NativeStore store, JSONObject config, int generation) {
+    private boolean refreshSchedule(
+            NativeStore store,
+            JSONObject config,
+            String configSnapshot,
+            int generation
+    ) {
         try {
             String today = LocalDate.now(ZoneOffset.UTC).minusDays(1).toString();
             JSONObject response = NativeHttp.get(ORIGIN + "/api/android/prayer-schedule?from=" + today + "&days=31");
@@ -79,7 +91,8 @@ public final class NativeRefreshWorker extends Worker {
                             getApplicationContext(),
                             config,
                             Instant.now(),
-                            generation
+                            generation,
+                            configSnapshot
                     );
             return replacement.configSaved;
         } catch (IOException | JSONException | RuntimeException error) {

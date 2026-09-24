@@ -1,15 +1,25 @@
+-- Historical migration version retained for migration-order compatibility.
+--
+-- Plan 2 originally used this version for the destructive legacy absolute-Iqama
+-- cutover. Plan 6 explicitly defers that destructive production cutover to a
+-- later separately approved plan. New Plan 6 targets must therefore preserve
+-- the five legacy columns physically while all application/runtime authority
+-- remains prayer start + shared delay.
+--
+-- Environments that already executed the older destructive form of this
+-- migration are normalized by the later
+-- 20260924070000_plan6_premerge_runtime_bootstrap migration.
+
 do $$
 declare
-  v_legacy_predicate text;
-  v_has_legacy_values boolean := false;
-  v_has_valid_delays boolean := false;
+  v_legacy_column_count integer;
 begin
-  select string_agg(format('%I is not null', c.column_name), ' or ' order by c.column_name)
-  into v_legacy_predicate
-  from information_schema.columns c
-  where c.table_schema = 'public'
-    and c.table_name = 'prayer_times'
-    and c.column_name in (
+  select count(*)
+  into v_legacy_column_count
+  from information_schema.columns
+  where table_schema = 'public'
+    and table_name = 'prayer_times'
+    and column_name in (
       'fajr_iqama',
       'dhuhr_iqama',
       'asr_iqama',
@@ -17,41 +27,20 @@ begin
       'isha_iqama'
     );
 
-  if v_legacy_predicate is not null then
-    execute format(
-      'select exists (select 1 from public.prayer_times where %s)',
-      v_legacy_predicate
-    )
-    into v_has_legacy_values;
-  end if;
-
-  if v_has_legacy_values then
-    if to_regclass('public.prayer_settings') is null then
-      raise exception 'Cannot remove populated legacy absolute Iqama columns without prayer_settings';
-    end if;
-
-    select exists (
-      select 1
-      from public.prayer_settings
-      where id = '1'
-        and fajr_iqama_delay_minutes between 0 and 180
-        and dhuhr_iqama_delay_minutes between 0 and 180
-        and asr_iqama_delay_minutes between 0 and 180
-        and maghrib_iqama_delay_minutes between 0 and 180
-        and isha_iqama_delay_minutes between 0 and 180
-    )
-    into v_has_valid_delays;
-
-    if not v_has_valid_delays then
-      raise exception 'Cannot remove populated legacy absolute Iqama columns without validated shared delays';
-    end if;
+  if v_legacy_column_count <> 5 then
+    raise exception
+      'Plan 6 transition requires the five legacy absolute-Iqama columns to remain present at this migration boundary';
   end if;
 end
 $$;
 
-alter table public.prayer_times
-  drop column if exists fajr_iqama,
-  drop column if exists dhuhr_iqama,
-  drop column if exists asr_iqama,
-  drop column if exists maghrib_iqama,
-  drop column if exists isha_iqama;
+comment on column public.prayer_times.fajr_iqama is
+  'Legacy compatibility field retained physically during Plan 6; not runtime Iqama authority.';
+comment on column public.prayer_times.dhuhr_iqama is
+  'Legacy compatibility field retained physically during Plan 6; not runtime Iqama authority.';
+comment on column public.prayer_times.asr_iqama is
+  'Legacy compatibility field retained physically during Plan 6; not runtime Iqama authority.';
+comment on column public.prayer_times.maghrib_iqama is
+  'Legacy compatibility field retained physically during Plan 6; not runtime Iqama authority.';
+comment on column public.prayer_times.isha_iqama is
+  'Legacy compatibility field retained physically during Plan 6; not runtime Iqama authority.';

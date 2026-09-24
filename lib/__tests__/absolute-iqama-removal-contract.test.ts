@@ -18,7 +18,7 @@ function activeFiles(root: string): string[] {
   });
 }
 
-describe("absolute daily Iqama storage removal", () => {
+describe("Plan 6 deferred absolute-Iqama storage cutover", () => {
   it("has no active root-app reads or writes of the five legacy absolute fields", () => {
     const offenders: string[] = [];
     for (const file of roots.flatMap(activeFiles)) {
@@ -31,17 +31,42 @@ describe("absolute daily Iqama storage removal", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("drops only the five legacy absolute Iqama columns and preserves Maghrib Program metadata", () => {
-    const migration = readFileSync(path.join(process.cwd(), "supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql"), "utf8");
-    for (const column of legacySnake) expect(migration).toContain(`drop column if exists ${column}`);
-    expect(migration).not.toContain("drop column if exists maghrib_combined_isha_time");
+  it("keeps the historical migration version non-destructive during Plan 6", () => {
+    const migration = readFileSync(
+      path.join(process.cwd(), "supabase/migrations/20260915223000_remove_absolute_iqama_columns.sql"),
+      "utf8",
+    ).toLowerCase();
+
+    for (const column of legacySnake) {
+      expect(migration).toContain(column);
+      expect(migration).not.toContain(`drop column if exists ${column}`);
+    }
+    expect(migration).toContain("plan 6");
+    expect(migration).toContain("not runtime iqama authority");
   });
 
-  it("documents the destructive target-environment deployment gate", () => {
-    const checklist = readFileSync(path.join(process.cwd(), "docs/masjid-display/iqama-cutover-checklist.md"), "utf8");
-    expect(checklist).toContain("all five delay columns are non-null");
-    expect(checklist).toContain("BLOCKED");
-    expect(checklist).toContain("supabase db reset");
-    expect(checklist).toContain("Do not apply the destructive migration to the target environment");
+  it("normalizes previously destructive environments without restoring runtime authority", () => {
+    const migration = readFileSync(
+      path.join(process.cwd(), "supabase/migrations/20260924070000_plan6_premerge_runtime_bootstrap.sql"),
+      "utf8",
+    ).toLowerCase();
+
+    for (const column of legacySnake) {
+      expect(migration).toContain(`add column if not exists ${column} text`);
+    }
+    expect(migration).not.toContain("drop column");
+    expect(migration).toContain("calculation_revision=1 / applied_calculation_revision=0");
+    expect(migration).toContain("20, 15, 15, 5, 10");
+  });
+
+  it("documents that destructive production removal is deferred to a later approved plan", () => {
+    const checklist = readFileSync(
+      path.join(process.cwd(), "docs/masjid-display/iqama-cutover-checklist.md"),
+      "utf8",
+    );
+    expect(checklist).toContain("Plan 7");
+    expect(checklist).toContain("DEFERRED");
+    expect(checklist).toContain("must remain physically present");
+    expect(checklist).toContain("not runtime authority");
   });
 });

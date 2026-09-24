@@ -94,13 +94,13 @@ describe("Plan 6 final review snapshot and announcement regressions", () => {
   it("keeps the Times shell available when the snapshot RPC fails", () => {
     const page = source("app/times/page.tsx");
     expect(page).toContain("getPublishedPrayerScheduleSnapshot({ now: new Date(), daysAfter: 0 }).catch(() => null)");
-    expect(page).toContain("snapshot?.timezone ?? settings?.timezone ?? APP_TIME_ZONE");
+    expect(page).toContain("snapshot?.timezone ?? authority?.timezone ?? APP_TIME_ZONE");
   });
 
   it("keeps atomic prayer rows available when optional runtime settings fail", () => {
     const runtime = source("app/home-prayer-runtime.ts");
-    expect(runtime.match(/getRuntimePrayerSettings\(\)\.catch\(\(\) => undefined\)/g) ?? []).toHaveLength(2);
-    expect(runtime).toContain("prayerSettings === undefined ? undefined : prayerSettings?.iqamaDelays ?? null");
+    expect(runtime.match(/getPrayerRuntimeAuthority\(\)\.catch\(\(\) => undefined\)/g) ?? []).toHaveLength(2);
+    expect(runtime).toContain("prayerAuthority === undefined ? undefined : prayerAuthority?.iqamaDelays ?? null");
 
     const home = source("components/home/HomePageClient.tsx");
     expect(home).toContain("if (latest.iqamaDelays !== undefined)");

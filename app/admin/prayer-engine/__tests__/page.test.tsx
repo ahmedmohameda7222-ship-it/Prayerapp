@@ -57,7 +57,7 @@ describe("Prayer Engine Admin", () => {
     expect(screen.getByLabelText(/Maghrib Iqama delay/i)).toHaveValue(5);
     expect(screen.getByLabelText(/Isha Iqama delay/i)).toHaveValue(10);
     expect(screen.getByLabelText(/^Latitude$/i)).toHaveValue("");
-    expect(screen.getByLabelText(/Fajr angle/i)).toHaveValue("");
+    expect(screen.getByLabelText(/Fajr angle/i)).toHaveValue(null);
   });
 
   it("treats historical calibration as optional operator reference instead of a production blocker", () => {

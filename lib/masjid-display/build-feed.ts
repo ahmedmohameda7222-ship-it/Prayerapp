@@ -10,7 +10,16 @@ import { getJumuahTimesForDisplayWindow } from "@/lib/data/jumuah";
 import { getMasjidDisplayGeneratedAt } from "@/lib/data/masjid-display-generated-at";
 import { getMasjidDisplaySettings, getMasjidDisplaySettingsForDisplay } from "@/lib/data/masjid-display-settings";
 import { getMosqueSettings, getMosqueSettingsForDisplay } from "@/lib/data/mosque-settings";
-import { getPrayerSettings, getPrayerSettingsForDisplay, getRuntimePrayerSettings, getRuntimePrayerSettingsForDisplay } from "@/lib/data/prayer-settings";
+import {
+  getPrayerRuntimeAuthority,
+  getPrayerRuntimeAuthorityForDisplay,
+  getPrayerSettings,
+  getPrayerSettingsForDisplay,
+  getRuntimePrayerSettings,
+  getRuntimePrayerSettingsForDisplay,
+  getPrayerRuntimeAuthority,
+  getPrayerRuntimeAuthorityForDisplay,
+} from "@/lib/data/prayer-settings";
 import { getPrayerTimes } from "@/lib/data/prayer-times";
 import { getPublishedPrayerScheduleSnapshot } from "@/lib/data/prayer-schedule-snapshot";
 import type { Announcement, DonationCampaign, Event, PrayerTime } from "@/lib/types";
@@ -47,6 +56,8 @@ type FeedDependencies = {
   getPrayerSettingsForDisplay?: typeof getPrayerSettingsForDisplay;
   getRuntimePrayerSettings?: typeof getRuntimePrayerSettings;
   getRuntimePrayerSettingsForDisplay?: typeof getRuntimePrayerSettingsForDisplay;
+  getPrayerRuntimeAuthority?: typeof getPrayerRuntimeAuthority;
+  getPrayerRuntimeAuthorityForDisplay?: typeof getPrayerRuntimeAuthorityForDisplay;
   getJumuahTimesForDisplayWindow: typeof getJumuahTimesForDisplayWindow;
   getAnnouncementsForDisplayWindow: typeof getAnnouncementsForDisplayWindow;
   getEventsForDisplayWindow: typeof getEventsForDisplayWindow;
@@ -318,19 +329,25 @@ export async function buildMasjidDisplayFeed(
   now = new Date(),
   dependencies: FeedDependencies = defaultDependencies,
 ): Promise<MasjidDisplayFeedBodyV1> {
-  const prayerSettingsSource = dependencies.getRuntimePrayerSettingsForDisplay
-    ? await dependencies.getRuntimePrayerSettingsForDisplay()
-    : dependencies.getRuntimePrayerSettings
-      ? await dependencies.getRuntimePrayerSettings().then((value) =>
+  const prayerSettingsSource = dependencies.getPrayerRuntimeAuthorityForDisplay
+    ? await dependencies.getPrayerRuntimeAuthorityForDisplay()
+    : dependencies.getPrayerRuntimeAuthority
+      ? await dependencies.getPrayerRuntimeAuthority().then((value) =>
           value ? { value, sourceUpdatedAt: undefined as string | undefined } : null
         )
-      : dependencies.getPrayerSettingsForDisplay
-        ? await dependencies.getPrayerSettingsForDisplay()
-        : await dependencies.getPrayerSettings().then((value) =>
-            value ? { value, sourceUpdatedAt: undefined as string | undefined } : null
-          );
+      : dependencies.getRuntimePrayerSettingsForDisplay
+        ? await dependencies.getRuntimePrayerSettingsForDisplay()
+        : dependencies.getRuntimePrayerSettings
+          ? await dependencies.getRuntimePrayerSettings().then((value) =>
+              value ? { value, sourceUpdatedAt: undefined as string | undefined } : null
+            )
+          : dependencies.getPrayerSettingsForDisplay
+            ? await dependencies.getPrayerSettingsForDisplay()
+            : await dependencies.getPrayerSettings().then((value) =>
+                value ? { value, sourceUpdatedAt: undefined as string | undefined } : null
+              );
   if (!prayerSettingsSource) {
-    throw new DisplayFeedBuildError("Prayer settings are required for the display feed");
+    throw new DisplayFeedBuildError("Prayer runtime authority is required for the display feed");
   }
 
   const prayerSettings = prayerSettingsSource.value;

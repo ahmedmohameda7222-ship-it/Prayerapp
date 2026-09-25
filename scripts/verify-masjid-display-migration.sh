@@ -23,6 +23,7 @@ pending_migrations=(
   "20260923100000_prayer_schedule_midnight_write_guards.sql"
   "20260924060000_certified_prayer_timezones.sql"
   "20260924070000_plan6_premerge_runtime_bootstrap.sql"
+  "20260925061000_plan6_snapshot_rpc_privileges.sql"
 )
 
 refresh_db_container() {
@@ -295,6 +296,11 @@ if [ "$(query_scalar "select count(*) from pg_proc p join pg_namespace n on n.oi
   echo "Plan 6 atomic published prayer snapshot RPC is missing" >&2
   exit 1
 fi
+snapshot_acl="$(query_scalar "select concat_ws(',',has_function_privilege('anon',p.oid,'EXECUTE')::text,has_function_privilege('authenticated',p.oid,'EXECUTE')::text,has_function_privilege('service_role',p.oid,'EXECUTE')::text) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='get_published_prayer_schedule_snapshot';")"
+if [ "$snapshot_acl" != "false,false,true" ]; then
+  echo "Plan 6 atomic snapshot RPC is not service-role-only: $snapshot_acl" >&2
+  exit 1
+fi
 
 echo "PLAN6_CHAIN_AFTER prayer_times_count=$after_prayer_count"
 echo "PLAN6_CHAIN_AFTER jumuah_times_count=$after_jumuah_count"
@@ -311,6 +317,7 @@ echo "PLAN6_CHAIN_AFTER timezone_state=$timezone_state"
 echo "PLAN6_CHAIN_AFTER display_state=$display_state"
 echo "PLAN6_CHAIN_AFTER legacy_iqama_columns=$legacy_iqama_columns"
 echo "PLAN6_CHAIN_AFTER public_app_url=$public_app_url"
+echo "PLAN6_CHAIN_AFTER snapshot_acl=$snapshot_acl"
 echo "PLAN6_PREMERGE_CHAIN=PASS"
 
 # Aggregate content-budget probe on the migrated state.

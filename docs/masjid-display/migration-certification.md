@@ -384,3 +384,74 @@ Destructive removal remains explicitly deferred to Plan 7 or later.
 Because repository files changed during this remediation, the branch still
 requires one final exact-head workflow set and a fresh exact-head Codex review
 before it can be returned to the independent Planner.
+
+
+## Direct production re-verification — 2026-09-25
+
+A fresh read-only verification was run against the real Prayerapp production
+Supabase project after the remediation was already applied:
+
+`dbqbzvkleqzbgufllgca`
+
+Current production migration head remains:
+
+`20260925045344_plan6_snapshot_rpc_privileges`
+
+Direct database verification confirms:
+
+- `prayer_times`: 81 rows;
+- retained-prayer preservation hash:
+  `a611e20d391dc7c306fc0f2a41a66b67`, matching the recorded preflight;
+- `jumuah_times`: 3 rows;
+- Jumuah preservation hash:
+  `aabc1b96fe44f8ca8c29ff2e0b087764`, matching the recorded preflight;
+- legacy absolute-Iqama hash:
+  `6f3fde0064cea4ffffd760ca4a96193b`, matching the recorded preflight;
+- all five legacy columns remain physically present;
+- each legacy column still has 11 non-null values;
+- `prayer_settings` singleton exists with applied/runtime timezone
+  `Europe/Berlin`, shared delays `20/15/15/5/10`, revisions `1/0`, and
+  `profile_configured = false`;
+- mosque-specific calculation parameters remain NULL rather than invented;
+- `masjid_display_settings` singleton exists with prayer durations
+  `10/10/10/10/10` and an empty Azkar playlist;
+- `mosque_settings.public_app_url` is
+  `https://donaumoschee.vercel.app`;
+- the certified-timezone and setup-incomplete profile constraints are present;
+- the atomic snapshot and schedule-write SECURITY DEFINER RPCs are not
+  executable by `anon` or `authenticated` and remain executable by
+  `service_role`;
+- the atomic published prayer snapshot executed successfully and returned 37
+  rows for `2026-09-24` through `2026-10-30` in `Europe/Berlin`;
+- the bounded Jumuah, announcement, event, and campaign Feed window RPCs all
+  executed successfully and returned valid JSON arrays.
+
+The post-apply Supabase security advisor no longer reports the previously found
+snapshot-RPC EXECUTE privilege issue. Remaining advisor entries are pre-existing
+or general INFO/WARN items (for example service-role-only RLS tables with no
+client policies, leaked-password protection, and performance advisories) and
+are not a Plan 6 migration merge-safety regression.
+
+### Mosque-settings preflight hash clarification
+
+The previously recorded preflight core `mosque_settings` hash
+`742a34e2f48ad5977c6d575eb339a701` does not equal the current direct
+core hash `95a597ca180c98fd05e82e3c744b2df1`.
+
+This discrepancy must not be presented as a verified before/after equality.
+The applied Plan 6 migration statements were re-inspected directly from both
+the repository and production migration history. They add
+`public_app_url`, install triggers/metadata, and populate
+`public_app_url` only when blank; no applied Plan 6 migration writes the
+legacy mosque core fields included in that hash
+(`mosque_name*`, address/contact/social/bank fields).
+
+The production row's `updated_at` advanced when the runtime bootstrap filled
+`public_app_url`, which is expected, but `updated_at` and
+`public_app_url` are both outside the recorded core-hash expression.
+Because no row-history source is available to reconstruct the exact earlier
+core values, the old core-hash equality is treated as non-conclusive evidence
+rather than silently asserted as preserved. Prayer/Jumuah/legacy-Iqama
+preservation remains directly and deterministically verified as above.
+
+No production data was modified as part of this re-verification.

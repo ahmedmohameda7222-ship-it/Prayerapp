@@ -23,7 +23,7 @@ pending_migrations=(
   "20260923100000_prayer_schedule_midnight_write_guards.sql"
   "20260924060000_certified_prayer_timezones.sql"
   "20260924070000_plan6_premerge_runtime_bootstrap.sql"
-  "20260925061000_plan6_snapshot_rpc_privileges.sql"
+  "20260925045344_plan6_snapshot_rpc_privileges.sql"
 )
 
 refresh_db_container() {

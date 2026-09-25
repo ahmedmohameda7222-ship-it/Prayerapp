@@ -384,4 +384,3 @@ Destructive removal remains explicitly deferred to Plan 7 or later.
 Because repository files changed during this remediation, the branch still
 requires one final exact-head workflow set and a fresh exact-head Codex review
 before it can be returned to the independent Planner.
-

@@ -76,14 +76,14 @@ describe("Masjid Display content Admin", () => {
     expect(actions).toContain("donationUrl: row.donation_url || undefined");
   });
 
-  it("allows campaign end date to be blank and exposes an HTTP(S) donation URL without QR upload", () => {
+  it("allows campaign end date to be blank and requires an HTTPS donation URL without QR upload", () => {
     const page = source("app/admin/donations/page.tsx");
     const actions = source("app/admin/donations/actions.ts");
     expect(page).toContain("donationUrl");
     expect(page).toContain('key: "endDate"');
     expect(page).toContain("optional: true");
-    expect(actions).toContain("parseOptionalHttpUrl");
-    expect(actions).toContain('url.protocol !== "http:" && url.protocol !== "https:"');
+    expect(actions).toContain("parseAdminOptionalHttpsUrl");
+    expect(actions).not.toContain("parseOptionalHttpUrl");
     expect(page).not.toMatch(/qr[^\n]*(upload|file)|type=["']file["']/i);
   });
 });

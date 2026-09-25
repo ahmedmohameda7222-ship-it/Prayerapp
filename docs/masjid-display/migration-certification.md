@@ -601,4 +601,3 @@ Final live TV/Vercel/browser/Admin Test Mode verification remains post-merge.
 Because this evidence update changes repository documentation, a fresh complete
 exact-head workflow set and final exact-head Codex review are still required
 after this commit before independent Planner handoff.
-

@@ -192,20 +192,21 @@ begin
     raise exception 'Plan 6 compatibility bootstrap did not retain all five legacy Iqama columns';
   end if;
 
+  -- ON CONFLICT DO NOTHING intentionally preserves a preconfigured singleton.
+  -- Accept both that valid configured state and the setup-incomplete bootstrap
+  -- state. The table/profile and certified-timezone constraints above enforce
+  -- the detailed shape of each state; this assertion verifies only the runtime
+  -- invariants Plan 6 requires from either one.
   if not exists (
     select 1
     from public.prayer_settings
     where id = '1'
-      and applied_timezone = 'Europe/Berlin'
-      and calculation_revision = 1
-      and applied_calculation_revision = 0
-      and profile_configured is false
-      and latitude is null
-      and longitude is null
-      and fajr_angle is null
-      and isha_rule is null
-      and asr_shadow_factor is null
-      and high_latitude_rule is null
+      and coalesce(btrim(timezone), '') <> ''
+      and coalesce(btrim(applied_timezone), '') <> ''
+      and calculation_revision >= 1
+      and applied_calculation_revision between 0 and calculation_revision
+      and row_revision >= 1
+      and profile_configured in (true, false)
       and fajr_iqama_delay_minutes between 0 and 180
       and dhuhr_iqama_delay_minutes between 0 and 180
       and asr_iqama_delay_minutes between 0 and 180

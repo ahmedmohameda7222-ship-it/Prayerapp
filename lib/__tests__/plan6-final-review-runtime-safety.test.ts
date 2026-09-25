@@ -225,6 +225,37 @@ describe("Plan 6 final-review runtime safety regressions", () => {
     expect(appliedLocalDate).toBeLessThan(insert);
   });
 
+  it("fails closed on timezone promotion after reminder delivery can start or while native alarms remain active", () => {
+    const sql = source(
+      "supabase/migrations/20260925070000_plan6_final_review_safety.sql",
+    ).toLowerCase();
+    const functionStart = sql.indexOf(
+      "create or replace function public.commit_prayer_schedule_recalculation",
+    );
+    const insert = sql.indexOf("insert into public.prayer_times", functionStart);
+    const timezoneGuard = sql.indexOf(
+      "if v_settings.timezone <> v_settings.applied_timezone",
+      functionStart,
+    );
+    const nativeGuard = sql.indexOf(
+      "from public.native_prayer_installations",
+      timezoneGuard,
+    );
+    const revokedGuard = sql.indexOf("where revoked_at is null", nativeGuard);
+    const deadline = sql.indexOf("v_timezone_cutover_deadline", timezoneGuard);
+    const maxLead = sql.indexOf("interval '15 minutes'", timezoneGuard);
+    const unstartedDay = sql.indexOf("defer to an unstarted schedule date", timezoneGuard);
+
+    expect(timezoneGuard).toBeGreaterThan(functionStart);
+    expect(nativeGuard).toBeGreaterThan(timezoneGuard);
+    expect(revokedGuard).toBeGreaterThan(nativeGuard);
+    expect(deadline).toBeGreaterThan(timezoneGuard);
+    expect(maxLead).toBeGreaterThan(timezoneGuard);
+    expect(unstartedDay).toBeGreaterThan(maxLead);
+    expect(nativeGuard).toBeLessThan(insert);
+    expect(unstartedDay).toBeLessThan(insert);
+  });
+
   it("queues native delivery receipts for current p3 prayer identities", () => {
     const nativeStore = source(
       "android-twa/app/src/main/java/de/donaumoschee/app/storage/NativeStore.java",

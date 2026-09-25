@@ -47,15 +47,6 @@ async function notifyActiveCampaign(row: CampaignPushRow) {
   } catch (error) { console.error("[donation campaign push] delivery failed", error); }
 }
 
-function parseOptionalHttpUrl(value: string | undefined, field: string): string | null {
-  if (!value?.trim()) return null;
-  try {
-    const url = new URL(value.trim());
-    if ((url.protocol !== "http:" && url.protocol !== "https:") || !url.hostname || url.username || url.password) throw new Error("invalid");
-    return url.toString();
-  } catch { throw new Error(`Invalid ${field}`); }
-}
-
 function parseDonationSettings(data: Record<string, string>) {
   const accountHolder = parseAdminText(data.accountHolder, { field: "accountHolder", max: 200, required: true });
   const iban = parseAdminText(data.iban, { field: "iban", max: 64, required: true }).replace(/\s/g, "");
@@ -86,7 +77,7 @@ function parseCampaign(data: Record<string, string>) {
     descriptionTr: parseAdminText(data.descriptionTr ?? "", { field: "descriptionTr", max: 5_000 }),
     targetAmount: parseAdminNumber(data.targetAmount, { field: "targetAmount", min: 0.01, max: 100_000_000 }),
     collectedAmount: parseAdminNumber(data.collectedAmount || "0", { field: "collectedAmount", min: 0, max: 100_000_000 }),
-    startDate, endDate, donationUrl: parseOptionalHttpUrl(data.donationUrl, "donationUrl"),
+    startDate, endDate, donationUrl: parseAdminOptionalHttpsUrl(data.donationUrl, { field: "donationUrl", max: 500 }),
     isActive: data.isActive ? parseAdminBoolean(data.isActive, "isActive") : false,
     isFeatured: data.isFeatured ? parseAdminBoolean(data.isFeatured, "isFeatured") : false,
   };

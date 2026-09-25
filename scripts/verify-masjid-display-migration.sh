@@ -24,6 +24,7 @@ pending_migrations=(
   "20260924060000_certified_prayer_timezones.sql"
   "20260924070000_plan6_premerge_runtime_bootstrap.sql"
   "20260925045344_plan6_snapshot_rpc_privileges.sql"
+  "20260925070000_plan6_final_review_safety.sql"
 )
 
 refresh_db_container() {
@@ -184,6 +185,75 @@ fi
 docker exec "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c   "delete from public.announcements where title = 'PLAN6_PREFLIGHT';"
 
 echo "PLAN6_CONTENT_PREFLIGHT=PASS existing over-capacity content rejected before capacity triggers"
+
+# Bootstrap compatibility: an environment may already have a valid configured
+# singleton before the Plan 6 production bootstrap. The bootstrap must preserve
+# that operator configuration rather than require the newly seeded 1/0 Berlin
+# setup-incomplete state.
+reset_to_reviewed_cutoff
+for migration_index in $(seq 0 16); do
+  apply_sql_file "supabase/migrations/${pending_migrations[$migration_index]}"
+done
+
+docker exec -i "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+insert into public.prayer_settings (
+  id,
+  latitude,
+  longitude,
+  timezone,
+  fajr_angle,
+  isha_rule,
+  isha_angle,
+  isha_minutes_after_maghrib,
+  asr_shadow_factor,
+  high_latitude_rule,
+  fajr_offset_minutes,
+  sunrise_offset_minutes,
+  dhuhr_offset_minutes,
+  asr_offset_minutes,
+  maghrib_offset_minutes,
+  isha_offset_minutes,
+  fajr_iqama_delay_minutes,
+  dhuhr_iqama_delay_minutes,
+  asr_iqama_delay_minutes,
+  maghrib_iqama_delay_minutes,
+  isha_iqama_delay_minutes,
+  calculation_revision,
+  applied_calculation_revision,
+  row_revision,
+  applied_timezone,
+  updated_at
+)
+values (
+  '1',
+  48.137154,
+  11.576124,
+  'Europe/Berlin',
+  18,
+  'angle',
+  17,
+  null,
+  1,
+  'middle_of_night',
+  0, 0, 0, 0, 0, 0,
+  20, 15, 15, 5, 10,
+  7,
+  7,
+  9,
+  'Europe/Berlin',
+  now()
+);
+SQL
+
+apply_sql_file "supabase/migrations/${pending_migrations[17]}"
+
+configured_profile_state="$(query_scalar "select concat_ws(',',profile_configured::text,calculation_revision,applied_calculation_revision,row_revision,timezone,applied_timezone,latitude::text) from public.prayer_settings where id='1';")"
+if [ "$configured_profile_state" != "true,7,7,9,Europe/Berlin,Europe/Berlin,48.137154" ]; then
+  echo "Plan 6 bootstrap changed or rejected an existing configured prayer-settings singleton: $configured_profile_state" >&2
+  exit 1
+fi
+
+echo "PLAN6_CONFIGURED_SINGLETON_COMPAT=PASS existing configured Prayer Engine singleton preserved"
 
 # Full production-like chain from the exact reviewed production cutoff.
 reset_to_reviewed_cutoff

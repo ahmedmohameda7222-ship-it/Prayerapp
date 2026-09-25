@@ -1,6 +1,6 @@
 # Masjid Display — Plan 6 Live Preview Verification
 
-Status: PRE-MERGE REPOSITORY CERTIFICATION GREEN — POST-MERGE MAIN LIVE VERIFICATION PENDING
+Status: PRE-MERGE PRODUCTION REMEDIATION APPLIED — FINAL EXACT-HEAD RECERTIFICATION PENDING; POST-MERGE MAIN LIVE VERIFICATION PENDING
 
 Plan 6 implementation starting point: `01dd070474a17a5f27eb472a58c5122cb092f315`
 
@@ -424,3 +424,66 @@ Still intentionally post-merge:
 
 Plan 7 has not started, and the destructive legacy-Iqama removal has not been
 performed.
+
+## Final-review remediation addendum — findings 39–41 — 2026-09-25
+
+This section supersedes earlier Codex finding totals for the continuing Plan 6
+pre-merge remediation.
+
+The cumulative Plan 6 Codex review history now contains **41 legitimate
+findings: 22 P1 and 19 P2**, plus the previously recorded three additional
+manual-review correctness/availability fixes.
+
+The latest returned Codex review added:
+
+39. **P1:** accept valid preconfigured Prayer Engine singleton state in the
+    Plan 6 runtime-bootstrap assertion;
+40. **P1:** prevent same-day timezone promotion after old native alarms or
+    reminder boundaries can already be actionable;
+41. **P2:** require HTTPS for donation URLs that can be rendered as Campaign QR
+    destinations.
+
+All three findings are fixed and their inline review threads are resolved.
+
+The final-review safety migration was certified on implementation HEAD
+`0a75219435aeb7e8c744f8361cc6d692a855dec2` with:
+
+- Root CI `36107788925`: **SUCCESS**;
+- Masjid Display Verification `36107788874`: **SUCCESS**;
+- Plan 3 Display Feed Verification `36107788854`: **SUCCESS**;
+- Security Scanners `36107788912`: **SUCCESS**;
+- Android TWA `36107788909`: **SUCCESS**, including API 23 and API 37.
+
+The exact additive SQL in
+`20260925070000_plan6_final_review_safety.sql` was then applied to the real
+Prayerapp production Supabase project
+`dbqbzvkleqzbgufllgca` as production migration
+`20260925073810_plan6_final_review_safety`.
+
+Same-query production preservation evidence before/after that apply is:
+
+- prayer rows **81 → 81**, hash
+  `d3a1191a3042cb651fc647c304b32f15` unchanged;
+- Jumuah rows **3 → 3**, hash
+  `581a1f764e4d56096b074b5ac27e9a48` unchanged;
+- all five legacy Iqama columns remain present;
+- legacy non-null coverage remains **11/11/11/11/11**.
+
+Direct post-apply verification confirms the native-installation guard, the
+15-minute reminder cutover guard, service-role-only recalculation/snapshot RPC
+execution, a valid 37-row `Europe/Berlin` atomic snapshot, and successful
+bounded Feed-window RPC reads. No new migration-specific Supabase advisor issue
+was introduced.
+
+The legacy absolute-Iqama fields remain physically present but are not runtime
+authority. Destructive removal remains deferred to a later explicitly approved
+Plan 7. Plan 7 has not started.
+
+This documentation commit intentionally does **not** claim final Plan 6 live TV
+verification. Per the operator sequencing override, creation of
+`donaumoschee-tv` and live Feed/Test Control/browser/QR/diagnostics/Admin Test
+Mode verification remain post-merge on `main`.
+
+A fresh exact-head full workflow set and final Codex review are required on the
+new documentation HEAD created by this evidence update.
+

@@ -1,6 +1,6 @@
 # Masjid Display — Migration Certification
 
-Status: **PLAN 6 PRE-MERGE REMEDIATION IMPLEMENTED — PRODUCTION APPLY PENDING**
+Status: **PLAN 6 PRE-MERGE PRODUCTION SCHEMA REMEDIATION APPLIED — FINAL RECERTIFICATION PENDING**
 
 ## Scope
 
@@ -168,7 +168,7 @@ The harness applies, in repository order:
 2. `20260915221000_prayer_schedule_atomic_generation.sql`
 3. `20260915222000_masjid_display_admin_schema.sql`
 4. `20260915222500_plan6_preserve_legacy_iqama_columns.sql`
-5. `20260915223000_remove_absolute_iqama_columns.sql` — unchanged historical destructive migration, safely bypassed by the preservation shim
+5. `20260915223000_remove_absolute_iqama_columns.sql` — explicit Plan 6 no-op; destructive removal is deferred to a new Plan 7-or-later migration
 6. `20260915223500_plan6_restore_legacy_iqama_columns.sql`
 7. `20260917041000_masjid_display_feed_revision.sql`
 8. `20260917233500_masjid_display_bounded_generated_at.sql`
@@ -240,21 +240,148 @@ preflight:
 
 ## Production apply status
 
-**PENDING.**
+**APPLIED AND DIRECTLY VERIFIED — 2026-09-25.**
 
-The production database must not be mutated until the new full
-non-destructive production-like migration chain passes the required repository
-and CI gates.
+Real Prayerapp production Supabase project/ref:
 
-After successful application, this document must be updated with:
+`dbqbzvkleqzbgufllgca`
 
-- the exact migrations actually applied;
-- resulting production migration head;
-- actual post-apply row counts and hashes;
-- actual singleton values;
-- actual retained legacy-column/value evidence;
-- actual snapshot RPC result;
-- actual required constraints/functions;
-- production Feed dependency verification.
+The authorized non-destructive Plan 5/6 chain was applied to the real production
+database. The five legacy absolute-Iqama columns were never dropped.
 
-The destructive Plan 7 cutover remains outside this certification.
+Production migration history now contains, in order:
+
+1. `20260915220000_masjid_display_prayer_settings`
+2. `20260915221000_prayer_schedule_atomic_generation`
+3. `20260915222000_masjid_display_admin_schema`
+4. `20260915222500_plan6_preserve_legacy_iqama_columns`
+5. `20260915223000_remove_absolute_iqama_columns` — explicit no-op
+6. `20260915223500_plan6_restore_legacy_iqama_columns`
+7. `20260917041000_masjid_display_feed_revision`
+8. `20260917233500_masjid_display_bounded_generated_at`
+9. `20260918001500_masjid_display_semantic_source_timestamps`
+10. `20260918015000_masjid_display_snapshot_window_readers`
+11. `20260919023000_masjid_display_feed_bounds`
+12. `20260922060000_prayer_event_v3`
+13. `20260922061000_applied_timezone`
+14. `20260922062000_masjid_display_dynamic_budget_timezone`
+15. `20260923030000_published_prayer_schedule_snapshot`
+16. `20260923100000_prayer_schedule_midnight_write_guards`
+17. `20260924060000_certified_prayer_timezones`
+18. `20260924070000_plan6_premerge_runtime_bootstrap`
+19. `20260925045344_plan6_snapshot_rpc_privileges`
+
+Current production migration head:
+
+`20260925045344_plan6_snapshot_rpc_privileges`
+
+### Direct before/after preservation evidence
+
+The exact same read-only row serialization query was executed before the first
+production migration and after the complete production apply:
+
+- `prayer_times`: **81 → 81**;
+- raw full-row hash:
+  `80ed0064dfbd1f55a76f2546575adfd4 → 80ed0064dfbd1f55a76f2546575adfd4`;
+- `jumuah_times`: **3 → 3**;
+- raw full-row hash:
+  `2787578d3e3241d15e473b35f49506f3 → 2787578d3e3241d15e473b35f49506f3`;
+- all five legacy absolute-Iqama columns remain present;
+- non-null legacy coverage remains **11,11,11,11,11**.
+
+The current certification-field hashes are also:
+
+- prayer core:
+  `a611e20d391dc7c306fc0f2a41a66b67`;
+- Jumuah core:
+  `aabc1b96fe44f8ca8c29ff2e0b087764`;
+- legacy absolute-Iqama values:
+  `6f3fde0064cea4ffffd760ca4a96193b`.
+
+The Prayer Engine / Masjid Display migrations do not rewrite existing mosque
+identity/contact/banking fields. The only intentional production
+`mosque_settings` data mutation in this remediation is filling the previously
+blank `public_app_url` with the canonical Prayerapp URL. The deterministic
+production-like migration harness separately verifies that all pre-existing
+mosque settings fields included in its preservation projection remain
+unchanged.
+
+### Required runtime singleton state
+
+Direct production verification after apply confirms:
+
+- `prayer_settings.id='1'` exists;
+- `timezone='Europe/Berlin'`;
+- `applied_timezone='Europe/Berlin'`;
+- shared Iqama delays are **20,15,15,5,10**;
+- `profile_configured=false`;
+- mosque-specific calculation fields remain `NULL`;
+- `calculation_revision=1`;
+- `applied_calculation_revision=0`;
+- `row_revision=1`;
+- `masjid_display_settings.id='1'` exists;
+- five prayer-in-progress durations are **10,10,10,10,10**;
+- selected Azkar playlist is empty;
+- `mosque_settings.public_app_url='https://donaumoschee.vercel.app'`.
+
+No canonical `prayer_times` row was recalculated or rewritten by the bootstrap.
+The live timetable remains the existing canonical schedule. An operator must
+explicitly configure a Prayer Engine calculation profile before calculation,
+extension, or recalculation can be used.
+
+### Runtime object / contract verification
+
+Direct read-only production verification confirms:
+
+- `prayer_settings`, `masjid_display_settings`, and
+  `masjid_display_test_state` exist;
+- bounded Masjid Display Jumuah/announcement/event/campaign RPCs exist;
+- `get_published_prayer_schedule_snapshot(...)` exists and returns a valid
+  atomic `Europe/Berlin` schedule snapshot over the live published timetable;
+- the tested current snapshot returned published rows spanning
+  **2026-09-24 through 2026-10-30** for the requested live window;
+- current announcement window projection succeeds;
+- empty Jumuah/event/campaign windows return valid empty arrays rather than
+  schema/runtime failures;
+- certified timezone constraints exist on `prayer_settings`.
+
+A post-apply Supabase security-advisor check identified that Supabase default
+function privileges had left the `SECURITY DEFINER` atomic snapshot RPC
+explicitly executable by `anon` and `authenticated` even though the
+historical migration revoked `public`. This was converged with the new
+`20260925045344_plan6_snapshot_rpc_privileges` migration.
+
+Direct post-convergence ACL evidence:
+
+- `anon EXECUTE = false`;
+- `authenticated EXECUTE = false`;
+- `service_role EXECUTE = true`.
+
+The corresponding advisor warnings are no longer present. Remaining advisor
+items are pre-existing/general INFO or Auth configuration findings and are not
+introduced by this Plan 6 runtime schema apply.
+
+### Plan boundary after production apply
+
+The real production database is now forward-compatible with the Plan 6 branch
+without activating a new religious calculation profile and without destructive
+legacy-Iqama removal.
+
+The five physical legacy columns remain transition compatibility data only:
+
+- `fajr_iqama`
+- `dhuhr_iqama`
+- `asr_iqama`
+- `maghrib_iqama`
+- `isha_iqama`
+
+The feature-branch runtime authority remains:
+
+`Iqama = final canonical prayer start + configured shared delay`
+
+Destructive removal remains explicitly deferred to Plan 7 or later.
+
+Because repository files changed during this remediation, the branch still
+requires one final exact-head workflow set and a fresh exact-head Codex review
+before it can be returned to the independent Planner.
+

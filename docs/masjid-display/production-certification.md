@@ -211,3 +211,68 @@ Rows are not promoted from PENDING/BLOCKED based on intent, unit-test similarity
 **PRODUCTION CERTIFICATION: BLOCKED**
 
 This status is expected and correct while required religious calibration, real-target migration prerequisite, physical TV/QR, or 24-hour soak evidence is absent.
+
+
+## Plan 6 pre-merge production-schema remediation addendum — 2026-09-25
+
+This addendum records resolution of the independent Planner's pre-merge
+database compatibility blocker. It does not rewrite the historical Plan 5
+production-certification result and does not claim the remaining Plan 6 live
+TV/browser evidence.
+
+Real Prayerapp production Supabase project/ref:
+
+`dbqbzvkleqzbgufllgca`
+
+The production database previously stopped at
+`20260902223939_admin_audit_hardening`. The required non-destructive Plan
+5/6 schema/runtime chain has now been applied and directly verified. Current
+production migration head:
+
+`20260925045344_plan6_snapshot_rpc_privileges`
+
+The destructive legacy-Iqama cutover was **not** executed. All five old
+absolute-Iqama columns and their existing values remain physically present.
+
+Before/after production preservation:
+
+- 81 prayer rows remain 81;
+- exact full-row prayer hash remains
+  `80ed0064dfbd1f55a76f2546575adfd4`;
+- 3 Jumuah rows remain 3;
+- exact full-row Jumuah hash remains
+  `2787578d3e3241d15e473b35f49506f3`;
+- each of the five legacy Iqama columns retains 11 populated rows.
+
+The new runtime authority is initialized without inventing a religious
+calculation profile:
+
+- applied timezone `Europe/Berlin`;
+- shared delays `20/15/15/5/10`;
+- calculation profile remains explicitly unconfigured;
+- canonical existing `prayer_times` remain live schedule authority;
+- Masjid Display singleton settings use the existing Admin defaults;
+- public app URL is `https://donaumoschee.vercel.app`.
+
+Required Prayer Engine / Masjid Display tables and RPCs exist. The atomic
+published prayer snapshot and bounded Feed window RPCs were executed directly
+against production after apply. The snapshot returned a valid applied-timezone
+published schedule.
+
+A Supabase security-advisor follow-up identified direct default EXECUTE grants
+on the snapshot `SECURITY DEFINER` RPC. The final convergence migration
+explicitly removed `anon` and `authenticated` EXECUTE and retained only
+`service_role`; direct ACL verification and a second advisor check confirm
+that warning is resolved.
+
+Repository runtime code does not restore the retained absolute-Iqama columns
+as authority. Iqama remains derived as canonical prayer start plus the
+configured shared delay.
+
+This resolves the production-schema merge-safety blocker. A fresh exact-head
+repository workflow set and a fresh exact-head Codex review are still required
+after the remediation/evidence commits.
+
+The remaining live Vercel TV/browser/Admin Test Mode checks remain intentionally
+post-merge on `main`. Destructive legacy-Iqama removal remains deferred to an
+explicitly approved Plan 7 or later.

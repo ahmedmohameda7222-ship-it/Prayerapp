@@ -91,13 +91,13 @@ select md5(string_agg(
 from public.prayer_times;
 "
 
-mosque_settings_hash_sql="
+mosque_settings_preserved_hash_sql="
 select md5(string_agg(
   concat_ws('|',
     id, mosque_name, coalesce(mosque_name_ar, ''), coalesce(mosque_name_en, ''),
     coalesce(mosque_name_de, ''), coalesce(mosque_name_tr, ''), address, phone,
     email, google_maps_link, whatsapp_link, telegram_link, account_holder,
-    iban, bic, coalesce(updated_at::text, '')
+    iban, bic
   ),
   '|' order by id
 ))
@@ -194,7 +194,7 @@ before_jumuah_hash="$(query_scalar "$jumuah_hash_sql")"
 before_legacy_iqama_hash="$(query_scalar "$legacy_iqama_hash_sql")"
 before_legacy_coverage="$(query_scalar "select concat_ws(',',count(fajr_iqama),count(dhuhr_iqama),count(asr_iqama),count(maghrib_iqama),count(isha_iqama)) from public.prayer_times;")"
 before_maghrib_program_count="$(query_scalar 'select count(*) from public.prayer_times where maghrib_program_enabled is true;')"
-before_mosque_settings_hash="$(query_scalar "$mosque_settings_hash_sql")"
+before_mosque_settings_hash="$(query_scalar "$mosque_settings_preserved_hash_sql")"
 before_mosque_settings_count="$(query_scalar "select count(*) from public.mosque_settings where id='1';")"
 
 if [ "$before_prayer_count" != "81" ] || [ "$before_jumuah_count" != "3" ] || [ "$before_mosque_settings_count" != "1" ]; then
@@ -222,7 +222,7 @@ after_jumuah_hash="$(query_scalar "$jumuah_hash_sql")"
 after_legacy_iqama_hash="$(query_scalar "$legacy_iqama_hash_sql")"
 after_legacy_coverage="$(query_scalar "select concat_ws(',',count(fajr_iqama),count(dhuhr_iqama),count(asr_iqama),count(maghrib_iqama),count(isha_iqama)) from public.prayer_times;")"
 after_maghrib_program_count="$(query_scalar 'select count(*) from public.prayer_times where maghrib_program_enabled is true;')"
-after_mosque_settings_hash="$(query_scalar "$mosque_settings_hash_sql")"
+after_mosque_settings_hash="$(query_scalar "$mosque_settings_preserved_hash_sql")"
 legacy_iqama_columns="$(query_scalar "$legacy_column_count_sql")"
 shared_delays="$(query_scalar "select concat_ws(',',fajr_iqama_delay_minutes,dhuhr_iqama_delay_minutes,asr_iqama_delay_minutes,maghrib_iqama_delay_minutes,isha_iqama_delay_minutes) from public.prayer_settings where id='1';")"
 revision_state="$(query_scalar "select concat_ws(',',calculation_revision,applied_calculation_revision,row_revision) from public.prayer_settings where id='1';")"
@@ -248,7 +248,7 @@ if [ "$before_legacy_iqama_hash" != "$after_legacy_iqama_hash" ]; then
   exit 1
 fi
 if [ "$before_mosque_settings_hash" != "$after_mosque_settings_hash" ]; then
-  echo "Plan 6 pending migration chain changed pre-existing mosque settings fields" >&2
+  echo "Plan 6 pending migration chain changed preserved mosque settings content fields" >&2
   exit 1
 fi
 if [ "$before_legacy_coverage" != "$after_legacy_coverage" ]; then

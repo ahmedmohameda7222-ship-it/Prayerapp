@@ -333,3 +333,94 @@ No destructive production migration was executed in Plan 6.
 **PRE-MERGE PLAN 6 REPOSITORY CERTIFICATION: 29 LEGITIMATE CODEX FINDINGS + 3 ADDITIONAL MANUAL-REVIEW FINDINGS FIXED; FINAL EXACT-HEAD CI/SECURITY/ANDROID + CODEX CLOSURE MUST BE VERIFIED IN PR #108 METADATA; POST-MERGE LIVE VERIFICATION PENDING.**
 
 The real Vercel/root/browser/Admin Test Mode verification is intentionally scheduled for post-merge `main` under the operator sequencing override. Do not convert this to `PLAN 6 COMPLETE — LIVE PREVIEW + SETTINGS CONTROL VERIFIED` until that post-merge evidence is actually recorded.
+
+
+## Planner merge-safety remediation — production Supabase prepared — 2026-09-25
+
+The independent Planner review of the previous certified repository HEAD found
+a real pre-merge sequencing blocker: the root production Vercel project deploys
+`main` automatically, while the real Prayerapp production Supabase project
+was still at migration head `20260902223939_admin_audit_hardening` and did
+not yet contain the Plan 5/6 runtime schema.
+
+Production Supabase project/ref:
+
+`dbqbzvkleqzbgufllgca`
+
+Before mutation, read-only preflight recorded:
+
+- `prayer_times`: 81 rows;
+- `jumuah_times`: 3 rows;
+- all five legacy absolute-Iqama columns present with 11 non-null values each;
+- `prayer_settings`: absent;
+- `masjid_display_settings`: absent;
+- `get_published_prayer_schedule_snapshot(...)`: absent.
+
+The migration sequence was remediated before destructive production execution:
+
+- the former `20260915223000_remove_absolute_iqama_columns.sql` Plan 6 draft
+  is now an explicit no-op;
+- the five legacy columns remain physically present throughout Plan 6;
+- a convergence/repair migration supports disposable environments that had run
+  an older feature-branch draft;
+- runtime authority does not read the retained legacy absolute-Iqama fields;
+- destructive removal requires a new, explicitly approved Plan 7-or-later
+  migration.
+
+The certified non-destructive Plan 5/6 chain was then applied to the real
+production project. Production migration head after the final privilege
+convergence is:
+
+`20260925045344_plan6_snapshot_rpc_privileges`
+
+Direct production preservation evidence after apply:
+
+- `prayer_times`: 81 rows, unchanged full-row hash
+  `80ed0064dfbd1f55a76f2546575adfd4`;
+- `jumuah_times`: 3 rows, unchanged full-row hash
+  `2787578d3e3241d15e473b35f49506f3`;
+- legacy absolute-Iqama non-null coverage remains 11/11/11/11/11;
+- all five legacy column names remain physically present.
+
+Runtime bootstrap state is intentionally split from religious calibration:
+
+- applied/runtime timezone: `Europe/Berlin`;
+- shared Iqama delays: `20,15,15,5,10`;
+- calculation profile: **not configured**;
+- mosque-specific calculation parameters remain NULL rather than invented;
+- calculation revision/applied revision: `1/0`;
+- Masjid Display prayer durations: `10,10,10,10,10`;
+- Azkar selection: empty;
+- public Prayerapp URL:
+  `https://donaumoschee.vercel.app`.
+
+The production atomic schedule snapshot RPC was executed directly after apply
+and returned a valid `Europe/Berlin` published schedule. Feed source window
+RPCs also execute successfully against the real production data.
+
+A post-apply Supabase advisor check exposed one migration privilege convergence
+issue: Supabase default function privileges had left the snapshot
+`SECURITY DEFINER` RPC directly executable by `anon` and
+`authenticated`. Migration
+`20260925045344_plan6_snapshot_rpc_privileges` now explicitly restricts it
+to the server-side service role. Direct ACL verification is:
+
+- anon: no EXECUTE;
+- authenticated: no EXECUTE;
+- service_role: EXECUTE.
+
+This remediation prepares the root production database for the future
+`main` deployment. It does **not** claim final Plan 6 live TV verification.
+
+Still intentionally post-merge:
+
+- root production health verification after the squash merge;
+- creation of `donaumoschee-tv` from `main`;
+- live Feed/Test Control proxy verification;
+- viewport/browser verification;
+- Prayerapp/Campaign QR verification;
+- diagnostics verification;
+- real Admin Test Mode start/switch/stop/expiry verification.
+
+Plan 7 has not started, and the destructive legacy-Iqama removal has not been
+performed.

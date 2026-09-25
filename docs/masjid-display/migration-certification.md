@@ -1,6 +1,6 @@
 # Masjid Display — Migration Certification
 
-Status: **PLAN 6 PRE-MERGE PRODUCTION SCHEMA REMEDIATION APPLIED — FINAL RECERTIFICATION PENDING**
+Status: **PLAN 6 PRE-MERGE PRODUCTION SCHEMA + FINAL-REVIEW SAFETY REMEDIATION APPLIED — FINAL EXACT-HEAD RECERTIFICATION PENDING**
 
 ## Scope
 
@@ -455,3 +455,150 @@ rather than silently asserted as preserved. Prayer/Jumuah/legacy-Iqama
 preservation remains directly and deterministically verified as above.
 
 No production data was modified as part of this re-verification.
+
+## Final-review production safety convergence — 2026-09-25
+
+A fresh Codex review after the first production-schema remediation identified
+three additional legitimate issues. These are findings **39–41** in the
+cumulative Plan 6 Codex review history:
+
+39. **P1:** the source assertion in
+    `20260924070000_plan6_premerge_runtime_bootstrap.sql` accepted only the
+    freshly seeded unconfigured Berlin singleton and could reject a valid
+    preconfigured Prayer Engine singleton;
+40. **P1:** a same-day timezone promotion could occur after native alarms or
+    reminder deliveries for the old schedule had already become actionable;
+41. **P2:** Donation Campaign Admin accepted a plaintext `http://` donation
+    URL that could become a payment-related Campaign QR destination.
+
+The branch corrections are:
+
+- the runtime-bootstrap assertion now validates generalized configured-or-
+  bootstrap singleton invariants rather than exact seeded values;
+- `20260925070000_plan6_final_review_safety.sql` reasserts those generalized
+  invariants and replaces the atomic recalculation RPC with fail-closed
+  timezone-cutover guards;
+- timezone promotion is rejected while any non-revoked native prayer
+  installation exists;
+- timezone promotion is rejected at or after the earliest old/new current-day
+  Fajr-minus-15-minute reminder boundary and must instead be deferred to an
+  unstarted schedule date;
+- Donation Campaign Admin now accepts only optional **HTTPS** donation URLs.
+
+### Exact-head certification before production apply
+
+Repository HEAD used to certify the final-review safety migration:
+
+`0a75219435aeb7e8c744f8361cc6d692a855dec2`
+
+All required workflow families succeeded:
+
+- Root CI `36107788925`: **SUCCESS**;
+- Masjid Display Verification `36107788874`: **SUCCESS**;
+- Plan 3 Display Feed Verification `36107788854`: **SUCCESS**;
+- Security Scanners `36107788912`: **SUCCESS**;
+- Android TWA `36107788909`: **SUCCESS**, including API 23 and API 37
+  instrumentation.
+
+Root CI specifically certified clean Supabase bootstrap, legacy-Iqama migration
+safety, restoration of the final migration head, reconciliation/data-
+preservation behavior, admin-audit migration behavior, TV verification, and the
+root production build.
+
+### Production apply
+
+Real Prayerapp production Supabase project/ref:
+
+`dbqbzvkleqzbgufllgca`
+
+Repository migration source:
+
+`supabase/migrations/20260925070000_plan6_final_review_safety.sql`
+
+The connected Supabase migration API applied that exact non-destructive SQL as:
+
+`20260925073810_plan6_final_review_safety`
+
+The production migration head is therefore now:
+
+`20260925073810_plan6_final_review_safety`
+
+The migration contains no legacy-Iqama DROP and does not rewrite canonical
+prayer/Jumuah rows.
+
+### Same-query pre/post preservation proof
+
+Immediately before and after the final-review safety migration, the same
+read-only deterministic projections produced identical results:
+
+- `prayer_times`: **81 → 81**;
+- prayer projection hash:
+  `d3a1191a3042cb651fc647c304b32f15 → d3a1191a3042cb651fc647c304b32f15`;
+- `jumuah_times`: **3 → 3**;
+- Jumuah projection hash:
+  `581a1f764e4d56096b074b5ac27e9a48 → 581a1f764e4d56096b074b5ac27e9a48`;
+- legacy absolute-Iqama non-null coverage:
+  **11/11/11/11/11 → 11/11/11/11/11**;
+- all five legacy columns remain physically present.
+
+The Prayer Engine singleton also remained unchanged by this convergence:
+
+- pending/applied timezone: `Europe/Berlin / Europe/Berlin`;
+- revisions: calculation `1`, applied `0`, row `1`;
+- `profile_configured=false`;
+- shared Iqama delays: `20/15/15/5/10`;
+- mosque-specific calculation parameters remain NULL.
+
+The Masjid Display singleton remains five 10-minute prayer durations with an
+empty Azkar playlist, and the public Prayerapp URL remains
+`https://donaumoschee.vercel.app`.
+
+### Direct runtime verification after apply
+
+Direct production inspection confirms:
+
+- the effective recalculation RPC contains the active-native-installation
+  guard;
+- it contains the Fajr-minus-15-minute cutover boundary;
+- it requires late cutovers to be deferred to an unstarted schedule date;
+- current active native installations are **0**;
+- recalculation RPC EXECUTE is denied to `anon` and `authenticated` and
+  granted to `service_role`;
+- snapshot RPC EXECUTE remains denied to `anon` and `authenticated` and
+  granted to `service_role`;
+- the atomic published schedule snapshot returns a valid object with **37**
+  rows in `Europe/Berlin`, spanning **2026-09-24 through 2026-10-30** for the
+  tested window;
+- bounded Jumuah, announcement, event, and campaign Feed-window RPCs all
+  execute successfully against production data;
+- the current tested windows returned 1 Jumuah, 1 announcement, 1 event, and
+  1 campaign row;
+- required Prayer Engine, Masjid Display, and mosque-settings singleton rows
+  exist.
+
+Post-DDL Supabase security/performance advisors introduced no new finding
+attributable to this migration. The remaining advisor items are the same
+pre-existing/general INFO/WARN items already outside this Plan 6 merge-safety
+change.
+
+### Plan boundary
+
+The five legacy columns are still physically present:
+
+- `fajr_iqama`
+- `dhuhr_iqama`
+- `asr_iqama`
+- `maghrib_iqama`
+- `isha_iqama`
+
+They remain compatibility data only. Active runtime authority is still:
+
+`Iqama = final canonical prayer start + configured shared delay`
+
+No destructive legacy-Iqama cutover was performed and Plan 7 has not started.
+Final live TV/Vercel/browser/Admin Test Mode verification remains post-merge.
+
+Because this evidence update changes repository documentation, a fresh complete
+exact-head workflow set and final exact-head Codex review are still required
+after this commit before independent Planner handoff.
+

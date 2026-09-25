@@ -486,4 +486,3 @@ Mode verification remain post-merge on `main`.
 
 A fresh exact-head full workflow set and final Codex review are required on the
 new documentation HEAD created by this evidence update.
-

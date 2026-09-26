@@ -2,6 +2,10 @@
 
 Status: READY FOR OPERATOR EXECUTION
 
+## Plan 7 execution target — main-only Vercel policy
+
+Plan 7 does not use a Vercel PR/feature-branch Preview. This live operator checklist executes after the independent Planner squash-merges the approved Plan 7 PR and the normal `main` deployment is READY on `donaumoschee-tv`. Record the deployed `main` SHA before starting. Do not enable Preview deployments as part of Test Mode certification.
+
 This checklist exercises the real TV renderer through the Admin-only **Masjid Display Test** controls. Every synthetic scenario is temporary. The expected badge is always `TEST MODE / وضع الاختبار`. When a valid canonical Prayerapp URL exists, the persistent Prayerapp QR remains visible in every scenario.
 
 | Admin scenario | Expected TV visual state | Countdown | Persistent QR | Stop / expiry expectation |

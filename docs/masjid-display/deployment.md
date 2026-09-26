@@ -2,7 +2,7 @@
 
 ## Plan 7 candidate workflow
 
-Plan 7 uses the existing TV project and preserves the stable production deployment while the feature branch is being certified.
+Plan 7 uses the existing TV project and preserves the stable production deployment while the feature branch is being certified. Vercel is intentionally configured to deploy `main` only; PR/feature-branch Preview deployments are disabled.
 
 | Setting | Value |
 | --- | --- |
@@ -16,12 +16,16 @@ Plan 7 uses the existing TV project and preserves the stable production deployme
 
 Required sequence:
 
-1. keep Plan 7 work on `feat/masjid-display-plan-7` and keep its PR against `main` Draft until certification is complete;
-2. use a Vercel Preview from the existing `donaumoschee-tv` project for the exact candidate HEAD where available;
-3. record the Preview deployment ID, URL, deployment state, and commit SHA;
-4. verify Preview `/api/display-feed` and `/api/test-control` against the real root production origin;
-5. inspect runtime errors/logs and browser UI before any production promotion;
-6. keep the current `main` production TV deployment intact until independent Planner approval and squash merge.
+1. keep Plan 7 work on `feat/masjid-display-plan-7` and keep its PR against `main` Draft during pre-merge certification;
+2. preserve the repository Vercel policy `git.deploymentEnabled["**"] = false` and `git.deploymentEnabled.main = true`;
+3. do **not** create or require a Vercel PR/feature-branch Preview;
+4. complete exact-head CI/security/source-boundary checks and final pre-merge review on the feature branch while the current `main` production TV deployment remains intact;
+5. only the independent Planner may authorize and perform the squash merge;
+6. after merge, allow the normal Vercel `main` deployment to deploy the merged Plan 7 commit;
+7. record the resulting production deployment ID, URL, state, and attached `main` commit SHA;
+8. verify production `/api/display-feed`, `/api/test-control`, runtime logs/errors, browser UI/fullscreen/diagnostics, Admin Test Mode, and physical TV/QR/network/wake behavior.
+
+This is a deliberate main-only release policy, not a missing-Preview blocker.
 
 `PRAYERAPP_ORIGIN` remains server-only. Never create `NEXT_PUBLIC_PRAYERAPP_ORIGIN`.
 
@@ -112,7 +116,8 @@ Never assume simultaneous deployment.
 3. Run TV tests, lint, typecheck, build, and producer/consumer contract verification.
 4. Deploy the exact candidate commit.
 5. Open diagnostics only for maintenance (`?diagnostics=1`) and verify schema, snapshot, sync, logical clock, coverage, online/LKG, and Test Mode flags.
-6. Record browser/live-preview evidence for the current candidate. For Plan 7, physical-TV, real QR, offline/reconnect, and wake evidence are release certification gates; 24/72-hour soak remains a non-blocking operational follow-up unless explicitly promoted to a gate.
+6. For an open Plan 7 PR, record exact-head automated evidence only; do not create a Vercel Preview.
+7. After the Planner squash-merges to `main`, record production browser/live evidence for the deployed merged commit. Physical-TV, real QR, offline/reconnect, and wake evidence remain final release-certification gates; 24/72-hour soak remains a non-blocking operational follow-up unless explicitly promoted to a gate.
 
 ## Runtime outage behavior
 

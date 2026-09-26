@@ -15,6 +15,8 @@ Plan 7 therefore uses two certification stages:
 
 The absence of a Plan 7 Preview is intentional and must not be treated as a blocker or repaired by enabling Preview deployments. Plan 7 is not fully release-certified until the post-merge stage is executed and recorded.
 
+The historical Plan 6 note below says the destructive legacy-Iqama cutover was deferred to Plan 7. The approved Plan 7 design supersedes that expectation: destructive removal is **not** part of Plan 7 unless the user separately gives explicit destructive-migration authorization. The five legacy absolute-Iqama columns therefore remain compatibility-only during this plan.
+
 ## Plan 6 sequencing note — 2026-09-22
 
 The operator explicitly moved Plan 6 real Vercel/browser/Admin Test Mode verification to **after the approved branch is merged to `main`**. Pre-merge certification therefore finishes repository implementation, exact-head CI/security/Android verification, and final Codex review first. This is a sequencing change only: the post-merge live checks remain required before Plan 6 may be called complete.

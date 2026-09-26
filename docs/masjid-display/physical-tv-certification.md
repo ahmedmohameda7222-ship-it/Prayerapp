@@ -59,7 +59,7 @@ No vendor-specific user-agent branch is required or expected. A compatibility wo
 
 ## Physical execution sequence
 
-1. Deploy the exact candidate commit to the existing `donaumoschee-tv` project and record deployment ID, preview URL, and attached commit SHA.
+1. After the independent Planner squash-merges the approved PR to `main`, let the existing `donaumoschee-tv` project deploy that merged `main` commit. Record the production deployment ID, production URL, and attached commit SHA. Do not create a PR/feature-branch Preview.
 2. Execute the fullscreen procedure above on the actual university target runtime.
 3. Inspect header, Arabic/German text, clock, content, Prayer Strip, separate Iqama row, urgent/status overlays, persistent QR safe area, and pixel-shift behavior at practical viewing distance.
 4. Run the deterministic Admin Test Mode checklist in `docs/masjid-display/test-mode-demo.md`.

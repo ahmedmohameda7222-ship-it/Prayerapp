@@ -63,6 +63,32 @@ When Codex returns findings:
 
 Do not use labels such as P0/P1/P2/B0/B1/B2 as a filter for what gets investigated.
 
+## Approved deployment-policy override — 2026-09-26
+
+The user explicitly requires Vercel to deploy **`main` only** and to create **no PR/feature-branch Preview deployment**.
+
+The repository already enforces this in `vercel.json`:
+
+- `git.deploymentEnabled["**"] = false`
+- `git.deploymentEnabled.main = true`
+
+This ruling supersedes any instruction below that requires a Vercel Preview for Plan 7.
+
+Operational consequence:
+
+1. Tasks 1–3 remain unchanged.
+2. Task 4 becomes verification/preservation of the main-only Vercel policy and stable existing production while the PR is open.
+3. Exact-head CI/security/source-boundary checks and final pre-merge code review run on the feature branch.
+4. The independent Planner remains the only actor allowed to approve/squash-merge the PR.
+5. Only after that merge does Vercel deploy Plan 7 from `main`.
+6. Deployed browser/fullscreen/diagnostics, real Admin Test Mode, and physical TV/QR/network/wake checks execute against the merged `main` production deployment.
+7. Plan 7 is not fully release-certified until those post-merge checks pass.
+8. Any live defect found post-merge must be handled through rollback or a new reviewed fix; do not bypass the main-only policy.
+
+**Codex sequencing ruling:** because the original requirement to finish deployed/physical checks before the final pre-merge review is no longer achievable without violating main-only deployment, the final Codex loop becomes the last **pre-merge** engineering gate after exact-head CI/security/docs/self-review. Post-merge live/physical certification still remains mandatory before the overall Plan 7 release is called complete.
+
+Cost if this ruling is wrong: a defect observable only on the deployed TV/runtime may be discovered after merge rather than before it, increasing reliance on rollback/follow-up readiness.
+
 ---
 
 ### Task 1: Add standards-based cross-browser fullscreen presentation mode
@@ -213,7 +239,7 @@ Commit example:
 
 ---
 
-### Task 4: Deploy the exact Plan 7 candidate as a Vercel TV Preview
+### Task 4: Preserve and verify the main-only Vercel deployment policy
 
 **External configuration:**
 - Project: `donaumoschee-tv`
@@ -228,36 +254,40 @@ Do not reuse PR #108.
 
 Record the new PR number.
 
-- [ ] **Step 2: Observe/create the Vercel Preview deployment for the exact branch HEAD**
+- [ ] **Step 2: Verify Preview deployments remain disabled**
 
-Use the existing TV project.
-
-Do not replace the stable production deployment merely to test the candidate.
+Confirm the repository/project policy continues to deploy `main` only and does not create a PR/feature-branch Preview.
 
 Record:
-- exact HEAD;
-- deployment ID;
-- preview URL;
-- deployment state;
-- commit SHA attached by Vercel.
+- exact feature-branch HEAD;
+- current stable production deployment ID/state;
+- current production attached `main` SHA;
+- the main-only `vercel.json` policy.
 
-- [ ] **Step 3: Confirm server-only upstream behavior**
+Do not create a Preview and do not replace/promote production while the PR is open.
 
-Verify Preview:
-- `/api/display-feed` → expected status/schema;
-- `/api/test-control` → expected sanitized state;
-- no direct browser Supabase dependency;
-- no `NEXT_PUBLIC_PRAYERAPP_ORIGIN`.
+- [ ] **Step 3: Reconfirm server-only boundary in source and stable production**
 
-- [ ] **Step 4: Inspect Vercel runtime errors/logs**
+Before merge:
+- confirm no direct browser Supabase dependency;
+- confirm no `NEXT_PUBLIC_PRAYERAPP_ORIGIN`;
+- confirm stable production `/api/display-feed` and `/api/test-control` remain healthy as baseline evidence only.
 
-No unexplained 5xx/runtime error cluster may remain.
+After Planner merge:
+- verify the new `main` production deployment is attached to the merged Plan 7 commit;
+- verify `/api/display-feed` and `/api/test-control` against that deployment.
 
-If deployment fails, fix the root cause with regression coverage and redeploy.
+- [ ] **Step 4: Inspect runtime errors/logs after the merged `main` deployment**
+
+No unexplained 5xx/runtime error cluster may remain on the deployed Plan 7 production release.
+
+If production deployment fails, use rollback/follow-up repair; never enable PR Preview as a workaround.
 
 ---
 
 ### Task 5: Browser/live UI verification of fullscreen, diagnostics, and layout
+
+**Timing under the main-only ruling:** execute deployed evidence after the Planner squash-merges Plan 7 and Vercel deploys the resulting `main` commit. Pre-merge semantic/unit/CSS evidence remains useful but does not substitute for this post-merge deployed check.
 
 **Files:**
 - Modify only if a real defect is discovered.
@@ -310,6 +340,8 @@ Every code fix receives focused regression coverage before final certification.
 ---
 
 ### Task 6: Run real Admin Test Mode end-to-end against the deployed Plan 7 TV
+
+**Timing under the main-only ruling:** execute against the merged Plan 7 `main` production deployment. No PR Preview is expected or permitted.
 
 **Files:**
 - Modify root/Test Mode/TV code only if a real defect is reproduced.
@@ -366,6 +398,8 @@ If a defect is found, reproduce it in automated coverage before fixing.
 ---
 
 ### Task 7: Perform physical target, QR, and network/wake certification
+
+**Timing under the main-only ruling:** execute against the merged Plan 7 `main` production deployment after the independent Planner performs the approved squash merge.
 
 **Files:**
 - Update: `docs/masjid-display/physical-tv-certification.md`

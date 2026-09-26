@@ -24,9 +24,14 @@ function installFullscreenApi(
 afterEach(() => {
   cleanup();
   fullscreenElement = null;
-  delete (document as Document & { fullscreenElement?: Element | null }).fullscreenElement;
-  delete (document.documentElement as HTMLElement & { requestFullscreen?: () => Promise<void> })
-    .requestFullscreen;
+  Object.defineProperty(document, "fullscreenElement", {
+    configurable: true,
+    get: () => null,
+  });
+  Object.defineProperty(document.documentElement, "requestFullscreen", {
+    configurable: true,
+    value: undefined,
+  });
 });
 
 describe("PresentationModeControl", () => {

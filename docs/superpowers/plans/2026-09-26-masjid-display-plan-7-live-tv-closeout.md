@@ -504,14 +504,21 @@ Prove final source has:
 - no active legacy absolute-Iqama authority;
 - no synthetic Test Mode → production Feed/LKG leak.
 
-- [ ] **Step 3: Finish evidence docs**
+- [ ] **Step 3: Finish pre-merge evidence docs**
 
-Record:
-- exact final HEAD;
+Before Planner merge, record:
+- exact final feature-branch HEAD;
 - Plan 7 PR number;
-- Vercel Preview deployment ID/URL;
+- main-only Vercel deployment policy evidence;
+- current stable production baseline deployment/SHA;
 - root production origin;
 - TV project ID;
+- exact-head CI/security run IDs;
+- source-boundary/self-review evidence;
+- all live/physical fields explicitly as `POST-MERGE` or `NOT EXECUTED`, never as PASS.
+
+After Planner merge, extend the same certification record with:
+- merged `main` production deployment ID/URL/SHA;
 - browser viewport results;
 - physical target/runtime evidence;
 - fullscreen result;
@@ -520,12 +527,11 @@ Record:
 - diagnostics result;
 - QR scan result;
 - offline/wake result;
-- CI/security run IDs;
 - any non-blocking operational follow-ups.
 
-- [ ] **Step 4: Request the ONE end-of-plan GitHub Codex Review**
+- [ ] **Step 4: Request the ONE final pre-merge GitHub Codex Review**
 
-Only now, after every Plan 7 implementation and verification task is otherwise complete, request:
+Under the approved main-only ruling, request Codex only after feature-branch implementation, exact-head automated CI/security, documentation, and self-review are complete:
 `@codex review`
 
 Tell Codex to review the exact final HEAD against the Plan 7 design and implementation plan, with focus on:
@@ -536,7 +542,7 @@ Tell Codex to review the exact final HEAD against the Plan 7 design and implemen
 - state/Test Mode/LKG isolation;
 - diagnostics information exposure;
 - deployment boundary/security;
-- reliability of any fixes found during live testing.
+- the main-only deployment boundary and post-merge certification plan.
 
 - [ ] **Step 5: Inspect ALL Codex findings**
 
@@ -556,21 +562,31 @@ Repeat until no legitimate finding remains.
 
 All required gates must correspond to the final HEAD.
 
-- [ ] **Step 7: Stop before merge**
+- [ ] **Step 7: Stop before Planner merge and return the pre-merge authorization report**
 
 Keep Plan 7 PR open and unmerged.
 
-Return the true final report to the independent Planner.
+Return the **pre-merge authorization report** to the independent Planner. It must clearly state that Vercel/live/Admin/physical certification is post-merge because Vercel deploys `main` only.
 
 The Planner will independently inspect:
-- exact HEAD;
+- exact feature-branch HEAD;
 - all Codex findings and how each was resolved;
-- CI;
-- Vercel evidence;
-- live/physical evidence;
-- long-term reliability of fixes.
+- exact-head CI/security;
+- main-only deployment-policy evidence;
+- the explicit list of post-merge certification gates.
 
 Only the Planner decides APPROVED vs NOT APPROVED and performs any squash merge.
+
+- [ ] **Step 8: Resume after the Planner merge and complete production certification**
+
+After the Planner squash-merges:
+- confirm the resulting `main` SHA and Vercel production deployment SHA match the approved merged release;
+- complete Tasks 4 post-merge checks and Tasks 5–7 against that production deployment;
+- record actual live/Admin/physical evidence only;
+- if a live defect exists, roll back or create a new reviewed fix rather than editing production blindly;
+- rerun any affected exact-head/post-merge verification.
+
+Only after these checks pass may the Plan 7 **true final report** be issued.
 
 ## 25-Minute / Checkpoint Reporting Rule
 

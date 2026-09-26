@@ -121,6 +121,7 @@ type FridayPageClientProps = {
   jumuahTimes: JumuahTime[];
   fridayKhutbah?: FridayKhutbah;
   initialNow: string;
+  timezone: string | null;
   initialScheduleDate?: string;
   prayerTimesLoadFailed?: boolean;
   additionalTimesLoadFailed?: boolean;
@@ -132,6 +133,7 @@ export function FridayPageClient({
   jumuahTimes,
   fridayKhutbah,
   initialNow,
+  timezone,
   initialScheduleDate = "",
   prayerTimesLoadFailed = false,
   additionalTimesLoadFailed = false,
@@ -142,10 +144,13 @@ export function FridayPageClient({
   const [now, setNow] = useState(() => new Date(initialNow));
   const refreshedScheduleDateRef = useRef("");
   const schedule = useMemo(
-    () => resolveUpcomingFridaySchedule(prayerTimes, jumuahTimes, now),
-    [jumuahTimes, now, prayerTimes],
+    () => timezone ? resolveUpcomingFridaySchedule(prayerTimes, jumuahTimes, now, timezone) : undefined,
+    [jumuahTimes, now, prayerTimes, timezone],
   );
-  const livePrayer = useMemo(() => getFridayLivePrayer(schedule, now), [schedule, now]);
+  const livePrayer = useMemo(
+    () => timezone ? getFridayLivePrayer(schedule, now, timezone) : undefined,
+    [schedule, now, timezone],
+  );
   const copy = COPY[locale];
   const direction = locale === "ar" ? "rtl" : "ltr";
 

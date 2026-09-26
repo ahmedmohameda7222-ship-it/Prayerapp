@@ -9,6 +9,9 @@ import android.util.Log;
 
 import de.donaumoschee.app.storage.NativeStore;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +20,7 @@ import java.util.UUID;
 
 public final class PrayerScheduler {
     private static final String TAG = "DanubePrayer";
+    private static final Object SCHEDULE_LOCK = new Object();
     public static final String EXTRA_EVENT_ID = "event-id";
     public static final String EXTRA_KIND = "kind";
     public static final String EXTRA_PRAYER = "prayer";
@@ -28,25 +32,114 @@ public final class PrayerScheduler {
     private PrayerScheduler() {}
 
     public static boolean reschedule(Context context) {
-        NativeStore store = new NativeStore(context);
-        int generation = store.accountGeneration();
-        if (!cancelStored(context, store, generation)) return false;
-        return scheduleCurrentGeneration(context, store, generation);
+        synchronized (SCHEDULE_LOCK) {
+            NativeStore store = new NativeStore(context);
+            int generation = store.accountGeneration();
+            NativeConfig config = store.loadConfig(Instant.now());
+            if (config == null) {
+                Log.w(TAG, "alarm.schedule preserve-existing reason=config-unavailable generation=" + generation);
+                return false;
+            }
+            if (!cancelStored(context, store, generation)) return false;
+            return scheduleCurrentGeneration(context, store, generation, config);
+        }
     }
 
     public static boolean reschedule(Context context, int expectedGeneration) {
-        NativeStore store = new NativeStore(context);
-        if (store.accountGeneration() != expectedGeneration) return false;
-        if (!cancelStored(context, store, expectedGeneration)) return false;
-        if (store.accountGeneration() != expectedGeneration) return false;
-        return scheduleCurrentGeneration(context, store, expectedGeneration);
+        synchronized (SCHEDULE_LOCK) {
+            NativeStore store = new NativeStore(context);
+            if (store.accountGeneration() != expectedGeneration) return false;
+            NativeConfig config = store.loadConfig(Instant.now());
+            if (config == null) {
+                Log.w(TAG, "alarm.schedule preserve-existing reason=config-unavailable generation=" + expectedGeneration);
+                return false;
+            }
+            if (store.accountGeneration() != expectedGeneration) return false;
+            if (!cancelStored(context, store, expectedGeneration)) return false;
+            if (store.accountGeneration() != expectedGeneration) return false;
+            return scheduleCurrentGeneration(context, store, expectedGeneration, config);
+        }
     }
 
-    private static boolean scheduleCurrentGeneration(Context context, NativeStore store, int generation) {
+    public static ConfigInstallResult replaceConfigAndReschedule(
+            Context context,
+            JSONObject object,
+            Instant now
+    ) throws JSONException {
+        synchronized (SCHEDULE_LOCK) {
+            NativeStore store = new NativeStore(context);
+            int generation = store.accountGeneration();
+            return replaceConfigAndRescheduleLocked(context, store, object, now, generation);
+        }
+    }
+
+    public static ConfigInstallResult replaceConfigAndReschedule(
+            Context context,
+            JSONObject object,
+            Instant now,
+            int expectedGeneration
+    ) throws JSONException {
+        synchronized (SCHEDULE_LOCK) {
+            NativeStore store = new NativeStore(context);
+            if (store.accountGeneration() != expectedGeneration) {
+                return new ConfigInstallResult(false, false);
+            }
+            return replaceConfigAndRescheduleLocked(context, store, object, now, expectedGeneration);
+        }
+    }
+
+    public static ConfigInstallResult replaceConfigAndReschedule(
+            Context context,
+            JSONObject object,
+            Instant now,
+            int expectedGeneration,
+            String expectedConfigSnapshot
+    ) throws JSONException {
+        synchronized (SCHEDULE_LOCK) {
+            NativeStore store = new NativeStore(context);
+            if (store.accountGeneration() != expectedGeneration) {
+                return new ConfigInstallResult(false, false);
+            }
+            String currentConfigSnapshot = store.rawConfigSnapshot();
+            if (expectedConfigSnapshot == null || !expectedConfigSnapshot.equals(currentConfigSnapshot)) {
+                Log.i(TAG, "alarm.schedule reject-stale-config generation=" + expectedGeneration);
+                return new ConfigInstallResult(false, false, true);
+            }
+            return replaceConfigAndRescheduleLocked(context, store, object, now, expectedGeneration);
+        }
+    }
+
+    private static ConfigInstallResult replaceConfigAndRescheduleLocked(
+            Context context,
+            NativeStore store,
+            JSONObject object,
+            Instant now,
+            int generation
+    ) throws JSONException {
+        if (store.accountGeneration() != generation) return new ConfigInstallResult(false, false);
+        NativeConfig config = NativeConfig.parse(object, now);
+        if (!store.saveConfigIfGeneration(config.source, now, generation)) {
+            return new ConfigInstallResult(false, false);
+        }
+        if (store.accountGeneration() != generation) return new ConfigInstallResult(false, false);
+        PrayerNotifications.createChannels(context);
+        if (store.accountGeneration() != generation) return new ConfigInstallResult(false, false);
+        if (!cancelStored(context, store, generation)) {
+            return new ConfigInstallResult(true, false);
+        }
+        if (store.accountGeneration() != generation) {
+            return new ConfigInstallResult(true, false);
+        }
+        return new ConfigInstallResult(
+                true,
+                scheduleCurrentGeneration(context, store, generation, config)
+        );
+    }
+
+    private static boolean scheduleCurrentGeneration(Context context, NativeStore store, int generation, NativeConfig config) {
         if (store.accountGeneration() != generation) return false;
-        NativeConfig config = store.loadConfig(Instant.now());
-        if (config == null || !NativeStatus.hasExactAlarmPermission(context)) {
-            Log.w(TAG, "alarm.schedule skipped config=" + (config != null) + " exact=" + NativeStatus.hasExactAlarmPermission(context));
+        if (!NativeStatus.hasExactAlarmPermission(context)) {
+            Log.w(TAG, "alarm.schedule skipped config=true exact=false");
             store.markScheduleFailureIfGeneration("alarm-schedule-unavailable", generation);
             return false;
         }
@@ -117,9 +210,11 @@ public final class PrayerScheduler {
     }
 
     public static void cancelAll(Context context) {
-        NativeStore store = new NativeStore(context);
-        cancelStored(context, store, null);
-        store.setScheduleInstalled(false);
+        synchronized (SCHEDULE_LOCK) {
+            NativeStore store = new NativeStore(context);
+            cancelStored(context, store, null);
+            store.setScheduleInstalled(false);
+        }
     }
 
     private static PendingIntent operation(Context context, AlarmEvent event, int generation) {
@@ -223,6 +318,26 @@ public final class PrayerScheduler {
             // Ignore corrupt local metadata.
         }
         return null;
+    }
+
+    public static final class ConfigInstallResult {
+        public final boolean configSaved;
+        public final boolean scheduleInstalled;
+        public final boolean staleConfigSnapshot;
+
+        private ConfigInstallResult(boolean configSaved, boolean scheduleInstalled) {
+            this(configSaved, scheduleInstalled, false);
+        }
+
+        private ConfigInstallResult(
+                boolean configSaved,
+                boolean scheduleInstalled,
+                boolean staleConfigSnapshot
+        ) {
+            this.configSaved = configSaved;
+            this.scheduleInstalled = scheduleInstalled;
+            this.staleConfigSnapshot = staleConfigSnapshot;
+        }
     }
 
     private static final class ScheduledRequest {

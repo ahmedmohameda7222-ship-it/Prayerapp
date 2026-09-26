@@ -69,8 +69,19 @@ describe("Android server delivery v2 contract", () => {
   it("binds each canonical event revision to that prayer's actual time", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
     expect(cron).toContain("scheduleRevision: time");
+    expect(cron).toContain("dueAtMs: prePrayerAt");
+    expect(cron).toContain("dueAtMs: adhanAt");
     expect(cron).not.toContain("function scheduleRevision(schedule");
     expect(cron).not.toContain("note_tr, updated_at");
+  });
+
+  it("keeps legacy p2 receipt aliases during the resolved-instant identity rollout", () => {
+    const identity = source("lib/android/prayer-event-id.ts");
+    const cron = source("app/api/cron/prayer-reminders/route.ts");
+
+    expect(identity).toContain("legacyPrayerEventIdV2");
+    expect(cron).toContain("legacyPrayerEventIdV2");
+    expect(cron).toContain(".in(\"event_id\", eventIds)");
   });
 
   it("drops stale prayer fallback pushes before showing them", () => {

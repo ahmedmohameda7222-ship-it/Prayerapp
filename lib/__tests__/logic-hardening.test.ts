@@ -54,16 +54,21 @@ describe("logic hardening", () => {
   it("fetches Prayer Times by the active range instead of a fixed 90-day window", () => {
     const browser = source("components/prayer/PrayerTimesBrowser.tsx");
     expect(browser).toContain('const rangeKey = `${range.start}:${range.end}`');
-    expect(browser).toContain("getPrayerTimes(false, range.start, range.end)");
+    expect(browser).toContain("loadPrayerScheduleRuntime(range.start, range.end)");
     expect(browser).not.toContain("addDaysIso(today, 90)");
   });
 
   it("fails safe against published QA prayer rows in reminder delivery", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
-    expect(cron).toContain('.eq("published", true)');
+    const snapshot = source("supabase/migrations/20260923030000_published_prayer_schedule_snapshot.sql");
+    expect(snapshot).toContain("p.published = true");
+    expect(snapshot).toContain("'note', p.note");
+    expect(snapshot).toContain("'note_ar', p.note_ar");
+    expect(snapshot).toContain("'note_en', p.note_en");
+    expect(snapshot).toContain("'note_de', p.note_de");
+    expect(snapshot).toContain("'note_tr', p.note_tr");
     expect(cron).toContain("isPrayerScheduleQaRow");
     expect(cron).toContain(".filter((schedule) => !isPrayerScheduleQaRow(schedule))");
-    expect(cron).toContain("note, note_ar, note_en, note_de, note_tr");
   });
 
   it("deduplicates Friday notifications at the Friday-date level", () => {
@@ -79,11 +84,14 @@ describe("logic hardening", () => {
     expect(push).toContain('row?.status === "sent"');
   });
 
-  it("uses Europe/Berlin for Azkar daily state while keeping Azkar hard-coded and read-only", () => {
+  it("uses the applied runtime timezone for Azkar daily state while keeping Azkar hard-coded and read-only", () => {
     const routine = source("components/azkar/AzkarRoutine.tsx");
+    const routineSelection = source("lib/azkar-routine.ts");
     const azkarData = source("lib/data/azkar.ts");
-    expect(routine).toContain("APP_TIME_ZONE");
-    expect(routine).toContain("todayIso(date)");
+    expect(routineSelection).toContain("timeZone = APP_TIME_ZONE");
+    expect(routine).toContain("smartAzkarCategory(now, timezone ?? undefined)");
+    expect(routine).toContain("todayIso(date, timezone ?? undefined)");
+    expect(routine).toContain("[categories, timezone]");
     expect(azkarData).toContain("hardcodedAzkarCategories");
     expect(azkarData).toContain("hardcodedAzkarItems");
     expect(azkarData).not.toContain("createAzkarItem");

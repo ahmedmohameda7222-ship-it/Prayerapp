@@ -12,7 +12,6 @@ import de.donaumoschee.app.adhan.AdhanPlaybackService;
 import de.donaumoschee.app.prayer.DeliveryRecord;
 import de.donaumoschee.app.prayer.NativeStatus;
 import de.donaumoschee.app.prayer.Prayer;
-import de.donaumoschee.app.prayer.PrayerNotifications;
 import de.donaumoschee.app.prayer.PrayerScheduler;
 import de.donaumoschee.app.settings.NativeSettingsLauncher;
 import de.donaumoschee.app.storage.NativeStore;
@@ -68,11 +67,10 @@ public final class BridgeHandler {
     }
 
     private void configure(JSONObject payload) throws JSONException {
-        NativeStore store = new NativeStore(context);
-        store.saveConfig(payload, Instant.now());
-        PrayerNotifications.createChannels(context);
-        boolean installed = PrayerScheduler.reschedule(context);
-        Log.i(TAG, "bridge.config synchronized installed=" + installed);
+        PrayerScheduler.ConfigInstallResult replacement =
+                PrayerScheduler.replaceConfigAndReschedule(context, payload, Instant.now());
+        boolean installed = replacement.scheduleInstalled;
+        Log.i(TAG, "bridge.config synchronized saved=" + replacement.configSaved + " installed=" + installed);
         NativeWork.initialize(context);
         NativeWork.cacheAudio(context);
         NativeWork.refreshNow(context);

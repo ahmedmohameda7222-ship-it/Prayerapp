@@ -41,10 +41,19 @@ describe("admin server-side input bounds", () => {
     expect(parseAdminTime("23:59", "time")).toBe("23:59");
     expect(() => parseAdminTime("24:00", "time")).toThrow("admin.errors.invalidInput");
     expect(parseAdminHttpsUrl("https://example.com/a", { field: "url", max: 500 })).toBe("https://example.com/a");
+    expect(() => parseAdminHttpsUrl("http://example.com/a", { field: "url", max: 500 })).toThrow("admin.errors.invalidInput");
     expect(() => parseAdminHttpsUrl("javascript:alert(1)", { field: "url", max: 500 })).toThrow("admin.errors.invalidInput");
     expect(parseAdminNumber("100", { field: "amount", min: 0, max: 1_000_000 })).toBe(100);
     expect(() => parseAdminNumber("Infinity", { field: "amount", min: 0, max: 1_000_000 })).toThrow("admin.errors.invalidInput");
     expect(() => parseAdminNumber("1000001", { field: "amount", min: 0, max: 1_000_000 })).toThrow("admin.errors.invalidInput");
+  });
+
+  it("requires HTTPS-only donation campaign QR destinations", () => {
+    const donations = source("app/admin/donations/actions.ts");
+    expect(donations).toContain(
+      'donationUrl: parseAdminOptionalHttpsUrl(data.donationUrl, { field: "donationUrl", max: 500 })',
+    );
+    expect(donations).not.toContain("parseOptionalHttpUrl");
   });
 
   it("requires every privileged mutation family to use shared server-side bounds", () => {

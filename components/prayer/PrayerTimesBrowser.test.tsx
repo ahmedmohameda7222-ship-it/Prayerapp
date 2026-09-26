@@ -1,13 +1,21 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { PrayerTimesBrowser } from "./PrayerTimesBrowser";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
+
+vi.mock("@/app/home-prayer-runtime", () => ({
+  loadPrayerScheduleRuntime: vi.fn(async () => ({
+    schedule: [],
+    iqamaDelays: null,
+    timezone: "Europe/Berlin",
+  })),
+}));
 
 describe("PrayerTimesBrowser", () => {
   it("keeps range controls usable without synthesizing prayer data", async () => {
     const user = userEvent.setup();
-    render(<TimeFormatProvider><PrayerTimesBrowser /></TimeFormatProvider>);
+    render(<TimeFormatProvider><PrayerTimesBrowser iqamaDelays={null} timezone="Europe/Berlin" /></TimeFormatProvider>);
 
     const week = await screen.findByRole("button", { name: "الأسبوع" });
     expect(week).toHaveAttribute("aria-pressed", "true");

@@ -85,8 +85,12 @@ public final class NativeStore {
         }
     }
 
+    public String rawConfigSnapshot() {
+        return preferences.getString(CONFIG, null);
+    }
+
     public JSONObject rawConfig() {
-        String value = preferences.getString(CONFIG, null);
+        String value = rawConfigSnapshot();
         if (value == null) return null;
         try {
             return new JSONObject(value);
@@ -190,7 +194,7 @@ public final class NativeStore {
             DeliveryLedger ledger = loadDeliveryLedgerLocked();
             DeliveryRecord current = ledger == null ? null : ledger.record(eventId);
             if (current == null || !ledger.markDelivered(eventId, deliveredAtMs)) return false;
-            if (!eventId.startsWith("p2:")) return persistDeliveryLedgerLocked(ledger);
+            if (!eventId.startsWith("p2:") && !eventId.startsWith("p3:")) return persistDeliveryLedgerLocked(ledger);
 
             DeliveryReceiptQueue receiptQueue = loadDeliveryReceiptQueueLocked();
             if (receiptQueue == null || !receiptQueue.enqueue(eventId, current.kind(), deliveredAtMs, accountGeneration())) {

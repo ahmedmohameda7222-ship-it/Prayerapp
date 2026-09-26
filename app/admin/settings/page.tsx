@@ -39,6 +39,7 @@ export default function AdminSettingsPage() {
         accountHolder: settings.accountHolder,
         iban: settings.iban,
         bic: settings.bic,
+        publicAppUrl: settings.publicAppUrl || "",
       });
     });
   }, []);
@@ -63,14 +64,14 @@ export default function AdminSettingsPage() {
   }
 
   const fields = [
-    { key: "address", labelKey: "admin.address", required: true },
-    { key: "phone", labelKey: "admin.phone" },
-    { key: "email", labelKey: "admin.email" },
-    { key: "googleMapsLink", labelKey: "admin.googleMapsLink" },
-    { key: "whatsappLink", labelKey: "admin.whatsappLink" },
-    { key: "accountHolder", labelKey: "donations.accountHolder" },
-    { key: "iban", labelKey: "donations.iban" },
-    { key: "bic", labelKey: "donations.bic" },
+    { key: "address", labelKey: "admin.address", required: true, type: "text" },
+    { key: "phone", labelKey: "admin.phone", type: "text" },
+    { key: "email", labelKey: "admin.email", type: "email" },
+    { key: "googleMapsLink", labelKey: "admin.googleMapsLink", type: "url" },
+    { key: "whatsappLink", labelKey: "admin.whatsappLink", type: "url" },
+    { key: "accountHolder", labelKey: "donations.accountHolder", type: "text" },
+    { key: "iban", labelKey: "donations.iban", type: "text" },
+    { key: "bic", labelKey: "donations.bic", type: "text" },
   ];
 
   return (
@@ -83,18 +84,27 @@ export default function AdminSettingsPage() {
         <Card>
           <h2 className="mb-4 text-lg font-extrabold text-[var(--color-emerald)]">{t("admin.mosqueSettings")}</h2>
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-            <LocalizedContentFields
-              fields={[{ base: "mosqueName", labelKey: "admin.mosqueName", requiredArabic: true }]}
-              form={form}
-              setForm={setForm}
-              disabled={!hasSupabase || isPending}
-            />
-            {fields.map(({ key, labelKey, required }) => (
+            <LocalizedContentFields fields={[{ base: "mosqueName", labelKey: "admin.mosqueName", requiredArabic: true }]} form={form} setForm={setForm} disabled={!hasSupabase || isPending} />
+            {fields.map(({ key, labelKey, required, type }) => (
               <label key={key} className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
                 {t(labelKey)}
-                <input type="text" required={required} value={form[key] || ""} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
+                <input type={type} required={required} value={form[key] || ""} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
               </label>
             ))}
+            <label className="grid gap-1 text-sm font-bold text-[var(--color-emerald)] md:col-span-2">
+              Prayerapp public URL
+              <input
+                type="url"
+                name="publicAppUrl"
+                required
+                value={form.publicAppUrl || ""}
+                onChange={(event) => setForm((current) => ({ ...current, publicAppUrl: event.target.value }))}
+                disabled={!hasSupabase || isPending}
+                placeholder="https://prayer.example/"
+                className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50"
+              />
+              <span className="text-xs font-normal text-[var(--color-muted)]">Used by the Masjid TV QR code and Test Control. Production URLs must use HTTPS.</span>
+            </label>
             <div className="flex gap-3 md:col-span-2">
               <Button type="submit" disabled={!hasSupabase || isPending}><Save className="h-4 w-4" aria-hidden="true" /> {t("admin.saveSettings")}</Button>
             </div>

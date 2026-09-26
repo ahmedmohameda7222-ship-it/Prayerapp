@@ -45,6 +45,27 @@ jobs:
       - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm test
+      - name: Typecheck root application
+        run: npx tsc --noEmit
+      - name: Verify Masjid Display producer/consumer contract
+        run: node scripts/verify-masjid-display-contract.mjs
+      - name: Install locked TV dependencies
+        working-directory: masjid-display
+        run: npm ci
+      - name: Run TV tests
+        working-directory: masjid-display
+        run: npm test
+      - name: Lint TV package
+        working-directory: masjid-display
+        run: npm run lint
+      - name: Typecheck TV package
+        working-directory: masjid-display
+        run: npm run typecheck
+      - name: Build TV package
+        working-directory: masjid-display
+        env:
+          PRAYERAPP_ORIGIN: https://prayerapp.example.test
+        run: npm run build
       - name: Verify clean Supabase migration bootstrap
         run: |
           supabase start
@@ -52,8 +73,88 @@ jobs:
           DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
           test -n "$DB_CONTAINER"
           docker exec "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
-          do $$
+          do $
           begin
+            if (
+              select count(*)
+              from information_schema.columns
+              where table_schema = 'public'
+                and table_name = 'prayer_times'
+                and column_name in (
+                  'fajr_iqama',
+                  'dhuhr_iqama',
+                  'asr_iqama',
+                  'maghrib_iqama',
+                  'isha_iqama'
+                )
+            ) <> 5 then
+              raise exception 'Plan 6 clean bootstrap must retain all five legacy absolute-Iqama columns';
+            end if;
+            if to_regclass('public.prayer_settings') is null then
+              raise exception 'prayer_settings missing after clean migration reset';
+            end if;
+            if to_regclass('public.masjid_display_settings') is null then
+              raise exception 'masjid_display_settings missing after clean migration reset';
+            end if;
+            if to_regclass('public.masjid_display_test_state') is null then
+              raise exception 'masjid_display_test_state missing after clean migration reset';
+            end if;
+            if not exists (
+              select 1
+              from public.prayer_settings
+              where id = '1'
+                and calculation_revision = 1
+                and applied_calculation_revision = 0
+                and row_revision = 1
+                and profile_configured is false
+                and latitude is null
+                and longitude is null
+                and fajr_angle is null
+                and isha_rule is null
+                and asr_shadow_factor is null
+                and high_latitude_rule is null
+                and timezone = 'Europe/Berlin'
+                and applied_timezone = 'Europe/Berlin'
+                and fajr_iqama_delay_minutes = 20
+                and dhuhr_iqama_delay_minutes = 15
+                and asr_iqama_delay_minutes = 15
+                and maghrib_iqama_delay_minutes = 5
+                and isha_iqama_delay_minutes = 10
+            ) then
+              raise exception 'Plan 6 prayer_settings bootstrap contract missing';
+            end if;
+            if not exists (
+              select 1
+              from public.masjid_display_settings
+              where id = '1'
+                and fajr_prayer_duration_minutes = 10
+                and dhuhr_prayer_duration_minutes = 10
+                and asr_prayer_duration_minutes = 10
+                and maghrib_prayer_duration_minutes = 10
+                and isha_prayer_duration_minutes = 10
+                and cardinality(azkar_playlist_ids) = 0
+            ) then
+              raise exception 'Plan 6 Masjid Display settings bootstrap contract missing';
+            end if;
+            if exists (
+              select 1 from public.mosque_settings where id = '1'
+            ) and not exists (
+              select 1
+              from public.mosque_settings
+              where id = '1'
+                and public_app_url = 'https://donaumoschee.vercel.app'
+            ) then
+              raise exception 'Plan 6 public Prayerapp URL bootstrap contract missing';
+            end if;
+            if not exists (
+              select 1
+              from pg_proc p
+              join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public'
+                and p.proname = 'get_published_prayer_schedule_snapshot'
+            ) then
+              raise exception 'published prayer schedule snapshot RPC missing after clean migration reset';
+            end if;
             if to_regclass('public.user_saved_azkar') is null then
               raise exception 'user_saved_azkar missing after clean migration reset';
             end if;
@@ -132,7 +233,7 @@ jobs:
               select 1 from pg_constraint c
               where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
                 and c.contype = 'c'
-                and pg_get_constraintdef(c.oid, true) ~ 'event_id.*p2:.*0-9a-f.*64'
+                and pg_get_constraintdef(c.oid, true) like '%p[23]:[0-9a-f]{64}%'
             ) or not exists (
               select 1 from pg_constraint c
               where c.conrelid = 'public.native_prayer_delivery_receipts'::regclass
@@ -349,6 +450,10 @@ jobs:
 
           docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
             < scripts/security/verify-production-schema.sql
+      - name: Certify Masjid Display legacy-Iqama migration safety
+        run: bash scripts/verify-masjid-display-migration.sh
+      - name: Restore final Supabase migration head after historical certification
+        run: supabase db reset --local --no-seed
       - name: Verify reconciliation idempotence and data preservation
         run: |
           DB_CONTAINER="$(docker ps --filter 'name=supabase_db_' --format '{{.ID}}' | head -n 1)"
@@ -356,6 +461,15 @@ jobs:
           {
             cat <<'SQL'
           begin;
+          -- Exercise the 2026-09-02 reconciliation at its own schema boundary.
+          -- The final schema has the later additive p3 receipt constraint; restore
+          -- the historical p2 constraint only inside this transaction, then rollback.
+          alter table public.native_prayer_delivery_receipts
+            drop constraint if exists native_prayer_delivery_receipts_event_id_check;
+          alter table public.native_prayer_delivery_receipts
+            add constraint native_prayer_delivery_receipts_event_id_check
+            check (event_id ~ '^p2:[0-9a-f]{64}$');
+
           insert into auth.users (id, aud, role, created_at, updated_at)
           values (
             '00000000-0000-4000-8000-000000000212'::uuid,

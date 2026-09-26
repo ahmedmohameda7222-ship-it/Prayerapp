@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
-import { getPrayerTimes } from "@/lib/data/prayer-times";
+import { loadPrayerScheduleRuntime } from "@/app/home-prayer-runtime";
 import { addDaysIso, addMonthsIso, formatDateRange, monthBoundsIso, startOfWeekIso, todayIso } from "@/lib/date-utils";
-import { getPrayerForDate } from "@/lib/prayer-utils";
+import { derivePrayerIqamaTimes, getPrayerForDate } from "@/lib/prayer-utils";
+import type { PrayerIqamaDelays } from "@/lib/prayer-engine/types";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
 import { DataError, DataLoading } from "@/components/ui/DataState";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -15,11 +16,29 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 
 type RangeTab = "today" | "week" | "month";
 
-export function PrayerTimesBrowser() {
+export function PrayerTimesBrowser({
+  iqamaDelays,
+  timezone,
+}: {
+  iqamaDelays: PrayerIqamaDelays | null;
+  timezone: string | null;
+}) {
+  const { t } = useTranslation();
+  if (!timezone) return <EmptyState message={t("prayer.notPublished")} />;
+  return <PrayerTimesBrowserReady iqamaDelays={iqamaDelays} timezone={timezone} />;
+}
+
+function PrayerTimesBrowserReady({
+  iqamaDelays,
+  timezone,
+}: {
+  iqamaDelays: PrayerIqamaDelays | null;
+  timezone: string;
+}) {
   const { t, locale } = useTranslation();
-  const today = todayIso();
+  const initialToday = todayIso(new Date(), timezone);
   const [tab, setTab] = useState<RangeTab>("week");
-  const [cursor, setCursor] = useState(today);
+  const [cursor, setCursor] = useState(initialToday);
 
   const range = useMemo(() => {
     if (tab === "today") return { start: cursor, end: cursor };
@@ -31,11 +50,14 @@ export function PrayerTimesBrowser() {
   }, [cursor, tab]);
 
   const rangeKey = `${range.start}:${range.end}`;
-  const { data: prayerTimes, error, loading, reload } = useAsyncData(
-    () => getPrayerTimes(false, range.start, range.end),
+  const { data: runtime, error, loading, reload } = useAsyncData(
+    () => loadPrayerScheduleRuntime(range.start, range.end),
     rangeKey,
   );
-  const effectivePrayerTimes = prayerTimes || [];
+  const effectivePrayerTimes = runtime?.schedule || [];
+  const effectiveTimezone = runtime?.timezone ?? timezone;
+  const effectiveIqamaDelays = runtime?.iqamaDelays === undefined ? iqamaDelays : runtime.iqamaDelays;
+  const today = todayIso(new Date(), effectiveTimezone);
 
   const tabs = useMemo(
     () => [
@@ -43,13 +65,20 @@ export function PrayerTimesBrowser() {
       { value: "week", label: t("times.week") },
       { value: "month", label: t("times.month") },
     ],
-    [t]
+    [t],
   );
 
   const visibleTimes = useMemo(
     () => effectivePrayerTimes.filter((item) => item.date >= range.start && item.date <= range.end),
-    [effectivePrayerTimes, range]
+    [effectivePrayerTimes, range],
   );
+
+  const iqamaByDate = useMemo(() => Object.fromEntries(
+    effectivePrayerTimes.map((item) => [
+      item.date,
+      effectiveIqamaDelays ? derivePrayerIqamaTimes(item, effectiveIqamaDelays, effectiveTimezone) : {},
+    ]),
+  ), [effectivePrayerTimes, effectiveIqamaDelays, effectiveTimezone]);
 
   function moveRange(direction: -1 | 1) {
     setCursor((current) => {
@@ -66,36 +95,21 @@ export function PrayerTimesBrowser() {
 
   return (
     <div className="prayer-browser">
-      <div className="prayer-range-control">
-        <SegmentedControl options={tabs} value={tab} onChange={(value) => setTab(value as RangeTab)} />
-      </div>
-
+      <div className="prayer-range-control"><SegmentedControl options={tabs} value={tab} onChange={(value) => setTab(value as RangeTab)} /></div>
       <section className="prayer-range-meta" aria-label={t("times.location")}>
-        <div className="prayer-range-location">
-          <MapPin className="h-4 w-4" aria-hidden="true" />
-          <span>{t("times.location")}</span>
-        </div>
+        <div className="prayer-range-location"><MapPin className="h-4 w-4" aria-hidden="true" /><span>{t("times.location")}</span></div>
         <div className="prayer-range-nav">
-          <button type="button" onClick={() => moveRange(-1)} aria-label={t("times.previousRange")}>
-            <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </button>
-          <div className="prayer-range-label">
-            <CalendarDays className="me-1 inline h-4 w-4" aria-hidden="true" />
-            <span dir="ltr">{formatDateRange(range.start, range.end, locale)}</span>
-          </div>
-          <button type="button" onClick={() => moveRange(1)} aria-label={t("times.nextRange")}>
-            <ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
-          </button>
+          <button type="button" onClick={() => moveRange(-1)} aria-label={t("times.previousRange")}><ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden="true" /></button>
+          <div className="prayer-range-label"><CalendarDays className="me-1 inline h-4 w-4" aria-hidden="true" /><span dir="ltr">{formatDateRange(range.start, range.end, locale)}</span></div>
+          <button type="button" onClick={() => moveRange(1)} aria-label={t("times.nextRange")}><ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden="true" /></button>
         </div>
       </section>
 
-      {tab === "today" && selected ? <PrayerTimesCard prayer={selected} /> : null}
-      {tab !== "today" && visibleTimes.length ? <WeeklyPrayerTable times={visibleTimes} selectedDate={today} /> : null}
+      {tab === "today" && selected ? <PrayerTimesCard prayer={selected} iqamaTimes={iqamaByDate[selected.date]} /> : null}
+      {tab !== "today" && visibleTimes.length ? <WeeklyPrayerTable times={visibleTimes} selectedDate={today} iqamaByDate={iqamaByDate} /> : null}
       {(tab === "today" ? !selected : visibleTimes.length === 0) ? <EmptyState message={t("prayer.notPublished")} /> : null}
 
-      <p className="rounded-[14px] bg-[var(--app-brand-soft)] p-3 text-center text-xs font-semibold text-[var(--app-brand-strong)]">
-        {t("prayer.publishedBy")}
-      </p>
+      <p className="rounded-[14px] bg-[var(--app-brand-soft)] p-3 text-center text-xs font-semibold text-[var(--app-brand-strong)]">{t("prayer.publishedBy")}</p>
     </div>
   );
 }

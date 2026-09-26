@@ -23,12 +23,13 @@ export function getHomeJumuahSchedule(
   prayerTimes: PrayerTime[],
   jumuahTimes: JumuahTime[],
   now: Date,
+  timezone: string,
   options: HomeJumuahOptions = {},
 ): HomeJumuahSchedule | undefined {
-  const schedule = resolveUpcomingFridaySchedule(prayerTimes, jumuahTimes, now);
+  const schedule = resolveUpcomingFridaySchedule(prayerTimes, jumuahTimes, now, timezone);
   if (!schedule) return undefined;
 
-  const daysUntil = dayDiff(todayIso(now), schedule.date);
+  const daysUntil = dayDiff(todayIso(now, timezone), schedule.date);
   if (daysUntil < 0 || (!options.allowAnyFutureFriday && daysUntil > 2)) return undefined;
 
   return {

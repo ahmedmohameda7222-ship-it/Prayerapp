@@ -7,7 +7,8 @@ import { AzkarCategoryChips, type AzkarTab } from "@/components/azkar/AzkarCateg
 import { TasbeehCounter } from "@/components/azkar/TasbeehCounter";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { APP_TIME_ZONE, todayIso } from "@/lib/date-utils";
+import { smartAzkarCategory } from "@/lib/azkar-routine";
+import { todayIso } from "@/lib/date-utils";
 import { useSavedAzkar } from "@/lib/hooks/use-saved-azkar";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import type { AzkarCategory, AzkarItem } from "@/lib/types";
@@ -20,42 +21,18 @@ type StoredProgress = {
   counts: Record<string, number>;
 };
 
-function mosqueClock(date: Date) {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: APP_TIME_ZONE,
-      weekday: "short",
-      hour: "2-digit",
-      hourCycle: "h23",
-    }).formatToParts(date).map((part) => [part.type, part.value]),
-  );
-  return {
-    weekday: parts.weekday,
-    hour: Number(parts.hour),
-  };
-}
-
-function localDateKey(date: Date) {
-  return todayIso(date);
-}
-
-function smartDefaultCategory(date: Date): AzkarCategory {
-  const { weekday, hour } = mosqueClock(date);
-  if (weekday === "Fri") return "Friday";
-  if (hour >= 4 && hour < 12) return "Morning";
-  if (hour >= 15 && hour < 22) return "Evening";
-  if (hour >= 22 || hour < 4) return "Sleep";
-  return "Morning";
+function localDateKey(date: Date, timezone?: string | null) {
+  return todayIso(date, timezone ?? undefined);
 }
 
 function isCategory(value: unknown, categories: AzkarCategory[]): value is AzkarCategory {
   return typeof value === "string" && categories.includes(value as AzkarCategory);
 }
 
-function readStoredProgress(categories: AzkarCategory[]): StoredProgress {
+function readStoredProgress(categories: AzkarCategory[], timezone?: string | null): StoredProgress {
   const now = new Date();
-  const today = localDateKey(now);
-  const fallbackCategory = smartDefaultCategory(now);
+  const today = localDateKey(now, timezone);
+  const fallbackCategory = smartAzkarCategory(now, timezone ?? undefined);
 
   try {
     const raw = window.localStorage.getItem(PROGRESS_KEY);
@@ -83,7 +60,7 @@ function readRequestedTab(categories: AzkarCategory[]): AzkarTab | undefined {
   return isCategory(requested, categories) ? requested : undefined;
 }
 
-export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[]; items: AzkarItem[] }) {
+export function AzkarRoutine({ categories, items, timezone }: { categories: AzkarCategory[]; items: AzkarItem[]; timezone?: string | null }) {
   const { t } = useTranslation();
   const [selectedTab, setSelectedTab] = useState<AzkarTab>("Morning");
   const [lastRealCategory, setLastRealCategory] = useState<AzkarCategory>("Morning");
@@ -95,20 +72,20 @@ export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[
 
   /* eslint-disable react-hooks/set-state-in-effect -- localStorage is only available after mount. */
   useEffect(() => {
-    const stored = readStoredProgress(categories);
+    const stored = readStoredProgress(categories, timezone);
     const requestedTab = readRequestedTab(categories);
     const initialTab = requestedTab || stored.lastSelectedCategory;
     setSelectedTab(initialTab);
     if (initialTab !== "Favorites") setLastRealCategory(initialTab);
     setCounts(stored.counts);
     setHydrated(true);
-  }, [categories]);
+  }, [categories, timezone]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!hydrated) return;
     const progress: StoredProgress = {
-      date: localDateKey(new Date()),
+      date: localDateKey(new Date(), timezone),
       lastSelectedCategory: lastRealCategory,
       counts,
     };
@@ -117,7 +94,7 @@ export function AzkarRoutine({ categories, items }: { categories: AzkarCategory[
     } catch {
       // Daily counting remains usable even if local storage is unavailable.
     }
-  }, [counts, hydrated, lastRealCategory]);
+  }, [counts, hydrated, lastRealCategory, timezone]);
 
   useEffect(() => {
     if (!hydrated || !favoritesLoaded || !user) return;

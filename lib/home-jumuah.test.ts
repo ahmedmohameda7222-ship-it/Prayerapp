@@ -29,12 +29,15 @@ function extra(id: string, date: string, prayerTime: string): JumuahTime {
   };
 }
 
+const BERLIN = "Europe/Berlin";
+
 describe("Home Jumuah visibility", () => {
   it("appears from Wednesday using automatic Primary even with zero additional rows", () => {
     const result = getHomeJumuahSchedule(
       [prayer("2026-08-14", "12:18")],
       [],
       new Date("2026-08-12T08:00:00.000Z"),
+      BERLIN,
     );
 
     expect(result?.daysUntil).toBe(2);
@@ -47,6 +50,7 @@ describe("Home Jumuah visibility", () => {
       [prayer("2026-08-14")],
       [],
       new Date("2026-08-11T08:00:00.000Z"),
+      BERLIN,
     )).toBeUndefined();
   });
 
@@ -55,6 +59,7 @@ describe("Home Jumuah visibility", () => {
       [prayer("2026-08-14")],
       [extra("two", "2026-08-14", "13:30")],
       new Date("2026-08-08T08:00:00.000Z"),
+      BERLIN,
       { allowAnyFutureFriday: true },
     );
 
@@ -68,6 +73,7 @@ describe("Home Jumuah visibility", () => {
       [prayer("2026-08-14")],
       [extra("two", "2026-08-14", "13:30"), extra("three", "2026-08-14", "14:30")],
       new Date("2026-08-14T10:30:00.000Z"),
+      BERLIN,
     );
 
     expect(result?.daysUntil).toBe(0);
@@ -79,6 +85,7 @@ describe("Home Jumuah visibility", () => {
       [prayer("2026-08-14"), prayer("2026-08-21")],
       [extra("two", "2026-08-14", "13:30")],
       new Date("2026-08-14T12:00:00.000Z"),
+      BERLIN,
     );
 
     expect(result).toBeUndefined();

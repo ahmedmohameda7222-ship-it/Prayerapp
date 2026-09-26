@@ -11,7 +11,7 @@ import { createServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-const eventIdPattern = /^p2:[0-9a-f]{64}$/u;
+const eventIdPattern = /^p[23]:[0-9a-f]{64}$/u;
 const MAX_ACCOUNT_GENERATION = 2_147_483_647;
 const MAX_FUTURE_DELIVERY_MS = 5 * 60 * 1000;
 const MAX_RECEIPT_AGE_MS = 2 * 24 * 60 * 60 * 1000;

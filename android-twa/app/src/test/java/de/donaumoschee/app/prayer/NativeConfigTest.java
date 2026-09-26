@@ -15,10 +15,23 @@ public final class NativeConfigTest {
 
     @Test
     public void parsesBoundedPublishedScheduleCache() throws Exception {
-        NativeConfig config = NativeConfig.parse(valid("fajr", "fajr-cairo"), NOW);
+        NativeConfig config = NativeConfig.parse(
+                valid("fajr", "fajr-cairo").put("timeZone", "Asia/Tokyo"),
+                NOW
+        );
         assertEquals(1, config.rows.size());
         assertEquals(1, config.reminders.size());
-        assertEquals(NativeConfig.ZONE, java.time.ZoneId.of("Europe/Berlin"));
+        assertEquals("Asia/Tokyo", config.timeZone);
+    }
+
+    @Test
+    public void acceptsServerTimezoneNotPresentInLocalTzdbWhenInstantsAreAuthoritative() throws Exception {
+        NativeConfig config = NativeConfig.parse(
+                valid("dhuhr", "abdul-basit-cairo").put("timeZone", "Server/Future-Time-Zone"),
+                NOW
+        );
+        assertEquals("Server/Future-Time-Zone", config.timeZone);
+        assertEquals(Instant.parse("2026-08-22T11:30:00Z"), config.rows.get(0).instant(Prayer.DHUHR));
     }
 
     @Test
@@ -56,7 +69,13 @@ public final class NativeConfigTest {
     private static JSONObject valid(String prayer, String sound) throws Exception {
         return new JSONObject("{\"schemaVersion\":1,\"revision\":\"cache-v1\",\"timeZone\":\"Europe/Berlin\","
                 + "\"scheduleValidUntil\":\"2026-09-01T00:00:00Z\","
-                + "\"rows\":[{\"date\":\"2026-08-22\",\"fajr\":\"05:00\",\"sunrise\":\"06:30\",\"dhuhr\":\"13:30\",\"asr\":\"17:30\",\"maghrib\":\"20:30\",\"isha\":\"22:00\"}],"
+                + "\"rows\":[{\"date\":\"2026-08-22\","
+                + "\"fajr\":\"05:00\",\"fajrAt\":\"2026-08-22T03:00:00Z\","
+                + "\"sunrise\":\"06:30\",\"sunriseAt\":\"2026-08-22T04:30:00Z\","
+                + "\"dhuhr\":\"13:30\",\"dhuhrAt\":\"2026-08-22T11:30:00Z\","
+                + "\"asr\":\"17:30\",\"asrAt\":\"2026-08-22T15:30:00Z\","
+                + "\"maghrib\":\"20:30\",\"maghribAt\":\"2026-08-22T18:30:00Z\","
+                + "\"isha\":\"22:00\",\"ishaAt\":\"2026-08-22T20:00:00Z\"}],"
                 + "\"reminders\":[{\"prayer\":\"" + prayer + "\",\"enabled\":true,\"leadMinutes\":15,\"adhanSoundId\":\"" + sound + "\"}]}");
     }
 }

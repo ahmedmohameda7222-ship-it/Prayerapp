@@ -19,7 +19,7 @@ describe("Friday public page contract", () => {
     const page = source("app/friday/page.tsx");
     const friday = source("components/friday/FridayPageClient.tsx");
 
-    expect(page).toContain("getPrayerTimes(false");
+    expect(page).toContain("getPublishedPrayerScheduleSnapshot");
     expect(page).toContain("getJumuahTimes()");
     expect(page).toContain("Promise.allSettled");
     expect(friday).toContain("resolveUpcomingFridaySchedule");
@@ -40,9 +40,11 @@ describe("Friday public page contract", () => {
   it("does not fabricate Primary when prayer-times loading fails", () => {
     const page = source("app/friday/page.tsx");
 
-    expect(page).toContain('prayerTimesResult.status === "fulfilled"\n    ? resolveUpcomingFridaySchedule');
+    expect(page).toContain('prayerSnapshotResult.status === "fulfilled"');
+    expect(page).toContain("const schedule = prayerSnapshot");
+    expect(page).toContain("? resolveUpcomingFridaySchedule");
     expect(page).toContain(": undefined;");
-    expect(page).toContain('prayerTimesLoadFailed={prayerTimesResult.status === "rejected"}');
+    expect(page).toContain('prayerTimesLoadFailed={prayerSnapshotResult.status === "rejected"}');
   });
 
   it("loads a published khutbah independently after resolving the displayed Friday", () => {

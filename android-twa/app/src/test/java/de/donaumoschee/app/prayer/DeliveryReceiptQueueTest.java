@@ -14,6 +14,7 @@ import static org.junit.Assert.fail;
 public final class DeliveryReceiptQueueTest {
     private static final String EVENT_A = "p2:" + "a".repeat(64);
     private static final String EVENT_B = "p2:" + "b".repeat(64);
+    private static final String EVENT_V3 = "p3:" + "c".repeat(64);
 
     @Test
     public void queuesCanonicalReceiptsPerGenerationAndAcknowledgesIdempotently() {
@@ -37,6 +38,15 @@ public final class DeliveryReceiptQueueTest {
         } catch (ReflectiveOperationException error) {
             fail("Receipt queue contract missing: " + error);
         }
+    }
+
+    @Test
+    public void acceptsCurrentAndLegacyCanonicalReceiptVersions() {
+        DeliveryReceiptQueue queue = new DeliveryReceiptQueue(3);
+
+        assertTrue(queue.enqueue(EVENT_A, "reminder", 1000L, 7));
+        assertTrue(queue.enqueue(EVENT_V3, "adhan", 2000L, 7));
+        assertEquals(2, queue.pending(7).size());
     }
 
     @Test

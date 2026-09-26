@@ -1,6 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { getPrayerForDate, getIqama, getNextPrayer, getNextPrayerFromSchedule, prayerOrder, formatCountdown } from "@/lib/prayer-utils";
+import {
+  deriveIqamaInstant,
+  derivePrayerIqamaTimes,
+  getPrayerForDate,
+  getNextPrayer,
+  getNextPrayerFromSchedule,
+  prayerOrder,
+  formatCountdown,
+} from "@/lib/prayer-utils";
+import { zonedDateTime } from "@/lib/date-utils";
 import type { PrayerTime } from "@/lib/types";
+import type { PrayerIqamaDelays } from "@/lib/prayer-engine/types";
 import { getSmartNextAction } from "@/lib/home-utils";
 
 const samplePrayer: PrayerTime = {
@@ -12,14 +22,19 @@ const samplePrayer: PrayerTime = {
   asr: "17:32",
   maghrib: "21:19",
   isha: "22:57",
-  fajrIqama: "04:00",
-  dhuhrIqama: "13:30",
-  asrIqama: "18:00",
-  maghribIqama: "21:25",
-  ishaIqama: "23:10",
   note: "Test",
   published: true,
   updatedAt: "2026-06-20T18:30:00+02:00",
+};
+
+const BERLIN = "Europe/Berlin";
+
+const delays: PrayerIqamaDelays = {
+  fajr: 0,
+  dhuhr: 10,
+  asr: 10,
+  maghrib: 5,
+  isha: 10,
 };
 
 describe("prayer-utils", () => {
@@ -42,18 +57,60 @@ describe("prayer-utils", () => {
     expect(found).toBeUndefined();
   });
 
-  it("getIqama returns iqama for prayers with iqama", () => {
-    expect(getIqama(samplePrayer, "fajr")).toBe("04:00");
-    expect(getIqama(samplePrayer, "dhuhr")).toBe("13:30");
+  it("derives Iqama from stored prayer start plus shared delay", () => {
+    expect(deriveIqamaInstant("2026-09-15", "18:00", 0, BERLIN).getTime()).toBe(
+      zonedDateTime("2026-09-15", "18:00").getTime(),
+    );
+    expect(deriveIqamaInstant("2026-09-15", "23:58", 5, BERLIN).getTime()).toBe(
+      zonedDateTime("2026-09-15", "23:58").getTime() + 5 * 60_000,
+    );
   });
 
-  it("getIqama returns undefined for sunrise", () => {
-    expect(getIqama(samplePrayer, "sunrise")).toBeUndefined();
+  it("uses the supplied mosque timezone for prayer instants, Iqama, and next-prayer targets", () => {
+    const timezone = "Asia/Tokyo";
+    expect(
+      deriveIqamaInstant("2026-09-21", "05:00", 10, timezone).toISOString(),
+    ).toBe("2026-09-20T20:10:00.000Z");
+
+    const tokyoPrayer = {
+      ...samplePrayer,
+      id: "tokyo",
+      date: "2026-09-21",
+      fajr: "05:00",
+      dhuhr: "12:00",
+      asr: "15:00",
+      maghrib: "18:00",
+      isha: "19:30",
+    };
+    expect(derivePrayerIqamaTimes(tokyoPrayer, delays, timezone).fajr).toBe("05:00");
+
+    const next = getNextPrayerFromSchedule(
+      [tokyoPrayer],
+      new Date("2026-09-20T19:30:00.000Z"),
+      timezone,
+    );
+    expect(next?.name).toBe("fajr");
+    expect(next?.target.toISOString()).toBe("2026-09-20T20:00:00.000Z");
   });
 
-  it("getIqama returns undefined when iqama is missing", () => {
-    const noIqama: PrayerTime = { ...samplePrayer, fajrIqama: undefined };
-    expect(getIqama(noIqama, "fajr")).toBeUndefined();
+  it("derives shared Iqama display times, keeps zero delay, and never creates Sunrise Iqama", () => {
+    const iqama = derivePrayerIqamaTimes(samplePrayer, delays, BERLIN);
+    expect(iqama.fajr).toBe("03:19");
+    expect(iqama.dhuhr).toBe("13:23");
+    expect(iqama.asr).toBe("17:42");
+    expect(iqama.maghrib).toBe("21:24");
+    expect(iqama.isha).toBe("23:07");
+    expect("sunrise" in iqama).toBe(false);
+  });
+
+  it("does not expose normal Friday Dhuhr Iqama because Friday Dhuhr is primary Jumuah", () => {
+    const friday = { ...samplePrayer, id: "pt-friday", date: "2026-06-26" };
+    expect(derivePrayerIqamaTimes(friday, delays, BERLIN).dhuhr).toBeUndefined();
+  });
+
+  it("rejects invalid shared Iqama delays", () => {
+    expect(() => deriveIqamaInstant("2026-09-15", "18:00", -1, BERLIN)).toThrow();
+    expect(() => deriveIqamaInstant("2026-09-15", "18:00", 1.5, BERLIN)).toThrow();
   });
 
   it("formatCountdown formats milliseconds correctly", () => {
@@ -64,20 +121,25 @@ describe("prayer-utils", () => {
 
   it("getNextPrayer returns the next obligatory prayer after now", () => {
     const now = new Date("2026-06-24T12:00:00+02:00");
-    const next = getNextPrayer(samplePrayer, now);
+    const next = getNextPrayer(samplePrayer, now, BERLIN);
     expect(next?.name).toBe("dhuhr");
     expect(next?.time).toBe("13:13");
   });
 
   it("does not fabricate tomorrow Fajr from today's row after Isha", () => {
     const afterIsha = new Date("2026-06-24T23:30:00+02:00");
-    expect(getNextPrayer(samplePrayer, afterIsha)).toBeUndefined();
+    expect(getNextPrayer(samplePrayer, afterIsha, BERLIN)).toBeUndefined();
   });
 
   it("uses tomorrow's actual published Fajr when a multi-day schedule is available", () => {
-    const tomorrow = { ...samplePrayer, id: "pt-2", date: "2026-06-25", fajr: "03:21" };
+    const tomorrow = {
+      ...samplePrayer,
+      id: "pt-2",
+      date: "2026-06-25",
+      fajr: "03:21",
+    };
     const afterIsha = new Date("2026-06-24T23:30:00+02:00");
-    const next = getNextPrayerFromSchedule([samplePrayer, tomorrow], afterIsha);
+    const next = getNextPrayerFromSchedule([samplePrayer, tomorrow], afterIsha, BERLIN);
     expect(next?.name).toBe("fajr");
     expect(next?.time).toBe("03:21");
     expect(next?.date).toBe("2026-06-25");
@@ -85,7 +147,11 @@ describe("prayer-utils", () => {
 
   it("does not treat Sunrise as the next prayer after Fajr", () => {
     const afterFajrBeforeSunrise = new Date("2026-06-24T04:00:00+02:00");
-    const next = getNextPrayerFromSchedule([samplePrayer], afterFajrBeforeSunrise);
+    const next = getNextPrayerFromSchedule(
+      [samplePrayer],
+      afterFajrBeforeSunrise,
+      BERLIN,
+    );
     expect(next?.name).toBe("dhuhr");
     expect(next?.time).toBe("13:13");
   });
@@ -94,17 +160,37 @@ describe("prayer-utils", () => {
 describe("getSmartNextAction", () => {
   it("prioritizes after-prayer Azkar shortly after an obligatory prayer", () => {
     const now = new Date("2026-06-24T13:30:00+02:00");
-    expect(getSmartNextAction([samplePrayer], now)).toBe("afterPrayer");
+    expect(getSmartNextAction([samplePrayer], now, BERLIN)).toBe("afterPrayer");
   });
 
   it("recommends the expected Azkar for morning, evening, and night", () => {
-    expect(getSmartNextAction([samplePrayer], new Date("2026-06-24T10:00:00+02:00"))).toBe("morning");
-    expect(getSmartNextAction([samplePrayer], new Date("2026-06-24T19:00:00+02:00"))).toBe("evening");
-    expect(getSmartNextAction([samplePrayer], new Date("2026-06-24T23:50:00+02:00"))).toBe("sleep");
+    expect(
+      getSmartNextAction(
+        [samplePrayer],
+        new Date("2026-06-24T10:00:00+02:00"),
+        BERLIN,
+      ),
+    ).toBe("morning");
+    expect(
+      getSmartNextAction(
+        [samplePrayer],
+        new Date("2026-06-24T19:00:00+02:00"),
+        BERLIN,
+      ),
+    ).toBe("evening");
+    expect(
+      getSmartNextAction(
+        [samplePrayer],
+        new Date("2026-06-24T23:50:00+02:00"),
+        BERLIN,
+      ),
+    ).toBe("sleep");
   });
 
   it("prefers Friday during the daytime Friday window", () => {
     const friday = { ...samplePrayer, id: "pt-friday", date: "2026-06-26" };
-    expect(getSmartNextAction([friday], new Date("2026-06-26T11:00:00+02:00"))).toBe("friday");
+    expect(
+      getSmartNextAction([friday], new Date("2026-06-26T11:00:00+02:00"), BERLIN),
+    ).toBe("friday");
   });
 });

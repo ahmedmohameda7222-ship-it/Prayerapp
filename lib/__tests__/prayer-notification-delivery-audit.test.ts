@@ -10,11 +10,16 @@ describe("prayer notification delivery audit", () => {
   it("keeps published QA schedules out of the real cron path", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
 
-    expect(cron).toContain('.from("prayer_times")');
-    expect(cron).toContain('.eq("published", true)');
+    const snapshot = source("supabase/migrations/20260923030000_published_prayer_schedule_snapshot.sql");
+    expect(cron).toContain("getPublishedPrayerScheduleSnapshot");
+    expect(snapshot).toContain("p.published = true");
+    expect(snapshot).toContain("'note', p.note");
+    expect(snapshot).toContain("'note_ar', p.note_ar");
+    expect(snapshot).toContain("'note_en', p.note_en");
+    expect(snapshot).toContain("'note_de', p.note_de");
+    expect(snapshot).toContain("'note_tr', p.note_tr");
     expect(cron).toContain("isPrayerScheduleQaRow");
     expect(cron).toContain(".filter((schedule) => !isPrayerScheduleQaRow(schedule))");
-    expect(cron).toContain("note, note_ar, note_en, note_de, note_tr");
   });
 
   it("checks pre-Adhan and Adhan due windows every cron run", () => {

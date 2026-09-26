@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAllowedAdminEmail } from "@/lib/auth/admin-server";
+import { getRuntimePrayerTimezone } from "@/lib/data/prayer-settings";
 import { todayIso } from "@/lib/date-utils";
 import {
   assessLaunchDataReadiness,
@@ -22,6 +23,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Supabase is not configured" }, { status: 503 });
   }
 
+  let timezone: string;
+  try {
+    timezone = await getRuntimePrayerTimezone();
+  } catch (error) {
+    console.error("[launch readiness] runtime timezone unavailable", error);
+    return NextResponse.json({ error: "Launch readiness data is unavailable" }, { status: 503 });
+  }
+
   const [prayers, jumuah, ramadan, mosque, donation, scheduler] = await Promise.all([
     client.from("prayer_times").select("date, published, note, note_ar, note_en, note_de, note_tr").eq("published", true),
     client.from("jumuah_times").select("published, location_name, location_address, khateeb_name, language, language_ar, language_en, language_de, language_tr, notes, notes_ar, notes_en, notes_de, notes_tr").eq("published", true),
@@ -39,7 +48,7 @@ export async function GET(request: Request) {
   }
 
   const data = assessLaunchDataReadiness({
-    today: todayIso(),
+    today: todayIso(new Date(), timezone),
     prayerTimes: prayers.data || [],
     jumuahTimes: jumuah.data || [],
     ramadanDays: ramadan.data || [],

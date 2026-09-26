@@ -37,6 +37,61 @@ public final class SchedulerV2AuthoritySourceContractTest {
     }
 
     @Test
+    public void rescheduleValidatesPersistedConfigBeforeCancellingInstalledAlarms() throws IOException {
+        String scheduler = javaSource("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        int loadConfig = scheduler.indexOf("NativeConfig config = store.loadConfig(Instant.now());");
+        int cancelStored = scheduler.indexOf("if (!cancelStored(context, store, generation)) return false;");
+
+        assertTrue(loadConfig >= 0);
+        assertTrue(cancelStored > loadConfig);
+        assertTrue(scheduler.contains("alarm.schedule preserve-existing reason=config-unavailable"));
+        assertTrue(scheduler.contains("scheduleCurrentGeneration(context, store, generation, config)"));
+    }
+
+    @Test
+    public void configReplacementAndAlarmInstallationShareOneSchedulerLock() throws IOException {
+        String scheduler = javaSource("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        String bridge = javaSource("de/donaumoschee/app/bridge/BridgeHandler.java");
+        String worker = javaSource("de/donaumoschee/app/workers/NativeRefreshWorker.java");
+
+        assertTrue(scheduler.contains("private static final Object SCHEDULE_LOCK = new Object();"));
+        assertTrue(scheduler.contains("replaceConfigAndReschedule("));
+        assertTrue(scheduler.contains("synchronized (SCHEDULE_LOCK)"));
+        assertTrue(scheduler.contains("store.saveConfigIfGeneration(config.source, now, generation)"));
+        assertTrue(bridge.contains("PrayerScheduler.replaceConfigAndReschedule(context, payload, Instant.now())"));
+        assertTrue(!bridge.contains("store.saveConfig(payload"));
+        assertTrue(worker.contains("PrayerScheduler.replaceConfigAndReschedule("));
+        assertTrue(!worker.contains("store.saveConfigIfGeneration(config"));
+    }
+
+    @Test
+    public void workerRejectsStaleConfigSnapshotsBeforeReplacingAlarms() throws IOException {
+        String scheduler = javaSource("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        String worker = javaSource("de/donaumoschee/app/workers/NativeRefreshWorker.java");
+        String store = javaSource("de/donaumoschee/app/storage/NativeStore.java");
+
+        assertTrue(store.contains("public String rawConfigSnapshot()"));
+        assertTrue(worker.contains("String configSnapshot = store.rawConfigSnapshot();"));
+        assertTrue(worker.contains("new JSONObject(configSnapshot)"));
+        assertTrue(worker.contains("configSnapshot,"));
+        assertTrue(scheduler.contains("String expectedConfigSnapshot"));
+        assertTrue(scheduler.contains("String currentConfigSnapshot = store.rawConfigSnapshot();"));
+        assertTrue(scheduler.contains("expectedConfigSnapshot.equals(currentConfigSnapshot)"));
+    }
+
+    @Test
+    public void staleWorkerSnapshotPreservesLatestHealthyScheduleReadiness() throws IOException {
+        String scheduler = javaSource("de/donaumoschee/app/prayer/PrayerScheduler.java");
+        String worker = javaSource("de/donaumoschee/app/workers/NativeRefreshWorker.java");
+
+        assertTrue(scheduler.contains("public final boolean staleConfigSnapshot;"));
+        assertTrue(scheduler.contains("new ConfigInstallResult(false, false, true)"));
+        assertTrue(worker.contains("refreshResult.staleConfigSnapshot"));
+        assertTrue(worker.contains("scheduleRefreshed = PrayerScheduler.reschedule(getApplicationContext(), generation);"));
+        assertTrue(worker.contains("sendHeartbeat(store, scheduleRefreshed, generation);"));
+    }
+
+    @Test
     public void nativeStatusAdvertisesReceiptV2AndCurrentGeneration() throws IOException {
         String status = javaSource("de/donaumoschee/app/prayer/NativeStatus.java");
         assertTrue(status.contains("delivery-receipt-v2"));

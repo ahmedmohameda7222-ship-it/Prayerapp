@@ -15,22 +15,24 @@ public final class PrayerEventId {
             LocalDate date,
             Prayer prayer,
             AlarmEvent.Kind kind,
-            int leadMinutes
+            int leadMinutes,
+            long dueAtMs
     ) {
         String canonical = String.join("|",
-                "v2",
+                "v3",
                 scheduleId,
                 scheduleRevision,
                 date.toString(),
                 prayer.key,
                 kind.name().toLowerCase(Locale.ROOT),
-                Integer.toString(leadMinutes)
+                Integer.toString(leadMinutes),
+                Long.toString(dueAtMs)
         );
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(canonical.getBytes(StandardCharsets.UTF_8));
             StringBuilder hex = new StringBuilder(digest.length * 2);
             for (byte value : digest) hex.append(String.format(Locale.ROOT, "%02x", value & 0xff));
-            return "p2:" + hex;
+            return "p3:" + hex;
         } catch (NoSuchAlgorithmException error) {
             throw new IllegalStateException("SHA-256 unavailable", error);
         }

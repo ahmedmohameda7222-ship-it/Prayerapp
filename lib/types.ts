@@ -1,8 +1,9 @@
 export type PrayerName = "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
+export type ObligatoryPrayerName = Exclude<PrayerName, "sunrise">;
+export type PrayerIqamaTimes = Partial<Record<ObligatoryPrayerName, string>>;
 
 export interface MaghribProgram {
   enabled: boolean;
-  maghribIqamaTime?: string;
   lessonTitle?: string;
   lessonDurationMinutes?: number;
   combinedIshaTime?: string;
@@ -45,11 +46,6 @@ export interface PrayerTime {
   asr: string;
   maghrib: string;
   isha: string;
-  fajrIqama?: string;
-  dhuhrIqama?: string;
-  asrIqama?: string;
-  maghribIqama?: string;
-  ishaIqama?: string;
   maghribProgram?: MaghribProgram;
   note?: string;
   noteAr?: string;
@@ -128,6 +124,7 @@ export type FridayKhutbah = {
 };
 
 export type AnnouncementType = "General" | "Urgent" | "Location update" | "Community" | "Ramadan" | "Eid" | "Donation";
+export type AnnouncementDisplayStyle = "normal" | "special";
 
 export interface Announcement extends LocalizedTitleFields, LocalizedMessageFields {
   id: string;
@@ -135,6 +132,9 @@ export interface Announcement extends LocalizedTitleFields, LocalizedMessageFiel
   message: string;
   type: AnnouncementType;
   isUrgent: boolean;
+  displayStyle: AnnouncementDisplayStyle;
+  displayFrom?: string;
+  displayUntil?: string;
   published: boolean;
   createdAt: string;
 }
@@ -158,7 +158,8 @@ export interface DonationCampaign extends LocalizedTitleFields, LocalizedDescrip
   targetAmount: number;
   collectedAmount: number;
   startDate: string;
-  endDate: string;
+  endDate?: string;
+  donationUrl?: string;
   isActive: boolean;
   isFeatured: boolean;
 }
@@ -240,4 +241,61 @@ export interface MosqueSettings {
   accountHolder: string;
   iban: string;
   bic: string;
+  publicAppUrl: string;
+}
+
+export interface MasjidDisplaySettings {
+  fajrPrayerDurationMinutes: number;
+  dhuhrPrayerDurationMinutes: number;
+  asrPrayerDurationMinutes: number;
+  maghribPrayerDurationMinutes: number;
+  ishaPrayerDurationMinutes: number;
+  azkarPlaylistIds: string[];
+}
+
+export const MASJID_DISPLAY_TEST_SCENARIOS = [
+  "normal",
+  "prayer_approaching",
+  "prayer_time_now",
+  "waiting_for_iqama",
+  "iqama_now",
+  "prayer_in_progress",
+  "friday_first_countdown",
+  "friday_next_countdown",
+  "jumuah_now",
+  "urgent",
+  "special_display",
+  "event",
+  "campaign",
+  "campaign_without_qr",
+  "azkar",
+  "offline",
+  "stale_prayer_data",
+  "missing_settings",
+  "long_bilingual",
+] as const;
+
+export type MasjidDisplayTestScenario = (typeof MASJID_DISPLAY_TEST_SCENARIOS)[number];
+
+type TestBase<S extends MasjidDisplayTestScenario> = { scenario: S; id: string };
+type TestCopy = { titleAr: string; titleDe: string; messageAr: string; messageDe: string };
+
+export type MasjidDisplayTestPayload =
+  | (TestBase<"normal" | "urgent" | "special_display" | "offline" | "stale_prayer_data" | "missing_settings" | "long_bilingual"> & TestCopy)
+  | (TestBase<"prayer_approaching" | "waiting_for_iqama"> & TestCopy & { targetAt: string; prayer?: ObligatoryPrayerName })
+  | (TestBase<"friday_first_countdown" | "friday_next_countdown"> & TestCopy & { targetAt: string; prayer?: ObligatoryPrayerName; serviceIndex: number })
+  | (TestBase<"prayer_time_now" | "iqama_now" | "prayer_in_progress"> & TestCopy & { prayer?: ObligatoryPrayerName })
+  | (TestBase<"jumuah_now"> & TestCopy & { prayer?: ObligatoryPrayerName; serviceIndex: number })
+  | (TestBase<"event"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string; locationAr: string; locationDe: string; startsAt: string })
+  | (TestBase<"campaign"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string; donationUrl: string })
+  | (TestBase<"campaign_without_qr"> & { titleAr: string; titleDe: string; descriptionAr: string; descriptionDe: string })
+  | (TestBase<"azkar"> & { azkarId: string; arabicText: string; germanText: string });
+
+export interface MasjidDisplayTestState {
+  enabled: boolean;
+  scenario: MasjidDisplayTestScenario | null;
+  payload: MasjidDisplayTestPayload | null;
+  startedAt: string | null;
+  expiresAt: string | null;
+  updatedAt: string;
 }

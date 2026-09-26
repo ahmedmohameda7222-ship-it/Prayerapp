@@ -4,6 +4,13 @@ import { localizedFieldsFromDb, localizedFieldsToDb, readDbString } from "./loca
 import { CACHE_TTL, getCached, invalidateCachePrefix } from "./cache";
 import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCachePrefix } from "./persistent-public-cache";
 
+export type DisplayAnnouncementSource = Announcement & { sourceUpdatedAt: string };
+
+export function invalidateAnnouncementCaches() {
+  invalidateCachePrefix("announcements");
+  clearPersistentCachePrefix("announcements");
+}
+
 function mapFromDb(row: Record<string, unknown>): Announcement {
   return {
     id: String(row.id),
@@ -13,8 +20,18 @@ function mapFromDb(row: Record<string, unknown>): Announcement {
     ...localizedFieldsFromDb(row, "message", "message"),
     type: String(row.type) as Announcement["type"],
     isUrgent: Boolean(row.is_urgent),
+    displayStyle: row.display_style === "special" ? "special" : "normal",
+    displayFrom: row.display_from ? String(row.display_from) : undefined,
+    displayUntil: row.display_until ? String(row.display_until) : undefined,
     published: Boolean(row.published),
     createdAt: String(row.created_at),
+  };
+}
+
+function mapDisplayFromDb(row: Record<string, unknown>): DisplayAnnouncementSource {
+  return {
+    ...mapFromDb(row),
+    sourceUpdatedAt: String(row.updated_at),
   };
 }
 
@@ -27,9 +44,25 @@ function mapToDb(item: Partial<Announcement>, includeCreatedAt = false): Record<
   if (!db.message && item.message) db.message = item.message;
   if (item.type) db.type = item.type;
   if (item.isUrgent !== undefined) db.is_urgent = item.isUrgent;
+  if (item.displayStyle !== undefined) db.display_style = item.displayStyle;
+  if (item.displayFrom !== undefined) db.display_from = item.displayFrom || null;
+  if (item.displayUntil !== undefined) db.display_until = item.displayUntil || null;
   if (item.published !== undefined) db.published = item.published;
   if (includeCreatedAt) db.created_at = new Date().toISOString();
   return db;
+}
+
+export async function getAnnouncementsForDisplayWindow(nowIso: string, horizonEndIso: string): Promise<DisplayAnnouncementSource[]> {
+  const client = createClient();
+  if (!client) return [];
+
+  const { data, error } = await client.rpc("get_masjid_display_announcements_window", {
+    p_now: nowIso,
+    p_horizon_end: horizonEndIso,
+  } as never);
+  if (error || !Array.isArray(data)) throw new Error("Unable to load announcements");
+
+  return (data as Record<string, unknown>[]).map(mapDisplayFromDb);
 }
 
 export async function getAnnouncements(includeUnpublished = false): Promise<Announcement[]> {
@@ -94,8 +127,7 @@ export async function createAnnouncement(item: Omit<Announcement, "id" | "create
   if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("announcements").insert(mapToDb(item, true) as never).select().single();
   if (error || !data) throw new Error("Failed to create announcement");
-  invalidateCachePrefix("announcements");
-  clearPersistentCachePrefix("announcements");
+  invalidateAnnouncementCaches();
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -104,8 +136,7 @@ export async function updateAnnouncement(id: string, item: Partial<Announcement>
   if (!client) throw new Error("Supabase is not configured");
   const { data, error } = await client.from("announcements").update(mapToDb(item) as never).eq("id", id).select().single();
   if (error || !data) throw new Error("Failed to update announcement");
-  invalidateCachePrefix("announcements");
-  clearPersistentCachePrefix("announcements");
+  invalidateAnnouncementCaches();
   return mapFromDb(data as Record<string, unknown>);
 }
 
@@ -114,6 +145,5 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   if (!client) throw new Error("Supabase is not configured");
   const { error } = await client.from("announcements").delete().eq("id", id);
   if (error) throw new Error("Failed to delete announcement");
-  invalidateCachePrefix("announcements");
-  clearPersistentCachePrefix("announcements");
+  invalidateAnnouncementCaches();
 }

@@ -18,6 +18,15 @@ describe("prayer reminder timing contract", () => {
     expect(card).toContain("option === 0 ? copy.atAdhan");
   });
 
+  it("uses the atomic applied-timezone schedule snapshot for reminder windows and prayer instants", () => {
+    const cron = source("app/api/cron/prayer-reminders/route.ts");
+
+    expect(cron).toContain("getPublishedPrayerScheduleSnapshot");
+    expect(cron).toContain("daysAfter: 1");
+    expect(cron).toContain("zonedDateTime(schedule.date, time, prayerSnapshot.timezone)");
+    expect(cron).not.toContain("getRuntimePrayerSettings");
+  });
+
   it("sends a pre-Adhan push only for selected lead times and always sends an Adhan push", () => {
     const cron = source("app/api/cron/prayer-reminders/route.ts");
 
@@ -29,7 +38,7 @@ describe("prayer reminder timing contract", () => {
     expect(cron).toContain('kind: "adhan"');
     expect(cron).toContain("leadMinutes: 0");
     expect(cron).toContain("nowMs >= adhanAt");
-    expect(cron).toContain('.eq("published", true)');
+    expect(source("supabase/migrations/20260923030000_published_prayer_schedule_snapshot.sql")).toContain("p.published = true");
     expect(cron).not.toContain("QA_MOCK_MARKER");
   });
 });

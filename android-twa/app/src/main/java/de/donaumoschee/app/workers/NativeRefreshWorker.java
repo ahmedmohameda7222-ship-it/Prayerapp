@@ -19,7 +19,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Map;
 
 public final class NativeRefreshWorker extends Worker {
@@ -35,23 +35,37 @@ public final class NativeRefreshWorker extends Worker {
     public Result doWork() {
         NativeStore store = new NativeStore(getApplicationContext());
         int generation = store.accountGeneration();
-        JSONObject config = store.rawConfig();
-        if (config == null) {
+        String configSnapshot = store.rawConfigSnapshot();
+        if (configSnapshot == null) {
             Log.i(TAG, "schedule.refresh skipped=no-config generation=" + generation);
             return Result.success();
         }
+        JSONObject config;
+        try {
+            config = new JSONObject(configSnapshot);
+        } catch (JSONException error) {
+            Log.w(TAG, "schedule.refresh skipped=invalid-config generation=" + generation);
+            return Result.retry();
+        }
 
-        boolean scheduleRefreshed = refreshSchedule(store, config, generation);
+        PrayerScheduler.ConfigInstallResult refreshResult =
+                refreshSchedule(store, config, configSnapshot, generation);
+        boolean scheduleRefreshed = refreshResult != null && refreshResult.configSaved;
         if (store.accountGeneration() != generation) {
             Log.i(TAG, "schedule.refresh stale-before-reschedule generation=" + generation);
             return Result.success();
         }
-        if (!scheduleRefreshed) {
+        if (refreshResult != null && refreshResult.staleConfigSnapshot) {
+            scheduleRefreshed = PrayerScheduler.reschedule(getApplicationContext(), generation);
+            if (!scheduleRefreshed) {
+                DeliveryDiagnostics.emit("schedule_refresh_failure", "stale-config-reschedule-failed");
+            }
+        } else if (!scheduleRefreshed) {
             DeliveryDiagnostics.emit("schedule_refresh_failure", "refresh-failed");
+            PrayerScheduler.reschedule(getApplicationContext(), generation);
         }
 
         Log.i(TAG, "schedule.refresh success=" + scheduleRefreshed + " generation=" + generation);
-        PrayerScheduler.reschedule(getApplicationContext(), generation);
         if (store.accountGeneration() != generation) {
             Log.i(TAG, "schedule.refresh stale-after-reschedule generation=" + generation);
             return Result.success();
@@ -61,20 +75,33 @@ public final class NativeRefreshWorker extends Worker {
         return scheduleRefreshed ? Result.success() : Result.retry();
     }
 
-    private boolean refreshSchedule(NativeStore store, JSONObject config, int generation) {
+    private PrayerScheduler.ConfigInstallResult refreshSchedule(
+            NativeStore store,
+            JSONObject config,
+            String configSnapshot,
+            int generation
+    ) {
         try {
-            String today = LocalDate.now(ZoneId.of("Europe/Berlin")).toString();
+            String today = LocalDate.now(ZoneOffset.UTC).minusDays(1).toString();
             JSONObject response = NativeHttp.get(ORIGIN + "/api/android/prayer-schedule?from=" + today + "&days=31");
-            if (store.accountGeneration() != generation) return false;
-            if (response.optInt("schemaVersion", -1) != 1 || !"Europe/Berlin".equals(response.optString("timeZone"))) return false;
+            if (store.accountGeneration() != generation) return null;
+            if (response.optInt("schemaVersion", -1) != 1) return null;
+            String timeZone = response.optString("timeZone", "").trim();
+            if (timeZone.isEmpty() || timeZone.length() > 128) return null;
             JSONArray rows = response.getJSONArray("rows");
-            String through = response.getString("through");
-            Instant validUntil = LocalDate.parse(through).plusDays(1).atStartOfDay(ZoneId.of("Europe/Berlin")).toInstant();
+            Instant validUntil = Instant.parse(response.getString("scheduleValidUntil"));
+            config.put("timeZone", timeZone);
             config.put("rows", rows);
             config.put("scheduleValidUntil", validUntil.toString());
-            return store.saveConfigIfGeneration(config, Instant.now(), generation);
+            return PrayerScheduler.replaceConfigAndReschedule(
+                    getApplicationContext(),
+                    config,
+                    Instant.now(),
+                    generation,
+                    configSnapshot
+            );
         } catch (IOException | JSONException | RuntimeException error) {
-            return false;
+            return null;
         }
     }
 

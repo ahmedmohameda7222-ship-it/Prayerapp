@@ -28,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 public final class NativeStoreInstrumentationTest {
     private static final String PREFERENCES = "native-prayer-engine-v1";
     private static final String EVENT_ID = "p2:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private static final String EVENT_ID_V3 = "p3:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     private static final long DUE_AT_MS = 1_700_000_000_000L;
 
     private Context context;
@@ -65,6 +66,22 @@ public final class NativeStoreInstrumentationTest {
 
         assertTrue(reopened.acknowledgeDeliveryReceipt(EVENT_ID, generation));
         assertTrue(new NativeStore(context).pendingDeliveryReceipts(generation).isEmpty());
+    }
+
+    @Test
+    public void currentP3DeliveryQueuesReceiptForServerAcknowledgement() {
+        NativeStore store = new NativeStore(context);
+        int generation = store.accountGeneration();
+
+        assertTrue(store.markDeliveryScheduled(EVENT_ID_V3, "ADHAN", DUE_AT_MS));
+        assertTrue(store.beginDelivery(EVENT_ID_V3, "ADHAN", DUE_AT_MS, DUE_AT_MS + 1_000L));
+        assertTrue(store.markDeliveryDelivered(EVENT_ID_V3, DUE_AT_MS + 2_000L));
+
+        List<DeliveryReceiptQueue.Receipt> pending = new NativeStore(context)
+                .pendingDeliveryReceipts(generation);
+        assertEquals(1, pending.size());
+        assertEquals(EVENT_ID_V3, pending.get(0).eventId);
+        assertEquals("adhan", pending.get(0).kind);
     }
 
     @Test

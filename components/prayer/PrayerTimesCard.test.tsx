@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { I18nProvider } from "@/lib/i18n/context";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
-import type { PrayerTime } from "@/lib/types";
+import type { PrayerIqamaTimes, PrayerTime } from "@/lib/types";
 import { PrayerTimesCard } from "./PrayerTimesCard";
 
 const prayer: PrayerTime = {
@@ -14,56 +14,57 @@ const prayer: PrayerTime = {
   asr: "17:28",
   maghrib: "21:14",
   isha: "22:57",
-  fajrIqama: "03:45",
   published: true,
   updatedAt: "2026-06-28T00:00:00.000Z",
 };
+const iqamaTimes: PrayerIqamaTimes = { fajr: "03:45", dhuhr: "13:22", asr: "17:38", maghrib: "21:19", isha: "23:07" };
 
 function renderCard(value: PrayerTime) {
   render(
     <I18nProvider initialLocale="en">
       <TimeFormatProvider>
-        <PrayerTimesCard prayer={value} />
+        <PrayerTimesCard prayer={value} iqamaTimes={iqamaTimes} />
       </TimeFormatProvider>
     </I18nProvider>,
   );
 }
 
 describe("PrayerTimesCard display settings", () => {
-  it("shows configured jamaah rows while preserving the official Isha azan", () => {
+  beforeEach(() => {
+    document.cookie = "timeFormat=24-hour; path=/";
+  });
+
+  it("shows shared-delay Iqama while preserving manual combined Isha as program metadata", () => {
     renderCard({
       ...prayer,
       maghribProgram: {
         enabled: true,
-        maghribIqamaTime: "21:20",
         lessonTitle: "Tafsir",
         lessonDurationMinutes: 10,
         combinedIshaTime: "21:35",
       },
     });
 
-    expect(screen.getByText("Salat Fajr")).toBeInTheDocument();
-    expect(screen.getByText("Salat Maghrib")).toBeInTheDocument();
     expect(screen.getByText("Tafsir · 10 min")).toBeInTheDocument();
-    expect(screen.getByText("Salat Isha")).toBeInTheDocument();
     expect(screen.getByText("Azan Isha")).toBeInTheDocument();
     expect(screen.getByText("22:57")).toBeInTheDocument();
+    expect(screen.getByText("Iqama 23:07")).toBeInTheDocument();
+    expect(screen.getByText("21:35")).toBeInTheDocument();
   });
 
-  it("hides the optional Maghrib program when disabled", () => {
+  it("hides optional Maghrib program metadata when disabled", () => {
     renderCard({
       ...prayer,
       maghribProgram: {
         enabled: false,
-        maghribIqamaTime: "21:20",
         lessonTitle: "Tafsir",
         lessonDurationMinutes: 10,
         combinedIshaTime: "21:35",
       },
     });
 
-    expect(screen.queryByText("Salat Maghrib")).not.toBeInTheDocument();
-    expect(screen.queryByText("Salat Isha")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tafsir · 10 min")).not.toBeInTheDocument();
+    expect(screen.queryByText("21:35")).not.toBeInTheDocument();
     expect(screen.getByText("Azan Isha")).toBeInTheDocument();
   });
 });

@@ -19,29 +19,61 @@ const DEFAULT_MOSQUE_SETTINGS: MosqueSettings = {
   accountHolder: "",
   iban: "",
   bic: "",
+  publicAppUrl: "",
 };
 
-export async function getMosqueSettings(): Promise<MosqueSettings> {
+export function invalidateMosqueSettingsCache(): void {
+  invalidateCache("mosque_settings");
+  clearPersistentCache("mosque_settings");
+}
+
+function mapMosqueSettingsRecord(record: Record<string, unknown>): MosqueSettings {
+  return {
+    mosqueName: readDbString(record, "mosque_name"),
+    ...localizedFieldsFromDb(record, "mosqueName", "mosque_name"),
+    address: String(record.address),
+    phone: String(record.phone),
+    email: String(record.email),
+    googleMapsLink: String(record.google_maps_link),
+    whatsappLink: String(record.whatsapp_link),
+    telegramLink: String(record.telegram_link),
+    accountHolder: String(record.account_holder),
+    iban: String(record.iban),
+    bic: String(record.bic),
+    publicAppUrl: record.public_app_url ? String(record.public_app_url) : "",
+  };
+}
+
+async function loadMosqueSettings(client: NonNullable<ReturnType<typeof createClient>>): Promise<MosqueSettings> {
+  const { data, error } = await client.from("mosque_settings").select("*").single();
+  if (error?.code === "PGRST116") return { ...DEFAULT_MOSQUE_SETTINGS };
+  if (error || !data) throw new Error("Unable to load mosque settings");
+  return mapMosqueSettingsRecord(data as Record<string, unknown>);
+}
+
+export async function getMosqueSettingsForDisplay(): Promise<{
+  value: MosqueSettings;
+  sourceUpdatedAt: string;
+}> {
+  const client = createClient();
+  if (!client) throw new Error("Supabase is not configured");
+  const { data, error } = await client.from("mosque_settings").select("*").eq("id", "1").single();
+  if (error || !data) throw new Error("Unable to load mosque settings");
+  const record = data as Record<string, unknown>;
+  return {
+    value: mapMosqueSettingsRecord(record),
+    sourceUpdatedAt: String(record.updated_at),
+  };
+}
+
+export async function getMosqueSettings(bypassCache = false): Promise<MosqueSettings> {
   const client = createClient();
   if (!client) return { ...DEFAULT_MOSQUE_SETTINGS };
+  if (bypassCache) return loadMosqueSettings(client);
+
   return getCached("mosque_settings", async () => {
     try {
-      const { data, error } = await client.from("mosque_settings").select("*").single();
-      if (error?.code === "PGRST116") return { ...DEFAULT_MOSQUE_SETTINGS };
-      if (error || !data) throw new Error("Unable to load mosque settings");
-      const result = {
-        mosqueName: readDbString(data as Record<string, unknown>, "mosque_name"),
-        ...localizedFieldsFromDb(data as Record<string, unknown>, "mosqueName", "mosque_name"),
-        address: String((data as Record<string, unknown>).address),
-        phone: String((data as Record<string, unknown>).phone),
-        email: String((data as Record<string, unknown>).email),
-        googleMapsLink: String((data as Record<string, unknown>).google_maps_link),
-        whatsappLink: String((data as Record<string, unknown>).whatsapp_link),
-        telegramLink: String((data as Record<string, unknown>).telegram_link),
-        accountHolder: String((data as Record<string, unknown>).account_holder),
-        iban: String((data as Record<string, unknown>).iban),
-        bic: String((data as Record<string, unknown>).bic),
-      };
+      const result = await loadMosqueSettings(client);
       saveToPersistentCache("mosque_settings", result, CACHE_TTL.mosqueSettings, 7 * 24 * 60 * 60 * 1000);
       return result;
     } catch (error) {
@@ -67,9 +99,9 @@ export async function updateMosqueSettings(settings: Partial<MosqueSettings>): P
   if (settings.accountHolder) db.account_holder = settings.accountHolder;
   if (settings.iban) db.iban = settings.iban;
   if (settings.bic) db.bic = settings.bic;
+  if (settings.publicAppUrl !== undefined) db.public_app_url = settings.publicAppUrl || null;
   const { data, error } = await client.from("mosque_settings").upsert({ id: "1", ...db } as never, { onConflict: "id" }).select().single();
   if (error || !data) throw new Error("Unable to update mosque settings");
-  invalidateCache("mosque_settings");
-  clearPersistentCache("mosque_settings");
+  invalidateMosqueSettingsCache();
   return getMosqueSettings();
 }

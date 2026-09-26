@@ -1,6 +1,6 @@
 # Masjid Display Plan 7 — Cross-Browser TV Presentation and Live Certification Design
 
-**Status:** Approved planning direction; implementation not started.
+**Status:** Implementation complete for the pre-merge code path; post-merge `main` live/physical certification pending.
 
 **Repository:** `ahmedmohameda7222-ship-it/Prayerapp`
 
@@ -219,7 +219,7 @@ Plan 7 is complete only when:
 - persistent Prayerapp QR and Campaign QR have real scan evidence;
 - offline/reconnect/wake behavior is verified;
 - all legitimate end-of-plan Codex findings are resolved and the final exact-head review is clean;
-- a final report is ready for independent Planner review.
+- a pre-merge authorization report is ready for independent Planner review, and after the Planner merge the final production-certification report is completed.
 
 A 24/72-hour soak remains an operational reliability follow-up and is not a Plan 7 completion blocker unless the user explicitly promotes it to a release gate.
 

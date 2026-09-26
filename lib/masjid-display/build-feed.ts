@@ -189,11 +189,11 @@ function prayerDay(row: PrayerTime): DisplayPrayerDay {
   };
 }
 
-function validHttpUrl(value: string | undefined) {
+function validHttpsUrl(value: string | undefined) {
   if (!value) return true;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:";
+    return url.protocol === "https:" && !url.username && !url.password && Boolean(url.hostname);
   } catch {
     return false;
   }
@@ -298,7 +298,7 @@ function projectCampaign(item: DonationCampaign): DisplayCampaignDto | null {
   if (item.endDate && validIsoDate(item.startDate) && validIsoDate(item.endDate) && item.endDate < item.startDate) {
     reasons.push("Campaign end date precedes start date");
   }
-  if (!validHttpUrl(item.donationUrl)) reasons.push("Donation URL is invalid");
+  if (!validHttpsUrl(item.donationUrl)) reasons.push("Donation URL must use HTTPS");
   if (typeof item.isFeatured !== "boolean") reasons.push("Featured flag is invalid");
   if (reasons.length > 0) {
     diagnostic("campaign", item.id || "<missing>", reasons);

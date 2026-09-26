@@ -120,12 +120,23 @@ export function validateDisplayPublishableContent(
   }
 
   if (!item.isActive) return [];
-  return requireFields(item, [
+  const errors = requireFields(item, [
     ["titleAr", "Arabic title"],
     ["descriptionAr", "Arabic description"],
     ["titleDe", "German title"],
     ["descriptionDe", "German description"],
   ], "active display campaign");
+  if (item.donationUrl) {
+    try {
+      const url = new URL(item.donationUrl);
+      if (url.protocol !== "https:" || url.username || url.password || !url.hostname) {
+        errors.push("Donation URL must use HTTPS");
+      }
+    } catch {
+      errors.push("Donation URL must use HTTPS");
+    }
+  }
+  return errors;
 }
 
 export function validateDisplayAdminPublishableContent(

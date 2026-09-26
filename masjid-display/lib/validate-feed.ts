@@ -175,7 +175,7 @@ function httpsUrl(value: unknown, path: string, issues: FeedValidationIssue[]): 
   return text;
 }
 
-function nullableHttpUrl(
+function nullableHttpsUrl(
   value: unknown,
   path: string,
   issues: FeedValidationIssue[],
@@ -185,11 +185,11 @@ function nullableHttpUrl(
   if (!text) return text;
   try {
     const url = new URL(text);
-    if (url.protocol !== "https:" && url.protocol !== "http:") {
-      addIssue(issues, path, "must be a valid HTTP or HTTPS URL");
+    if (url.protocol !== "https:" || url.username || url.password || !url.hostname) {
+      addIssue(issues, path, "must be a valid HTTPS URL");
     }
   } catch {
-    addIssue(issues, path, "must be a valid HTTP or HTTPS URL");
+    addIssue(issues, path, "must be a valid HTTPS URL");
   }
   return text;
 }
@@ -419,7 +419,7 @@ function validateCampaign(
     collectedAmount: finiteNumber(source.collectedAmount, `${path}.collectedAmount`, issues),
     startDate,
     endDate,
-    donationUrl: nullableHttpUrl(source.donationUrl, `${path}.donationUrl`, issues),
+    donationUrl: nullableHttpsUrl(source.donationUrl, `${path}.donationUrl`, issues),
     isFeatured: booleanValue(source.isFeatured, `${path}.isFeatured`, issues),
   };
 }

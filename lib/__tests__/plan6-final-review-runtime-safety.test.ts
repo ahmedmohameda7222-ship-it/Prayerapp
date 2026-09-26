@@ -331,22 +331,22 @@ describe("Plan 6 final-review runtime safety regressions", () => {
 
   it("serializes timezone promotion against concurrent native enrollment before checking active installations", () => {
     const sql = source(
-      "supabase/migrations/20260925073810_plan6_final_review_safety.sql",
+      "supabase/migrations/20260926091128_plan6_reviewer_concurrency_qr_safety.sql",
     ).toLowerCase();
-    const timezoneGuard = sql.indexOf(
-      "if v_settings.timezone <> v_settings.applied_timezone",
+    const triggerGuard = sql.indexOf(
+      "if new.applied_timezone is distinct from old.applied_timezone",
     );
     const nativeLock = sql.indexOf(
       "lock table public.native_prayer_installations in share mode",
-      timezoneGuard,
+      triggerGuard,
     );
     const nativeGuard = sql.indexOf(
       "from public.native_prayer_installations",
-      timezoneGuard,
+      nativeLock,
     );
 
-    expect(timezoneGuard).toBeGreaterThan(-1);
-    expect(nativeLock).toBeGreaterThan(timezoneGuard);
+    expect(triggerGuard).toBeGreaterThan(-1);
+    expect(nativeLock).toBeGreaterThan(triggerGuard);
     expect(nativeGuard).toBeGreaterThan(nativeLock);
   });
 

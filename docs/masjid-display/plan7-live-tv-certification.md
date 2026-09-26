@@ -82,7 +82,7 @@ Production was not replaced or promoted during Plan 7 development.
 
 **Deployment-policy ruling (2026-09-26):** Vercel must deploy `main` only and must not create PR/feature-branch Preview deployments. The earlier Preview requirement is superseded. Pre-merge certification covers exact-head code/CI/security/review evidence; Vercel live/Admin/physical certification moves to the merged `main` production deployment. Cost if wrong: a live-only defect is discovered after merge and must be handled by rollback or a follow-up reviewed fix.
 
-### Production-path health observed while Preview is blocked
+### Stable production baseline observed during pre-merge work
 
 These checks prove only the stable merged production path; they do **not** certify the Plan 7 UI candidate.
 

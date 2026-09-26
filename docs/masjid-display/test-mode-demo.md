@@ -26,14 +26,19 @@ This checklist exercises the real TV renderer through the Admin-only **Masjid Di
 | Missing/incomplete configuration | Configuration-degraded visual | No invented prayer/Iqama value | Visible when canonical URL is valid | Stop/expiry restores real configuration state |
 | Long Arabic/German | Long bilingual stress card | None | Visible | Stop/expiry returns to current production rotation |
 
+## Presentation-mode invariant
+
+Test Mode is independent of fullscreen/presentation state. Entering or leaving fullscreen must not start, stop, extend, replace, or otherwise mutate the active Test Mode scenario. The setup control is hidden while fullscreen is active and returns after fullscreen exit; the current synthetic scenario and TEST MODE badge continue normally.
+
 ## Operator sequence
 
-1. Open the Admin-only **Masjid Display Test** page and the actual TV display.
+1. Open the Admin-only **Masjid Display Test** page and the exact deployed TV candidate. If the target browser supports the standard Fullscreen API, enter presentation mode through **Vollbild / ملء الشاشة** and keep the TV in that mode while exercising the scenarios.
 2. Start each scenario in the table in button order. Confirm the expected state, countdown behavior where applicable, the TEST MODE badge, and persistent Prayerapp QR behavior.
 3. Switch directly from one active scenario to another and confirm the TV changes within the approximately two-second Test Control polling cadence.
 4. Use **Extend +15 minutes** once and verify the expiry advances by exactly 15 minutes.
 5. Use **Stop Test Mode** and verify the TV immediately returns to the **current** real state rather than replaying the pre-test state.
-6. For one scenario, do not stop it. Confirm automatic expiry after 15 minutes and the same return-to-current-real-state behavior.
+6. Switch fullscreen off and back on during one active scenario. Confirm the same scenario/revision remains active and no stale state is replayed.
+7. For one scenario, do not stop it. Confirm automatic expiry after 15 minutes and the same return-to-current-real-state behavior.
 
 ## Data isolation invariant
 

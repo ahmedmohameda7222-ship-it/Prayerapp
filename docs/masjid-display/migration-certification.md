@@ -603,3 +603,90 @@ Final live TV/Vercel/browser/Admin Test Mode verification remains post-merge.
 Because this evidence update changes repository documentation, a fresh complete
 exact-head workflow set and final exact-head Codex review are still required
 after this commit before independent Planner handoff.
+
+
+## Independent reviewer remediation — 2026-09-26
+
+A subsequent independent reviewer pass on exact HEAD
+`d725d53f3140b3de27ec7ce4ef05cc1a5e19ffde` identified four legitimate
+pre-merge findings:
+
+1. **P1:** timezone promotion checked for active native installations without
+   serializing that check against a concurrent native enrollment;
+2. **P2:** legacy/persisted plaintext HTTP donation URLs could still reach
+   Campaign QR rendering through activation/Feed/TV paths;
+3. **P2:** campaign activation validated one row snapshot and then activated
+   the row in a separate unfenced update, allowing a stale-validation race;
+4. **P2:** production migration history omitted repository migration
+   `20260901223000_atomic_push_account_registration` even though the semantic
+   function/privilege state already existed in production.
+
+### Reviewer remediation migration
+
+The additive production migration:
+
+`20260926091128_plan6_reviewer_concurrency_qr_safety`
+
+was applied directly to the real Prayerapp production Supabase project
+`dbqbzvkleqzbgufllgca` and is mirrored in the repository as:
+
+`supabase/migrations/20260926091128_plan6_reviewer_concurrency_qr_safety.sql`
+
+It:
+
+- installs a `BEFORE UPDATE OF applied_timezone` trigger on
+  `prayer_settings`;
+- acquires a PostgreSQL `SHARE` table lock on
+  `native_prayer_installations` before timezone activation, which conflicts
+  with enrollment `INSERT/UPDATE` row-exclusive locks;
+- rechecks for any non-revoked native installation while that serialization
+  lock is held;
+- adds an additive `NOT VALID` HTTPS-only check constraint for
+  `donation_campaigns.donation_url`, so new/updated insecure URLs fail while
+  untouched historical rows are not destructively rewritten.
+
+Direct production verification confirmed:
+
+- the timezone/native trigger is installed;
+- its trigger function is not executable by `anon` or `authenticated`;
+- the trigger function remains executable by `service_role`;
+- a transactional HTTP donation-URL probe was rejected by the database
+  constraint and left **0** test rows;
+- the post-change security advisor introduced no new migration-specific
+  security regression.
+
+### Application remediation
+
+The application/TV fixes additionally:
+
+- reject non-HTTPS Campaign donation URLs in active publishability validation;
+- reject non-HTTPS Campaign URLs in the root Feed projection;
+- reject non-HTTPS Campaign URLs in the TV Feed validator;
+- fence Campaign activation with the validated row's `updated_at` value and
+  fail with a reload/retry error when that row changed concurrently.
+
+The regression suite was first committed independently and observed RED on the
+unfixed branch:
+
+- root: timezone/native serialization test failed;
+- root: active HTTP Campaign QR validation test failed;
+- root: stale Campaign activation test failed;
+- TV: HTTP Campaign QR validation test failed.
+
+### Migration-history repair
+
+Before repair, production already contained the repository-authoritative
+`register_push_subscription(...)` function and the expected service-role-only
+EXECUTE boundary, but `supabase_migrations.schema_migrations` omitted version
+`20260901223000`.
+
+A history-only repair recorded:
+
+`20260901223000_atomic_push_account_registration`
+
+using the exact repository migration text as the tracking statement. The
+migration SQL was **not re-executed**. Production migration history now includes
+the missing version in timestamp order together with the later reconciliation
+and Plan 6 migrations.
+
+No destructive legacy-Iqama operation was performed. Plan 7 remains unstarted.

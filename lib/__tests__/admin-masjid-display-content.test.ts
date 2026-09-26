@@ -71,7 +71,7 @@ describe("Masjid Display content Admin", () => {
     expect(eventActions).toContain("validateDisplayAdminPublishableContent");
     expect(actions).toContain("validateDisplayAdminPublishableContent");
     expect(actions).toContain(
-      'select("title_ar,title_de,description_ar,description_de,donation_url")',
+      'select("title_ar,title_de,description_ar,description_de,donation_url,updated_at")',
     );
     expect(actions).toContain("donationUrl: row.donation_url || undefined");
   });

@@ -690,3 +690,41 @@ the missing version in timestamp order together with the later reconciliation
 and Plan 6 migrations.
 
 No destructive legacy-Iqama operation was performed. Plan 7 remains unstarted.
+
+
+### Full repository/production history parity follow-up
+
+The first history review exposed one missing production tracking version,
+`20260901223000_atomic_push_account_registration`. A full repository-wide
+comparison then identified three additional older repository versions that were
+also absent from production tracking even though their semantic state already
+existed in production:
+
+- `20260823104600_native_delivery_receipts`;
+- `20260826160500_friday_v2_khutbahs`;
+- `20260831080500_security_rate_limits`.
+
+Before any history repair, production was inspected directly:
+
+- native delivery receipt columns/table already existed;
+- Friday V2 `friday_khutbahs` existed, `jumuah_times.khutbah_time` was
+  nullable, public read grants were present, and service-role write authority
+  was present;
+- the security rate-limit table/function existed, the cleanup cron job existed,
+  and `consume_security_rate_limit` remained service-role-only.
+
+Each missing version was therefore recorded as a **history-only repair** using
+the exact repository migration text as its tracking statement. None of those
+three migration SQL files was re-executed.
+
+After the four history-only repairs, the complete timestamped migration sets
+match exactly:
+
+- repository migration files: **46**;
+- production migration-history rows: **46**;
+- repository-only versions: **0**;
+- production-only versions: **0**.
+
+The current production migration head remains:
+
+`20260926091128_plan6_reviewer_concurrency_qr_safety`.

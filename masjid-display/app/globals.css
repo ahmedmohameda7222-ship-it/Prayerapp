@@ -293,8 +293,48 @@ body {
 
 .display-footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: clamp(.75rem, 1.5vmin, 1.5rem);
   min-height: 0;
+}
+
+.presentation-mode-slot {
+  min-width: 0;
+  align-self: center;
+}
+
+.presentation-mode-control {
+  display: grid;
+  justify-items: start;
+  gap: clamp(.35rem, .7vmin, .65rem);
+  max-width: min(30rem, 48vw);
+}
+
+.presentation-mode-control button {
+  min-height: 2.75rem;
+  padding: clamp(.55rem, .9vmin, .85rem) clamp(.85rem, 1.4vmin, 1.35rem);
+  border: .1rem solid rgba(246, 242, 231, .62);
+  border-radius: clamp(.55rem, .8vmin, .8rem);
+  background: rgba(7, 20, 15, .9);
+  color: inherit;
+  font: inherit;
+  font-size: clamp(.85rem, 1.25vmin, 1.15rem);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.presentation-mode-control button:focus-visible {
+  outline: .18rem solid currentColor;
+  outline-offset: .18rem;
+}
+
+.presentation-mode-fallback {
+  margin: 0;
+  max-width: 32rem;
+  font-size: clamp(.72rem, 1vmin, .95rem);
+  line-height: 1.35;
+  opacity: .86;
 }
 
 .persistent-app-qr {

@@ -1,36 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 const FALLBACK_MESSAGE =
   "Vollbild über das Browser-Menü aktivieren / فعّل ملء الشاشة من قائمة المتصفح.";
 
+function subscribeToFullscreen(onStoreChange: () => void) {
+  document.addEventListener("fullscreenchange", onStoreChange);
+  return () => document.removeEventListener("fullscreenchange", onStoreChange);
+}
+
+function fullscreenSnapshot() {
+  return Boolean(document.fullscreenElement);
+}
+
+function fullscreenServerSnapshot() {
+  return false;
+}
+
+function fullscreenSupportSnapshot() {
+  return typeof document.documentElement.requestFullscreen === "function";
+}
+
+function fullscreenSupportServerSnapshot() {
+  return false;
+}
+
 export function PresentationModeControl() {
-  const [fullscreenActive, setFullscreenActive] = useState(false);
-  const [supported, setSupported] = useState<boolean | null>(null);
+  const fullscreenActive = useSyncExternalStore(
+    subscribeToFullscreen,
+    fullscreenSnapshot,
+    fullscreenServerSnapshot,
+  );
+  const supported = useSyncExternalStore(
+    subscribeToFullscreen,
+    fullscreenSupportSnapshot,
+    fullscreenSupportServerSnapshot,
+  );
   const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const root = document.documentElement;
-
-    const syncFullscreenState = () => {
-      const active = Boolean(document.fullscreenElement);
-      setFullscreenActive(active);
-      if (active) setFallbackMessage(null);
+    const handleFullscreenChange = () => {
+      if (document.fullscreenElement) {
+        setFallbackMessage(null);
+      }
     };
 
     const handleFullscreenError = () => {
       setFallbackMessage(FALLBACK_MESSAGE);
     };
 
-    setSupported(typeof root.requestFullscreen === "function");
-    syncFullscreenState();
-
-    document.addEventListener("fullscreenchange", syncFullscreenState);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("fullscreenerror", handleFullscreenError);
 
     return () => {
-      document.removeEventListener("fullscreenchange", syncFullscreenState);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.removeEventListener("fullscreenerror", handleFullscreenError);
     };
   }, []);
@@ -38,7 +62,6 @@ export function PresentationModeControl() {
   const enterFullscreen = async () => {
     const root = document.documentElement;
     if (typeof root.requestFullscreen !== "function") {
-      setSupported(false);
       setFallbackMessage(FALLBACK_MESSAGE);
       return;
     }
@@ -61,7 +84,7 @@ export function PresentationModeControl() {
     }
   };
 
-  if (supported === null || fullscreenActive) return null;
+  if (fullscreenActive) return null;
 
   if (!supported) {
     return (

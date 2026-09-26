@@ -4,6 +4,7 @@ import { DisplayMain } from "./DisplayMain";
 import { Header } from "./Header";
 import { PersistentAppQr } from "./PersistentAppQr";
 import { PrayerStrip } from "./PrayerStrip";
+import { PresentationModeControl } from "./PresentationModeControl";
 import { StatusOverlay } from "./StatusOverlay";
 import { TestModeBadge } from "./TestModeBadge";
 import { UrgentBar } from "./UrgentBar";
@@ -41,6 +42,9 @@ export function DisplayShell({
       <PrayerStrip vm={vm} />
 
       <footer className="display-footer">
+        <div className="presentation-mode-slot">
+          <PresentationModeControl />
+        </div>
         <PersistentAppQr publicAppUrl={vm.publicAppUrl} />
       </footer>
 

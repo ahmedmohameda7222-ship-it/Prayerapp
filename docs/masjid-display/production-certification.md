@@ -4,6 +4,18 @@ Status: BLOCKED
 
 Plan 5 is a production-readiness evidence gate. Software/certification-framework completion does not convert missing religious, real-target, physical, or soak evidence into PASS.
 
+## Plan 7 sequencing note — 2026-09-26
+
+The operator explicitly requires Vercel to deploy **`main` only** and to create no PR/feature-branch Preview deployment. The repository `vercel.json` already enforces `"**": false` with `"main": true`.
+
+Plan 7 therefore uses two certification stages:
+
+1. **Pre-merge:** exact feature-branch CI/security, source-boundary checks, documentation, self-review, and the final Codex review loop.
+2. **Post-merge:** after the independent Planner squash-merges to `main`, verify the resulting Vercel production deployment, Feed/Test Control, runtime logs, browser/fullscreen/diagnostics, real Admin Test Mode, physical TV/runtime, both real QR scans, temporary network interruption/recovery, and wake/visibility behavior.
+
+The absence of a Plan 7 Preview is intentional and must not be treated as a blocker or repaired by enabling Preview deployments. Plan 7 is not fully release-certified until the post-merge stage is executed and recorded.
+
+The historical Plan 6 note below says the destructive legacy-Iqama cutover was deferred to Plan 7. The approved Plan 7 design supersedes that expectation: destructive removal is **not** part of Plan 7 unless the user separately gives explicit destructive-migration authorization. The five legacy absolute-Iqama columns therefore remain compatibility-only during this plan.
 
 ## Plan 6 sequencing note — 2026-09-22
 

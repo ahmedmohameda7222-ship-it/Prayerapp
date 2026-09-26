@@ -728,3 +728,21 @@ match exactly:
 The current production migration head remains:
 
 `20260926091128_plan6_reviewer_concurrency_qr_safety`.
+
+
+### Timezone/native concurrency regression gate
+
+The local production-like migration harness now exercises both lock orderings
+against the migrated schema:
+
+1. an enrollment-style `ROW EXCLUSIVE` lock is acquired first and the
+   `prayer_settings.applied_timezone` update is verified to wait;
+2. timezone activation is started first, its trigger-held `SHARE` lock is
+   observed, and an enrollment-style `ROW EXCLUSIVE` attempt is verified to
+   fail on lock timeout rather than enter the cutover window.
+
+The harness emits:
+
+`PLAN6_TIMEZONE_NATIVE_CONCURRENCY=PASS`
+
+only when both interleavings are serialized.

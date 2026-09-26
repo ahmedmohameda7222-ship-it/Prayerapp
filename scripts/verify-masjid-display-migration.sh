@@ -391,6 +391,80 @@ echo "PLAN6_CHAIN_AFTER public_app_url=$public_app_url"
 echo "PLAN6_CHAIN_AFTER snapshot_acl=$snapshot_acl"
 echo "PLAN6_PREMERGE_CHAIN=PASS"
 
+# Concurrency regression: timezone activation and native enrollment must serialize
+# on native_prayer_installations. An enrollment-style ROW EXCLUSIVE lock acquired
+# first must delay timezone activation; once activation owns SHARE, an
+# enrollment-style ROW EXCLUSIVE acquisition must be unable to slip through.
+docker exec "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \
+  "begin; lock table public.native_prayer_installations in row exclusive mode; select pg_sleep(3); rollback;" \
+  >/tmp/plan6-enrollment-lock.log 2>&1 &
+enrollment_lock_pid=$!
+
+row_exclusive_ready=0
+for _ in $(seq 1 40); do
+  if [ "$(query_scalar "select count(*) from pg_locks where relation='public.native_prayer_installations'::regclass and mode='RowExclusiveLock' and granted;")" -gt 0 ]; then
+    row_exclusive_ready=1
+    break
+  fi
+  sleep 0.1
+done
+if [ "$row_exclusive_ready" != "1" ]; then
+  wait "$enrollment_lock_pid" || true
+  echo "Plan 6 concurrency probe could not establish enrollment-style ROW EXCLUSIVE lock" >&2
+  exit 1
+fi
+
+timezone_wait_started_ms="$(date +%s%3N)"
+docker exec "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \
+  "begin; set local lock_timeout='6s'; update public.prayer_settings set applied_timezone='UTC' where id='1'; rollback;" \
+  >/tmp/plan6-timezone-wait.log 2>&1
+timezone_wait_finished_ms="$(date +%s%3N)"
+wait "$enrollment_lock_pid"
+
+timezone_wait_elapsed_ms=$((timezone_wait_finished_ms - timezone_wait_started_ms))
+if [ "$timezone_wait_elapsed_ms" -lt 1000 ]; then
+  echo "Plan 6 timezone activation did not wait for concurrent enrollment-style lock: ${timezone_wait_elapsed_ms}ms" >&2
+  exit 1
+fi
+
+docker exec "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \
+  "begin; update public.prayer_settings set applied_timezone='UTC' where id='1'; select pg_sleep(3); rollback;" \
+  >/tmp/plan6-timezone-lock.log 2>&1 &
+timezone_lock_pid=$!
+
+share_ready=0
+for _ in $(seq 1 40); do
+  if [ "$(query_scalar "select count(*) from pg_locks where relation='public.native_prayer_installations'::regclass and mode='ShareLock' and granted;")" -gt 0 ]; then
+    share_ready=1
+    break
+  fi
+  sleep 0.1
+done
+if [ "$share_ready" != "1" ]; then
+  wait "$timezone_lock_pid" || true
+  echo "Plan 6 concurrency probe could not observe timezone SHARE lock" >&2
+  exit 1
+fi
+
+set +e
+enrollment_block_output="$(docker exec "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \
+  "begin; set local lock_timeout='500ms'; lock table public.native_prayer_installations in row exclusive mode; rollback;" 2>&1)"
+enrollment_block_status=$?
+set -e
+wait "$timezone_lock_pid"
+
+if [ "$enrollment_block_status" -eq 0 ]; then
+  echo "Plan 6 enrollment-style lock unexpectedly entered during timezone activation" >&2
+  exit 1
+fi
+if ! grep -qi "lock timeout" <<<"$enrollment_block_output"; then
+  echo "Plan 6 enrollment-style lock was blocked for an unexpected reason" >&2
+  printf '%s\n' "$enrollment_block_output" >&2
+  exit 1
+fi
+
+echo "PLAN6_TIMEZONE_NATIVE_CONCURRENCY=PASS enrollment and timezone activation serialize in both lock orderings"
+
 # Aggregate content-budget probe on the migrated state.
 set +e
 content_budget_output="$(

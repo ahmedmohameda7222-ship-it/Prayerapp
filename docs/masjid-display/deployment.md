@@ -114,7 +114,7 @@ Never assume simultaneous deployment.
 1. Create/use the independent TV project with root directory `masjid-display/`.
 2. Configure server-only `PRAYERAPP_ORIGIN` from the real root Prayerapp project.
 3. Run TV tests, lint, typecheck, build, and producer/consumer contract verification.
-4. Deploy the exact candidate commit.
+4. Deploy the exact candidate commit through the project's approved release path. For Plan 7 specifically, this means only after the independent Planner squash-merges to `main`; do not deploy the PR branch.
 5. Open diagnostics only for maintenance (`?diagnostics=1`) and verify schema, snapshot, sync, logical clock, coverage, online/LKG, and Test Mode flags.
 6. For an open Plan 7 PR, record exact-head automated evidence only; do not create a Vercel Preview.
 7. After the Planner squash-merges to `main`, record production browser/live evidence for the deployed merged commit. Physical-TV, real QR, offline/reconnect, and wake evidence remain final release-certification gates; 24/72-hour soak remains a non-blocking operational follow-up unless explicitly promoted to a gate.

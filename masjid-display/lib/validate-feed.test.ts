@@ -54,4 +54,11 @@ describe("Feed v1 consumer validation", () => {
     bad.announcements[0].messageDe = "";
     expect(() => validateFeedV1(bad)).toThrow(/messageDe|German|announcement/i);
   });
+
+  it("rejects HTTP campaign donation QR destinations", () => {
+    const bad = cloneFixture();
+    bad.campaigns[0].donationUrl = "http://example.com/donate";
+    expect(() => validateFeedV1(bad)).toThrow(/https|donationurl|url/i);
+  });
+
 });

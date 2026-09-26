@@ -328,4 +328,26 @@ describe("Plan 6 final-review runtime safety regressions", () => {
     expect(functionEnd).toBeGreaterThan(definition);
     expect(preflight).toBeGreaterThan(functionEnd);
   });
+
+  it("serializes timezone promotion against concurrent native enrollment before checking active installations", () => {
+    const sql = source(
+      "supabase/migrations/20260925073810_plan6_final_review_safety.sql",
+    ).toLowerCase();
+    const timezoneGuard = sql.indexOf(
+      "if v_settings.timezone <> v_settings.applied_timezone",
+    );
+    const nativeLock = sql.indexOf(
+      "lock table public.native_prayer_installations in share mode",
+      timezoneGuard,
+    );
+    const nativeGuard = sql.indexOf(
+      "from public.native_prayer_installations",
+      timezoneGuard,
+    );
+
+    expect(timezoneGuard).toBeGreaterThan(-1);
+    expect(nativeLock).toBeGreaterThan(timezoneGuard);
+    expect(nativeGuard).toBeGreaterThan(nativeLock);
+  });
+
 });

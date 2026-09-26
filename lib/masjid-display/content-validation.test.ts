@@ -103,4 +103,16 @@ describe("display publishability validation", () => {
       descriptionDe: "x".repeat(5_000),
     })).toEqual([]);
   });
+
+  it("rejects HTTP donation QR destinations when a campaign is active, including legacy persisted rows", () => {
+    expect(validateDisplayPublishableContent("campaign", {
+      isActive: true,
+      titleAr: "تبرع",
+      titleDe: "Spende",
+      descriptionAr: "وصف",
+      descriptionDe: "Beschreibung",
+      donationUrl: "http://example.com/donate",
+    })).toContain("Donation URL must use HTTPS");
+  });
+
 });

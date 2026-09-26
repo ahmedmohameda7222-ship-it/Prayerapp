@@ -94,25 +94,26 @@ Friday Dhuhr/Jumuah behavior must remain unchanged.
 
 No legacy absolute-Iqama database field may be reintroduced as a runtime source.
 
-### 4. Live verification uses preview-before-production
+### 4. Vercel deploys `main` only; Plan 7 uses a two-stage certification flow
 
 Plan 7 development happens on `feat/masjid-display-plan-7`, based on the current merged `main`.
 
-The existing TV production deployment must not be edited blindly while implementation is in progress.
+**User-approved deployment policy (2026-09-26): Vercel must not create PR/feature-branch Preview deployments. Only `main` may deploy.** The repository-level `vercel.json` already enforces this with `"**": false` and `"main": true`.
 
-Expected flow:
+Therefore the Plan 7 certification flow is intentionally split:
 
 1. implement Plan 7 on the feature branch;
-2. use Vercel Preview for the TV project when available;
-3. verify the exact candidate commit against the real production root Prayerapp;
-4. create/maintain a Draft PR against `main`;
-5. finish all implementation and live verification;
-6. run the final Codex review loop only at the end;
-7. return the final report to the independent Planner;
-8. only the Planner may approve the squash merge;
-9. after merge, verify the resulting production TV deployment from `main`.
+2. keep Vercel production unchanged while the PR is open;
+3. complete exact-head automated CI/security, source-boundary verification, documentation, and final pre-merge code review on the feature branch;
+4. return a pre-merge report to the independent Planner;
+5. only the Planner may approve and squash-merge the PR to `main`;
+6. allow the normal Vercel `main` deployment to produce the Plan 7 production candidate;
+7. verify that deployed `main` SHA, Feed/Test Control, runtime logs, browser/fullscreen/diagnostics, Admin Test Mode, and physical TV/QR/network/wake behavior;
+8. fix any post-merge defect through a new reviewed change rather than bypassing the main-only policy.
 
-The TV preview continues to use the server-only production root origin. No browser Supabase access or secret is introduced.
+No PR Preview is expected, required, or permitted for Plan 7 under this policy. No browser Supabase access or secret is introduced.
+
+**Ruling:** the original preview-before-merge sequence is superseded because it conflicts with the explicit main-only deployment policy. Cost if wrong: live defects can only be discovered after the Planner merges to `main`, so rollback/follow-up readiness is mandatory.
 
 ### 5. Physical target matrix is generic
 
@@ -211,7 +212,7 @@ Plan 7 is complete only when:
 - generic fullscreen/presentation mode is implemented and verified;
 - Prayer Strip Iqama readability is corrected;
 - exact-head automated checks are green;
-- Vercel Preview/live TV endpoints are healthy;
+- the main-only Vercel deployment policy is preserved before merge, and the post-merge `main` TV deployment/endpoints are healthy;
 - diagnostics are safe;
 - Test Mode end-to-end behavior is verified;
 - physical target evidence is recorded for the actual release browser/runtime;

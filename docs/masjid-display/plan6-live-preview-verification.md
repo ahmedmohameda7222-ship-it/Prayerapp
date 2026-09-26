@@ -455,10 +455,10 @@ The final-review safety migration was certified on implementation HEAD
 - Android TWA `36107788909`: **SUCCESS**, including API 23 and API 37.
 
 The exact additive SQL in
-`20260925070000_plan6_final_review_safety.sql` was then applied to the real
+`20260925073810_plan6_final_review_safety.sql` was then applied to the real
 Prayerapp production Supabase project
 `dbqbzvkleqzbgufllgca` as production migration
-`20260925073810_plan6_final_review_safety`.
+`20260925073810_plan6_final_review_safety`. The repository migration filename is now aligned to that applied production version; this bookkeeping alignment did not re-run the SQL.
 
 Same-query production preservation evidence before/after that apply is:
 

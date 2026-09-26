@@ -227,7 +227,7 @@ describe("Plan 6 final-review runtime safety regressions", () => {
 
   it("fails closed on timezone promotion after reminder delivery can start or while native alarms remain active", () => {
     const sql = source(
-      "supabase/migrations/20260925070000_plan6_final_review_safety.sql",
+      "supabase/migrations/20260925073810_plan6_final_review_safety.sql",
     ).toLowerCase();
     const functionStart = sql.indexOf(
       "create or replace function public.commit_prayer_schedule_recalculation",

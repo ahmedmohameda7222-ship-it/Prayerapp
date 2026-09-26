@@ -475,7 +475,7 @@ The branch corrections are:
 
 - the runtime-bootstrap assertion now validates generalized configured-or-
   bootstrap singleton invariants rather than exact seeded values;
-- `20260925070000_plan6_final_review_safety.sql` reasserts those generalized
+- `20260925073810_plan6_final_review_safety.sql` reasserts those generalized
   invariants and replaces the atomic recalculation RPC with fail-closed
   timezone-cutover guards;
 - timezone promotion is rejected while any non-revoked native prayer
@@ -513,11 +513,13 @@ Real Prayerapp production Supabase project/ref:
 
 Repository migration source:
 
-`supabase/migrations/20260925070000_plan6_final_review_safety.sql`
+`supabase/migrations/20260925073810_plan6_final_review_safety.sql`
 
 The connected Supabase migration API applied that exact non-destructive SQL as:
 
 `20260925073810_plan6_final_review_safety`
+
+The repository migration version is aligned with the already-applied production history; the rename changed only migration bookkeeping, not SQL or production state.
 
 The production migration head is therefore now:
 

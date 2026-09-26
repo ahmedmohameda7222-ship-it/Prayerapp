@@ -11,7 +11,7 @@ This document records only evidence that was actually observed. `NOT EXECUTED`, 
 | Repository | `ahmedmohameda7222-ship-it/Prayerapp` |
 | Branch | `feat/masjid-display-plan-7` |
 | Plan 7 Draft PR | #109 — open, Draft, unmerged |
-| Candidate HEAD at this checkpoint | `3bacefc16ddec4028bbea4b373ab2fa5c0638785` |
+| Candidate HEAD at this checkpoint | `1f5b17681466fca02fa82267aca49b6652a62a7e` before this policy-documentation update |
 | Approved main / Plans 1–6 base | `a38cc86c57e9955720b18d4707c69dadc1d11e0b` |
 | Final exact HEAD | NOT FINAL |
 | Supabase / SQL | No Plan 7 SQL or migration created so far |
@@ -74,11 +74,13 @@ This document records only evidence that was actually observed. `NOT EXECUTED`, 
 | Root production origin | `https://donaumoschee.vercel.app` |
 | Current TV production deployment | `dpl_3JoLiEfwaeM6kyRcuJ9PESb7SsZe` — READY |
 | Current TV production Git SHA | `a38cc86c57e9955720b18d4707c69dadc1d11e0b` (`main`) |
-| Plan 7 Preview deployment ID | BLOCKED — no automatic feature-branch Preview exists and the connected deployment action is unavailable |
-| Plan 7 Preview URL | BLOCKED |
-| Preview attached exact Plan 7 SHA | BLOCKED |
+| Vercel PR/feature-branch Preview | NOT REQUIRED / MUST NOT BE CREATED — user-approved main-only policy |
+| Repository deployment policy | PASS — `vercel.json` has `"**": false` and `"main": true` |
+| Plan 7 production deployment | POST-MERGE GATE — only after Planner squash-merges to `main` |
 
 Production was not replaced or promoted during Plan 7 development.
+
+**Deployment-policy ruling (2026-09-26):** Vercel must deploy `main` only and must not create PR/feature-branch Preview deployments. The earlier Preview requirement is superseded. Pre-merge certification covers exact-head code/CI/security/review evidence; Vercel live/Admin/physical certification moves to the merged `main` production deployment. Cost if wrong: a live-only defect is discovered after merge and must be handled by rollback or a follow-up reviewed fix.
 
 ### Production-path health observed while Preview is blocked
 
@@ -91,27 +93,37 @@ These checks prove only the stable merged production path; they do **not** certi
 
 ## Current exact-head CI evidence
 
-For checkpoint HEAD `3bacefc16ddec4028bbea4b373ab2fa5c0638785`:
+For exact pre-policy-update checkpoint HEAD `1f5b17681466fca02fa82267aca49b6652a62a7e`:
 
 | Gate / run | Result |
 | --- | --- |
-| Masjid Display Verification — run `36239830626`, `verify-tv-package` | PASS |
-| Masjid Display Verification — run `36239830626`, two-app integration | PENDING at evidence capture |
-| Root CI — run `36239830632` | PENDING at evidence capture |
-| Security Scanners — run `36239830631` | CodeQL JS/TS PASS; Gitleaks PASS; OSV PASS; SBOM PASS; exact-head DAST PASS; deployed-production DAST PASS; authenticated local DAST PASS |
-| Android TWA — run `36239830608` | Build candidate PASS; API 23/API 37 instrumentation PENDING at evidence capture |
-| GitHub CodeQL check | PASS |
+| Root `verify` | PASS — job `108398862013` |
+| Masjid Display `verify-tv-package` | PASS — job `108398788714` |
+| Masjid Display two-app integration | PASS — job `108398935213` |
+| CodeQL JavaScript/TypeScript | PASS — job `108398789211` |
+| GitHub CodeQL | PASS — job `108398967178` |
+| Gitleaks full-history scan | PASS — job `108398789233` |
+| OSV dependency scan | PASS — job `108398789225` |
+| SBOM generation | PASS — job `108398789258` |
+| Safe exact-head runtime DAST | PASS — job `108398789199` |
+| Safe authenticated local DAST | PASS — job `108398789123` |
+| Safe deployed-production DAST | PASS — job `108398789245` |
+| Android build candidate | PASS — job `108398794850` |
+| Android instrumentation API 23 | PASS — job `108399336740` |
+| Android instrumentation API 37 | PASS — job `108399336673` |
+| Release signing | SKIPPED as expected — no approved release/merge action |
 
-No claim that all exact-head checks are green is made while any required run is pending.
+All triggered required automated gates for `1f5b17681466fca02fa82267aca49b6652a62a7e` completed successfully. A later documentation-only HEAD must receive its own final exact-head checks before any pre-merge-ready claim.
 
 ## Live browser / Admin Test Mode / physical evidence
 
 | Required evidence | Result |
 | --- | --- |
-| Exact Plan 7 Preview responds | BLOCKED by missing Preview deployment |
-| Preview `/api/display-feed` | BLOCKED |
-| Preview `/api/test-control` | BLOCKED |
-| Runtime/log inspection on Preview | BLOCKED |
+| Vercel PR Preview | NOT APPLICABLE — deliberately disabled |
+| Merged `main` production responds with Plan 7 SHA | POST-MERGE |
+| Production `/api/display-feed` on merged Plan 7 | POST-MERGE |
+| Production `/api/test-control` on merged Plan 7 | POST-MERGE |
+| Runtime/log inspection on merged Plan 7 | POST-MERGE |
 | 1920×1080 browser viewport | NOT EXECUTED |
 | 2560×1440 or 3840×2160 browser viewport | NOT EXECUTED |
 | Real fullscreen entry/exit | NOT EXECUTED |
@@ -130,7 +142,7 @@ No claim that all exact-head checks are green is made while any required run is 
 
 ## Codex review
 
-Not requested. Per the approved Plan 7 order, Codex review is deferred until all implementation, live Vercel/browser verification, required physical/user checks, documentation, and self-review are complete.
+Not requested at this checkpoint. Because the user-approved main-only deployment policy makes feature-branch Vercel/live/physical verification impossible before merge, the pre-merge Codex gate will run only after the final documentation-only policy update has green exact-head CI and self-review. Post-merge Vercel/live/physical certification remains required before Plan 7 can be called fully release-certified.
 
 ## Operational follow-up
 

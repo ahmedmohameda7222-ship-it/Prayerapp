@@ -1,6 +1,37 @@
 # Masjid Display — Deployment, Rollback, and Operations
 
-## Plan 6 live-preview configuration
+## Plan 7 candidate workflow
+
+Plan 7 uses the existing TV project and preserves the stable production deployment while the feature branch is being certified.
+
+| Setting | Value |
+| --- | --- |
+| Root Prayerapp project | `donaumoschee` |
+| Root production origin | `https://donaumoschee.vercel.app` |
+| TV project | `donaumoschee-tv` |
+| TV project ID | `prj_6oqEYWPnfn1kMRo798M21swUl2w2` |
+| TV Root Directory | `masjid-display` |
+| Candidate branch | `feat/masjid-display-plan-7` |
+| Server-only upstream | `PRAYERAPP_ORIGIN=https://donaumoschee.vercel.app` |
+
+Required sequence:
+
+1. keep Plan 7 work on `feat/masjid-display-plan-7` and keep its PR against `main` Draft until certification is complete;
+2. use a Vercel Preview from the existing `donaumoschee-tv` project for the exact candidate HEAD where available;
+3. record the Preview deployment ID, URL, deployment state, and commit SHA;
+4. verify Preview `/api/display-feed` and `/api/test-control` against the real root production origin;
+5. inspect runtime errors/logs and browser UI before any production promotion;
+6. keep the current `main` production TV deployment intact until independent Planner approval and squash merge.
+
+`PRAYERAPP_ORIGIN` remains server-only. Never create `NEXT_PUBLIC_PRAYERAPP_ORIGIN`.
+
+### Presentation/fullscreen operation
+
+The TV UI exposes a native **Vollbild / ملء الشاشة** setup button while not fullscreen. Activate it through an ordinary user gesture (pointer/touch, keyboard Enter/Space, or normal TV-remote focused-button activation). The implementation uses the standard Fullscreen API with feature detection, requests hidden navigation UI where supported, hides the setup control in fullscreen, and restores it after exit.
+
+If programmatic fullscreen is unavailable or denied, follow the visible browser-level fallback instruction. Do not add Samsung-, Amazon-, Silk-, Chrome-, or other user-agent routing solely to force fullscreen.
+
+## Historical Plan 6 live-preview configuration
 
 The approved Plan 6 candidate configuration is:
 
@@ -81,7 +112,7 @@ Never assume simultaneous deployment.
 3. Run TV tests, lint, typecheck, build, and producer/consumer contract verification.
 4. Deploy the exact candidate commit.
 5. Open diagnostics only for maintenance (`?diagnostics=1`) and verify schema, snapshot, sync, logical clock, coverage, online/LKG, and Test Mode flags.
-6. Record browser/live-preview evidence for Plan 6. Physical-TV/QR and soak certification remain separate Plan 7/operational release follow-ups.
+6. Record browser/live-preview evidence for the current candidate. For Plan 7, physical-TV, real QR, offline/reconnect, and wake evidence are release certification gates; 24/72-hour soak remains a non-blocking operational follow-up unless explicitly promoted to a gate.
 
 ## Runtime outage behavior
 

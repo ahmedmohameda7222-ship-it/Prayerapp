@@ -27,6 +27,11 @@ export interface DisplayRuntimeDiagnostics {
   validationError: string | null;
 }
 
+export function nextClockTickDelay(deviceNowMs: number): number {
+  const remainder = ((deviceNowMs % 1_000) + 1_000) % 1_000;
+  return remainder === 0 ? 1_000 : 1_000 - remainder;
+}
+
 export interface DisplayRuntimeViewModel {
   feed: MasjidDisplayFeedV1 | null;
   logicalNow: Date;
@@ -295,7 +300,6 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
         responseReceivedAtMs,
         serverDateHeader,
       );
-      setLogicalNow(clock.now(responseReceivedAtMs));
       setDiagnostics((current) => ({
         ...current,
         clockOffsetMs: observation.offsetMs,
@@ -400,9 +404,14 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
     });
 
     const poll = window.setInterval(() => void refreshProduction(), 60_000);
-    const tick = window.setInterval(() => {
-      setLogicalNow(clock.now(Date.now()));
-    }, 1_000);
+    let tickTimer: number | null = null;
+    const scheduleTick = () => {
+      tickTimer = window.setTimeout(() => {
+        setLogicalNow(clock.now(Date.now()));
+        scheduleTick();
+      }, nextClockTickDelay(Date.now()));
+    };
+    scheduleTick();
 
     const wake = () => {
       setLogicalNow(clock.now(Date.now()));
@@ -417,7 +426,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
     return () => {
       disposed = true;
       window.clearInterval(poll);
-      window.clearInterval(tick);
+      if (tickTimer !== null) window.clearTimeout(tickTimer);
       window.removeEventListener("online", wake);
       document.removeEventListener("visibilitychange", visible);
     };

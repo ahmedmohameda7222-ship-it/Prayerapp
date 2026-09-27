@@ -432,7 +432,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
     };
   }, [clock, refreshProduction]);
 
-  const testControl = useTestControl(logicalNow, observeServerDate);
+  const testControl = useTestControl(logicalNow);
 
   const productionContent = useMemo(
     () => (feed ? activeDisplayContent(feed, logicalNow) : null),

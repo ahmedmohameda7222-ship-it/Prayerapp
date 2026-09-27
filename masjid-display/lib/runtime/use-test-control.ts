@@ -109,14 +109,7 @@ function parseTestControl(value: unknown): TestControlState | null {
   };
 }
 
-export function useTestControl(
-  logicalNow: Date,
-  observeServerDate?: (
-    requestStartedAtMs: number,
-    responseReceivedAtMs: number,
-    serverDateHeader: string,
-  ) => void,
-): TestControlState {
+export function useTestControl(logicalNow: Date): TestControlState {
   const [remoteState, setRemoteState] = useState<TestControlState>({ active: false });
   const requestGenerationRef = useRef(0);
   const latestAcceptedGenerationRef = useRef(0);
@@ -126,10 +119,8 @@ export function useTestControl(
 
     const poll = async () => {
       const generation = ++requestGenerationRef.current;
-      const requestStartedAtMs = Date.now();
       try {
         const response = await fetch("/api/test-control", { cache: "no-store" });
-        const responseReceivedAtMs = Date.now();
         if (cancelled || !response.ok) return;
 
         const parsed = parseTestControl(await response.json());
@@ -142,14 +133,6 @@ export function useTestControl(
         }
 
         latestAcceptedGenerationRef.current = generation;
-        const serverDate = response.headers.get("date");
-        if (serverDate) {
-          observeServerDate?.(
-            requestStartedAtMs,
-            responseReceivedAtMs,
-            serverDate,
-          );
-        }
         setRemoteState(parsed);
       } catch {
         // A transient Test Control failure does not discard an active override;
@@ -163,7 +146,7 @@ export function useTestControl(
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [observeServerDate]);
+  }, []);
 
   if (
     remoteState.active &&

@@ -198,6 +198,39 @@ describe("useDisplayRuntime", () => {
     expect(result.current.logicalNow.toISOString()).toBe("2026-09-15T18:00:04.000Z");
   });
 
+  it("lets the one-second display ticker own logicalNow between server syncs", async () => {
+    const validFeed = cloneFeed();
+    seedLkg(validFeed);
+    const response = deferred<Response>();
+    vi.setSystemTime(new Date("2026-09-15T18:00:00.000Z"));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockImplementation(() => response.promise));
+
+    const { result } = renderHook(() => useDisplayRuntime());
+    await flushEffects();
+    expect(result.current.logicalNow.toISOString()).toBe("2026-09-15T18:00:00.000Z");
+
+    vi.setSystemTime(new Date("2026-09-15T18:00:00.750Z"));
+    await act(async () => {
+      response.resolve(
+        new Response(null, {
+          status: 304,
+          headers: { date: "Tue, 15 Sep 2026 18:00:00 GMT" },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.logicalNow.toISOString()).toBe("2026-09-15T18:00:00.000Z");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(250);
+    });
+    expect(result.current.logicalNow.getTime()).toBeGreaterThan(
+      Date.parse("2026-09-15T18:00:00.000Z"),
+    );
+  });
+
   it("atomically replaces production state and LKG after a valid 200", async () => {
     const oldFeed = cloneFeed();
     seedLkg(oldFeed);

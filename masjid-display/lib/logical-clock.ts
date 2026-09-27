@@ -1,6 +1,5 @@
 const COARSE_DATE_JITTER_TOLERANCE_MS = 1_500;
-const LARGE_DRIFT_MS = 60_000;
-const CONSISTENT_LARGE_DRIFT_TOLERANCE_MS = 2_000;
+const CONSISTENT_DRIFT_TOLERANCE_MS = 2_000;
 
 export interface ClockObservation {
   accepted: boolean;
@@ -17,19 +16,15 @@ export interface LogicalClock {
   now(deviceNowMs: number): Date;
 }
 
-function requestMidpointMs(requestStartedAtMs: number, responseReceivedAtMs: number): number {
-  return requestStartedAtMs + (responseReceivedAtMs - requestStartedAtMs) / 2;
-}
-
 export function createLogicalClock(): LogicalClock {
   let offsetMs = 0;
   let hasValidatedOffset = false;
-  let pendingLargeOffsetMs: number | null = null;
+  let pendingOffsetMs: number | null = null;
 
   const observation = (accepted: boolean): ClockObservation => ({
     accepted,
     offsetMs,
-    pendingLargeDrift: pendingLargeOffsetMs !== null,
+    pendingLargeDrift: pendingOffsetMs !== null,
   });
 
   return {
@@ -44,40 +39,34 @@ export function createLogicalClock(): LogicalClock {
         return observation(false);
       }
 
-      const observedDeviceNowMs = requestMidpointMs(
-        requestStartedAtMs,
-        responseReceivedAtMs,
-      );
-      const candidateOffsetMs = serverNowMs - observedDeviceNowMs;
+      // HTTP Date describes when the response was originated, so calibrate it
+      // against response receipt. Using the request midpoint turns variable
+      // server processing time into false clock drift.
+      const candidateOffsetMs = serverNowMs - responseReceivedAtMs;
+
       if (!hasValidatedOffset) {
         offsetMs = candidateOffsetMs;
         hasValidatedOffset = true;
-        pendingLargeOffsetMs = null;
+        pendingOffsetMs = null;
         return observation(true);
       }
 
       const driftFromAcceptedOffsetMs = candidateOffsetMs - offsetMs;
       if (Math.abs(driftFromAcceptedOffsetMs) <= COARSE_DATE_JITTER_TOLERANCE_MS) {
-        pendingLargeOffsetMs = null;
-        return observation(true);
-      }
-
-      if (Math.abs(driftFromAcceptedOffsetMs) <= LARGE_DRIFT_MS) {
-        offsetMs = candidateOffsetMs;
-        pendingLargeOffsetMs = null;
+        pendingOffsetMs = null;
         return observation(true);
       }
 
       if (
-        pendingLargeOffsetMs !== null &&
-        Math.abs(candidateOffsetMs - pendingLargeOffsetMs) <= CONSISTENT_LARGE_DRIFT_TOLERANCE_MS
+        pendingOffsetMs !== null &&
+        Math.abs(candidateOffsetMs - pendingOffsetMs) <= CONSISTENT_DRIFT_TOLERANCE_MS
       ) {
         offsetMs = candidateOffsetMs;
-        pendingLargeOffsetMs = null;
+        pendingOffsetMs = null;
         return observation(true);
       }
 
-      pendingLargeOffsetMs = candidateOffsetMs;
+      pendingOffsetMs = candidateOffsetMs;
       return observation(false);
     },
 

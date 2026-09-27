@@ -360,6 +360,40 @@ describe("buildMasjidDisplayFeed", () => {
     expect(feed.generatedAt).toBe("2026-09-12T10:00:00.000Z");
   });
 
+  it("accepts a contiguous prayer schedule that safely ends before the approximate future horizon", async () => {
+    const source = deps();
+    source.getPrayerTimes.mockResolvedValue(
+      prayerRows("2026-09-26", "2026-10-31"),
+    );
+
+    const feed = await buildMasjidDisplayFeed(
+      new Date("2026-09-27T10:00:00.000Z"),
+      source as never,
+    );
+
+    expect(source.getPrayerTimes).toHaveBeenCalledWith(
+      true,
+      "2026-09-26",
+      "2026-11-01",
+    );
+    expect(feed.prayers.schedule[0]?.date).toBe("2026-09-26");
+    expect(feed.prayers.schedule.at(-1)?.date).toBe("2026-10-31");
+    expect(feed.prayers.schedule.some((day) => day.date === "2026-09-27")).toBe(true);
+  });
+
+  it("still rejects a contiguous prayer schedule that no longer covers the current day", async () => {
+    const source = deps();
+    source.getPrayerTimes.mockResolvedValue(
+      prayerRows("2026-09-26", "2026-09-26"),
+    );
+
+    await expect(
+      buildMasjidDisplayFeed(
+        new Date("2026-09-27T10:00:00.000Z"),
+        source as never,
+      ),
+    ).rejects.toBeInstanceOf(DisplayFeedBuildError);
+  });
   it("rejects a religious snapshot with an internal prayer-date gap", async () => {
     const source = deps();
     source.getPrayerTimes.mockResolvedValue(prayerRows().filter((row) => row.date !== "2026-09-25"));

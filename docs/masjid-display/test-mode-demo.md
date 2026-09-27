@@ -2,6 +2,10 @@
 
 Status: READY FOR OPERATOR EXECUTION
 
+## Plan 7 execution target — main-only Vercel policy
+
+Plan 7 does not use a Vercel PR/feature-branch Preview. This live operator checklist executes after the independent Planner squash-merges the approved Plan 7 PR and the normal `main` deployment is READY on `donaumoschee-tv`. Record the deployed `main` SHA before starting. Do not enable Preview deployments as part of Test Mode certification.
+
 This checklist exercises the real TV renderer through the Admin-only **Masjid Display Test** controls. Every synthetic scenario is temporary. The expected badge is always `TEST MODE / وضع الاختبار`. When a valid canonical Prayerapp URL exists, the persistent Prayerapp QR remains visible in every scenario.
 
 | Admin scenario | Expected TV visual state | Countdown | Persistent QR | Stop / expiry expectation |
@@ -26,14 +30,19 @@ This checklist exercises the real TV renderer through the Admin-only **Masjid Di
 | Missing/incomplete configuration | Configuration-degraded visual | No invented prayer/Iqama value | Visible when canonical URL is valid | Stop/expiry restores real configuration state |
 | Long Arabic/German | Long bilingual stress card | None | Visible | Stop/expiry returns to current production rotation |
 
+## Presentation-mode invariant
+
+Test Mode is independent of fullscreen/presentation state. Entering or leaving fullscreen must not start, stop, extend, replace, or otherwise mutate the active Test Mode scenario. The setup control is hidden while fullscreen is active and returns after fullscreen exit; the current synthetic scenario and TEST MODE badge continue normally.
+
 ## Operator sequence
 
-1. Open the Admin-only **Masjid Display Test** page and the actual TV display.
+1. Open the Admin-only **Masjid Display Test** page and the exact deployed TV candidate. If the target browser supports the standard Fullscreen API, enter presentation mode through **Vollbild / ملء الشاشة** and keep the TV in that mode while exercising the scenarios.
 2. Start each scenario in the table in button order. Confirm the expected state, countdown behavior where applicable, the TEST MODE badge, and persistent Prayerapp QR behavior.
 3. Switch directly from one active scenario to another and confirm the TV changes within the approximately two-second Test Control polling cadence.
 4. Use **Extend +15 minutes** once and verify the expiry advances by exactly 15 minutes.
 5. Use **Stop Test Mode** and verify the TV immediately returns to the **current** real state rather than replaying the pre-test state.
-6. For one scenario, do not stop it. Confirm automatic expiry after 15 minutes and the same return-to-current-real-state behavior.
+6. Switch fullscreen off and back on during one active scenario. Confirm the same scenario/revision remains active and no stale state is replayed.
+7. For one scenario, do not stop it. Confirm automatic expiry after 15 minutes and the same return-to-current-real-state behavior.
 
 ## Data isolation invariant
 

@@ -50,6 +50,7 @@ export function PrayerStrip({ vm }: { vm: DisplayRuntimeViewModel }) {
           key={cell.key}
         >
           <div
+            className="prayer-cell-content"
             data-testid={`prayer-${cell.key}`}
             data-informational={cell.informational ? "true" : undefined}
           >
@@ -57,9 +58,14 @@ export function PrayerStrip({ vm }: { vm: DisplayRuntimeViewModel }) {
               <strong>{cell.labelDe}</strong>
               <span dir="rtl">{cell.labelAr}</span>
             </div>
-            <time>{cell.time}</time>
+            <time className="prayer-time">{cell.time}</time>
             {cell.iqamaDelay === undefined ? null : (
-              <small>Iqama +{cell.iqamaDelay} min</small>
+              <div
+                className="prayer-iqama"
+                data-testid={`prayer-iqama-${cell.key}`}
+              >
+                Iqama +{cell.iqamaDelay} min
+              </div>
             )}
           </div>
         </article>

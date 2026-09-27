@@ -22,6 +22,7 @@ vi.mock("qrcode.react", () => ({
 
 const feed = structuredClone(fixture) as MasjidDisplayFeedV1;
 const fridayNoon = new Date("2026-09-18T10:34:56.000Z");
+const weekdayNoon = new Date("2026-09-17T10:34:56.000Z");
 
 function vm(overrides: Partial<DisplayRuntimeViewModel> = {}): DisplayRuntimeViewModel {
   return {
@@ -100,6 +101,25 @@ describe("DisplayShell", () => {
     expect(within(dhuhr).getByText(/Jumuah/i)).toBeInTheDocument();
     expect(within(dhuhr).getByText(/الجمعة/)).toBeInTheDocument();
     expect(within(dhuhr).queryByText(/Iqama/i)).not.toBeInTheDocument();
+  });
+
+  it("renders normal Iqama delays as separate rows while Sunrise stays informational", () => {
+    render(<DisplayShell vm={vm({ logicalNow: weekdayNoon })} />);
+
+    for (const prayer of ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const) {
+      const cell = screen.getByTestId(`prayer-${prayer}`);
+      const iqama = within(cell).getByTestId(`prayer-iqama-${prayer}`);
+      const prayerTime = cell.querySelector("time");
+
+      expect(iqama).toHaveClass("prayer-iqama");
+      expect(iqama).toHaveTextContent(/^Iqama \+\d+ min$/);
+      expect(prayerTime).toHaveClass("prayer-time");
+      expect(iqama).not.toContainElement(prayerTime);
+    }
+
+    expect(
+      within(screen.getByTestId("prayer-sunrise")).queryByTestId("prayer-iqama-sunrise"),
+    ).not.toBeInTheDocument();
   });
 
   it("omits the urgent bar when empty and shows production urgent content when present", () => {

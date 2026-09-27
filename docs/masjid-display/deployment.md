@@ -1,6 +1,41 @@
 # Masjid Display — Deployment, Rollback, and Operations
 
-## Plan 6 live-preview configuration
+## Plan 7 candidate workflow
+
+Plan 7 uses the existing TV project and preserves the stable production deployment while the feature branch is being certified. Vercel is intentionally configured to deploy `main` only; PR/feature-branch Preview deployments are disabled.
+
+| Setting | Value |
+| --- | --- |
+| Root Prayerapp project | `donaumoschee` |
+| Root production origin | `https://donaumoschee.vercel.app` |
+| TV project | `donaumoschee-tv` |
+| TV project ID | `prj_6oqEYWPnfn1kMRo798M21swUl2w2` |
+| TV Root Directory | `masjid-display` |
+| Candidate branch | `feat/masjid-display-plan-7` |
+| Server-only upstream | `PRAYERAPP_ORIGIN=https://donaumoschee.vercel.app` |
+
+Required sequence:
+
+1. keep Plan 7 work on `feat/masjid-display-plan-7` and keep its PR against `main` Draft during pre-merge certification;
+2. preserve the repository Vercel policy `git.deploymentEnabled["**"] = false` and `git.deploymentEnabled.main = true`;
+3. do **not** create or require a Vercel PR/feature-branch Preview;
+4. complete exact-head CI/security/source-boundary checks and final pre-merge review on the feature branch while the current `main` production TV deployment remains intact;
+5. only the independent Planner may authorize and perform the squash merge;
+6. after merge, allow the normal Vercel `main` deployment to deploy the merged Plan 7 commit;
+7. record the resulting production deployment ID, URL, state, and attached `main` commit SHA;
+8. verify production `/api/display-feed`, `/api/test-control`, runtime logs/errors, browser UI/fullscreen/diagnostics, Admin Test Mode, and physical TV/QR/network/wake behavior.
+
+This is a deliberate main-only release policy, not a missing-Preview blocker.
+
+`PRAYERAPP_ORIGIN` remains server-only. Never create `NEXT_PUBLIC_PRAYERAPP_ORIGIN`.
+
+### Presentation/fullscreen operation
+
+The TV UI exposes a native **Vollbild / ملء الشاشة** setup button while not fullscreen. Activate it through an ordinary user gesture (pointer/touch, keyboard Enter/Space, or normal TV-remote focused-button activation). The implementation uses the standard Fullscreen API with feature detection, requests hidden navigation UI where supported, hides the setup control in fullscreen, and restores it after exit.
+
+If programmatic fullscreen is unavailable or denied, follow the visible browser-level fallback instruction. Do not add Samsung-, Amazon-, Silk-, Chrome-, or other user-agent routing solely to force fullscreen.
+
+## Historical Plan 6 live-preview configuration
 
 The approved Plan 6 candidate configuration is:
 
@@ -79,9 +114,10 @@ Never assume simultaneous deployment.
 1. Create/use the independent TV project with root directory `masjid-display/`.
 2. Configure server-only `PRAYERAPP_ORIGIN` from the real root Prayerapp project.
 3. Run TV tests, lint, typecheck, build, and producer/consumer contract verification.
-4. Deploy the exact candidate commit.
+4. Deploy the exact candidate commit through the project's approved release path. For Plan 7 specifically, this means only after the independent Planner squash-merges to `main`; do not deploy the PR branch.
 5. Open diagnostics only for maintenance (`?diagnostics=1`) and verify schema, snapshot, sync, logical clock, coverage, online/LKG, and Test Mode flags.
-6. Record browser/live-preview evidence for Plan 6. Physical-TV/QR and soak certification remain separate Plan 7/operational release follow-ups.
+6. For an open Plan 7 PR, record exact-head automated evidence only; do not create a Vercel Preview.
+7. After the Planner squash-merges to `main`, record production browser/live evidence for the deployed merged commit. Physical-TV, real QR, offline/reconnect, and wake evidence remain final release-certification gates; 24/72-hour soak remains a non-blocking operational follow-up unless explicitly promoted to a gate.
 
 ## Runtime outage behavior
 

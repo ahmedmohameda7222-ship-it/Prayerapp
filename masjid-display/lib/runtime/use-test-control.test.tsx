@@ -1,5 +1,6 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useTestControl } from "./use-test-control";
 
@@ -280,7 +281,10 @@ describe("useTestControl", () => {
   });
 
   it("keeps Test Control polling independent from logical-clock calibration", () => {
-    const source = readFileSync(new URL("./use-test-control.ts", import.meta.url), "utf8");
+    const source = readFileSync(
+      path.join(process.cwd(), "lib/runtime/use-test-control.ts"),
+      "utf8",
+    );
 
     expect(source).not.toContain("observeServerDate");
     expect(source).not.toContain('headers.get("date")');

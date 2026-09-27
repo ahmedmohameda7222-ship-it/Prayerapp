@@ -94,6 +94,40 @@ describe("LogicalClock", () => {
     );
   });
 
+  it("keeps a validated offset stable across sub-second HTTP Date jitter", () => {
+    const clock = createLogicalClock();
+    const firstDeviceNow = Date.parse("2026-09-15T18:00:05.500Z");
+    const first = clock.observeServerDate(
+      firstDeviceNow,
+      firstDeviceNow,
+      "Tue, 15 Sep 2026 18:00:05 GMT",
+    );
+
+    expect(first.accepted).toBe(true);
+    expect(first.offsetMs).toBe(-500);
+
+    const earlyInSecond = Date.parse("2026-09-15T18:00:07.050Z");
+    const early = clock.observeServerDate(
+      earlyInSecond,
+      earlyInSecond,
+      "Tue, 15 Sep 2026 18:00:07 GMT",
+    );
+    expect(early.accepted).toBe(true);
+    expect(early.offsetMs).toBe(-500);
+
+    const lateInSecond = Date.parse("2026-09-15T18:00:09.950Z");
+    const late = clock.observeServerDate(
+      lateInSecond,
+      lateInSecond,
+      "Tue, 15 Sep 2026 18:00:09 GMT",
+    );
+    expect(late.accepted).toBe(true);
+    expect(late.offsetMs).toBe(-500);
+    expect(clock.now(Date.parse("2026-09-15T18:00:10.500Z")).toISOString()).toBe(
+      "2026-09-15T18:00:10.000Z",
+    );
+  });
+
   it("ignores an invalid server Date signal", () => {
     const clock = createLogicalClock();
     const first = Date.parse("2026-09-15T18:00:05Z");

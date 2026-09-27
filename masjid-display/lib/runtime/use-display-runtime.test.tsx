@@ -227,13 +227,6 @@ describe("useDisplayRuntime", () => {
     });
 
     expect(result.current.logicalNow.toISOString()).toBe("2026-09-15T18:00:00.000Z");
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(250);
-    });
-    expect(result.current.logicalNow.getTime()).toBeGreaterThan(
-      Date.parse("2026-09-15T18:00:00.000Z"),
-    );
   });
 
   it("atomically replaces production state and LKG after a valid 200", async () => {

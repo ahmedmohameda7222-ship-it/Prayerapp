@@ -178,7 +178,7 @@ describe("useDisplayRuntime", () => {
     expect(result.current.networkAvailable).toBe(false);
   });
 
-  it("uses request/response midpoint timing for a slow production Feed response", async () => {
+  it("calibrates a slow production Feed response against response receipt", async () => {
     const validFeed = cloneFeed();
     seedLkg(validFeed);
     const response = deferred<Response>();
@@ -193,7 +193,7 @@ describe("useDisplayRuntime", () => {
       response.resolve(
         new Response(null, {
           status: 304,
-          headers: { date: "Tue, 15 Sep 2026 18:00:02 GMT" },
+          headers: { date: "Tue, 15 Sep 2026 18:00:04 GMT" },
         }),
       );
       await Promise.resolve();

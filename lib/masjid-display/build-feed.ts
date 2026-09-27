@@ -434,8 +434,13 @@ export async function buildMasjidDisplayFeed(
     .filter((item) => item.published && item.date >= startDate && item.date <= endDate)
     .sort((a, b) => a.date.localeCompare(b.date));
   const schedule = representedPrayers.map(prayerDay);
-  const expectedDates = expectedScheduleDates(startDate, endDate);
+  const lastScheduleDate = schedule.at(-1)?.date;
+  const expectedDates = lastScheduleDate
+    ? expectedScheduleDates(startDate, lastScheduleDate)
+    : [];
   if (
+    !lastScheduleDate ||
+    lastScheduleDate < today ||
     schedule.length !== expectedDates.length ||
     schedule.some((day, index) => day.date !== expectedDates[index])
   ) {

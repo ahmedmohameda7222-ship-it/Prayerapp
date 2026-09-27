@@ -1,3 +1,4 @@
+const COARSE_DATE_JITTER_TOLERANCE_MS = 1_500;
 const LARGE_DRIFT_MS = 60_000;
 const CONSISTENT_LARGE_DRIFT_TOLERANCE_MS = 2_000;
 
@@ -55,7 +56,13 @@ export function createLogicalClock(): LogicalClock {
         return observation(true);
       }
 
-      if (Math.abs(candidateOffsetMs - offsetMs) <= LARGE_DRIFT_MS) {
+      const driftFromAcceptedOffsetMs = candidateOffsetMs - offsetMs;
+      if (Math.abs(driftFromAcceptedOffsetMs) <= COARSE_DATE_JITTER_TOLERANCE_MS) {
+        pendingLargeOffsetMs = null;
+        return observation(true);
+      }
+
+      if (Math.abs(driftFromAcceptedOffsetMs) <= LARGE_DRIFT_MS) {
         offsetMs = candidateOffsetMs;
         pendingLargeOffsetMs = null;
         return observation(true);

@@ -88,7 +88,7 @@ describe("LogicalClock", () => {
     );
   });
 
-  it("requires a second consistent midpoint observation before adopting large drift", () => {
+  it("requires a second consistent response-time observation before adopting large drift", () => {
     const clock = createLogicalClock();
     const base = Date.parse("2026-09-15T18:00:05Z");
     clock.observeServerDate(base, base, "Tue, 15 Sep 2026 18:00:00 GMT");
@@ -112,7 +112,7 @@ describe("LogicalClock", () => {
     expect(secondLarge.accepted).toBe(true);
     expect(secondLarge.pendingLargeDrift).toBe(false);
     expect(clock.now(Date.parse("2026-09-15T18:10:14Z")).toISOString()).toBe(
-      "2026-09-15T18:15:14.000Z",
+      "2026-09-15T18:15:12.000Z",
     );
   });
 

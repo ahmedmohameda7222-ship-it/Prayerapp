@@ -11,7 +11,7 @@ This document records only evidence that was actually observed. `NOT EXECUTED`, 
 | Repository | `ahmedmohameda7222-ship-it/Prayerapp` |
 | Branch | `feat/masjid-display-plan-7` |
 | Plan 7 Draft PR | #109 — open, Draft, unmerged |
-| Candidate HEAD at this checkpoint | `1f5b17681466fca02fa82267aca49b6652a62a7e` before this policy-documentation update |
+| Candidate HEAD at this checkpoint | `89f101ae8dc9ab1307f698d74630a1a7cfb4dbc5` before this evidence refresh |
 | Approved main / Plans 1–6 base | `a38cc86c57e9955720b18d4707c69dadc1d11e0b` |
 | Final exact HEAD | NOT FINAL |
 | Supabase / SQL | No Plan 7 SQL or migration created so far |
@@ -93,27 +93,29 @@ These checks prove only the stable merged production path; they do **not** certi
 
 ## Current exact-head CI evidence
 
-For exact pre-policy-update checkpoint HEAD `1f5b17681466fca02fa82267aca49b6652a62a7e`:
+For exact documentation/policy checkpoint HEAD `89f101ae8dc9ab1307f698d74630a1a7cfb4dbc5`:
 
 | Gate / run | Result |
 | --- | --- |
-| Root `verify` | PASS — job `108398862013` |
-| Masjid Display `verify-tv-package` | PASS — job `108398788714` |
-| Masjid Display two-app integration | PASS — job `108398935213` |
-| CodeQL JavaScript/TypeScript | PASS — job `108398789211` |
-| GitHub CodeQL | PASS — job `108398967178` |
-| Gitleaks full-history scan | PASS — job `108398789233` |
-| OSV dependency scan | PASS — job `108398789225` |
-| SBOM generation | PASS — job `108398789258` |
-| Safe exact-head runtime DAST | PASS — job `108398789199` |
-| Safe authenticated local DAST | PASS — job `108398789123` |
-| Safe deployed-production DAST | PASS — job `108398789245` |
-| Android build candidate | PASS — job `108398794850` |
-| Android instrumentation API 23 | PASS — job `108399336740` |
-| Android instrumentation API 37 | PASS — job `108399336673` |
+| Root `verify` | PASS — run `36243095605`, job `108407190798` |
+| Masjid Display `verify-tv-package` | PASS — run `36243095602`, job `108407184886` |
+| Masjid Display two-app integration | PASS — run `36243095602`, job `108407326199` |
+| CodeQL JavaScript/TypeScript | PASS — run `36243095614`, job `108407192290` |
+| GitHub CodeQL | PASS — check `108407351709` |
+| Gitleaks full-history scan | PASS — run `36243095614`, job `108407192196` |
+| OSV dependency scan | PASS — run `36243095614`, job `108407192244` |
+| SBOM generation | PASS — run `36243095614`, job `108407192085` |
+| Safe exact-head runtime DAST | PASS — run `36243095614`, job `108407192226` |
+| Safe authenticated local DAST | PASS — run `36243095614`, job `108407192198` |
+| Safe deployed-production DAST | PASS — run `36243095614`, job `108407192220` |
+| Android build candidate | PASS — run `36243095626`, job `108407189091` |
+| Android instrumentation API 23 | PASS — run `36243095626`, job `108407700529` |
+| Android instrumentation API 37 | PASS — run `36243095626`, job `108407700527` |
 | Release signing | SKIPPED as expected — no approved release/merge action |
 
-All triggered required automated gates for `1f5b17681466fca02fa82267aca49b6652a62a7e` completed successfully. A later documentation-only HEAD must receive its own final exact-head checks before any pre-merge-ready claim.
+All triggered required automated gates for `89f101ae8dc9ab1307f698d74630a1a7cfb4dbc5` completed successfully. Source-boundary recheck also found no TV Supabase runtime/client, no `NEXT_PUBLIC_PRAYERAPP_ORIGIN`, no prayer-calculation/audio path, and no production vendor/user-agent fullscreen routing.
+
+This evidence refresh itself creates a newer documentation-only HEAD. To avoid an infinite evidence-commit loop, the final exact-head workflow IDs and final Codex closure after this refresh are recorded in PR #109 metadata/conversation.
 
 ## Live browser / Admin Test Mode / physical evidence
 
@@ -142,7 +144,11 @@ All triggered required automated gates for `1f5b17681466fca02fa82267aca49b6652a6
 
 ## Codex review
 
-Not requested at this checkpoint. Because the user-approved main-only deployment policy makes feature-branch Vercel/live/physical verification impossible before merge, the pre-merge Codex gate will run only after the final documentation-only policy update has green exact-head CI and self-review. Post-merge Vercel/live/physical certification remains required before Plan 7 can be called fully release-certified.
+The final pre-merge Codex review was requested on exact documentation HEAD `e568e8b30dd9190810a60228ccff3e436498ddc3` with the approved main-only Vercel ruling explicitly included. The Codex connector did **not** perform a review: it returned a usage-limit message, so there were no findings to accept, reject, or resolve.
+
+Two later commits through `89f101ae8dc9ab1307f698d74630a1a7cfb4dbc5` are documentation-only (`production-certification.md` and the Plan 7 design) and their exact-head CI is green as recorded above.
+
+A fresh Codex request is required on the final documentation HEAD after this evidence refresh. If quota remains unavailable, that is an external review-service blocker and must be reported truthfully; it is not equivalent to a clean Codex review.
 
 ## Operational follow-up
 

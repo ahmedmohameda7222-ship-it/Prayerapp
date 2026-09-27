@@ -1,4 +1,6 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useTestControl } from "./use-test-control";
 
@@ -278,31 +280,13 @@ describe("useTestControl", () => {
     expect(result.current).toEqual({ active: false });
   });
 
-  it("reports request start and response receipt to the logical clock callback", async () => {
-    const observe = vi.fn();
-    const response = deferred<Response>();
-    vi.setSystemTime(new Date("2026-09-15T18:00:00.000Z"));
-    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockImplementation(() => response.promise));
-
-    renderHook(() => useTestControl(new Date(Date.now()), observe));
-    await flushEffects();
-
-    vi.setSystemTime(new Date("2026-09-15T18:00:04.000Z"));
-    await act(async () => {
-      response.resolve(
-        new Response(JSON.stringify({ active: false }), {
-          status: 200,
-          headers: { "content-type": "application/json", date: "Tue, 15 Sep 2026 18:00:02 GMT" },
-        }),
-      );
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(observe).toHaveBeenCalledWith(
-      Date.parse("2026-09-15T18:00:00.000Z"),
-      Date.parse("2026-09-15T18:00:04.000Z"),
-      "Tue, 15 Sep 2026 18:00:02 GMT",
+  it("keeps Test Control polling independent from logical-clock calibration", () => {
+    const source = readFileSync(
+      path.join(process.cwd(), "lib/runtime/use-test-control.ts"),
+      "utf8",
     );
+
+    expect(source).not.toContain("observeServerDate");
+    expect(source).not.toContain('headers.get("date")');
   });
 });

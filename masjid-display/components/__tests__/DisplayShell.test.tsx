@@ -152,6 +152,16 @@ describe("DisplayShell", () => {
     expect(css).toMatch(/\.content-card\s*\{[\s\S]*?font-size:\s*clamp\(/);
   });
 
+  it("uses an explicit calm TV palette and gives the Prayer Strip dedicated readable height", () => {
+    const css = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
+
+    expect(css).toContain("--display-bg-deep:");
+    expect(css).toContain("--display-accent:");
+    expect(css).toMatch(/\.display-shell\s*\{[\s\S]*?background:[\s\S]*?radial-gradient/);
+    expect(css).toMatch(/\.prayer-strip\s*\{[\s\S]*?min-height:\s*clamp\(/);
+    expect(css).toMatch(/\.prayer-cell\s*\{[\s\S]*?background:/);
+  });
+
   it("uses fluid/container layout rules without physical-device media queries", () => {
     const css = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
     expect(css).toMatch(/\.display-shell\s*\{/);

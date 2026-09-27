@@ -14,23 +14,10 @@ import { PrayerInProgress } from "./states/PrayerInProgress";
 import { PrayerTimeNow } from "./states/PrayerTimeNow";
 import { WaitingForIqama } from "./states/WaitingForIqama";
 
-function NormalPrayerPanel({ vm }: { vm: DisplayRuntimeViewModel }) {
-  const day = vm.content?.prayerDay;
-  if (!day) return null;
-  return (
-    <section className="content-slide normal-prayer-panel">
-      <h2>Gebetszeiten / مواقيت الصلاة</h2>
-      <p>{day.fajr} · {day.sunrise} · {day.dhuhr} · {day.asr} · {day.maghrib} · {day.isha}</p>
-    </section>
-  );
-}
-
 function renderNormalSlide(vm: DisplayRuntimeViewModel, slide: NormalSlide | null) {
   if (!slide || !vm.content) return null;
 
   switch (slide.kind) {
-    case "PRAYER":
-      return <NormalPrayerPanel vm={vm} />;
     case "AZKAR": {
       const item = vm.content.azkar.find((entry) => entry.id === slide.itemId);
       return item ? <AzkarSlide item={item} /> : null;

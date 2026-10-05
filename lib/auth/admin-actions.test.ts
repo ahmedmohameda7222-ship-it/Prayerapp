@@ -13,9 +13,9 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
-import { verifyAdminAction } from "./admin-actions";
+import { establishAdminSessionAction, verifyAdminAction } from "./admin-actions";
 
-describe("verifyAdminAction", () => {
+describe("admin auth actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.ADMIN_EMAILS = "admin@example.com";
@@ -43,5 +43,27 @@ describe("verifyAdminAction", () => {
     expect(mocks.getUser).toHaveBeenCalledWith("stable-admin-token");
     expect(mocks.from).not.toHaveBeenCalled();
     expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+
+  it("synchronizes the admin profile once when establishing a signed-in session", async () => {
+    await expect(establishAdminSessionAction("stable-admin-token")).resolves.toEqual({
+      allowed: true,
+      email: "admin@example.com",
+    });
+
+    expect(mocks.getUser).toHaveBeenCalledTimes(1);
+    expect(mocks.getUser).toHaveBeenCalledWith("stable-admin-token");
+    expect(mocks.from).toHaveBeenCalledTimes(1);
+    expect(mocks.from).toHaveBeenCalledWith("admin_users");
+    expect(mocks.upsert).toHaveBeenCalledTimes(1);
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      {
+        user_id: "admin-1",
+        email: "admin@example.com",
+        display_name: "Admin",
+        role: "Admin",
+      },
+      { onConflict: "email" },
+    );
   });
 });

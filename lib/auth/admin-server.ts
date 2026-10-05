@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 export type AllowedAdminIdentity = {
   userId: string;
   email: string;
+  displayName: string;
 };
 
 function getServerAdminEmails(): string[] {
@@ -29,7 +30,12 @@ export async function getAllowedAdminIdentity(token: string): Promise<AllowedAdm
     const allowed = getServerAdminEmails();
     if (!allowed.includes(email)) return null;
 
-    return { userId: data.user.id, email };
+    const displayName =
+      typeof data.user.user_metadata?.display_name === "string" && data.user.user_metadata.display_name.trim()
+        ? data.user.user_metadata.display_name.trim()
+        : email.split("@")[0];
+
+    return { userId: data.user.id, email, displayName };
   } catch {
     return null;
   }

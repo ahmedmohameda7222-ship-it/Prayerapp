@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useReducer, useCallback } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
+import type { Session, User } from "@supabase/supabase-js";
+import { usePublicAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
-import { verifyAdminAction } from "./admin-actions";
-import type { User, Session } from "@supabase/supabase-js";
+import { establishAdminSessionAction, verifyAdminAction } from "./admin-actions";
 
 export type AdminAuthState = {
   user: User | null;
@@ -14,11 +25,11 @@ export type AdminAuthState = {
   error: string | null;
 };
 
-type Action =
-  | { type: "SET_SESSION"; user: User | null; session: Session | null; isAdmin: boolean }
-  | { type: "SET_ERROR"; error: string }
-  | { type: "SET_LOADING"; loading: boolean }
-  | { type: "RESET" };
+type AdminAuthContextValue = AdminAuthState & {
+  signIn: (email: string, password: string) => Promise<boolean>;
+  signOut: () => Promise<void>;
+  refresh: () => Promise<void>;
+};
 
 const initialState: AdminAuthState = {
   user: null,
@@ -28,95 +39,211 @@ const initialState: AdminAuthState = {
   error: null,
 };
 
-function reducer(state: AdminAuthState, action: Action): AdminAuthState {
-  switch (action.type) {
-    case "SET_SESSION":
-      return { ...state, user: action.user, session: action.session, isAdmin: action.isAdmin, loading: false, error: null };
-    case "SET_ERROR":
-      return { ...state, error: action.error, loading: false };
-    case "SET_LOADING":
-      return { ...state, loading: action.loading };
-    case "RESET":
-      return { user: null, session: null, isAdmin: false, loading: false, error: null };
-  }
-}
+const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
 
-export function useAdminAuth() {
+export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const {
+    session: publicSession,
+    user: publicUser,
+    loading: publicLoading,
+  } = usePublicAuth();
+  const [state, setState] = useState<AdminAuthState>(initialState);
+  const verifiedTokenRef = useRef<string | null>(null);
+  const verificationIdRef = useRef(0);
+  const signInInFlightRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
-    async function init() {
-      const client = createClient();
-      if (!client) {
-        if (!cancelled) dispatch({ type: "SET_LOADING", loading: false });
-        return;
-      }
-      const { data, error } = await client.auth.getSession();
-      if (cancelled) return;
-      if (error || !data.session) {
-        dispatch({ type: "SET_LOADING", loading: false });
-        return;
-      }
-      const verification = await verifyAdminAction(data.session.access_token);
-      const allowed = verification.allowed;
-      dispatch({ type: "SET_SESSION", user: data.session.user, session: data.session, isAdmin: allowed });
+    if (publicLoading) {
+      setState((current) => ({
+        ...current,
+        user: publicUser,
+        session: publicSession,
+        loading: true,
+      }));
+      return;
     }
-    init();
-    return () => { cancelled = true; };
-  }, []);
+
+    const token = publicSession?.access_token ?? null;
+    if (!token) {
+      verifiedTokenRef.current = null;
+      verificationIdRef.current += 1;
+      if (!signInInFlightRef.current) {
+        setState({ ...initialState, loading: false });
+      }
+      return;
+    }
+
+    if (signInInFlightRef.current) {
+      setState((current) => ({
+        ...current,
+        user: publicUser,
+        session: publicSession,
+        loading: true,
+      }));
+      return;
+    }
+
+    if (verifiedTokenRef.current === token) {
+      setState((current) => ({
+        ...current,
+        user: publicUser,
+        session: publicSession,
+        loading: false,
+      }));
+      return;
+    }
+
+    const verificationId = ++verificationIdRef.current;
+    setState((current) => ({
+      ...current,
+      user: publicUser,
+      session: publicSession,
+      loading: true,
+      error: null,
+    }));
+
+    void verifyAdminAction(token)
+      .then((verification) => {
+        if (verificationIdRef.current !== verificationId) return;
+        verifiedTokenRef.current = token;
+        setState({
+          user: publicUser,
+          session: publicSession,
+          isAdmin: verification.allowed,
+          loading: false,
+          error: null,
+        });
+      })
+      .catch(() => {
+        if (verificationIdRef.current !== verificationId) return;
+        verifiedTokenRef.current = token;
+        setState({
+          user: publicUser,
+          session: publicSession,
+          isAdmin: false,
+          loading: false,
+          error: null,
+        });
+      });
+  }, [publicLoading, publicSession, publicUser]);
 
   const signOut = useCallback(async () => {
+    verificationIdRef.current += 1;
+    verifiedTokenRef.current = null;
+    signInInFlightRef.current = false;
+
     const client = createClient();
     if (client) {
       await client.auth.signOut();
     }
-    dispatch({ type: "RESET" });
+
+    setState({ ...initialState, loading: false });
     router.push("/admin/login");
   }, [router]);
 
-  const signIn = useCallback(
-    async (email: string, password: string) => {
-      const client = createClient();
-      if (!client) {
-        dispatch({ type: "SET_ERROR", error: "admin.errors.supabaseNotConfigured" });
-        return false;
-      }
-      dispatch({ type: "SET_LOADING", loading: true });
-      const { data, error } = await client.auth.signInWithPassword({ email, password });
-      if (error || !data.session) {
-        dispatch({ type: "SET_ERROR", error: "admin.errors.invalidCredentials" });
-        return false;
-      }
-      const verification = await verifyAdminAction(data.session.access_token);
-      const allowed = verification.allowed;
-      if (!allowed) {
-        await client.auth.signOut();
-        dispatch({ type: "SET_ERROR", error: "admin.errors.unauthorized" });
-        return false;
-      }
-      dispatch({ type: "SET_SESSION", user: data.user, session: data.session, isAdmin: true });
-      return true;
-    },
-    []
-  );
-
-  const refresh = useCallback(async () => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const client = createClient();
     if (!client) {
-      dispatch({ type: "SET_LOADING", loading: false });
-      return;
+      setState((current) => ({
+        ...current,
+        loading: false,
+        error: "admin.errors.supabaseNotConfigured",
+      }));
+      return false;
     }
-    const { data, error } = await client.auth.getSession();
+
+    signInInFlightRef.current = true;
+    setState((current) => ({ ...current, loading: true, error: null }));
+
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error || !data.session) {
-      dispatch({ type: "SET_LOADING", loading: false });
-      return;
+      signInInFlightRef.current = false;
+      setState((current) => ({
+        ...current,
+        isAdmin: false,
+        loading: false,
+        error: "admin.errors.invalidCredentials",
+      }));
+      return false;
     }
-    const verification = await verifyAdminAction(data.session.access_token);
-    const allowed = verification.allowed;
-    dispatch({ type: "SET_SESSION", user: data.session.user, session: data.session, isAdmin: allowed });
+
+    const establishment = await establishAdminSessionAction(data.session.access_token);
+    signInInFlightRef.current = false;
+
+    if (!establishment.allowed) {
+      await client.auth.signOut();
+      verifiedTokenRef.current = null;
+      setState({
+        user: null,
+        session: null,
+        isAdmin: false,
+        loading: false,
+        error: "admin.errors.unauthorized",
+      });
+      return false;
+    }
+
+    verificationIdRef.current += 1;
+    verifiedTokenRef.current = data.session.access_token;
+    setState({
+      user: data.user,
+      session: data.session,
+      isAdmin: true,
+      loading: false,
+      error: null,
+    });
+    return true;
   }, []);
 
-  return { ...state, signIn, signOut, refresh };
+  const refresh = useCallback(async () => {
+    const session = state.session ?? publicSession;
+    if (!session) {
+      verifiedTokenRef.current = null;
+      setState({ ...initialState, loading: false });
+      return;
+    }
+
+    const token = session.access_token;
+    const verificationId = ++verificationIdRef.current;
+    setState((current) => ({ ...current, loading: true, error: null }));
+
+    try {
+      const verification = await verifyAdminAction(token);
+      if (verificationIdRef.current !== verificationId) return;
+      verifiedTokenRef.current = token;
+      setState({
+        user: session.user,
+        session,
+        isAdmin: verification.allowed,
+        loading: false,
+        error: null,
+      });
+    } catch {
+      if (verificationIdRef.current !== verificationId) return;
+      verifiedTokenRef.current = token;
+      setState({
+        user: session.user,
+        session,
+        isAdmin: false,
+        loading: false,
+        error: null,
+      });
+    }
+  }, [publicSession, state.session]);
+
+  const value = useMemo<AdminAuthContextValue>(
+    () => ({ ...state, signIn, signOut, refresh }),
+    [refresh, signIn, signOut, state],
+  );
+
+  return createElement(AdminAuthContext.Provider, { value }, children);
+}
+
+export function useAdminAuth() {
+  const value = useContext(AdminAuthContext);
+  if (!value) {
+    throw new Error("useAdminAuth must be used within AdminAuthProvider");
+  }
+  return value;
 }

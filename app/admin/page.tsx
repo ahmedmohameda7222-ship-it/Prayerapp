@@ -7,42 +7,58 @@ import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminWarningCard } from "@/components/admin/AdminWarningCard";
 import { Card } from "@/components/ui/Card";
 import { DataError, DataLoading } from "@/components/ui/DataState";
-import { getAnnouncements } from "@/lib/data/announcements";
-import { getDonationCampaigns } from "@/lib/data/donations";
-import { getJumuahTimes } from "@/lib/data/jumuah";
-import { getPrayerTimes } from "@/lib/data/prayer-times";
-import { addDaysIso } from "@/lib/date-utils";
-import { getMissingPublishedPrayerDates } from "@/lib/prayer-coverage";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
 import { useAsyncData } from "@/lib/hooks/use-async-data";
-import { loadAdminRuntimeDateAction } from "./runtime-date";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import { loadAdminDashboardSummaryAction } from "./dashboard-summary";
 
 export default function AdminDashboardPage() {
   const { t } = useTranslation();
   const { session } = useAdminAuth();
   const accessToken = session?.access_token || "";
   const { data, loading, error, reload } = useAsyncData(
-    () => accessToken ? loadDashboard(accessToken) : Promise.resolve(null),
+    async () => {
+      if (!accessToken) return null;
+      const result = await loadAdminDashboardSummaryAction(accessToken);
+      if (!result.success || !result.data) {
+        throw new Error(result.error || "Unable to load admin dashboard summary");
+      }
+      return result.data;
+    },
     accessToken,
   );
-  const today = data?.today ?? "";
-  const nextWeekStart = today ? addDaysIso(today, 1) : "";
-  const nextWeekMissing = data && today
-    ? getMissingPublishedPrayerDates(data.prayerTimes, nextWeekStart, 7).length > 0
-    : false;
 
   return (
     <AdminShell titleKey="admin.dashboard">
       {loading ? <DataLoading /> : null}
       {error ? <DataError message={error} retry={reload} /> : null}
       {data ? <div className="grid gap-5">
-        {nextWeekMissing ? <AdminWarningCard message={t("admin.missingNextWeek")} /> : null}
+        {data.nextWeekMissing ? <AdminWarningCard message={t("admin.missingNextWeek")} /> : null}
         <div className="admin-grid">
-          <AdminStatCard label={t("admin.todayPrayerStatus")} value={data.prayerTimes.some((item) => item.date === today && item.published) ? t("admin.published") : t("admin.notPublished")} note={t("admin.liveDate", { date: today })} icon={Clock} />
-          <AdminStatCard label={t("admin.jumuahStatus")} value={data.jumuah.some((item) => item.date >= today && item.published) ? t("admin.published") : t("admin.notPublished")} note={t("admin.fridayVisible")} icon={ShieldCheck} />
-          <AdminStatCard label={t("admin.activeCampaigns")} value={data.campaigns.filter((item) => item.isActive).length} note={t("admin.featuredCount", { count: data.campaigns.filter((item) => item.isFeatured).length })} icon={HandHeart} />
-          <AdminStatCard label={t("admin.announcements")} value={t("admin.liveCount", { count: data.announcements.filter((item) => item.published).length })} note={t("admin.urgentCount", { count: data.announcements.filter((item) => item.isUrgent).length })} icon={Bell} />
+          <AdminStatCard
+            label={t("admin.todayPrayerStatus")}
+            value={data.todayPrayerPublished ? t("admin.published") : t("admin.notPublished")}
+            note={t("admin.liveDate", { date: data.today })}
+            icon={Clock}
+          />
+          <AdminStatCard
+            label={t("admin.jumuahStatus")}
+            value={data.upcomingJumuahPublished ? t("admin.published") : t("admin.notPublished")}
+            note={t("admin.fridayVisible")}
+            icon={ShieldCheck}
+          />
+          <AdminStatCard
+            label={t("admin.activeCampaigns")}
+            value={data.activeCampaignCount}
+            note={t("admin.featuredCount", { count: data.featuredCampaignCount })}
+            icon={HandHeart}
+          />
+          <AdminStatCard
+            label={t("admin.announcements")}
+            value={t("admin.liveCount", { count: data.publishedAnnouncementCount })}
+            note={t("admin.urgentCount", { count: data.urgentAnnouncementCount })}
+            icon={Bell}
+          />
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <Card className="p-0">
@@ -61,22 +77,4 @@ export default function AdminDashboardPage() {
       </div> : null}
     </AdminShell>
   );
-}
-
-async function loadDashboard(token: string) {
-  const runtimeDate = await loadAdminRuntimeDateAction(token);
-  if (!runtimeDate.success || !runtimeDate.data) {
-    throw new Error(runtimeDate.error || "Unable to load mosque runtime date");
-  }
-  const [prayerTimes, jumuah, campaigns, announcements] = await Promise.all([
-    getPrayerTimes(true), getJumuahTimes(true), getDonationCampaigns(true), getAnnouncements(true),
-  ]);
-  return {
-    prayerTimes,
-    jumuah,
-    campaigns,
-    announcements,
-    today: runtimeDate.data.today,
-    timezone: runtimeDate.data.timezone,
-  };
 }

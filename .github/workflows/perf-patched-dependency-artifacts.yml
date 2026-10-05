@@ -45,13 +45,15 @@ jobs:
           update('package.json', pkg => {
             pkg.dependencies.next = '16.3.6';
             pkg.devDependencies['eslint-config-next'] = '16.3.6';
-            pkg.overrides = { ...(pkg.overrides || {}), braces: 'file:vendor/braces-3.0.4-prayerapp.1.tgz' };
+            pkg.devDependencies.braces = 'file:vendor/braces-3.0.4-prayerapp.1.tgz';
+            pkg.overrides = { ...(pkg.overrides || {}), braces: '$braces' };
           });
 
           update('masjid-display/package.json', pkg => {
             pkg.dependencies.next = '16.3.6';
             pkg.devDependencies['eslint-config-next'] = '16.3.6';
-            pkg.overrides = { ...(pkg.overrides || {}), braces: 'file:../vendor/braces-3.0.4-prayerapp.1.tgz' };
+            pkg.devDependencies.braces = 'file:../vendor/braces-3.0.4-prayerapp.1.tgz';
+            pkg.overrides = { ...(pkg.overrides || {}), braces: '$braces' };
           });
           NODE
           npm install --package-lock-only --ignore-scripts

@@ -1,31 +1,41 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useAdminAuth } from "./use-admin-auth";
+import { AdminAuthProvider, useAdminAuth } from "./use-admin-auth";
 
 const mocks = vi.hoisted(() => ({
-  getSession: vi.fn(),
+  createClient: vi.fn(),
   signOut: vi.fn(),
+  signInWithPassword: vi.fn(),
   verifyAdminAction: vi.fn(),
+  establishAdminSessionAction: vi.fn(),
   push: vi.fn(),
+  publicAuth: {
+    session: null as null | {
+      access_token: string;
+      user: { id: string; email: string };
+    },
+    user: null as null | { id: string; email: string },
+    loading: false,
+    refreshSession: vi.fn(),
+  },
 }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mocks.push }),
 }));
 
+vi.mock("@/components/providers/AuthProvider", () => ({
+  usePublicAuth: () => mocks.publicAuth,
+}));
+
 vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: {
-      getSession: mocks.getSession,
-      signOut: mocks.signOut,
-      signInWithPassword: vi.fn(),
-    },
-  }),
+  createClient: mocks.createClient,
 }));
 
 vi.mock("./admin-actions", () => ({
   verifyAdminAction: mocks.verifyAdminAction,
+  establishAdminSessionAction: mocks.establishAdminSessionAction,
 }));
 
 function Consumer({ label }: { label: string }) {
@@ -40,26 +50,34 @@ function Consumer({ label }: { label: string }) {
 describe("useAdminAuth shared bootstrap", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getSession.mockResolvedValue({
-      data: {
-        session: {
-          access_token: "stable-admin-token",
-          user: { id: "admin-1", email: "admin@example.com" },
-        },
+    const user = { id: "admin-1", email: "admin@example.com" };
+    mocks.publicAuth.session = {
+      access_token: "stable-admin-token",
+      user,
+    };
+    mocks.publicAuth.user = user;
+    mocks.publicAuth.loading = false;
+    mocks.createClient.mockReturnValue({
+      auth: {
+        signOut: mocks.signOut,
+        signInWithPassword: mocks.signInWithPassword,
       },
-      error: null,
     });
     mocks.verifyAdminAction.mockResolvedValue({ allowed: true, email: "admin@example.com" });
   });
 
-  it("bootstraps and verifies one stable session only once for multiple admin consumers", async () => {
+  it("verifies one stable session only once for multiple admin consumers", async () => {
     render(
       React.createElement(
-        React.Fragment,
+        AdminAuthProvider,
         null,
-        React.createElement(Consumer, { label: "first" }),
-        React.createElement(Consumer, { label: "second" }),
-        React.createElement(Consumer, { label: "third" }),
+        React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(Consumer, { label: "first" }),
+          React.createElement(Consumer, { label: "second" }),
+          React.createElement(Consumer, { label: "third" }),
+        ),
       ),
     );
 
@@ -69,7 +87,7 @@ describe("useAdminAuth shared bootstrap", () => {
       expect(screen.getByTestId("third")).toHaveTextContent("true");
     });
 
-    expect(mocks.getSession).toHaveBeenCalledTimes(1);
+    expect(mocks.createClient).not.toHaveBeenCalled();
     expect(mocks.verifyAdminAction).toHaveBeenCalledTimes(1);
     expect(mocks.verifyAdminAction).toHaveBeenCalledWith("stable-admin-token");
   });

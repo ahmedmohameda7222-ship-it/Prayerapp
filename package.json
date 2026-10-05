@@ -35,6 +35,10 @@
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9",
+    "braces": "file:vendor/braces-3.0.4-prayerapp.1.tgz"
+  },
+  "overrides": {
+    "braces": "$braces"
   }
 }

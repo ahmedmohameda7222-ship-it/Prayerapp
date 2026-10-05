@@ -15,7 +15,7 @@ vi.mock("./use-test-control", () => ({
   useTestControl: () => testControl.current,
 }));
 
-import { useDisplayRuntime } from "./use-display-runtime";
+import { nextClockTickDelay, useDisplayRuntime } from "./use-display-runtime";
 
 const STORAGE_KEY = "masjid-display-lkg-v1";
 const SERVER_DATE = "Tue, 15 Sep 2026 18:00:00 GMT";
@@ -66,6 +66,12 @@ describe("useDisplayRuntime", () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it("aligns the display ticker to the next whole device second", () => {
+    expect(nextClockTickDelay(Date.parse("2026-09-15T18:00:00.000Z"))).toBe(1_000);
+    expect(nextClockTickDelay(Date.parse("2026-09-15T18:00:00.250Z"))).toBe(750);
+    expect(nextClockTickDelay(Date.parse("2026-09-15T18:00:00.999Z"))).toBe(1);
   });
 
   it("keeps the first client render hydration-stable and loads LKG after mount", async () => {
@@ -172,7 +178,7 @@ describe("useDisplayRuntime", () => {
     expect(result.current.networkAvailable).toBe(false);
   });
 
-  it("uses request/response midpoint timing for a slow production Feed response", async () => {
+  it("calibrates a slow production Feed response against response receipt", async () => {
     const validFeed = cloneFeed();
     seedLkg(validFeed);
     const response = deferred<Response>();
@@ -187,7 +193,7 @@ describe("useDisplayRuntime", () => {
       response.resolve(
         new Response(null, {
           status: 304,
-          headers: { date: "Tue, 15 Sep 2026 18:00:02 GMT" },
+          headers: { date: "Tue, 15 Sep 2026 18:00:04 GMT" },
         }),
       );
       await Promise.resolve();
@@ -195,7 +201,32 @@ describe("useDisplayRuntime", () => {
     });
 
     expect(result.current.diagnostics?.clockOffsetMs).toBe(0);
-    expect(result.current.logicalNow.toISOString()).toBe("2026-09-15T18:00:04.000Z");
+  });
+
+  it("lets the one-second display ticker own logicalNow between server syncs", async () => {
+    const validFeed = cloneFeed();
+    seedLkg(validFeed);
+    const response = deferred<Response>();
+    vi.setSystemTime(new Date("2026-09-15T18:00:00.000Z"));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockImplementation(() => response.promise));
+
+    const { result } = renderHook(() => useDisplayRuntime());
+    await flushEffects();
+    expect(result.current.logicalNow.toISOString()).toBe("2026-09-15T18:00:00.000Z");
+
+    vi.setSystemTime(new Date("2026-09-15T18:00:00.750Z"));
+    await act(async () => {
+      response.resolve(
+        new Response(null, {
+          status: 304,
+          headers: { date: "Tue, 15 Sep 2026 18:00:00 GMT" },
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.logicalNow.toISOString()).toBe("2026-09-15T18:00:00.000Z");
   });
 
   it("atomically replaces production state and LKG after a valid 200", async () => {

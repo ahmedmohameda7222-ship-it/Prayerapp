@@ -109,6 +109,7 @@ export function StateFrame({
   now,
   timezone,
   targetLabel,
+  showTargetTime = true,
 }: {
   testId: string;
   titleDe: string;
@@ -118,9 +119,12 @@ export function StateFrame({
   now: Date;
   timezone: string;
   targetLabel?: string;
+  showTargetTime?: boolean;
 }) {
   const labels = prayerLabels(prayer ?? null);
-  const targetTime = formatTargetTime(target ?? null, timezone);
+  const targetTime = showTargetTime
+    ? formatTargetTime(target ?? null, timezone)
+    : null;
   const countdown = formatCountdown(target ?? null, now);
 
   return (

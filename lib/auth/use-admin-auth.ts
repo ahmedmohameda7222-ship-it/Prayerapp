@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -35,6 +36,11 @@ type VerificationState = {
   allowed: boolean;
 };
 
+type VerificationRequest = {
+  token: string;
+  promise: Promise<{ allowed: boolean }>;
+};
+
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
@@ -48,6 +54,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [signInPending, setSignInPending] = useState(false);
   const [refreshPending, setRefreshPending] = useState(false);
+  const verificationRequestRef = useRef<VerificationRequest | null>(null);
   const token = publicSession?.access_token ?? null;
 
   useEffect(() => {
@@ -60,18 +67,26 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    let request = verificationRequestRef.current;
+    if (!request || request.token !== token) {
+      request = {
+        token,
+        promise: verifyAdminAction(token)
+          .then((result) => ({ allowed: result.allowed }))
+          .catch(() => ({ allowed: false })),
+      };
+      verificationRequestRef.current = request;
+    }
+
     let cancelled = false;
-    void verifyAdminAction(token)
-      .then((result) => {
-        if (!cancelled) {
-          setVerification({ token, allowed: result.allowed });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setVerification({ token, allowed: false });
-        }
-      });
+    void request.promise.then((result) => {
+      if (!cancelled) {
+        setVerification({ token: request.token, allowed: result.allowed });
+      }
+      if (verificationRequestRef.current === request) {
+        verificationRequestRef.current = null;
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -84,6 +99,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       await client.auth.signOut();
     }
 
+    verificationRequestRef.current = null;
     setVerification(null);
     setActionError(null);
     setSignInPending(false);
@@ -111,12 +127,14 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const establishment = await establishAdminSessionAction(data.session.access_token);
     if (!establishment.allowed) {
       await client.auth.signOut();
+      verificationRequestRef.current = null;
       setVerification(null);
       setSignInPending(false);
       setActionError("admin.errors.unauthorized");
       return false;
     }
 
+    verificationRequestRef.current = null;
     setVerification({ token: data.session.access_token, allowed: true });
     setSignInPending(false);
     setActionError(null);
@@ -125,6 +143,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!token) {
+      verificationRequestRef.current = null;
       setVerification(null);
       setActionError(null);
       return;

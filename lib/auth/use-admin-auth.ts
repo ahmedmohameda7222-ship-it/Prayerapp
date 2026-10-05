@@ -7,7 +7,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -31,12 +30,9 @@ type AdminAuthContextValue = AdminAuthState & {
   refresh: () => Promise<void>;
 };
 
-const initialState: AdminAuthState = {
-  user: null,
-  session: null,
-  isAdmin: false,
-  loading: true,
-  error: null,
+type VerificationState = {
+  token: string;
+  allowed: boolean;
 };
 
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
@@ -48,189 +44,126 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     user: publicUser,
     loading: publicLoading,
   } = usePublicAuth();
-  const [state, setState] = useState<AdminAuthState>(initialState);
-  const verifiedTokenRef = useRef<string | null>(null);
-  const verificationIdRef = useRef(0);
-  const signInInFlightRef = useRef(false);
+  const [verification, setVerification] = useState<VerificationState | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [signInPending, setSignInPending] = useState(false);
+  const [refreshPending, setRefreshPending] = useState(false);
+  const token = publicSession?.access_token ?? null;
 
   useEffect(() => {
-    if (publicLoading) {
-      setState((current) => ({
-        ...current,
-        user: publicUser,
-        session: publicSession,
-        loading: true,
-      }));
+    if (
+      publicLoading ||
+      signInPending ||
+      !token ||
+      verification?.token === token
+    ) {
       return;
     }
 
-    const token = publicSession?.access_token ?? null;
-    if (!token) {
-      verifiedTokenRef.current = null;
-      verificationIdRef.current += 1;
-      if (!signInInFlightRef.current) {
-        setState({ ...initialState, loading: false });
-      }
-      return;
-    }
-
-    if (signInInFlightRef.current) {
-      setState((current) => ({
-        ...current,
-        user: publicUser,
-        session: publicSession,
-        loading: true,
-      }));
-      return;
-    }
-
-    if (verifiedTokenRef.current === token) {
-      setState((current) => ({
-        ...current,
-        user: publicUser,
-        session: publicSession,
-        loading: false,
-      }));
-      return;
-    }
-
-    const verificationId = ++verificationIdRef.current;
-    setState((current) => ({
-      ...current,
-      user: publicUser,
-      session: publicSession,
-      loading: true,
-      error: null,
-    }));
-
+    let cancelled = false;
     void verifyAdminAction(token)
-      .then((verification) => {
-        if (verificationIdRef.current !== verificationId) return;
-        verifiedTokenRef.current = token;
-        setState({
-          user: publicUser,
-          session: publicSession,
-          isAdmin: verification.allowed,
-          loading: false,
-          error: null,
-        });
+      .then((result) => {
+        if (!cancelled) {
+          setVerification({ token, allowed: result.allowed });
+        }
       })
       .catch(() => {
-        if (verificationIdRef.current !== verificationId) return;
-        verifiedTokenRef.current = token;
-        setState({
-          user: publicUser,
-          session: publicSession,
-          isAdmin: false,
-          loading: false,
-          error: null,
-        });
+        if (!cancelled) {
+          setVerification({ token, allowed: false });
+        }
       });
-  }, [publicLoading, publicSession, publicUser]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [publicLoading, signInPending, token, verification?.token]);
 
   const signOut = useCallback(async () => {
-    verificationIdRef.current += 1;
-    verifiedTokenRef.current = null;
-    signInInFlightRef.current = false;
-
     const client = createClient();
     if (client) {
       await client.auth.signOut();
     }
 
-    setState({ ...initialState, loading: false });
+    setVerification(null);
+    setActionError(null);
+    setSignInPending(false);
+    setRefreshPending(false);
     router.push("/admin/login");
   }, [router]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const client = createClient();
     if (!client) {
-      setState((current) => ({
-        ...current,
-        loading: false,
-        error: "admin.errors.supabaseNotConfigured",
-      }));
+      setActionError("admin.errors.supabaseNotConfigured");
       return false;
     }
 
-    signInInFlightRef.current = true;
-    setState((current) => ({ ...current, loading: true, error: null }));
+    setSignInPending(true);
+    setActionError(null);
 
     const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error || !data.session) {
-      signInInFlightRef.current = false;
-      setState((current) => ({
-        ...current,
-        isAdmin: false,
-        loading: false,
-        error: "admin.errors.invalidCredentials",
-      }));
+      setSignInPending(false);
+      setActionError("admin.errors.invalidCredentials");
       return false;
     }
 
     const establishment = await establishAdminSessionAction(data.session.access_token);
-    signInInFlightRef.current = false;
-
     if (!establishment.allowed) {
       await client.auth.signOut();
-      verifiedTokenRef.current = null;
-      setState({
-        user: null,
-        session: null,
-        isAdmin: false,
-        loading: false,
-        error: "admin.errors.unauthorized",
-      });
+      setVerification(null);
+      setSignInPending(false);
+      setActionError("admin.errors.unauthorized");
       return false;
     }
 
-    verificationIdRef.current += 1;
-    verifiedTokenRef.current = data.session.access_token;
-    setState({
-      user: data.user,
-      session: data.session,
-      isAdmin: true,
-      loading: false,
-      error: null,
-    });
+    setVerification({ token: data.session.access_token, allowed: true });
+    setSignInPending(false);
+    setActionError(null);
     return true;
   }, []);
 
   const refresh = useCallback(async () => {
-    const session = state.session ?? publicSession;
-    if (!session) {
-      verifiedTokenRef.current = null;
-      setState({ ...initialState, loading: false });
+    if (!token) {
+      setVerification(null);
+      setActionError(null);
       return;
     }
 
-    const token = session.access_token;
-    const verificationId = ++verificationIdRef.current;
-    setState((current) => ({ ...current, loading: true, error: null }));
-
+    setRefreshPending(true);
+    setActionError(null);
     try {
-      const verification = await verifyAdminAction(token);
-      if (verificationIdRef.current !== verificationId) return;
-      verifiedTokenRef.current = token;
-      setState({
-        user: session.user,
-        session,
-        isAdmin: verification.allowed,
-        loading: false,
-        error: null,
-      });
+      const result = await verifyAdminAction(token);
+      setVerification({ token, allowed: result.allowed });
     } catch {
-      if (verificationIdRef.current !== verificationId) return;
-      verifiedTokenRef.current = token;
-      setState({
-        user: session.user,
-        session,
-        isAdmin: false,
-        loading: false,
-        error: null,
-      });
+      setVerification({ token, allowed: false });
+    } finally {
+      setRefreshPending(false);
     }
-  }, [publicSession, state.session]);
+  }, [token]);
+
+  const tokenVerified = Boolean(token && verification?.token === token);
+  const state = useMemo<AdminAuthState>(() => ({
+    user: token ? publicUser : null,
+    session: token ? publicSession : null,
+    isAdmin: tokenVerified && verification?.allowed === true,
+    loading:
+      publicLoading ||
+      signInPending ||
+      refreshPending ||
+      Boolean(token && !tokenVerified),
+    error: actionError,
+  }), [
+    actionError,
+    publicLoading,
+    publicSession,
+    publicUser,
+    refreshPending,
+    signInPending,
+    token,
+    tokenVerified,
+    verification?.allowed,
+  ]);
 
   const value = useMemo<AdminAuthContextValue>(
     () => ({ ...state, signIn, signOut, refresh }),

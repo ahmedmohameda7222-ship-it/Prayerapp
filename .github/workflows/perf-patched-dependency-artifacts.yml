@@ -1,0 +1,110 @@
+name: Performance patched dependency artifacts
+
+on:
+  push:
+    branches:
+      - perf/admin-app-performance-hardening
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: "${{ github.event.head_commit.message == 'chore: generate patched dependency artifacts' }}"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            masjid-display/package-lock.json
+      - name: Pack reviewed braces security fork
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f vendor/braces-3.0.4-prayerapp.1.tgz vendor/braces-3.0.4-prayerapp.1.tgz.sha256
+          npm pack ./vendor/braces --pack-destination vendor
+          test -s vendor/braces-3.0.4-prayerapp.1.tgz
+          sha256sum vendor/braces-3.0.4-prayerapp.1.tgz > vendor/braces-3.0.4-prayerapp.1.tgz.sha256
+          npm pack ./vendor/braces --dry-run
+      - name: Pin root and TV dependency graphs
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const update = (path, mutate) => {
+            const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+            mutate(pkg);
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+          };
+
+          update('package.json', pkg => {
+            pkg.dependencies.next = '16.3.6';
+            pkg.devDependencies['eslint-config-next'] = '16.3.6';
+            pkg.overrides = { ...(pkg.overrides || {}), braces: 'file:vendor/braces-3.0.4-prayerapp.1.tgz' };
+          });
+
+          update('masjid-display/package.json', pkg => {
+            pkg.dependencies.next = '16.3.6';
+            pkg.devDependencies['eslint-config-next'] = '16.3.6';
+            pkg.overrides = { ...(pkg.overrides || {}), braces: 'file:../vendor/braces-3.0.4-prayerapp.1.tgz' };
+          });
+          NODE
+          npm install --package-lock-only --ignore-scripts
+          npm install --prefix masjid-display --package-lock-only --ignore-scripts
+      - name: Verify patched dependency behavior and installability
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          node <<'NODE'
+          const braces = require('braces');
+          const version = require('braces/package.json').version;
+          if (version !== '3.0.4-prayerapp.1') {
+            throw new Error(`Unexpected root braces version: ${version}`);
+          }
+          if (JSON.stringify(braces('{a,b}')) !== JSON.stringify(['(a|b)'])) {
+            throw new Error('Normal braces compile behavior changed');
+          }
+          const attack = '{'.repeat(101) + 'a,b' + '}'.repeat(101);
+          try {
+            braces(attack);
+            throw new Error('Deep nesting attack was not rejected');
+          } catch (error) {
+            if (!/exceeds max depth/.test(String(error && error.message))) throw error;
+          }
+          NODE
+          npm ci --prefix masjid-display --ignore-scripts
+          node <<'NODE'
+          const path = require('node:path');
+          const createRequire = require('node:module').createRequire;
+          const tvRequire = createRequire(path.resolve('masjid-display/package.json'));
+          const braces = tvRequire('braces');
+          const version = tvRequire('braces/package.json').version;
+          if (version !== '3.0.4-prayerapp.1') {
+            throw new Error(`Unexpected TV braces version: ${version}`);
+          }
+          const attack = '('.repeat(101) + 'x' + ')'.repeat(101);
+          try {
+            braces(attack);
+            throw new Error('Deep parenthesis nesting attack was not rejected');
+          } catch (error) {
+            if (!/exceeds max depth/.test(String(error && error.message))) throw error;
+          }
+          NODE
+          npm audit --omit=dev
+          npm audit --prefix masjid-display --omit=dev
+      - name: Commit generated dependency artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check -- package.json package-lock.json masjid-display/package.json masjid-display/package-lock.json vendor/braces
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json masjid-display/package.json masjid-display/package-lock.json vendor/braces-3.0.4-prayerapp.1.tgz vendor/braces-3.0.4-prayerapp.1.tgz.sha256
+          git commit -m 'security: pin patched dependency graphs'
+          git push origin HEAD:perf/admin-app-performance-hardening

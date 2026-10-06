@@ -20,10 +20,11 @@ describe("AppHeader Arabic wordmark contract", () => {
     expect(header).not.toContain('/branding/masjid-al-danube-ar.svg');
     expect(header).toContain('import { ArabicMosqueWordmark } from "@/components/layout/ArabicMosqueWordmark"');
     expect(header).toContain("<ArabicMosqueWordmark />");
+    expect(layout).toContain('import { ArabicMosqueWordmarkSprite } from "@/components/layout/ArabicMosqueWordmarkSprite"');
+    expect(layout).toContain("<ArabicMosqueWordmarkSprite />");
     expect(layout).toContain("RouteRuntimeBoundary");
     expect(boundary).toContain('pathname.startsWith("/admin")');
-    expect(publicRuntime).toContain('import { ArabicMosqueWordmarkSprite } from "@/components/layout/ArabicMosqueWordmarkSprite"');
-    expect(publicRuntime).toContain("<ArabicMosqueWordmarkSprite />");
+    expect(publicRuntime).not.toContain("ArabicMosqueWordmarkSprite");
     expect(existsSync(wordmarkPath)).toBe(true);
     expect(existsSync(spritePath)).toBe(true);
 

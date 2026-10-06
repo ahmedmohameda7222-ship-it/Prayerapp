@@ -12,7 +12,7 @@ Draft PR: #111
 
 ## Scope
 
-This change set hardens the existing application without changing the intended public product behavior. The primary targets are repeated admin authentication work, broad admin-dashboard reads, dependency vulnerabilities, and actionable Supabase advisor findings.
+This change set hardens the existing application without changing the intended public product behavior. The targets are repeated admin authentication work, broad admin-dashboard and Prayer Times reads, unnecessary public-only runtime work under `/admin`, dependency vulnerabilities, and actionable Supabase advisor findings.
 
 ## Admin authentication amplification
 
@@ -70,11 +70,45 @@ The four broad browser data transfers are removed. This is intentionally describ
 
 The dashboard contract test asserts one authorization, six bounded/narrow summary queries, no `select("*")`, the one-week prayer window, the Jumu'ah row limit, and HEAD count semantics.
 
-## Runtime isolation decision
+## Prayer Times admin data window
 
-Admin-specific authorization remains isolated under `app/admin/layout.tsx`.
+### Production-base behavior
 
-The root `AuthProvider` remains global deliberately. `AppPreferencesProvider` consumes the public session to attach or re-sync push subscriptions, and account routes consume the same public-auth context. Moving public authentication under `/admin` or `/account` would change notification/account behavior and was therefore rejected as an unsafe bundle-only optimization.
+`/admin/prayer-times` loaded the complete `prayer_times` table with `getPrayerTimes(true)` on initial render and after every create/update/delete/publish mutation. The response therefore grew with the complete historical prayer schedule.
+
+### Hardened behavior
+
+The admin management surface now loads one fixed 120-day window at a time. The initial operational window begins 30 days before the applied mosque runtime date and extends 89 days after it. Previous and Next move by exactly 120 days, so the windows tile the full historical/future date domain without gaps; Current returns to the applied-runtime-date window.
+
+Every initial, navigation, and post-mutation admin read supplies both `startDate` and `endDate`. The data helper adds a `PrayerTimesQueryOptions` object API while preserving its legacy positional arguments for existing callers. Public prayer behavior and Prayer Engine calculation semantics are unchanged.
+
+The next-week publication warning is evaluated only while the current operational window is displayed, preventing historical navigation from producing a false readiness warning.
+
+## Runtime isolation
+
+The production-base root layout imported and mounted the complete public runtime stack for every route, including `/admin`: public navigation, launch/platform chrome, native Android/update bridges, Adhan audio runtime, push/AppPreferences synchronization, service-worker registration, notification opt-in, and pull-to-refresh.
+
+The hardened root keeps only the shared `I18nProvider` and `AuthProvider` at the global boundary. `RouteRuntimeBoundary` checks the active pathname and does not render the public runtime for `/admin`. Non-admin routes dynamically load `PublicRuntimeProviders`, which preserves the original public provider ordering, including `AppPreferencesProvider -> NativeAndroidProvider -> AndroidUpdateProvider -> AdhanAudioProvider -> TimeFormatProvider`.
+
+Public authentication intentionally remains global because admin authorization reuses the same browser session and account behavior requires the public auth authority. The public-only side-effect/runtime providers are what moved out of the admin path.
+
+Route-level bundle reduction is certified separately from the source-shape change; no byte-reduction claim is made until the base-vs-head build-artifact measurement is recorded.
+
+## Admin navigation
+
+The existing `/admin/prayer-engine` route is now exposed directly in the admin sidebar. The new Prayer Engine navigation label and Prayer Times window controls are localized for Arabic, English, German, and Turkish through the same translation-override mechanism already used for brand/prayer names.
+
+## Root request micro-optimization
+
+`generateMetadata()` and `RootLayout()` both require the request locale. The locale resolver is now wrapped with React `cache()`, so repeated locale resolution in one render request shares the same request-scoped result instead of independently reading request cookies/headers twice. Locale precedence and fallback behavior are unchanged.
+
+## `url.parse()` deprecation ownership
+
+The Node `[DEP0169] url.parse()` warning was traced rather than rewritten blindly.
+
+Observed CI evidence shows the warning during the pinned `actions/setup-node` cache-restore phase, before Prayerapp dependency installation or application tests. The application dependency graph also contains `web-push` `3.6.7`; its upstream `src/web-push-lib.js` uses Node's legacy `url.parse()` API for push endpoint/audience parsing. `3.6.7` is the current published `web-push` release found during this review, so there is no compatible package upgrade that removes that call today.
+
+The warning is therefore treated as dependency-owned/tooling-owned. Prayer delivery behavior is not rewritten solely to suppress the warning. Future remediation should prefer an upstream `web-push` release that replaces legacy URL parsing, then rerun the existing push/security regressions.
 
 ## Dependency remediation
 
@@ -106,15 +140,19 @@ The new index may appear as "unused" immediately after creation; that is expecte
 - Existing unused-index notices: indexes are not removed solely from the advisor snapshot without workload evidence.
 - RLS-enabled/no-policy INFO findings on server-controlled/internal tables are retained as deny-by-default boundaries.
 
-### Remaining manual security control
+### Accepted/deferred Free-plan Auth control
 
-Supabase still reports **Leaked Password Protection Disabled**. The connected project actions used for this work do not expose the Auth configuration mutation needed to enable that control. It remains an explicit manual/open control rather than being represented as fixed.
+Supabase still reports **Leaked Password Protection Disabled**. The project owner explicitly accepted/deferred this control because the project is currently on the Supabase Free plan; Supabase documents leaked-password protection as a Pro-plan-and-above feature. It is not a blocker for this branch and is not represented as fixed.
 
-Reference: Supabase Auth password security / leaked-password protection documentation.
+## TDD evidence for remaining scope
 
-## Verification evidence during implementation
+Commit `483b2c7f0fbd54f352b676b281a0f1cc8ee6a41d` introduced five executable contracts for the remaining performance-hardening scope. CI #2033 passed install, production audit, and lint, then failed exactly at `npm test` with all five new assertions RED while 958 existing tests passed. The failures covered bounded Prayer Times reads, admin runtime isolation, Prayer Engine navigation/localization, request-locale memoization, and `url.parse()` ownership documentation.
 
-On implementation HEAD `b8386cab827992026571d968db9a42eb53afffb1` before this evidence document was added:
+This provides a controlled RED baseline before the implementation changes above.
+
+## Earlier verification evidence
+
+On implementation HEAD `b8386cab827992026571d968db9a42eb53afffb1` before the later remaining-scope changes:
 
 - `npm ci`: passed, zero vulnerabilities reported;
 - `npm audit --omit=dev`: passed, zero vulnerabilities;
@@ -130,8 +168,8 @@ On implementation HEAD `b8386cab827992026571d968db9a42eb53afffb1` before this ev
 - deployed-production safe DAST job: passed;
 - SBOM evidence generation: passed.
 
-That run exposed one stale Plan 6 source-shape regression which expected the dashboard page itself to call `loadAdminRuntimeDateAction`. The dashboard now obtains the same applied runtime timezone through the bounded server summary action, so the regression was updated to verify the new authority boundary instead of restoring the old dashboard data path.
+A later exact candidate `70ba3d282e9f19b4a04abee7a7d6706397bc60ee` completed CI #2032, Security Scanners #957, Masjid Display Verification #692, and Android TWA #1355 successfully before the remaining-scope TDD work began.
 
 ## Final certification rule
 
-The PR remains Draft. The evidence above does not authorize merge by itself. Final certification requires fresh CI and security results for the exact final branch HEAD after this document and all implementation/test changes are committed, followed by an independent review of the final diff. No merge should occur while any required exact-HEAD gate is failing or pending.
+The PR remains Draft. Final certification requires fresh CI, Security Scanners, Masjid Display Verification, and Android TWA results for the exact final branch HEAD after the remaining implementation, bundle measurement, and documentation changes are committed, followed by an independent review of the final diff. No merge should occur while any required exact-HEAD gate is failing or pending.

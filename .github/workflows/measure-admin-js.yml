@@ -1,0 +1,100 @@
+name: Measure admin initial JS
+
+on:
+  push:
+    branches: [perf/admin-app-performance-hardening]
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pre-isolation baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: 483b2c7f0fbd54f352b676b281a0f1cc8ee6a41d
+          path: before
+          persist-credentials: false
+      - name: Checkout current head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: after
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+      - name: Install and build baseline
+        working-directory: before
+        run: |
+          npm ci
+          npm run build
+      - name: Install and build current head
+        working-directory: after
+        run: |
+          npm ci
+          npm run build
+      - name: Measure initial admin JavaScript
+        run: |
+          cat > measure.mjs <<'NODE'
+          import { gzipSync } from 'node:zlib';
+
+          const [baseUrl, route] = process.argv.slice(2);
+          const pageUrl = new URL(route, baseUrl);
+          const response = await fetch(pageUrl, { redirect: 'follow' });
+          if (!response.ok) throw new Error(`${pageUrl} -> ${response.status}`);
+          const html = await response.text();
+          const scripts = [...new Set(
+            [...html.matchAll(/<script[^>]+src=["']([^"']+\.js(?:\?[^"']*)?)["']/g)]
+              .map((match) => new URL(match[1], response.url).href)
+              .filter((url) => url.includes('/_next/'))
+          )];
+          const details = [];
+          let rawBytes = 0;
+          let gzipBytes = 0;
+          for (const url of scripts) {
+            const scriptResponse = await fetch(url);
+            if (!scriptResponse.ok) throw new Error(`${url} -> ${scriptResponse.status}`);
+            const bytes = Buffer.from(await scriptResponse.arrayBuffer());
+            const gzip = gzipSync(bytes);
+            rawBytes += bytes.length;
+            gzipBytes += gzip.length;
+            details.push({ path: new URL(url).pathname, rawBytes: bytes.length, gzipBytes: gzip.length });
+          }
+          console.log(JSON.stringify({ route, finalUrl: response.url, scriptRequests: scripts.length, rawBytes, gzipBytes, scripts: details }, null, 2));
+          NODE
+
+          start_server() {
+            dir="$1"; port="$2"
+            (cd "$dir" && npm start -- -p "$port" >"../${dir}.server.log" 2>&1 & echo $! >"../${dir}.pid")
+            for _ in $(seq 1 60); do
+              if curl -fsS "http://127.0.0.1:${port}/admin/login" >/dev/null; then return 0; fi
+              sleep 1
+            done
+            cat "${dir}.server.log"
+            return 1
+          }
+
+          start_server before 3101
+          start_server after 3102
+
+          node measure.mjs http://127.0.0.1:3101 /admin/login > before-login.json
+          node measure.mjs http://127.0.0.1:3102 /admin/login > after-login.json
+          node measure.mjs http://127.0.0.1:3101 /admin > before-admin.json
+          node measure.mjs http://127.0.0.1:3102 /admin > after-admin.json
+
+          kill "$(cat before.pid)" "$(cat after.pid)" || true
+
+          node - <<'NODE'
+          const fs = require('node:fs');
+          for (const route of ['login', 'admin']) {
+            const before = JSON.parse(fs.readFileSync(`before-${route}.json`, 'utf8'));
+            const after = JSON.parse(fs.readFileSync(`after-${route}.json`, 'utf8'));
+            const pct = (a, b) => b ? (((a - b) / b) * 100).toFixed(2) : '0.00';
+            console.log(`ADMIN_JS_RESULT route=/${route === 'login' ? 'admin/login' : 'admin'} beforeRequests=${before.scriptRequests} afterRequests=${after.scriptRequests} beforeRaw=${before.rawBytes} afterRaw=${after.rawBytes} rawReductionPct=${pct(before.rawBytes, after.rawBytes)} beforeGzip=${before.gzipBytes} afterGzip=${after.gzipBytes} gzipReductionPct=${pct(before.gzipBytes, after.gzipBytes)}`);
+            console.log(`BEFORE_${route.toUpperCase()}=${JSON.stringify(before)}`);
+            console.log(`AFTER_${route.toUpperCase()}=${JSON.stringify(after)}`);
+          }
+          NODE

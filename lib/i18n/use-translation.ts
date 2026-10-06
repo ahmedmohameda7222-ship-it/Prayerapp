@@ -7,6 +7,7 @@ import en from "../../messages/en.json";
 import de from "../../messages/de.json";
 import tr from "../../messages/tr.json";
 import type { Locale } from "./types";
+import { getAdminPerformanceTranslationOverride } from "./admin-performance";
 import { getPrayerTranslationOverride } from "./prayer-names";
 import { getBrandTranslationOverride } from "@/lib/app-brand";
 
@@ -22,6 +23,9 @@ export function useTranslation() {
 
     const prayerOverride = getPrayerTranslationOverride(locale as Locale, key);
     if (prayerOverride) return interpolate(prayerOverride, values);
+
+    const adminPerformanceOverride = getAdminPerformanceTranslationOverride(locale as Locale, key);
+    if (adminPerformanceOverride) return interpolate(adminPerformanceOverride, values);
 
     const keys = key.split(".");
     let value: unknown = current;

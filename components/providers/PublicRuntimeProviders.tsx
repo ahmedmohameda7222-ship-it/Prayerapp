@@ -9,6 +9,7 @@ import { NativeAndroidProvider } from "@/components/providers/NativeAndroidProvi
 import { PlatformChromeBootstrap } from "@/components/providers/PlatformChromeBootstrap";
 import { PullToRefresh } from "@/components/providers/PullToRefresh";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
+import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
 import { ArabicMosqueWordmarkSprite } from "@/components/layout/ArabicMosqueWordmarkSprite";
 import { PublicNavigation } from "@/components/layout/PublicNavigation";
 import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
@@ -23,9 +24,11 @@ export function PublicRuntimeProviders({ children }: { children: ReactNode }) {
         <NativeAndroidProvider>
           <AndroidUpdateProvider>
             <AdhanAudioProvider>
-              {children}
-              <PublicNavigation />
-              <PullToRefresh />
+              <TimeFormatProvider>
+                {children}
+                <PublicNavigation />
+                <PullToRefresh />
+              </TimeFormatProvider>
             </AdhanAudioProvider>
             <ServiceWorkerRegistrar />
             <NotificationOptInPrompt />

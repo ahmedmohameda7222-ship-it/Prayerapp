@@ -25,7 +25,7 @@ const metadataDescriptions: Record<Locale, string> = {
   tr: "Deggendorf için yerel namaz vakitleri, cuma, duyurular, bağışlar ve topluluk bilgileri.",
 };
 
-const resolveRequestLocale = cache(async (): Promise<Locale> => {
+const resolveRequestLocale = cache(async () => {
   const cookieStore = await cookies();
   const storedLocale = cookieStore.get("locale")?.value;
   if (isLocale(storedLocale)) return storedLocale;

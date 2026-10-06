@@ -88,11 +88,31 @@ The next-week publication warning is evaluated only while the current operationa
 
 The production-base root layout imported and mounted the complete public runtime stack for every route, including `/admin`: public navigation, launch/platform chrome, native Android/update bridges, Adhan audio runtime, push/AppPreferences synchronization, service-worker registration, notification opt-in, and pull-to-refresh.
 
-The hardened root keeps only the shared `I18nProvider` and `AuthProvider` at the global boundary. `RouteRuntimeBoundary` checks the active pathname and does not render the public runtime for `/admin`. Non-admin routes dynamically load `PublicRuntimeProviders`, which preserves the original public provider ordering, including `AppPreferencesProvider -> NativeAndroidProvider -> AndroidUpdateProvider -> AdhanAudioProvider -> TimeFormatProvider`.
+The hardened root keeps the shared `I18nProvider` and `AuthProvider` at the global client boundary. `ArabicMosqueWordmarkSprite` remains a server-rendered root component because it reads the approved SVG source with Node `fs` and must not cross into a client module. `RouteRuntimeBoundary` checks the active pathname and does not render the public client runtime for `/admin`. Non-admin routes dynamically load `PublicRuntimeProviders`, which preserves the original public provider ordering, including `AppPreferencesProvider -> NativeAndroidProvider -> AndroidUpdateProvider -> AdhanAudioProvider -> TimeFormatProvider`.
 
 Public authentication intentionally remains global because admin authorization reuses the same browser session and account behavior requires the public auth authority. The public-only side-effect/runtime providers are what moved out of the admin path.
 
-Route-level bundle reduction is certified separately from the source-shape change; no byte-reduction claim is made until the base-vs-head build-artifact measurement is recorded.
+### Measured initial admin JavaScript
+
+The bundle gate was measured in GitHub Actions run `37394901187`, job `112048421957`, using two clean production builds on Node 20 / Next.js 16.3.6:
+
+- before: `483b2c7f0fbd54f352b676b281a0f1cc8ee6a41d`, before runtime isolation;
+- after: `7df335919bb264bdfd4b896bba495b17c8180a86`, after runtime isolation and the dependency lock refresh.
+
+For each build, a local `next start` production server was queried, all initial `/_next/*.js` scripts referenced by the returned HTML were fetched, and both raw and locally gzipped bytes were summed.
+
+| Route | Metric | Before | After | Change |
+| --- | ---: | ---: | ---: | ---: |
+| `/admin/login` | initial script requests | 15 | 14 | -1 |
+| `/admin/login` | raw JS | 1,019,106 B | 957,458 B | -61,648 B (-6.05%) |
+| `/admin/login` | gzip JS | 301,337 B | 281,270 B | -20,067 B (-6.66%) |
+| `/admin` | initial script requests | 15 | 14 | -1 |
+| `/admin` | raw JS | 1,028,816 B | 978,342 B | -50,474 B (-4.91%) |
+| `/admin` | gzip JS | 304,219 B | 288,239 B | -15,980 B (-5.25%) |
+
+The percentages above use the pre-change byte count as the denominator. The temporary measurement workflow used during evidence capture was removed after the measurement completed successfully.
+
+This is a real route-level reduction, not a source-shape inference: both `/admin/login` and `/admin` load one fewer initial script and fewer raw/gzip JavaScript bytes.
 
 ## Admin navigation
 
@@ -117,9 +137,19 @@ Root dependencies were remediated without widening the application architecture:
 - `next`: `16.3.6`
 - `eslint-config-next`: `16.3.6`
 
-The generated root lockfile is committed. The production dependency audit now reports zero vulnerabilities, and the repository OSV workflow has passed on the hardened branch during implementation verification.
+The Masjid Display package uses the same patched Next/eslint-config-next baseline. The PR also retains the reviewed vendored `braces` patch artifact and lockfile override required by the security scan.
 
-The Masjid Display dependency remediation in this PR also retains the reviewed vendored `braces` patch artifact and lockfile changes required by the security scan.
+### Fresh `source-map-js` advisory during implementation
+
+A later Security Scanners run surfaced a newly current High advisory, `GHSA-68fv-2mgg-jv7q`, against transitive `source-map-js` `1.2.1` in both the root and Masjid Display lockfiles. The fixed version is `1.2.2`, and every owning dependency already accepted the compatible `^1.2.1` range.
+
+The remediation was therefore lock-only. A temporary workflow ran npm's own lockfile resolver in both workspaces and verified that neither `package.json` changed. Result:
+
+- root `source-map-js`: `1.2.2`;
+- Masjid Display `source-map-js`: `1.2.2`;
+- each lockfile changed only its `version`, `resolved`, and `integrity` values for this package.
+
+The temporary write workflow was removed immediately after producing the lock-only commit. Final OSV status is certified only by the exact-final-HEAD Security Scanners run recorded below after it completes.
 
 ## Supabase advisor remediation
 
@@ -148,7 +178,7 @@ Supabase still reports **Leaked Password Protection Disabled**. The project owne
 
 Commit `483b2c7f0fbd54f352b676b281a0f1cc8ee6a41d` introduced five executable contracts for the remaining performance-hardening scope. CI #2033 passed install, production audit, and lint, then failed exactly at `npm test` with all five new assertions RED while 958 existing tests passed. The failures covered bounded Prayer Times reads, admin runtime isolation, Prayer Engine navigation/localization, request-locale memoization, and `url.parse()` ownership documentation.
 
-This provides a controlled RED baseline before the implementation changes above.
+The implementation then turned all five new contracts green. Existing contracts that assumed public-only providers were literal children of `app/layout.tsx` were updated to assert the same product semantics at the new `PublicRuntimeProviders` boundary. The Prayer Times input-stability regression now also asserts that the initial admin read contains both date bounds.
 
 ## Earlier verification evidence
 
@@ -170,6 +200,12 @@ On implementation HEAD `b8386cab827992026571d968db9a42eb53afffb1` before the lat
 
 A later exact candidate `70ba3d282e9f19b4a04abee7a7d6706397bc60ee` completed CI #2032, Security Scanners #957, Masjid Display Verification #692, and Android TWA #1355 successfully before the remaining-scope TDD work began.
 
+## Vercel baseline
+
+The production Vercel projects `donaumoschee` and `donaumoschee-tv` were both confirmed READY on the production base `abf76039c6baa53297775de31cdd44f85ac13f87`. The app production deployment showed no error/fatal runtime log entries in the checked 24-hour baseline window.
+
+No automatic feature-branch preview existed at the time of that check. Exact-final-HEAD preview verification is recorded only after the final documentation commit is frozen and the preview build is tied to that exact SHA.
+
 ## Final certification rule
 
-The PR remains Draft. Final certification requires fresh CI, Security Scanners, Masjid Display Verification, and Android TWA results for the exact final branch HEAD after the remaining implementation, bundle measurement, and documentation changes are committed, followed by an independent review of the final diff. No merge should occur while any required exact-HEAD gate is failing or pending.
+The PR remains Draft. Final certification requires fresh CI, Security Scanners, Masjid Display Verification, and Android TWA results for the exact final branch HEAD after this documentation update, plus live Supabase advisor re-check, exact-head Vercel preview verification, and an independent final diff review. No merge should occur while any required exact-HEAD gate is failing or pending.

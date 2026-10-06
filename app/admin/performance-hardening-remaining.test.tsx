@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { getAdminPerformanceTranslationOverride } from "@/lib/i18n/admin-performance";
 
 const source = (path: string) => readFileSync(path, "utf8");
 
@@ -40,11 +41,10 @@ describe("remaining performance hardening contracts", () => {
       expect(layout).not.toContain(`import { ${publicOnly}`);
     }
 
-    if (existsSync("components/providers/RouteRuntimeBoundary.tsx")) {
-      const boundary = source("components/providers/RouteRuntimeBoundary.tsx");
-      expect(boundary).toContain('pathname.startsWith("/admin")');
-      expect(boundary).toContain("PublicRuntimeProviders");
-    }
+    const boundary = source("components/providers/RouteRuntimeBoundary.tsx");
+    expect(boundary).toContain('pathname.startsWith("/admin")');
+    expect(boundary).toContain("PublicRuntimeProviders");
+    expect(boundary).toContain('dynamic(() =>');
   });
 
   it("exposes Prayer Engine from the admin sidebar with all supported translations", () => {
@@ -52,11 +52,19 @@ describe("remaining performance hardening contracts", () => {
     expect(sidebar).toContain('href: "/admin/prayer-engine"');
     expect(sidebar).toContain('labelKey: "admin.prayerEngine"');
 
-    for (const locale of ["en", "de", "tr", "ar"]) {
-      const messages = JSON.parse(source(`messages/${locale}.json`)) as {
-        admin?: Record<string, unknown>;
-      };
-      expect(messages.admin?.prayerEngine).toBeTruthy();
+    const localizedKeys = [
+      "admin.prayerEngine",
+      "admin.prayerTimesWindow",
+      "admin.prayerTimesWindowRange",
+      "admin.previousWindow",
+      "admin.currentWindow",
+      "admin.nextWindow",
+    ];
+
+    for (const locale of ["en", "de", "tr", "ar"] as const) {
+      for (const key of localizedKeys) {
+        expect(getAdminPerformanceTranslationOverride(locale, key)).toBeTruthy();
+      }
     }
   });
 

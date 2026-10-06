@@ -5,6 +5,28 @@ import { saveToPersistentCache, loadFromPersistentCacheStale, clearPersistentCac
 
 const PRAYER_STALE_FALLBACK_MS = 5 * 60_000;
 
+export type PrayerTimesQueryOptions = {
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+};
+
+function normalizePrayerTimesQueryOptions(
+  startDateOrOptions?: string | PrayerTimesQueryOptions,
+  endDate?: string,
+  limit?: number,
+): PrayerTimesQueryOptions {
+  if (startDateOrOptions && typeof startDateOrOptions === "object") {
+    return startDateOrOptions;
+  }
+
+  return {
+    startDate: startDateOrOptions,
+    endDate,
+    limit,
+  };
+}
+
 function mapFromDb(row: Record<string, unknown>): PrayerTime {
   return {
     id: String(row.id),
@@ -68,12 +90,18 @@ function selectedDate(row: unknown) {
 
 export async function getPrayerTimes(
   includeUnpublished = false,
-  startDate?: string,
-  endDate?: string,
-  limit?: number,
+  startDateOrOptions?: string | PrayerTimesQueryOptions,
+  legacyEndDate?: string,
+  legacyLimit?: number,
 ): Promise<PrayerTime[]> {
   const client = createClient();
   if (!client) return [];
+
+  const {
+    startDate,
+    endDate,
+    limit,
+  } = normalizePrayerTimesQueryOptions(startDateOrOptions, legacyEndDate, legacyLimit);
 
   if (includeUnpublished) {
     let query = client.from("prayer_times").select("*").order("date", { ascending: true });

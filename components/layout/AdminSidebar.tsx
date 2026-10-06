@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CalendarDays, ChevronDown, Clock, HandHeart, LayoutDashboard, LogOut, Settings } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, Clock, HandHeart, LayoutDashboard, LogOut, Settings, SlidersHorizontal } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
@@ -11,6 +11,7 @@ import { APP_NAMES } from "@/lib/app-brand";
 const items = [
   { href: "/admin", labelKey: "admin.dashboard", icon: LayoutDashboard },
   { href: "/admin/prayer-times", labelKey: "admin.prayerTimes", icon: Clock },
+  { href: "/admin/prayer-engine", labelKey: "admin.prayerEngine", icon: SlidersHorizontal },
   { href: "/admin/jumuah", labelKey: "admin.jumuah", icon: MosqueIcon },
   { href: "/admin/announcements", labelKey: "admin.announcements", icon: Bell },
   { href: "/admin/donations", labelKey: "admin.donations", icon: HandHeart },

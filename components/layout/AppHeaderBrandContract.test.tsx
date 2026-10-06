@@ -11,6 +11,8 @@ describe("AppHeader Arabic wordmark contract", () => {
   it("renders the approved Arabic wordmark from an in-DOM SVG sprite without an image request", () => {
     const header = source("components/layout/AppHeader.tsx");
     const layout = source("app/layout.tsx");
+    const publicRuntime = source("components/providers/PublicRuntimeProviders.tsx");
+    const boundary = source("components/providers/RouteRuntimeBoundary.tsx");
     const wordmarkPath = join(process.cwd(), "components/layout/ArabicMosqueWordmark.tsx");
     const spritePath = join(process.cwd(), "components/layout/ArabicMosqueWordmarkSprite.tsx");
 
@@ -20,6 +22,9 @@ describe("AppHeader Arabic wordmark contract", () => {
     expect(header).toContain("<ArabicMosqueWordmark />");
     expect(layout).toContain('import { ArabicMosqueWordmarkSprite } from "@/components/layout/ArabicMosqueWordmarkSprite"');
     expect(layout).toContain("<ArabicMosqueWordmarkSprite />");
+    expect(layout).toContain("RouteRuntimeBoundary");
+    expect(boundary).toContain('pathname.startsWith("/admin")');
+    expect(publicRuntime).not.toContain("ArabicMosqueWordmarkSprite");
     expect(existsSync(wordmarkPath)).toBe(true);
     expect(existsSync(spritePath)).toBe(true);
 

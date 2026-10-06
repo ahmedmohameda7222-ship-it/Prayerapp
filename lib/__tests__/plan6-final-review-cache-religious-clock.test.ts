@@ -94,8 +94,15 @@ describe("Plan 6 final-review cache and religious-clock regressions", () => {
     expect(runtimeDateAction).toContain("getRuntimePrayerTimezone");
     expect(runtimeDateAction).toContain("todayIso(new Date(), timezone)");
 
+    const dashboard = source("app/admin/page.tsx");
+    const dashboardSummary = source("app/admin/dashboard-summary.ts");
+    expect(dashboard).toContain("loadAdminDashboardSummaryAction");
+    expect(dashboard).not.toContain("todayIso()");
+    expect(dashboardSummary).toContain("requireAllowedAdminIdentity");
+    expect(dashboardSummary).toContain("getRuntimePrayerTimezone");
+    expect(dashboardSummary).toContain("todayIso(new Date(), timezone)");
+
     for (const path of [
-      "app/admin/page.tsx",
       "app/admin/prayer-times/page.tsx",
       "app/admin/jumuah/page.tsx",
     ]) {

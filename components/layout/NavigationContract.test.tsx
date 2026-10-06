@@ -7,12 +7,17 @@ function source(path: string) {
 }
 
 describe("public navigation contract", () => {
-  it("keeps public navigation persistent in the root layout instead of remounting it per page", () => {
+  it("keeps public navigation persistent in the public runtime instead of remounting it per page", () => {
     const layout = source("app/layout.tsx");
+    const boundary = source("components/providers/RouteRuntimeBoundary.tsx");
+    const publicRuntime = source("components/providers/PublicRuntimeProviders.tsx");
     const shell = source("components/layout/AppShell.tsx");
     const host = source("components/layout/PublicNavigation.tsx");
 
-    expect(layout).toContain("<PublicNavigation />");
+    expect(layout).toContain("<RouteRuntimeBoundary>");
+    expect(boundary).toContain('pathname.startsWith("/admin")');
+    expect(boundary).toContain("<PublicRuntimeProviders>");
+    expect(publicRuntime).toContain("<PublicNavigation />");
     expect(shell).not.toContain("<BottomNav");
     expect(host).toContain('HIDDEN_PREFIXES = ["/admin"]');
     expect(host).toContain('HIDDEN_ROUTES = new Set(["/offline"])');

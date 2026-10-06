@@ -7,7 +7,7 @@ const source = (path: string) => readFileSync(join(process.cwd(), path), "utf8")
 describe("Android bridge readiness v2", () => {
   it("captures the first port-bearing native message before React providers mount", () => {
     const bootstrap = source("components/providers/PlatformChromeBootstrap.tsx");
-    const layout = source("app/layout.tsx");
+    const publicRuntime = source("components/providers/PublicRuntimeProviders.tsx");
 
     expect(bootstrap).toContain("__DANUBE_NATIVE_BRIDGE_BOOTSTRAP__");
     expect(bootstrap).toContain('event.origin !== "https://donaumoschee.vercel.app"');
@@ -15,8 +15,8 @@ describe("Android bridge readiness v2", () => {
     expect(bootstrap).toContain('initial.type !== "native.ready"');
     expect(bootstrap).toContain('window.addEventListener("message", captureNativeBridge)');
 
-    const bootstrapIndex = layout.indexOf("<PlatformChromeBootstrap />");
-    const providerIndex = layout.indexOf("<NativeAndroidProvider>");
+    const bootstrapIndex = publicRuntime.indexOf("<PlatformChromeBootstrap />");
+    const providerIndex = publicRuntime.indexOf("<NativeAndroidProvider>");
     expect(bootstrapIndex).toBeGreaterThan(-1);
     expect(providerIndex).toBeGreaterThan(bootstrapIndex);
   });

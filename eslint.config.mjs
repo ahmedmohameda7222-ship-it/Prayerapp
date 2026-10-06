@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "public/sw.js",
+    // Third-party CommonJS source retained verbatim-ish for the patched braces package.
+    "vendor/**",
   ]),
 ]);
 

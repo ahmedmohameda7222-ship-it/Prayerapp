@@ -53,8 +53,8 @@ describe("Android direct-APK update system", () => {
 
   it("checks only verified native TWA installs on launch, resume, throttle, and manual request", () => {
     const provider = source("components/providers/AndroidUpdateProvider.tsx");
-    const layout = source("app/layout.tsx");
-    expect(layout).toContain("<AndroidUpdateProvider>");
+    const publicRuntime = source("components/providers/PublicRuntimeProviders.tsx");
+    expect(publicRuntime).toContain("<AndroidUpdateProvider>");
     expect(provider).toContain("useNativeAndroid()");
     expect(provider).toContain("visibilitychange");
     expect(provider).toContain("UPDATE_CHECK_INTERVAL_MS");

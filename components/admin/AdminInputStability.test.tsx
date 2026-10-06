@@ -12,6 +12,7 @@ const dataMocks = vi.hoisted(() => ({
   getDonationCampaigns: vi.fn(),
   getDonations: vi.fn(),
   getDonationReport: vi.fn(),
+  loadAdminRuntimeDateAction: vi.fn(),
 }));
 
 vi.mock("@/components/layout/AdminShell", () => ({
@@ -28,6 +29,9 @@ vi.mock("@/lib/data/donations", () => ({
   getDonations: dataMocks.getDonations,
   getDonationReport: dataMocks.getDonationReport,
 }));
+vi.mock("@/app/admin/runtime-date", () => ({
+  loadAdminRuntimeDateAction: dataMocks.loadAdminRuntimeDateAction,
+}));
 vi.mock("@/app/admin/prayer-times/actions", () => ({}));
 vi.mock("@/app/admin/donations/actions", () => ({}));
 
@@ -40,6 +44,10 @@ describe("admin input stability", () => {
     localStorage.clear();
     vi.clearAllMocks();
     dataMocks.getPrayerTimes.mockResolvedValue([]);
+    dataMocks.loadAdminRuntimeDateAction.mockResolvedValue({
+      success: true,
+      data: { today: "2026-10-06", timezone: "Europe/Berlin" },
+    });
     dataMocks.getDonationCampaigns.mockResolvedValue([]);
     dataMocks.getDonations.mockResolvedValue([]);
     dataMocks.getDonationSettings.mockResolvedValue({
@@ -67,6 +75,15 @@ describe("admin input stability", () => {
     const user = userEvent.setup();
     const { container } = renderInEnglish(<AdminPrayerTimesPage />);
     await waitFor(() => expect(dataMocks.getPrayerTimes).toHaveBeenCalledTimes(1));
+
+    expect(dataMocks.loadAdminRuntimeDateAction).toHaveBeenCalledWith("test-token");
+    expect(dataMocks.getPrayerTimes).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({
+        startDate: expect.any(String),
+        endDate: expect.any(String),
+      }),
+    );
 
     const timeInput = container.querySelector<HTMLInputElement>('input[type="time"]');
     const noteInput = container.querySelector<HTMLInputElement>('input[type="text"]');

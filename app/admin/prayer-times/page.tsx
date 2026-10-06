@@ -23,6 +23,25 @@ import {
 } from "./actions";
 import { loadAdminRuntimeDateAction } from "../runtime-date";
 
+const ADMIN_PRAYER_TIMES_WINDOW_DAYS = 120;
+const ADMIN_PRAYER_TIMES_LOOKBACK_DAYS = 30;
+
+function prayerTimesWindowEnd(startDate: string) {
+  return addDaysIso(startDate, ADMIN_PRAYER_TIMES_WINDOW_DAYS - 1);
+}
+
+function shiftPrayerTimesWindow(startDate: string, direction: -1 | 1) {
+  return addDaysIso(startDate, direction * ADMIN_PRAYER_TIMES_WINDOW_DAYS);
+}
+
+function resetPrayerTimesWindow(runtimeToday: string) {
+  return addDaysIso(runtimeToday, -ADMIN_PRAYER_TIMES_LOOKBACK_DAYS);
+}
+
+function prayerTimesWindowLabel(startDate: string, endDate: string) {
+  return `${startDate} – ${endDate}`;
+}
+
 const emptyForm = {
   date: "",
   fajr: "",
@@ -45,6 +64,7 @@ export default function AdminPrayerTimesPage() {
   const [items, setItems] = useState<PrayerTime[]>([]);
   const [itemsLoaded, setItemsLoaded] = useState(false);
   const [runtimeToday, setRuntimeToday] = useState<string | null>(null);
+  const [windowStart, setWindowStart] = useState<string | null>(null);
   const [form, setForm] = useState<Record<string, string>>({ ...emptyForm });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -52,31 +72,47 @@ export default function AdminPrayerTimesPage() {
   const [isPending, startTransition] = useTransition();
   const hasSupabase = !!createClient();
   const accessToken = session?.access_token || "";
+  const windowEnd = windowStart ? prayerTimesWindowEnd(windowStart) : null;
+  const currentWindowStart = runtimeToday ? resetPrayerTimesWindow(runtimeToday) : null;
+  const isCurrentWindow = Boolean(windowStart && currentWindowStart === windowStart);
   const nextWeekStart = runtimeToday ? addDaysIso(runtimeToday, 1) : null;
-  const nextWeekMissing = nextWeekStart
+  const nextWeekMissing = isCurrentWindow && nextWeekStart
     ? getMissingPublishedPrayerDates(items, nextWeekStart, 7).length > 0
     : false;
 
-  const refreshItems = useCallback(async () => {
-    invalidateCachePrefix("prayer_times");
-    setItems(await getPrayerTimes(true));
-    setItemsLoaded(true);
+  const loadPrayerTimesWindow = useCallback(async (startDate: string) => {
+    const data = await getPrayerTimes(true, {
+      startDate,
+      endDate: prayerTimesWindowEnd(startDate),
+    });
+    return data;
   }, []);
+
+  const refreshItems = useCallback(async () => {
+    if (!windowStart) return;
+    invalidateCachePrefix("prayer_times");
+    setItems(await loadPrayerTimesWindow(windowStart));
+    setItemsLoaded(true);
+  }, [loadPrayerTimesWindow, windowStart]);
 
   useEffect(() => {
     if (!accessToken) return;
     let active = true;
-    Promise.all([
-      getPrayerTimes(true),
-      loadAdminRuntimeDateAction(accessToken),
-    ])
-      .then(([data, runtimeDate]) => {
-        if (!active) return;
+    setItemsLoaded(false);
+
+    loadAdminRuntimeDateAction(accessToken)
+      .then(async (runtimeDate) => {
         if (!runtimeDate.success || !runtimeDate.data) {
           throw new Error(runtimeDate.error || "Unable to load mosque runtime date");
         }
+
+        const startDate = resetPrayerTimesWindow(runtimeDate.data.today);
+        const data = await loadPrayerTimesWindow(startDate);
+        if (!active) return;
+
         setItems(data);
         setRuntimeToday(runtimeDate.data.today);
+        setWindowStart(startDate);
         setItemsLoaded(true);
       })
       .catch(() => {
@@ -84,8 +120,26 @@ export default function AdminPrayerTimesPage() {
         setItemsLoaded(true);
         setError(t("common.dataLoadFailed"));
       });
+
     return () => { active = false; };
-  }, [accessToken, t]);
+  }, [accessToken, loadPrayerTimesWindow, t]);
+
+  const navigatePrayerTimesWindow = useCallback((nextStart: string) => {
+    setError("");
+    setSuccess("");
+    setItemsLoaded(false);
+    startTransition(async () => {
+      try {
+        const data = await loadPrayerTimesWindow(nextStart);
+        setItems(data);
+        setWindowStart(nextStart);
+      } catch {
+        setError(t("common.dataLoadFailed"));
+      } finally {
+        setItemsLoaded(true);
+      }
+    });
+  }, [loadPrayerTimesWindow, t]);
 
   function resetForm() {
     setForm({ ...emptyForm });
@@ -167,6 +221,44 @@ export default function AdminPrayerTimesPage() {
         <Card className="p-4 text-sm text-[var(--color-muted)]">
           Prayer Times is the schedule viewer and emergency prayer-time correction surface. Shared Iqama delays are managed in Prayer Engine Admin.
         </Card>
+
+        {windowStart && windowEnd ? (
+          <Card className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm font-bold text-[var(--color-emerald)]">{t("admin.prayerTimesWindow")}</p>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                {t("admin.prayerTimesWindowRange", { range: prayerTimesWindowLabel(windowStart, windowEnd) })}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={isPending || !itemsLoaded}
+                onClick={() => navigatePrayerTimesWindow(shiftPrayerTimesWindow(windowStart, -1))}
+              >
+                {t("admin.previousWindow")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={isPending || !itemsLoaded || !currentWindowStart || isCurrentWindow}
+                onClick={() => currentWindowStart && navigatePrayerTimesWindow(currentWindowStart)}
+              >
+                {t("admin.currentWindow")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={isPending || !itemsLoaded}
+                onClick={() => navigatePrayerTimesWindow(shiftPrayerTimesWindow(windowStart, 1))}
+              >
+                {t("admin.nextWindow")}
+              </Button>
+            </div>
+          </Card>
+        ) : null}
+
         {itemsLoaded && nextWeekMissing ? <AdminWarningCard message={t("admin.missingNextWeek")} /> : null}
         {!hasSupabase ? <Card className="flex items-center gap-3 p-4 text-sm font-bold text-[var(--color-warning)]"><AlertTriangle className="h-5 w-5" aria-hidden="true" /> {t("admin.supabaseNotConfigured")}</Card> : null}
         {error ? <Card className="p-4 text-sm font-bold text-[var(--color-danger)]">{error}</Card> : null}

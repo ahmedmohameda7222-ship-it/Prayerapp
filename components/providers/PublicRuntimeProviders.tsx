@@ -10,14 +10,12 @@ import { PlatformChromeBootstrap } from "@/components/providers/PlatformChromeBo
 import { PullToRefresh } from "@/components/providers/PullToRefresh";
 import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
 import { TimeFormatProvider } from "@/components/providers/TimeFormatProvider";
-import { ArabicMosqueWordmarkSprite } from "@/components/layout/ArabicMosqueWordmarkSprite";
 import { PublicNavigation } from "@/components/layout/PublicNavigation";
 import { NotificationOptInPrompt } from "@/components/notifications/NotificationOptInPrompt";
 
 export function PublicRuntimeProviders({ children }: { children: ReactNode }) {
   return (
     <>
-      <ArabicMosqueWordmarkSprite />
       <PlatformChromeBootstrap />
       <AppLaunchScreen />
       <AppPreferencesProvider>

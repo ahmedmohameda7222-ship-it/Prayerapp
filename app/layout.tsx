@@ -15,6 +15,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { getTextDirection } from "@/lib/i18n/direction";
 import { detectSupportedLocale, isLocale, type Locale } from "@/lib/i18n/types";
 import { APP_NAMES } from "@/lib/app-brand";
+import { ArabicMosqueWordmarkSprite } from "@/components/layout/ArabicMosqueWordmarkSprite";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { RouteRuntimeBoundary } from "@/components/providers/RouteRuntimeBoundary";
 
@@ -75,6 +76,7 @@ export default async function RootLayout({
   return (
     <html lang={initialLocale} dir={getTextDirection(initialLocale)} translate="no" suppressHydrationWarning>
       <body>
+        <ArabicMosqueWordmarkSprite />
         <I18nProvider initialLocale={initialLocale}>
           <AuthProvider>
             <RouteRuntimeBoundary>{children}</RouteRuntimeBoundary>

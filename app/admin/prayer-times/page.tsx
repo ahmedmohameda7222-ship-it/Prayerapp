@@ -98,7 +98,6 @@ export default function AdminPrayerTimesPage() {
   useEffect(() => {
     if (!accessToken) return;
     let active = true;
-    setItemsLoaded(false);
 
     loadAdminRuntimeDateAction(accessToken)
       .then(async (runtimeDate) => {

@@ -78,10 +78,11 @@ describe("Android PWA install and pull-to-refresh contracts", () => {
 
   it("contains native overscroll and refresh-indicator styling", () => {
     const layout = source("app/layout.tsx");
+    const publicRuntime = source("components/providers/PublicRuntimeProviders.tsx");
     const css = source("app/pull-to-refresh.css");
 
     expect(layout).toContain('import "./pull-to-refresh.css"');
-    expect(layout).toContain("<PullToRefresh />");
+    expect(publicRuntime).toContain("<PullToRefresh />");
     expect(css).toContain('html[data-pull-refresh="enabled"]');
     expect(css).toContain("overscroll-behavior-y: contain");
     expect(css).toContain("pwa-pull-refresh-indicator");

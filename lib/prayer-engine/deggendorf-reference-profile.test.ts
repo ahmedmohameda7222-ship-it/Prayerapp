@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CalculationMethod, Coordinates, HighLatitudeRule, Madhab, PrayerTimes, Rounding } from "adhan";
 import { calculatePrayerTimes } from "./calculate";
 import { DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE } from "./deggendorf-reference-profile";
 import { validSettings } from "./test-settings";
@@ -79,38 +80,81 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
     expect(discrepancies, JSON.stringify(summary)).toEqual([]);
   });
 
-  it("diagnoses a universal sub-minute phase shift without per-date overrides", () => {
-    const settings = { ...validSettings, ...DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE };
-    const diagnostics: Record<string, unknown> = {};
-    for (const prayer of PRAYERS) {
-      const candidates: Array<{ shift: number; exact: number; abs: number }> = [];
-      for (let step = -25; step <= 5; step++) {
-        const shift = step / 20; // constant astronomical phase in minutes
-        const testSettings = {
-          ...settings,
-          offsets: {
-            ...settings.offsets,
-            [prayer]: settings.offsets[prayer] + shift,
-          },
-        };
-        let exact = 0;
-        let abs = 0;
-        for (const row of screenshotRows) {
-          const [date, ...times] = row.split("|");
-          const expected = times[PRAYERS.indexOf(prayer)];
-          const generated = calculatePrayerTimes(date, testSettings)[prayer];
-          const residual = Math.abs(minutes(generated) - minutes(expected));
-          if (residual === 0) exact++;
-          abs += residual;
+  it("diagnoses whether one date-independent astronomical profile can exactly fit the screenshot", () => {
+    const settings = DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE;
+    const expected = screenshotRows.map((row) => {
+      const [date, ...times] = row.split("|");
+      const base = Date.parse(`${date}T00:00:00.000Z`);
+      // Reference days are safely outside the DST changeover hour;
+      // these are the official Europe/Berlin offsets for this period.
+      const berlinMinutes = date < "2026-10-25" ? 120 : 60;
+      return {
+        date,
+        expectedMs: Object.fromEntries(PRAYERS.map((key, index) => [
+          key,
+          base + (minutes(times[index]) - berlinMinutes) * 60000,
+        ])) as Record<(typeof PRAYERS)[number], number>,
+      };
+    });
+
+    const params = CalculationMethod.Other();
+    params.fajrAngle = settings.fajrAngle;
+    params.ishaAngle = settings.ishaAngle!;
+    params.madhab = Madhab.Shafi;
+    params.highLatitudeRule = HighLatitudeRule.TwilightAngle;
+    params.rounding = Rounding.None;
+
+    const best: Array<{
+      latitude: number; longitude: number;
+      exactPrayers: number; exactSunrise: number;
+      counts: Record<string, number>; offsets: Record<string, number>;
+    }> = [];
+
+    for (let latIdx = -12; latIdx <= 12; latIdx++) {
+      for (let lonIdx = -12; lonIdx <= 12; lonIdx++) {
+        const latitude = settings.latitude + latIdx * 0.0025;
+        const longitude = settings.longitude + lonIdx * 0.0025;
+        const coordinates = new Coordinates(latitude, longitude);
+        const bounds = Object.fromEntries(PRAYERS.map((prayer) => [prayer, []])) as
+          Record<(typeof PRAYERS)[number], Array<{ lower: number; upper: number }>>;
+
+        for (const row of expected) {
+          const astronomical = new PrayerTimes(coordinates, new Date(`${row.date}T12:00:00.000Z`), params);
+          for (const prayer of PRAYERS) {
+            const upper = (row.expectedMs[prayer] - astronomical[prayer].getTime()) / 60000;
+            bounds[prayer].push({ lower: upper - 1, upper });
+          }
         }
-        candidates.push({ shift, exact, abs });
+
+        const counts: Record<string, number> = {};
+        const offsets: Record<string, number> = {};
+        for (const prayer of PRAYERS) {
+          let highest = 0;
+          let chosen = 0;
+          for (const window of bounds[prayer]) {
+            const candidate = window.upper - 0.0000001;
+            const exact = bounds[prayer].filter(({ lower, upper }) => lower < candidate && candidate <= upper).length;
+            if (exact > highest || (exact === highest && Math.abs(candidate - settings.offsets[prayer]) < Math.abs(chosen - settings.offsets[prayer]))) {
+              highest = exact;
+              chosen = candidate;
+            }
+          }
+          counts[prayer] = highest;
+          offsets[prayer] = Number(chosen.toFixed(4));
+        }
+        const exactPrayers = counts.fajr + counts.dhuhr + counts.asr + counts.maghrib + counts.isha;
+        const exactSunrise = counts.sunrise;
+        best.push({ latitude, longitude, exactPrayers, exactSunrise, counts, offsets });
       }
-      diagnostics[prayer] = candidates
-        .sort((a, b) => b.exact - a.exact || a.abs - b.abs || Math.abs(a.shift) - Math.abs(b.shift))
-        .slice(0, 5);
     }
-    console.info("DEGGENDORF_PHASE_FIT", JSON.stringify(diagnostics));
-    expect(PRAYERS.length).toBe(6);
+    best.sort((a, b) =>
+      b.exactPrayers - a.exactPrayers ||
+      b.exactSunrise - a.exactSunrise ||
+      Math.hypot(a.latitude - settings.latitude, a.longitude - settings.longitude) -
+      Math.hypot(b.latitude - settings.latitude, b.longitude - settings.longitude)
+    );
+    console.info("DEGGENDORF_COORDINATE_FIT", JSON.stringify(best.slice(0, 10)));
+    expect(best[0].exactPrayers).toBeGreaterThan(0);
   });
 
   it("generates a full year, both DST boundaries, and leap day without a local-date overflow", () => {

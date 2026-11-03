@@ -42,6 +42,7 @@ export function calculatePrayerTimes(
   const params = CalculationMethod.Other();
 
   params.fajrAngle = settings.fajrAngle;
+  params.maghribAngle = settings.maghribAngle ?? 0;
   params.ishaAngle = settings.ishaRule === "angle" ? settings.ishaAngle! : 0;
   params.ishaInterval =
     settings.ishaRule === "fixed_minutes"

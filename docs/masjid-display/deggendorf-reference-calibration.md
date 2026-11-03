@@ -31,7 +31,7 @@ date-independent settings:
 | Fajr twilight angle | 16.5° |
 | Isha twilight angle | 17° |
 | Asr shadow factor | 1 |
-| High-latitude rule | Middle of the night |
+| High-latitude rule | Twilight angle (night-fraction safety cap) |
 | Prayer offsets in minutes | Fajr -1; Sunrise -4; Dhuhr +7; Asr +6; Maghrib +8; Isha +6 |
 
 The candidate was initially estimated from the photograph and an astronomical
@@ -41,7 +41,10 @@ prove the source's original method or religious authorization.
 
 Engine: existing pinned `adhan@4.4.6`, `CalculationMethod.Other()`,
 `Rounding.None`, minute offsets before Prayerapp's final ceiling to local
-HH:MM. No per-date special cases, no manual DST hour changes, no external
+HH:MM. The twilight-angle high-latitude rule is required to prevent Isha from
+crossing the local midnight boundary in short summer nights, as detected
+by the full-year regression test. No per-date special cases, no manual DST
+hour changes, no external
 API calls at runtime.
 
 ## Verification

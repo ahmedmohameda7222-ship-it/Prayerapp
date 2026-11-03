@@ -44,6 +44,7 @@ function settingsToForm(
     longitude: settings ? String(settings.longitude) : "",
     timezone: settings?.timezone ?? runtimeAuthority?.timezone ?? "Europe/Berlin",
     fajrAngle: settings ? String(settings.fajrAngle) : "",
+    maghribAngle: settings ? String(settings.maghribAngle ?? 0) : "0",
     ishaRule: settings?.ishaRule ?? "angle",
     ishaAngle: settings?.ishaAngle == null ? "" : String(settings.ishaAngle),
     ishaMinutesAfterMaghrib: settings?.ishaMinutesAfterMaghrib == null ? "" : String(settings.ishaMinutesAfterMaghrib),
@@ -75,6 +76,7 @@ function buildSettings(form: NumericForm, current: PrayerCalculationSettings | n
     longitude: toNumber(form.longitude, "longitude"),
     timezone: form.timezone.trim(),
     fajrAngle: toNumber(form.fajrAngle, "Fajr angle"),
+    maghribAngle: toNumber(form.maghribAngle, "Maghrib angle"),
     ishaRule,
     ishaAngle: ishaRule === "angle" ? toNumber(form.ishaAngle, "Isha angle") : null,
     ishaMinutesAfterMaghrib: ishaRule === "fixed_minutes" ? toNumber(form.ishaMinutesAfterMaghrib, "Isha fixed minutes") : null,
@@ -129,6 +131,7 @@ export function PrayerEngineAdmin({
       longitude: String(profile.longitude),
       timezone: profile.timezone,
       fajrAngle: String(profile.fajrAngle),
+      maghribAngle: String(profile.maghribAngle),
       ishaRule: profile.ishaRule,
       ishaAngle: String(profile.ishaAngle),
       ishaMinutesAfterMaghrib: "",
@@ -279,7 +282,8 @@ export function PrayerEngineAdmin({
           <label className="grid gap-1 text-sm font-bold">Latitude<input className={inputClass()} value={form.latitude} onChange={(e) => update("latitude", e.target.value)} inputMode="decimal" /></label>
           <label className="grid gap-1 text-sm font-bold">Longitude<input className={inputClass()} value={form.longitude} onChange={(e) => update("longitude", e.target.value)} inputMode="decimal" /></label>
           <label className="grid gap-1 text-sm font-bold">Timezone<select className={inputClass()} value={form.timezone} onChange={(e) => update("timezone", e.target.value)}>{CERTIFIED_PRAYER_TIMEZONES.map((timezone) => <option key={timezone} value={timezone}>{timezone}</option>)}</select></label>
-          <label className="grid gap-1 text-sm font-bold">Fajr angle<input className={inputClass()} type="number" step="0.1" value={form.fajrAngle} onChange={(e) => update("fajrAngle", e.target.value)} /></label>
+          <label className="grid gap-1 text-sm font-bold">Fajr angle<input className={inputClass()} type="number" step="0.01" value={form.fajrAngle} onChange={(e) => update("fajrAngle", e.target.value)} /></label>
+          <label className="grid gap-1 text-sm font-bold">Maghrib solar depression angle (0 = sunset)<input className={inputClass()} type="number" min="0" max="30" step="0.01" value={form.maghribAngle} onChange={(e) => update("maghribAngle", e.target.value)} /></label>
           <label className="grid gap-1 text-sm font-bold">Isha rule<select className={inputClass()} value={form.ishaRule} onChange={(e) => update("ishaRule", e.target.value)}><option value="angle">Angle</option><option value="fixed_minutes">Fixed minutes after Maghrib</option></select></label>
           {ishaFixed ? (
             <label className="grid gap-1 text-sm font-bold">Isha fixed minutes after Maghrib<input className={inputClass()} type="number" min={0} max={240} value={form.ishaMinutesAfterMaghrib} onChange={(e) => update("ishaMinutesAfterMaghrib", e.target.value)} /></label>
@@ -292,7 +296,7 @@ export function PrayerEngineAdmin({
 
         <div className="grid gap-3">
           <h4 className="font-bold">Calculation offsets (minutes)</h4>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{PRAYERS.map((prayer) => <label key={prayer} className="grid gap-1 text-sm font-bold">{prayer[0].toUpperCase() + prayer.slice(1)} offset<input className={inputClass()} type="number" min={-60} max={60} value={form[`offset_${prayer}`]} onChange={(e) => update(`offset_${prayer}`, e.target.value)} /></label>)}</div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{PRAYERS.map((prayer) => <label key={prayer} className="grid gap-1 text-sm font-bold">{prayer[0].toUpperCase() + prayer.slice(1)} offset<input className={inputClass()} type="number" min={-60} max={60} step="0.00001" value={form[`offset_${prayer}`]} onChange={(e) => update(`offset_${prayer}`, e.target.value)} /></label>)}</div>
         </div>
 
         <div className="grid gap-3">

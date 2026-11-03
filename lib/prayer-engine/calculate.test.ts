@@ -39,6 +39,19 @@ describe("calculatePrayerTimes", () => {
     expect(toMinutes(shifted.dhuhr) - toMinutes(base.dhuhr)).toBe(7);
   });
 
+  it("supports fractional offsets and an independent Maghrib solar depression angle", () => {
+    const date = "2026-10-20";
+    const regular = calculatePrayerTimes(date, validSettings);
+    const laterMaghrib = calculatePrayerTimes(date, {
+      ...validSettings,
+      maghribAngle: 1.33,
+      offsets: { ...validSettings.offsets, maghrib: 3.99167 },
+    });
+    expect(toMinutes(laterMaghrib.maghrib)).toBeGreaterThan(toMinutes(regular.maghrib));
+    expect(laterMaghrib.sunrise).toBe(regular.sunrise);
+    expect(laterMaghrib.fajr).toBe(regular.fajr);
+  });
+
   it("supports fixed Isha intervals including zero minutes", () => {
     const zero = calculatePrayerTimes("2026-01-15", {
       ...validSettings,

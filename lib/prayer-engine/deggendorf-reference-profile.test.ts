@@ -79,6 +79,40 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
     expect(discrepancies, JSON.stringify(summary)).toEqual([]);
   });
 
+  it("diagnoses a universal sub-minute phase shift without per-date overrides", () => {
+    const settings = { ...validSettings, ...DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE };
+    const diagnostics: Record<string, unknown> = {};
+    for (const prayer of PRAYERS) {
+      const candidates: Array<{ shift: number; exact: number; abs: number }> = [];
+      for (let step = -25; step <= 5; step++) {
+        const shift = step / 20; // constant astronomical phase in minutes
+        const testSettings = {
+          ...settings,
+          offsets: {
+            ...settings.offsets,
+            [prayer]: settings.offsets[prayer] + shift,
+          },
+        };
+        let exact = 0;
+        let abs = 0;
+        for (const row of screenshotRows) {
+          const [date, ...times] = row.split("|");
+          const expected = times[PRAYERS.indexOf(prayer)];
+          const generated = calculatePrayerTimes(date, testSettings)[prayer];
+          const residual = Math.abs(minutes(generated) - minutes(expected));
+          if (residual === 0) exact++;
+          abs += residual;
+        }
+        candidates.push({ shift, exact, abs });
+      }
+      diagnostics[prayer] = candidates
+        .sort((a, b) => b.exact - a.exact || a.abs - b.abs || Math.abs(a.shift) - Math.abs(b.shift))
+        .slice(0, 5);
+    }
+    console.info("DEGGENDORF_PHASE_FIT", JSON.stringify(diagnostics));
+    expect(PRAYERS.length).toBe(6);
+  });
+
   it("generates a full year, both DST boundaries, and leap day without a local-date overflow", () => {
     const settings = { ...validSettings, ...DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE };
     for (let timestamp = Date.UTC(2027, 0, 1); timestamp < Date.UTC(2028, 0, 1); timestamp += 86_400_000) {

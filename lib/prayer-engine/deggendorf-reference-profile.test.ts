@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { CalculationMethod, Coordinates, HighLatitudeRule, Madhab, PrayerTimes, Rounding } from "adhan";
 import { calculatePrayerTimes } from "./calculate";
 import { DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE } from "./deggendorf-reference-profile";
 import { validSettings } from "./test-settings";
@@ -78,60 +77,6 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
       }]),
     );
     expect(discrepancies, JSON.stringify(summary)).toEqual([]);
-  });
-
-  it("diagnoses a wide physical twilight-angle search for exact Fajr and Maghrib output", () => {
-    const profile = DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE;
-    const coordinate = new Coordinates(profile.latitude, profile.longitude);
-    const references = screenshotRows.map((row) => {
-      const [date, ...times] = row.split("|");
-      const midnight = Date.parse(`${date}T00:00:00.000Z`);
-      const timezoneDeltaMinutes = date < "2026-10-25" ? 120 : 60;
-      return {
-        date,
-        target: Object.fromEntries(PRAYERS.map((key, index) => [
-          key, midnight + (minutes(times[index]) - timezoneDeltaMinutes) * 60000
-        ])) as Record<(typeof PRAYERS)[number], number>,
-      };
-    });
-    const result: Record<string, unknown> = {};
-    for (const prayer of ["fajr", "maghrib"] as const) {
-      const candidates: Array<{ angle: number; matched: number; offset: number; margin: number }> = [];
-      const maxStep = prayer === "fajr" ? 800 : 160;
-      for (let i = 0; i <= maxStep; i++) {
-        const angle = prayer === "fajr" ? 12 + i * 0.02 : 0.8 + i * 0.01;
-        const p = CalculationMethod.Other();
-        p.fajrAngle = prayer === "fajr" ? angle : 16.5;
-        p.ishaAngle = 17;
-        p.maghribAngle = prayer === "maghrib" ? angle : 0;
-        p.highLatitudeRule = HighLatitudeRule.TwilightAngle;
-        p.madhab = Madhab.Shafi;
-        p.rounding = Rounding.None;
-        const windows = references.map(({ date, target }) => {
-          const solar = new PrayerTimes(coordinate, new Date(`${date}T12:00:00Z`), p);
-          const upper = (target[prayer] - solar[prayer].getTime()) / 60000;
-          return { lower: upper - 1, upper };
-        });
-        let matched = 0, offset = 0, margin = 0;
-        for (const w of windows) {
-          const candidate = w.upper - 0.0000001;
-          const chosen = windows.filter(v => v.lower < candidate && candidate <= v.upper);
-          const intersectionLower = Math.max(...chosen.map(v=>v.lower));
-          const intersectionUpper = Math.min(...chosen.map(v=>v.upper));
-          if (chosen.length > matched || chosen.length === matched && intersectionUpper - intersectionLower > margin) {
-            matched = chosen.length;
-            offset = (intersectionLower + intersectionUpper) / 2;
-            margin = intersectionUpper - intersectionLower;
-          }
-        }
-        candidates.push({ angle: Number(angle.toFixed(3)), matched,
-          offset: Number(offset.toFixed(5)), margin: Number((margin * 60).toFixed(3)) });
-      }
-      candidates.sort((a,b)=>b.matched-a.matched||b.margin-a.margin||Math.abs(a.angle-16.5)-Math.abs(b.angle-16.5));
-      result[prayer] = candidates.slice(0, 12);
-    }
-    console.info("DEGGENDORF_WIDE_ANGLE_FIT", JSON.stringify(result));
-    expect(true).toBe(true);
   });
 
   it("generates a full year, both DST boundaries, and leap day without a local-date overflow", () => {

@@ -45,7 +45,7 @@ function minutes(value: string): number {
 }
 
 describe("Deggendorf reference screenshot / Prayer Engine", () => {
-  it("recalculates photographed days astronomically without date-specific overrides", () => {
+  it("recalculates every photographed prayer minute exactly without date-specific overrides", () => {
     const profile = {
       ...validSettings,
       ...DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE,
@@ -63,7 +63,7 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
         const expectedMinutes = minutes(expected[key]);
         const delta = Math.abs(actualMinutes - expectedMinutes);
         differences[key].push(actualMinutes - expectedMinutes);
-        if (delta > 1) {
+        if (delta !== 0) {
           discrepancies.push(`${date} ${key}: engine ${generated[key]}, screenshot ${expected[key]}, delta ${actualMinutes - expectedMinutes}`);
         }
       }
@@ -72,7 +72,8 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
       PRAYERS.map((key) => [key, {
         min: Math.min(...differences[key]),
         max: Math.max(...differences[key]),
-        countBeyondOneMinute: differences[key].filter((difference) => Math.abs(difference) > 1).length,
+        exactCount: differences[key].filter((difference) => difference === 0).length,
+        countOutsideExact: differences[key].filter((difference) => difference !== 0).length,
       }]),
     );
     expect(discrepancies, JSON.stringify(summary)).toEqual([]);

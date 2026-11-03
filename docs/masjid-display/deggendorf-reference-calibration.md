@@ -32,11 +32,28 @@ date-independent settings:
 | Latitude | 48.833 |
 | Longitude | 12.967 |
 | Timezone | Europe/Berlin |
-| Fajr twilight angle | 16.5° |
+| Fajr twilight angle | 19.2° (empirical displayed-Fajr fit) |
 | Isha twilight angle | 17° |
+| Optional Maghrib depression angle | 1.33° |
 | Asr shadow factor | 1 |
 | High-latitude rule | Twilight angle (night-fraction safety cap) |
-| Prayer offsets in minutes | Fajr -1; Sunrise -4; Dhuhr +7; Asr +6; Maghrib +8; Isha +6 |
+| Prayer offsets in minutes | Fajr +15.15833; Sunrise -4.18333; Dhuhr +6.51667; Asr +5.86667; Maghrib +3.99167; Isha +5.23333 |
+
+
+The production database previously stored six minute offsets as integers and
+had no independent Maghrib solar-angle field. The migration
+`20261103220000_prayer_engine_fractional_offsets_maghrib_angle.sql`
+converts these existing integer offsets into `numeric(9,5)` without changing
+their values, and adds a Maghrib angle with a zero-degree backward-compatible
+default. **It contains no seeded prayer days and is not applied to production
+by creating this PR.** Angular settings and sub-minute minute offsets are
+persisted as operator-controlled calculation parameters, not date overrides.
+
+Exact matches against 27 photographed autumn dates establish only a fit on
+that sample. They do **not** demonstrate the reference provider's hidden
+method, ritual approval, or a full-year exact match. Even with seasonal
+continuity checks, the computed times must be reviewed independently in winter
+and summer before the profile is used for a mosque timetable.
 
 The candidate was initially estimated from the photograph and an astronomical
 cross-check, then calibrated against output of the exact pinned Adhan engine.
@@ -59,7 +76,7 @@ API calls at runtime.
 `npx vitest run lib/prayer-engine/deggendorf-reference-profile.test.ts`
 compares the five prayer times plus the supplementary Sunrise value with the
 photographed reference for all 27 dates, with a calibration tolerance of
-**at most one minute per value**. Verification MUST run against the pinned actual Adhan
+**exact HH:mm equality (zero-minute tolerance)**. Verification MUST run against the pinned actual Adhan
 engine; a separate approximation cannot establish a passing result.
 
 Use `.github/workflows/prayer-reference-calibration.yml` for an independent

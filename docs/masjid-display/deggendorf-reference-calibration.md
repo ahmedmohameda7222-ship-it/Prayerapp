@@ -32,10 +32,10 @@ date-independent settings:
 | Isha twilight angle | 17° |
 | Asr shadow factor | 1 |
 | High-latitude rule | Middle of the night |
-| Prayer offsets in minutes | Fajr 0; Sunrise -3; Dhuhr +7; Asr +3; Maghrib +6; Isha +4 |
+| Prayer offsets in minutes | Fajr -1; Sunrise -4; Dhuhr +7; Asr +6; Maghrib +8; Isha +6 |
 
-The candidate was estimated from the photograph and an astronomical
-cross-check. The photographed app's **actual internal algorithm and source
+The candidate was initially estimated from the photograph and an astronomical
+cross-check, then calibrated against output of the exact pinned Adhan engine. The photographed app's **actual internal algorithm and source
 authority are not known**. Even when the numerical test passes, it does not
 prove the source's original method or religious authorization.
 

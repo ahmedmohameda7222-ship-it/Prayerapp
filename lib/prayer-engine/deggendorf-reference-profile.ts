@@ -30,7 +30,7 @@ export const DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE = {
   asrShadowFactor: 1,
   highLatitudeRule: "twilight_angle",
   offsets: {
-    fajr: -1,
+    fajr: -6,
     sunrise: -4,
     dhuhr: 7,
     asr: 6,

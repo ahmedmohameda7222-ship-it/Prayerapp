@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { PrayerScheduleDiff, PrayerSchedulePreview } from "@/lib/prayer-engine/generate";
@@ -108,12 +108,14 @@ export function PrayerEngineAdmin({
   const [recalcStart, setRecalcStart] = useState("");
   const [recalcEnd, setRecalcEnd] = useState("");
   const [isPending, startTransition] = useTransition();
+  const recalculationPreviewRequest = useRef(0);
 
   const needsRecalculation = Boolean(settings && settings.calculationRevision !== settings.appliedCalculationRevision);
   const canUseServerActions = Boolean(token);
   const ishaFixed = form.ishaRule === "fixed_minutes";
 
   function update(name: string, value: string) {
+    ++recalculationPreviewRequest.current;
     setForm((current) => ({ ...current, [name]: value }));
     // A preview must never be committable after calculation inputs change.
     setExtensionPreview(null);
@@ -124,6 +126,7 @@ export function PrayerEngineAdmin({
   }
 
   function loadDeggendorfReferenceProfile() {
+    ++recalculationPreviewRequest.current;
     const profile = DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE;
     setForm((current) => ({
       ...current,
@@ -150,6 +153,7 @@ export function PrayerEngineAdmin({
   }
 
   function saveSettings() {
+    ++recalculationPreviewRequest.current;
     setError("");
     setMessage("");
     let payload: PrayerCalculationSettings;
@@ -201,8 +205,10 @@ export function PrayerEngineAdmin({
   function previewRecalculation() {
     if (!canUseServerActions || !recalcStart || !recalcEnd) return;
     setError("");
+    const request = ++recalculationPreviewRequest.current;
     startTransition(async () => {
       const result = await previewPrayerRecalculationAction(token, recalcStart, recalcEnd);
+      if (request !== recalculationPreviewRequest.current) return;
       if (!result.success || !result.data) { setError(result.error || "Preview failed"); return; }
       setRecalcPreview(result.data);
       setMessage(`Recalculation preview: ${result.data.changedRowCount} changed row(s), ${result.data.changedPrayerCount} changed prayer value(s).`);
@@ -323,7 +329,7 @@ export function PrayerEngineAdmin({
 
       <Card className="grid gap-4 p-5">
         <h3 className="font-extrabold">Recalculate Future Schedule</h3>
-        <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1 text-sm font-bold">Recalculation start<input className={inputClass()} type="date" value={recalcStart} onChange={(e) => { setRecalcStart(e.target.value); setRecalcPreview(null); }} /></label><label className="grid gap-1 text-sm font-bold">Recalculation end<input className={inputClass()} type="date" value={recalcEnd} onChange={(e) => { setRecalcEnd(e.target.value); setRecalcPreview(null); }} /></label></div>
+        <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1 text-sm font-bold">Recalculation start<input className={inputClass()} type="date" value={recalcStart} onChange={(e) => { ++recalculationPreviewRequest.current; setRecalcStart(e.target.value); setRecalcPreview(null); }} /></label><label className="grid gap-1 text-sm font-bold">Recalculation end<input className={inputClass()} type="date" value={recalcEnd} onChange={(e) => { ++recalculationPreviewRequest.current; setRecalcEnd(e.target.value); setRecalcPreview(null); }} /></label></div>
         <Button type="button" onClick={previewRecalculation} disabled={isPending || !canUseServerActions || !settings || !recalcStart || !recalcEnd}>Preview Recalculation</Button>
         <Button type="button" onClick={commitRecalculation} disabled={isPending || !recalcPreview}>Commit Recalculation</Button>
         {recalcPreview ? (

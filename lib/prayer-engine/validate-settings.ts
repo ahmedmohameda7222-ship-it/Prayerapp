@@ -87,7 +87,7 @@ function validateOffsets(value: unknown): PrayerOffsets {
   return Object.fromEntries(
     PRAYER_KEYS.map((key) => [
       key,
-      integerInRange(source[key], `${key} offset`, -60, 60),
+      finiteNumber(source[key], `${key} offset`, -60, 60),
     ]),
   ) as unknown as PrayerOffsets;
 }
@@ -110,6 +110,9 @@ export function validatePrayerCalculationSettings(
   const longitude = finiteNumber(source.longitude, "longitude", -180, 180);
   const timezone = validateTimezone(source.timezone);
   const fajrAngle = positiveAngle(source.fajrAngle, "Fajr angle");
+  const maghribAngle = source.maghribAngle === undefined
+    ? 0
+    : finiteNumber(source.maghribAngle, "Maghrib angle", 0, 30);
 
   if (source.ishaRule !== "angle" && source.ishaRule !== "fixed_minutes") {
     throw new Error("Invalid Isha rule");
@@ -158,6 +161,7 @@ export function validatePrayerCalculationSettings(
     longitude,
     timezone,
     fajrAngle,
+    maghribAngle,
     ishaRule,
     ishaAngle,
     ishaMinutesAfterMaghrib,

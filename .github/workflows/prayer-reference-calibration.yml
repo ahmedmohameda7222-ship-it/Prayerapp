@@ -27,6 +27,12 @@ jobs:
       - run: npm ci
       - name: Verify photographed Deggendorf reference against real Adhan
         run: npx vitest run lib/prayer-engine/deggendorf-reference-profile.test.ts lib/prayer-engine/preview-presentation.test.ts
+      - name: Run complete root test suite
+        run: npm test
+      - name: Check display producer/consumer contract
+        run: node scripts/verify-masjid-display-contract.mjs
+      - name: Lint complete root application
+        run: npm run lint
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Lint prayer engine and admin controls

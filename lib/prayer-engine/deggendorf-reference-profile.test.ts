@@ -52,8 +52,14 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
     const discrepancies: string[] = [];
     const differences: Record<string, number[]> = Object.fromEntries(PRAYERS.map((prayer) => [prayer, []]));
     for (const raw of screenshotRows) {
-      const [date, sahurEnds, ...prayers] = raw.split("|");
-      const expected = Object.fromEntries(PRAYERS.map((key, i) => [key, prayers[i]]));
+      const [date, sahurEnds, displayedFajr, ...otherPrayers] = raw.split("|");
+      // The source is Fazilet Calendar: Sahur Ends/Imsak is the twilight onset.
+      // The displayed Fajr is consistently 20 minutes later, not a second
+      // independent astronomical dawn event. The canonical Fajr instant
+      // should track Imsak; mosque Iqama remains separately configured.
+      const expected = Object.fromEntries(
+        PRAYERS.map((key, i) => [key, i === 0 ? sahurEnds : otherPrayers[i - 1]]),
+      );
       const generated = calculatePrayerTimes(date, profile);
       for (const key of PRAYERS) {
         const actualMinutes = minutes(generated[key]);
@@ -66,7 +72,11 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
       }
       // The screenshot labels Sahur Ends exactly twenty minutes before Fajr.
       // The canonical six-prayer schedule has no separate Sahur/Imsak column.
-      expect(minutes(prayers[0]) - minutes(sahurEnds), date).toBe(20);
+      expect(minutes(displayedFajr) - minutes(sahurEnds), date).toBe(20);
+      expect(
+        Math.abs(minutes(generated.fajr) + 20 - minutes(displayedFajr)),
+        `${date} displayed Fajr must be derived from calculated Imsak +20m`,
+      ).toBeLessThanOrEqual(1);
     }
     const summary = Object.fromEntries(
       PRAYERS.map((key) => [key, {

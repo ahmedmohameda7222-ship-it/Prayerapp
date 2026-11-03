@@ -16,25 +16,30 @@ import type { PrayerCalculationSettings } from "./types";
  * The parameters reproduce the photographed *displayed Fajr* values, not an
  * independently certified astronomical dawn onset. Never infer an extra
  * 20-minute shift or conflate Sahur/Imsak with canonical Fajr.
- * Mosque review is needed before production use.
+ * The fit uses fractional-minute astronomical offsets and an optional
+ * Maghrib solar angle. It is a model fitted to the observed October-November
+ * window, NOT a verified year-round Fazilet methodology. Its exactness is
+ * checked against independent test-only screenshot data, never loaded at
+ * runtime. Mosque review is needed before production use.
  */
 export const DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE = {
   latitude: 48.833,
   longitude: 12.967,
   timezone: "Europe/Berlin",
-  fajrAngle: 16.5,
+  fajrAngle: 19.2,
+  maghribAngle: 1.33,
   ishaRule: "angle",
   ishaAngle: 17,
   ishaMinutesAfterMaghrib: null,
   asrShadowFactor: 1,
   highLatitudeRule: "twilight_angle",
   offsets: {
-    fajr: -1,
-    sunrise: -4,
-    dhuhr: 7,
-    asr: 6,
-    maghrib: 8,
-    isha: 6,
+    fajr: 15.15833,
+    sunrise: -4.18333,
+    dhuhr: 6.51667,
+    asr: 5.86667,
+    maghrib: 3.99167,
+    isha: 5.23333,
   },
 } as const satisfies Pick<
   PrayerCalculationSettings,
@@ -42,6 +47,7 @@ export const DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE = {
   | "longitude"
   | "timezone"
   | "fajrAngle"
+  | "maghribAngle"
   | "ishaRule"
   | "ishaAngle"
   | "ishaMinutesAfterMaghrib"

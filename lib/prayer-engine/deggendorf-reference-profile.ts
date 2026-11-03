@@ -21,7 +21,7 @@ export const DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE = {
   ishaAngle: 17,
   ishaMinutesAfterMaghrib: null,
   asrShadowFactor: 1,
-  highLatitudeRule: "middle_of_night",
+  highLatitudeRule: "twilight_angle",
   offsets: {
     fajr: -1,
     sunrise: -4,

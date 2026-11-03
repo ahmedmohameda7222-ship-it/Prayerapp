@@ -78,6 +78,15 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
     expect(discrepancies, JSON.stringify(summary)).toEqual([]);
   });
 
+  it("generates a full year, both DST boundaries, and leap day without a local-date overflow", () => {
+    const settings = { ...validSettings, ...DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE };
+    for (let timestamp = Date.UTC(2027, 0, 1); timestamp < Date.UTC(2028, 0, 1); timestamp += 86_400_000) {
+      const date = new Date(timestamp).toISOString().slice(0, 10);
+      expect(() => calculatePrayerTimes(date, settings), date).not.toThrow();
+    }
+    expect(() => calculatePrayerTimes("2028-02-29", settings)).not.toThrow();
+  });
+
   it("treats 2026-10-25 as Europe/Berlin DST, not a manual hour offset", () => {
     const settings = { ...validSettings, ...DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE };
     const saturday = calculatePrayerTimes("2026-10-24", settings);

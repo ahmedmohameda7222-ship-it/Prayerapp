@@ -140,6 +140,58 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
     expect(true).toBe(true);
   });
 
+  it("finds if latitude and dawn twilight angle jointly eliminate the final Fajr minute mismatch", () => {
+    const data = screenshotRows.map((raw) => {
+      const [date, fajr] = raw.split("|");
+      const utcOffset = date < "2026-10-25" ? 120 : 60;
+      const expectedMs = Date.parse(`${date}T00:00:00Z`) + (minutes(fajr) - utcOffset) * 60_000;
+      return { date, expectedMs };
+    });
+    const best: Array<{ lat: number; fajrAngle: number; exact: number; offset: number; marginSeconds: number }> = [];
+    const lon = DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE.longitude;
+    for (let ilat = -15; ilat <= 15; ilat++) {
+      const lat = 48.833 + 0.0025 * ilat;
+      const coords = new Coordinates(lat, lon);
+      for (let ia = -60; ia <= 60; ia++) {
+        const fajrAngle = 16.5 + 0.005 * ia;
+        const params = CalculationMethod.Other();
+        params.fajrAngle = fajrAngle;
+        params.ishaAngle = 17;
+        params.madhab = Madhab.Shafi;
+        params.highLatitudeRule = HighLatitudeRule.TwilightAngle;
+        params.rounding = Rounding.None;
+        const windows = data.map(({ date, expectedMs }) => {
+          const raw = new PrayerTimes(coords, new Date(`${date}T12:00:00Z`), params).fajr.getTime();
+          const upper = (expectedMs - raw) / 60000;
+          return { lower: upper - 1, upper };
+        });
+        let exact = 0;
+        let offset = 0;
+        let marginSeconds = 0;
+        for (const w of windows) {
+          const candidate = w.upper - 1e-7;
+          const matching = windows.filter(x=> x.lower < candidate && candidate <= x.upper);
+          if (matching.length > exact) {
+            exact = matching.length;
+            const lower = Math.max(...matching.map(x=>x.lower));
+            const upper = Math.min(...matching.map(x=>x.upper));
+            offset = (lower + upper) / 2;
+            marginSeconds = (upper - lower) * 60;
+          }
+        }
+        if (exact >= 27) best.push({
+          lat: Number(lat.toFixed(4)), fajrAngle: Number(fajrAngle.toFixed(4)), exact,
+          offset: Number(offset.toFixed(4)), marginSeconds: Number(marginSeconds.toFixed(3)),
+        });
+      }
+    }
+    best.sort((a,b)=>b.marginSeconds-a.marginSeconds||
+      Math.abs(a.lat-48.833)-Math.abs(b.lat-48.833)||
+      Math.abs(a.fajrAngle-16.5)-Math.abs(b.fajrAngle-16.5));
+    console.info("DEGGENDORF_FAJR_FULL_MATCH",JSON.stringify({count:best.length,best:best.slice(0,12)}));
+    expect(true).toBe(true);
+  });
+
   it("generates a full year, both DST boundaries, and leap day without a local-date overflow", () => {
     const settings = { ...validSettings, ...DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE };
     for (let timestamp = Date.UTC(2027, 0, 1); timestamp < Date.UTC(2028, 0, 1); timestamp += 86_400_000) {

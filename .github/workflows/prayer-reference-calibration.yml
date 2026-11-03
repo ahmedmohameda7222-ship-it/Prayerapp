@@ -1,0 +1,33 @@
+name: Prayer reference calibration
+
+on:
+  pull_request:
+    paths:
+      - "lib/prayer-engine/**"
+      - "app/admin/prayer-engine/**"
+      - ".github/workflows/prayer-reference-calibration.yml"
+  push:
+    branches:
+      - feature/deggendorf-reference-prayer-calibration
+
+permissions:
+  contents: read
+
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Verify photographed Deggendorf reference against real Adhan
+        run: npx vitest run lib/prayer-engine/deggendorf-reference-profile.test.ts
+      - name: Check TypeScript
+        run: npx tsc --noEmit
+      - name: Lint prayer engine and admin controls
+        run: npx eslint lib/prayer-engine app/admin/prayer-engine

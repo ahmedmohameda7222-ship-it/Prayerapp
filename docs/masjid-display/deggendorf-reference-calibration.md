@@ -6,15 +6,19 @@ Status: **candidate; not approved or applied to production**.
 
 Reference: user-supplied screenshot, Deggendorf, from 2026-10-12 to
 2026-11-09 (27 fully legible daily rows, omitting obscured rows).
+**The five prayer times are the calibration target:** Fajr, Dhuhr, Asr,
+Maghrib (Iftar in the image), and Isha. Sunrise is checked as an
+astronomical helper, not an obligatory prayer. Sahur Ends/Imsak is not
+used to calibrate the regular five-prayer schedule.
 
 - Columns: Sahur Ends, Fajr, Sunrise, Zuhr, Asr, Iftar, Isha.
-- **Sahur Ends** is exactly 20 minutes before Fajr in the shown rows; it is
-  *not* Fajr and is not a seventh field in canonical `prayer_times`.
+- **Sahur Ends** is a separate Ramadan feature. It is not mapped to Fajr,
+  is not used as a test input, and does not cause a 20-minute shift.
 - **Iftar** is compared to canonical `maghrib`.
 - The 2026-10-25 Europe/Berlin DST transition is included.
-- A reference example (2026-11-03) is Sahur Ends 04:59, Fajr 05:19,
-  Sunrise 06:54, Dhuhr 11:59, Asr 14:24, Maghrib 16:53, Isha 18:32.
-- All 27 expected daily rows exist **only** in
+- A reference example (2026-11-03) is Fajr 05:19, Sunrise 06:54,
+  Dhuhr 11:59, Asr 14:24, Maghrib 16:53, Isha 18:32.
+- All 27 expected daily rows (without Sahur data) exist **only** in
   `lib/prayer-engine/deggendorf-reference-profile.test.ts`. They must
   never be copied to production DB by seed/import/migration.
 
@@ -35,8 +39,11 @@ date-independent settings:
 | Prayer offsets in minutes | Fajr -1; Sunrise -4; Dhuhr +7; Asr +6; Maghrib +8; Isha +6 |
 
 The candidate was initially estimated from the photograph and an astronomical
-cross-check, then calibrated against output of the exact pinned Adhan engine. The photographed app's **actual internal algorithm and source
-authority are not known**. Even when the numerical test passes, it does not
+cross-check, then calibrated against output of the exact pinned Adhan engine.
+The Fajr angle is an empirical fit to the screenshot's displayed Fajr, **not**
+a claim about its source's true astronomical dawn angle or religious method.
+The photographed app's **actual internal algorithm and source authority are
+not known**. Even when the numerical test passes, it does not
 prove the source's original method or religious authorization.
 
 Engine: existing pinned `adhan@4.4.6`, `CalculationMethod.Other()`,
@@ -50,9 +57,9 @@ API calls at runtime.
 ## Verification
 
 `npx vitest run lib/prayer-engine/deggendorf-reference-profile.test.ts`
-compares every one of the six generated values with the photographed reference
-for all 27 dates, with the historical calibration tolerance of **at most one
-minute per prayer**. Verification MUST run against the pinned actual Adhan
+compares the five prayer times plus the supplementary Sunrise value with the
+photographed reference for all 27 dates, with a calibration tolerance of
+**at most one minute per value**. Verification MUST run against the pinned actual Adhan
 engine; a separate approximation cannot establish a passing result.
 
 Use `.github/workflows/prayer-reference-calibration.yml` for an independent

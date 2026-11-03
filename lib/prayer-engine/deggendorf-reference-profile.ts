@@ -8,15 +8,22 @@ import type { PrayerCalculationSettings } from "./types";
  * a declaration of the source app's exact calculation method, or mosque approval.
  * Review the regression test and Admin diff before using this in production.
  *
- * The photographed "Sahur Ends" is 20 minutes before Fajr, and "Iftar"
- * corresponds to the astronomical Maghrib event. Neither is a separate
- * stored prayer-time field in Prayerapp.
+ * Fazilet Calendar source: 19° Imsak, 17° Isha, plus religious
+ * safeguards (temkin). Sahur Ends is Imsak / dawn onset, while the
+ * screenshot's "Fajr" is a time 20 minutes later. Prayerapp's canonical
+ * Fajr field represents dawn onset, NOT the later recommended Fajr
+ * display or a mosque-defined Iqama time.
+ *
+ * Reference: https://fazilettakvimi.com/tr/sikca-sorulan-sorular/muhteva-ile-ilgili-sorular/
+ * Iftar is Maghrib. Astronomical offsets are inferred and must be
+ * mosque-reviewed; a single generic astronomy library does not reproduce
+ * Fazilet's full, proprietary city/season-specific temkin calculations.
  */
 export const DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE = {
   latitude: 48.833,
   longitude: 12.967,
   timezone: "Europe/Berlin",
-  fajrAngle: 16.5,
+  fajrAngle: 19,
   ishaRule: "angle",
   ishaAngle: 17,
   ishaMinutesAfterMaghrib: null,

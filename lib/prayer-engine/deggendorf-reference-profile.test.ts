@@ -80,115 +80,57 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
     expect(discrepancies, JSON.stringify(summary)).toEqual([]);
   });
 
-  it("searches dawn and sunset solar depression angles against the photographed times", () => {
+  it("diagnoses a wide physical twilight-angle search for exact Fajr and Maghrib output", () => {
     const profile = DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE;
-    const coordinates = new Coordinates(profile.latitude, profile.longitude);
+    const coordinate = new Coordinates(profile.latitude, profile.longitude);
     const references = screenshotRows.map((row) => {
       const [date, ...times] = row.split("|");
-      const base = Date.parse(`${date}T00:00:00Z`);
-      const utcOffset = date < "2026-10-25" ? 120 : 60;
+      const midnight = Date.parse(`${date}T00:00:00.000Z`);
+      const timezoneDeltaMinutes = date < "2026-10-25" ? 120 : 60;
       return {
         date,
-        target: Object.fromEntries(PRAYERS.map((key, i) => [key,
-          base + (minutes(times[i]) - utcOffset) * 60_000,
+        target: Object.fromEntries(PRAYERS.map((key, index) => [
+          key, midnight + (minutes(times[index]) - timezoneDeltaMinutes) * 60000
         ])) as Record<(typeof PRAYERS)[number], number>,
       };
     });
-    const report: Record<string, unknown> = {};
+    const result: Record<string, unknown> = {};
     for (const prayer of ["fajr", "maghrib"] as const) {
-      const candidates: Array<{ angle: number; exact: number; offset: number; span: number }> = [];
-      const total = prayer === "fajr" ? 121 : 101;
-      for (let i = 0; i < total; i++) {
-        const angle = prayer === "fajr" ? 16.2 + i * 0.005 : 0.84 + i * 0.02;
-        const params = CalculationMethod.Other();
-        params.fajrAngle = prayer === "fajr" ? angle : profile.fajrAngle;
-        params.ishaAngle = profile.ishaAngle!;
-        params.maghribAngle = prayer === "maghrib" ? angle : 0;
-        params.highLatitudeRule = HighLatitudeRule.TwilightAngle;
-        params.madhab = Madhab.Shafi;
-        params.rounding = Rounding.None;
+      const candidates: Array<{ angle: number; matched: number; offset: number; margin: number }> = [];
+      const maxStep = prayer === "fajr" ? 800 : 160;
+      for (let i = 0; i <= maxStep; i++) {
+        const angle = prayer === "fajr" ? 12 + i * 0.02 : 0.8 + i * 0.01;
+        const p = CalculationMethod.Other();
+        p.fajrAngle = prayer === "fajr" ? angle : 16.5;
+        p.ishaAngle = 17;
+        p.maghribAngle = prayer === "maghrib" ? angle : 0;
+        p.highLatitudeRule = HighLatitudeRule.TwilightAngle;
+        p.madhab = Madhab.Shafi;
+        p.rounding = Rounding.None;
         const windows = references.map(({ date, target }) => {
-          const astronomical = new PrayerTimes(coordinates, new Date(`${date}T12:00:00Z`), params);
-          const upper = (target[prayer] - astronomical[prayer].getTime()) / 60000;
+          const solar = new PrayerTimes(coordinate, new Date(`${date}T12:00:00Z`), p);
+          const upper = (target[prayer] - solar[prayer].getTime()) / 60000;
           return { lower: upper - 1, upper };
         });
-        let bestExact = 0;
-        let bestOffset = 0;
-        let bestSpan = 0;
+        let matched = 0, offset = 0, margin = 0;
         for (const w of windows) {
-          const c = w.upper - 1e-7;
-          const matching = windows.filter(x => x.lower < c && c <= x.upper);
-          if(matching.length > bestExact) {
-            bestExact = matching.length;
-            const lower = Math.max(...matching.map(x => x.lower));
-            const upper = Math.min(...matching.map(x => x.upper));
-            bestOffset = (lower + upper) / 2;
-            bestSpan = (upper - lower) * 60;
+          const candidate = w.upper - 0.0000001;
+          const chosen = windows.filter(v => v.lower < candidate && candidate <= v.upper);
+          const intersectionLower = Math.max(...chosen.map(v=>v.lower));
+          const intersectionUpper = Math.min(...chosen.map(v=>v.upper));
+          if (chosen.length > matched || chosen.length === matched && intersectionUpper - intersectionLower > margin) {
+            matched = chosen.length;
+            offset = (intersectionLower + intersectionUpper) / 2;
+            margin = intersectionUpper - intersectionLower;
           }
         }
-        candidates.push({
-          angle: Number(angle.toFixed(3)),
-          exact: bestExact,
-          offset: Number(bestOffset.toFixed(4)),
-          span: Number(bestSpan.toFixed(2)),
-        });
+        candidates.push({ angle: Number(angle.toFixed(3)), matched,
+          offset: Number(offset.toFixed(5)), margin: Number((margin * 60).toFixed(3)) });
       }
-      candidates.sort((a,b)=>b.exact-a.exact||b.span-a.span);
-      report[prayer] = candidates.slice(0, 12);
+      candidates.sort((a,b)=>b.matched-a.matched||b.margin-a.margin||Math.abs(a.angle-16.5)-Math.abs(b.angle-16.5));
+      result[prayer] = candidates.slice(0, 12);
     }
-    console.info("DEGGENDORF_SOLAR_ANGLE_FIT", JSON.stringify(report));
-    expect(true).toBe(true);
-  });
-
-  it("finds if latitude and dawn twilight angle jointly eliminate the final Fajr minute mismatch", () => {
-    const data = screenshotRows.map((raw) => {
-      const [date, fajr] = raw.split("|");
-      const utcOffset = date < "2026-10-25" ? 120 : 60;
-      const expectedMs = Date.parse(`${date}T00:00:00Z`) + (minutes(fajr) - utcOffset) * 60_000;
-      return { date, expectedMs };
-    });
-    const best: Array<{ lat: number; fajrAngle: number; exact: number; offset: number; marginSeconds: number }> = [];
-    const lon = DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE.longitude;
-    for (let ilat = -15; ilat <= 15; ilat++) {
-      const lat = 48.833 + 0.0025 * ilat;
-      const coords = new Coordinates(lat, lon);
-      for (let ia = -60; ia <= 60; ia++) {
-        const fajrAngle = 16.5 + 0.005 * ia;
-        const params = CalculationMethod.Other();
-        params.fajrAngle = fajrAngle;
-        params.ishaAngle = 17;
-        params.madhab = Madhab.Shafi;
-        params.highLatitudeRule = HighLatitudeRule.TwilightAngle;
-        params.rounding = Rounding.None;
-        const windows = data.map(({ date, expectedMs }) => {
-          const raw = new PrayerTimes(coords, new Date(`${date}T12:00:00Z`), params).fajr.getTime();
-          const upper = (expectedMs - raw) / 60000;
-          return { lower: upper - 1, upper };
-        });
-        let exact = 0;
-        let offset = 0;
-        let marginSeconds = 0;
-        for (const w of windows) {
-          const candidate = w.upper - 1e-7;
-          const matching = windows.filter(x=> x.lower < candidate && candidate <= x.upper);
-          if (matching.length > exact) {
-            exact = matching.length;
-            const lower = Math.max(...matching.map(x=>x.lower));
-            const upper = Math.min(...matching.map(x=>x.upper));
-            offset = (lower + upper) / 2;
-            marginSeconds = (upper - lower) * 60;
-          }
-        }
-        if (exact >= 27) best.push({
-          lat: Number(lat.toFixed(4)), fajrAngle: Number(fajrAngle.toFixed(4)), exact,
-          offset: Number(offset.toFixed(4)), marginSeconds: Number(marginSeconds.toFixed(3)),
-        });
-      }
-    }
-    best.sort((a,b)=>b.marginSeconds-a.marginSeconds||
-      Math.abs(a.lat-48.833)-Math.abs(b.lat-48.833)||
-      Math.abs(a.fajrAngle-16.5)-Math.abs(b.fajrAngle-16.5));
-    console.info("DEGGENDORF_FAJR_FULL_MATCH",JSON.stringify({count:best.length,best:best.slice(0,12)}));
+    console.info("DEGGENDORF_WIDE_ANGLE_FIT", JSON.stringify(result));
     expect(true).toBe(true);
   });
 

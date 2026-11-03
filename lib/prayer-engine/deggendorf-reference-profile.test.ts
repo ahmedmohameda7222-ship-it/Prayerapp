@@ -49,6 +49,8 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
       ...validSettings,
       ...DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE,
     };
+    const discrepancies: string[] = [];
+    const differences: Record<string, number[]> = Object.fromEntries(PRAYERS.map((prayer) => [prayer, []]));
     for (const raw of screenshotRows) {
       const [date, sahurEnds, ...prayers] = raw.split("|");
       const expected = Object.fromEntries(PRAYERS.map((key, i) => [key, prayers[i]]));
@@ -57,12 +59,23 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
         const actualMinutes = minutes(generated[key]);
         const expectedMinutes = minutes(expected[key]);
         const delta = Math.abs(actualMinutes - expectedMinutes);
-        expect(delta, `${date} ${key}: engine ${generated[key]}, screenshot ${expected[key]}`).toBeLessThanOrEqual(1);
+        differences[key].push(actualMinutes - expectedMinutes);
+        if (delta > 1) {
+          discrepancies.push(`${date} ${key}: engine ${generated[key]}, screenshot ${expected[key]}, delta ${actualMinutes - expectedMinutes}`);
+        }
       }
       // The screenshot labels Sahur Ends exactly twenty minutes before Fajr.
       // The canonical six-prayer schedule has no separate Sahur/Imsak column.
       expect(minutes(prayers[0]) - minutes(sahurEnds), date).toBe(20);
     }
+    const summary = Object.fromEntries(
+      PRAYERS.map((key) => [key, {
+        min: Math.min(...differences[key]),
+        max: Math.max(...differences[key]),
+        countBeyondOneMinute: differences[key].filter((difference) => Math.abs(difference) > 1).length,
+      }]),
+    );
+    expect(discrepancies, JSON.stringify(summary)).toEqual([]);
   });
 
   it("treats 2026-10-25 as Europe/Berlin DST, not a manual hour offset", () => {

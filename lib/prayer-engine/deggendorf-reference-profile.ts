@@ -23,12 +23,12 @@ export const DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE = {
   asrShadowFactor: 1,
   highLatitudeRule: "middle_of_night",
   offsets: {
-    fajr: 0,
-    sunrise: -3,
+    fajr: -1,
+    sunrise: -4,
     dhuhr: 7,
-    asr: 3,
-    maghrib: 6,
-    isha: 4,
+    asr: 6,
+    maghrib: 8,
+    isha: 6,
   },
 } as const satisfies Pick<
   PrayerCalculationSettings,

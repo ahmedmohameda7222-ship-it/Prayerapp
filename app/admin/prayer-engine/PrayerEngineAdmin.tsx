@@ -7,6 +7,7 @@ import type { PrayerScheduleDiff, PrayerSchedulePreview } from "@/lib/prayer-eng
 import type { PrayerCalculationSettings, PrayerKey } from "@/lib/prayer-engine/types";
 import type { PrayerRuntimeAuthority } from "@/lib/data/prayer-settings";
 import { CERTIFIED_PRAYER_TIMEZONES } from "@/lib/prayer-engine/certified-timezones";
+import { DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE } from "@/lib/prayer-engine/deggendorf-reference-profile";
 import { PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY } from "@/lib/prayer-engine/production-approval";
 import {
   calibratePrayerEngineAction,
@@ -115,6 +116,31 @@ export function PrayerEngineAdmin({
     setError("");
   }
 
+  function loadDeggendorfReferenceProfile() {
+    const profile = DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE;
+    setForm((current) => ({
+      ...current,
+      latitude: String(profile.latitude),
+      longitude: String(profile.longitude),
+      timezone: profile.timezone,
+      fajrAngle: String(profile.fajrAngle),
+      ishaRule: profile.ishaRule,
+      ishaAngle: String(profile.ishaAngle),
+      ishaMinutesAfterMaghrib: "",
+      asrShadowFactor: String(profile.asrShadowFactor),
+      highLatitudeRule: profile.highLatitudeRule,
+      ...Object.fromEntries(
+        PRAYERS.map((prayer) => [`offset_${prayer}`, String(profile.offsets[prayer])]),
+      ),
+    }));
+    setError("");
+    setExtensionPreview(null);
+    setRecalcPreview(null);
+    setMessage(
+      "Candidate Deggendorf astronomical profile loaded for review only. No settings or prayer times were saved.",
+    );
+  }
+
   function saveSettings() {
     setError("");
     setMessage("");
@@ -214,6 +240,17 @@ export function PrayerEngineAdmin({
 
       <Card className="grid gap-4 p-5">
         <h3 className="font-extrabold">Calculation and shared Iqama settings</h3>
+        <div className="grid gap-2">
+          <Button type="button" onClick={loadDeggendorfReferenceProfile} disabled={isPending}>
+            Load Deggendorf reference calculation (review only)
+          </Button>
+          <p className="text-xs text-[var(--color-muted)]">
+            Date-independent astronomical parameters inferred from the October–November 2026
+            reference timetable. Review values and existing Iqama delays; this button makes
+            no database changes. Saving settings and applying a future schedule require
+            separate explicit actions.
+          </p>
+        </div>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="grid gap-1 text-sm font-bold">Latitude<input className={inputClass()} value={form.latitude} onChange={(e) => update("latitude", e.target.value)} inputMode="decimal" /></label>
           <label className="grid gap-1 text-sm font-bold">Longitude<input className={inputClass()} value={form.longitude} onChange={(e) => update("longitude", e.target.value)} inputMode="decimal" /></label>

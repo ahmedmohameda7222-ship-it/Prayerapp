@@ -26,7 +26,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Verify photographed Deggendorf reference against real Adhan
-        run: npx vitest run lib/prayer-engine/deggendorf-reference-profile.test.ts
+        run: npx vitest run lib/prayer-engine/deggendorf-reference-profile.test.ts lib/prayer-engine/preview-presentation.test.ts
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Lint prayer engine and admin controls

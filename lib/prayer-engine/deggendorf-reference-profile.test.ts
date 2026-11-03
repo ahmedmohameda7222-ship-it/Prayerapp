@@ -6,35 +6,36 @@ import { validSettings } from "./test-settings";
 // Transcribed from the user-supplied timetable screenshot for Deggendorf,
 // spanning the 2026-10-25 Europe/Berlin daylight-saving transition.
 // Reference expectations belong in TESTS ONLY, never database seed data.
-// Column order: date | Sahur Ends | Fajr | Sunrise | Dhuhr | Asr | Iftar/Maghrib | Isha.
+// Column order: date | Fajr | Sunrise | Dhuhr | Asr | Iftar/Maghrib | Isha.
+// Sahur Ends is a separate Ramadan/Imsak concern, intentionally excluded.
 const screenshotRows = [
-  "2026-10-12|05:27|05:47|07:20|13:02|15:56|18:32|20:09",
-  "2026-10-13|05:29|05:49|07:22|13:01|15:54|18:30|20:07",
-  "2026-10-14|05:30|05:50|07:23|13:01|15:53|18:28|20:05",
-  "2026-10-15|05:32|05:52|07:25|13:01|15:51|18:26|20:03",
-  "2026-10-16|05:33|05:53|07:26|13:01|15:50|18:24|20:01",
-  "2026-10-17|05:34|05:54|07:28|13:00|15:48|18:22|19:59",
-  "2026-10-20|05:39|05:59|07:32|13:00|15:44|18:17|19:54",
-  "2026-10-21|05:40|06:00|07:34|13:00|15:42|18:15|19:52",
-  "2026-10-22|05:42|06:02|07:35|13:00|15:41|18:13|19:50",
-  "2026-10-23|05:43|06:03|07:37|12:59|15:39|18:11|19:49",
-  "2026-10-24|05:45|06:05|07:38|12:59|15:38|18:09|19:47",
-  "2026-10-25|04:46|05:06|06:40|11:59|14:36|17:08|18:45",
-  "2026-10-26|04:48|05:08|06:42|11:59|14:35|17:06|18:44",
-  "2026-10-27|04:49|05:09|06:43|11:59|14:34|17:04|18:42",
-  "2026-10-28|04:50|05:10|06:45|11:59|14:32|17:02|18:40",
-  "2026-10-29|04:52|05:12|06:46|11:59|14:31|17:01|18:39",
-  "2026-10-30|04:53|05:13|06:48|11:59|14:30|16:59|18:37",
-  "2026-10-31|04:55|05:15|06:49|11:59|14:28|16:57|18:36",
-  "2026-11-01|04:56|05:16|06:51|11:59|14:27|16:56|18:34",
-  "2026-11-02|04:58|05:18|06:53|11:59|14:26|16:54|18:33",
-  "2026-11-03|04:59|05:19|06:54|11:59|14:24|16:53|18:32",
-  "2026-11-04|05:00|05:20|06:56|11:59|14:23|16:51|18:30",
-  "2026-11-05|05:02|05:22|06:57|11:59|14:22|16:49|18:29",
-  "2026-11-06|05:03|05:23|06:59|11:59|14:21|16:48|18:28",
-  "2026-11-07|05:04|05:24|07:01|11:59|14:20|16:46|18:26",
-  "2026-11-08|05:06|05:26|07:02|11:59|14:18|16:45|18:25",
-  "2026-11-09|05:07|05:27|07:04|11:59|14:17|16:44|18:24"
+  "2026-10-12|05:47|07:20|13:02|15:56|18:32|20:09",
+  "2026-10-13|05:49|07:22|13:01|15:54|18:30|20:07",
+  "2026-10-14|05:50|07:23|13:01|15:53|18:28|20:05",
+  "2026-10-15|05:52|07:25|13:01|15:51|18:26|20:03",
+  "2026-10-16|05:53|07:26|13:01|15:50|18:24|20:01",
+  "2026-10-17|05:54|07:28|13:00|15:48|18:22|19:59",
+  "2026-10-20|05:59|07:32|13:00|15:44|18:17|19:54",
+  "2026-10-21|06:00|07:34|13:00|15:42|18:15|19:52",
+  "2026-10-22|06:02|07:35|13:00|15:41|18:13|19:50",
+  "2026-10-23|06:03|07:37|12:59|15:39|18:11|19:49",
+  "2026-10-24|06:05|07:38|12:59|15:38|18:09|19:47",
+  "2026-10-25|05:06|06:40|11:59|14:36|17:08|18:45",
+  "2026-10-26|05:08|06:42|11:59|14:35|17:06|18:44",
+  "2026-10-27|05:09|06:43|11:59|14:34|17:04|18:42",
+  "2026-10-28|05:10|06:45|11:59|14:32|17:02|18:40",
+  "2026-10-29|05:12|06:46|11:59|14:31|17:01|18:39",
+  "2026-10-30|05:13|06:48|11:59|14:30|16:59|18:37",
+  "2026-10-31|05:15|06:49|11:59|14:28|16:57|18:36",
+  "2026-11-01|05:16|06:51|11:59|14:27|16:56|18:34",
+  "2026-11-02|05:18|06:53|11:59|14:26|16:54|18:33",
+  "2026-11-03|05:19|06:54|11:59|14:24|16:53|18:32",
+  "2026-11-04|05:20|06:56|11:59|14:23|16:51|18:30",
+  "2026-11-05|05:22|06:57|11:59|14:22|16:49|18:29",
+  "2026-11-06|05:23|06:59|11:59|14:21|16:48|18:28",
+  "2026-11-07|05:24|07:01|11:59|14:20|16:46|18:26",
+  "2026-11-08|05:26|07:02|11:59|14:18|16:45|18:25",
+  "2026-11-09|05:27|07:04|11:59|14:17|16:44|18:24"
 ] as const;
 
 const PRAYERS = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"] as const;
@@ -52,13 +53,9 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
     const discrepancies: string[] = [];
     const differences: Record<string, number[]> = Object.fromEntries(PRAYERS.map((prayer) => [prayer, []]));
     for (const raw of screenshotRows) {
-      const [date, sahurEnds, displayedFajr, ...otherPrayers] = raw.split("|");
-      // The source is Fazilet Calendar: Sahur Ends/Imsak is the twilight onset.
-      // The displayed Fajr is consistently 20 minutes later, not a second
-      // independent astronomical dawn event. The canonical Fajr instant
-      // should track Imsak; mosque Iqama remains separately configured.
+      const [date, ...prayers] = raw.split("|");
       const expected = Object.fromEntries(
-        PRAYERS.map((key, i) => [key, i === 0 ? sahurEnds : otherPrayers[i - 1]]),
+        PRAYERS.map((key, i) => [key, prayers[i]]),
       );
       const generated = calculatePrayerTimes(date, profile);
       for (const key of PRAYERS) {
@@ -70,11 +67,6 @@ describe("Deggendorf reference screenshot / Prayer Engine", () => {
           discrepancies.push(`${date} ${key}: engine ${generated[key]}, screenshot ${expected[key]}, delta ${actualMinutes - expectedMinutes}`);
         }
       }
-      // The screenshot labels Sahur Ends exactly twenty minutes before Fajr.
-      // The canonical six-prayer schedule has no separate Sahur/Imsak column.
-      expect(minutes(displayedFajr) - minutes(sahurEnds), date).toBe(20);
-      // Comparison to Sahur Ends already guarantees the derived twenty-minute
-      // displayed Fajr matches when the first prayer's residual is <= 1m.
     }
     const summary = Object.fromEntries(
       PRAYERS.map((key) => [key, {

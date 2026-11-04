@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
         with:
-          persist-credentials: true
+          persist-credentials: false
           ref: feature/deggendorf-reference-prayer-calibration
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -37,6 +37,8 @@ jobs:
           npm test
           (cd masjid-display && npm ci && npm audit --omit=dev && npm run lint && npm test)
       - name: Commit lockfiles if checks pass
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git diff --check
@@ -49,4 +51,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git diff --cached --stat
           git commit -m 'security: resolve vulnerable minimatch only for TypeScript-ESLint'
-          git push origin HEAD:refs/heads/feature/deggendorf-reference-prayer-calibration
+          # Header applies to this one git push only; no credentials persisted.
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\\n')" push origin HEAD:refs/heads/feature/deggendorf-reference-prayer-calibration

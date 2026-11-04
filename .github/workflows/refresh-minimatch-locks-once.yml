@@ -52,4 +52,4 @@ jobs:
           git diff --cached --stat
           git commit -m 'security: resolve vulnerable minimatch only for TypeScript-ESLint'
           # Header applies to this one git push only; no credentials persisted.
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\\n')" push origin HEAD:refs/heads/feature/deggendorf-reference-prayer-calibration
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')" push origin HEAD:refs/heads/feature/deggendorf-reference-prayer-calibration

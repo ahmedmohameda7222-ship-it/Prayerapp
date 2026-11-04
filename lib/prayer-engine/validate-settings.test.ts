@@ -62,11 +62,34 @@ describe("validatePrayerCalculationSettings", () => {
     ).toBe(90);
   });
 
-  it("enforces integer offset, delay, and revision ranges", () => {
+  it("accepts bounded fractional-minute astronomy offsets and a Maghrib solar angle", () => {
+    const validated = validatePrayerCalculationSettings({
+      ...validSettings,
+      maghribAngle: 1.33,
+      offsets: { ...validSettings.offsets, fajr: 15.15833, maghrib: 3.99167 },
+    });
+    expect(validated.maghribAngle).toBe(1.33);
+    expect(validated.offsets.fajr).toBe(15.15833);
+    expect(validated.offsets.maghrib).toBe(3.99167);
+  });
+
+  it("enforces bounded angle, offset, Iqama-delay, and revision ranges", () => {
     expect(() =>
       validatePrayerCalculationSettings({
         ...validSettings,
-        offsets: { ...validSettings.offsets, fajr: 1.5 },
+        maghribAngle: 31,
+      }),
+    ).toThrow();
+    expect(() =>
+      validatePrayerCalculationSettings({
+        ...validSettings,
+        maghribAngle: -1,
+      }),
+    ).toThrow();
+    expect(() =>
+      validatePrayerCalculationSettings({
+        ...validSettings,
+        offsets: { ...validSettings.offsets, fajr: 60.00001 },
       }),
     ).toThrow();
     expect(() =>

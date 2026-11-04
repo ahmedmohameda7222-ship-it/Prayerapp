@@ -30,6 +30,7 @@ function mapFromDb(row: Record<string, unknown>): PrayerCalculationSettings {
     longitude: Number(row.longitude),
     timezone: row.timezone,
     fajrAngle: Number(row.fajr_angle),
+    maghribAngle: Number(row.maghrib_angle ?? 0),
     ishaRule: row.isha_rule,
     ishaAngle: row.isha_angle == null ? null : Number(row.isha_angle),
     ishaMinutesAfterMaghrib:
@@ -86,6 +87,7 @@ function mutablePrayerSettingsValues(
     longitude: settings.longitude,
     timezone: settings.timezone,
     fajr_angle: settings.fajrAngle,
+    maghrib_angle: settings.maghribAngle ?? 0,
     isha_rule: settings.ishaRule,
     isha_angle: settings.ishaAngle,
     isha_minutes_after_maghrib: settings.ishaMinutesAfterMaghrib,
@@ -134,6 +136,7 @@ function calculationFingerprint(settings: PrayerCalculationSettings): string {
     longitude: settings.longitude,
     timezone: settings.timezone,
     fajrAngle: settings.fajrAngle,
+    maghribAngle: settings.maghribAngle ?? 0,
     ishaRule: settings.ishaRule,
     ishaAngle: settings.ishaAngle,
     ishaMinutesAfterMaghrib: settings.ishaMinutesAfterMaghrib,

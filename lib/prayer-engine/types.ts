@@ -21,6 +21,8 @@ export interface PrayerCalculationSettings {
   longitude: number;
   timezone: string;
   fajrAngle: number;
+  /** Optional solar-depression angle in degrees after sunset for Maghrib. 0 = solar sunset. */
+  maghribAngle?: number;
   ishaRule: "angle" | "fixed_minutes";
   ishaAngle: number | null;
   ishaMinutesAfterMaghrib: number | null;

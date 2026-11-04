@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const actionMocks = vi.hoisted(() => ({
@@ -65,6 +65,65 @@ describe("Prayer Engine Admin", () => {
     expect(screen.queryByText(/Production calculation profile is not approved/i)).not.toBeInTheDocument();
     expect(screen.getByText(/historical timetable comparison is optional reference/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Commit Recalculation/i })).toBeDisabled();
+  });
+
+
+  it("invalidates an in-flight recalculation preview when its date range changes", async () => {
+    const date = "2026-11-03";
+    let resolvePreview!: (result: {
+      success: boolean;
+      data: {
+        startDate: string;
+        endDate: string;
+        settingsRevision: number;
+        changedRowCount: number;
+        changedPrayerCount: number;
+        rows: Array<unknown>;
+      };
+    }) => void;
+    actionMocks.previewPrayerRecalculationAction.mockImplementationOnce(
+      () => new Promise((resolve) => { resolvePreview = resolve; }),
+    );
+
+    render(
+      <PrayerEngineAdmin
+        initialSettings={SYNTHETIC_TEST_PRAYER_SETTINGS}
+        token="test-token"
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/Recalculation start/i), {
+      target: { value: date },
+    });
+    fireEvent.change(screen.getByLabelText(/Recalculation end/i), {
+      target: { value: date },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^Preview Recalculation$/i }));
+    await waitFor(() => {
+      expect(actionMocks.previewPrayerRecalculationAction).toHaveBeenCalledWith(
+        "test-token", date, date,
+      );
+    });
+
+    // The operator edits the proposed range while the prior request is in flight.
+    fireEvent.change(screen.getByLabelText(/Recalculation end/i), {
+      target: { value: "2026-11-04" },
+    });
+    await act(async () => {
+      resolvePreview({
+        success: true,
+        data: {
+          startDate: date,
+          endDate: date,
+          settingsRevision: 1,
+          changedRowCount: 1,
+          changedPrayerCount: 6,
+          rows: [],
+        },
+      });
+    });
+
+    expect(screen.getByRole("button", { name: /Commit Recalculation/i })).toBeDisabled();
+    expect(screen.queryByRole("region", { name: /Generated prayer times for every date/i })).not.toBeInTheDocument();
   });
 
   it("reloads applied settings after a successful recalculation commit", async () => {

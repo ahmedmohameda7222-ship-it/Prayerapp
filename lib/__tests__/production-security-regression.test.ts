@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
 describe("production security regression contracts", () => {
-  it("pins root and TV Next.js to the patched 16.3.x security baseline", () => {
+  it("pins root and TV Next.js and Sharp to the approved October 2026 security baseline", () => {
     for (const prefix of ["", "masjid-display/"]) {
       const manifest = JSON.parse(read(`${prefix}package.json`)) as {
         dependencies?: Record<string, string>;
@@ -15,10 +15,11 @@ describe("production security regression contracts", () => {
         packages?: Record<string, { version?: string }>;
       };
 
-      expect(manifest.dependencies?.next).toBe("16.3.6");
-      expect(manifest.devDependencies?.["eslint-config-next"]).toBe("16.3.6");
-      expect(lock.packages?.["node_modules/next"]?.version).toBe("16.3.6");
-      expect(lock.packages?.["node_modules/eslint-config-next"]?.version).toBe("16.3.6");
+      expect(manifest.dependencies?.next).toBe("16.4.5");
+      expect(manifest.devDependencies?.["eslint-config-next"]).toBe("16.4.5");
+      expect(lock.packages?.["node_modules/next"]?.version).toBe("16.4.5");
+      expect(lock.packages?.["node_modules/eslint-config-next"]?.version).toBe("16.4.5");
+      expect(lock.packages?.["node_modules/sharp"]?.version).toBe("0.35.5");
     }
   });
 

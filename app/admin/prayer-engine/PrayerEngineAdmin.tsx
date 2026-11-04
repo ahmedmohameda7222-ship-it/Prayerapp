@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { PrayerScheduleDiff, PrayerSchedulePreview } from "@/lib/prayer-engine/generate";
 import type { PrayerCalculationSettings, PrayerKey } from "@/lib/prayer-engine/types";
 import type { PrayerRuntimeAuthority } from "@/lib/data/prayer-settings";
 import { CERTIFIED_PRAYER_TIMEZONES } from "@/lib/prayer-engine/certified-timezones";
+import { DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE } from "@/lib/prayer-engine/deggendorf-reference-profile";
+import { buildRecalculationCsv } from "@/lib/prayer-engine/preview-presentation";
 import { PRAYER_ENGINE_OPERATIONAL_APPROVAL_POLICY } from "@/lib/prayer-engine/production-approval";
 import {
   calibratePrayerEngineAction,
@@ -42,6 +44,7 @@ function settingsToForm(
     longitude: settings ? String(settings.longitude) : "",
     timezone: settings?.timezone ?? runtimeAuthority?.timezone ?? "Europe/Berlin",
     fajrAngle: settings ? String(settings.fajrAngle) : "",
+    maghribAngle: settings ? String(settings.maghribAngle ?? 0) : "0",
     ishaRule: settings?.ishaRule ?? "angle",
     ishaAngle: settings?.ishaAngle == null ? "" : String(settings.ishaAngle),
     ishaMinutesAfterMaghrib: settings?.ishaMinutesAfterMaghrib == null ? "" : String(settings.ishaMinutesAfterMaghrib),
@@ -73,6 +76,7 @@ function buildSettings(form: NumericForm, current: PrayerCalculationSettings | n
     longitude: toNumber(form.longitude, "longitude"),
     timezone: form.timezone.trim(),
     fajrAngle: toNumber(form.fajrAngle, "Fajr angle"),
+    maghribAngle: toNumber(form.maghribAngle, "Maghrib angle"),
     ishaRule,
     ishaAngle: ishaRule === "angle" ? toNumber(form.ishaAngle, "Isha angle") : null,
     ishaMinutesAfterMaghrib: ishaRule === "fixed_minutes" ? toNumber(form.ishaMinutesAfterMaghrib, "Isha fixed minutes") : null,
@@ -104,18 +108,52 @@ export function PrayerEngineAdmin({
   const [recalcStart, setRecalcStart] = useState("");
   const [recalcEnd, setRecalcEnd] = useState("");
   const [isPending, startTransition] = useTransition();
+  const recalculationPreviewRequest = useRef(0);
 
   const needsRecalculation = Boolean(settings && settings.calculationRevision !== settings.appliedCalculationRevision);
   const canUseServerActions = Boolean(token);
   const ishaFixed = form.ishaRule === "fixed_minutes";
 
   function update(name: string, value: string) {
+    ++recalculationPreviewRequest.current;
     setForm((current) => ({ ...current, [name]: value }));
+    // A preview must never be committable after calculation inputs change.
+    setExtensionPreview(null);
+    setRecalcPreview(null);
+    setCalibration("");
     setMessage("");
     setError("");
   }
 
+  function loadDeggendorfReferenceProfile() {
+    ++recalculationPreviewRequest.current;
+    const profile = DEGGENDORF_SCREENSHOT_REFERENCE_PROFILE;
+    setForm((current) => ({
+      ...current,
+      latitude: String(profile.latitude),
+      longitude: String(profile.longitude),
+      timezone: profile.timezone,
+      fajrAngle: String(profile.fajrAngle),
+      maghribAngle: String(profile.maghribAngle),
+      ishaRule: profile.ishaRule,
+      ishaAngle: String(profile.ishaAngle),
+      ishaMinutesAfterMaghrib: "",
+      asrShadowFactor: String(profile.asrShadowFactor),
+      highLatitudeRule: profile.highLatitudeRule,
+      ...Object.fromEntries(
+        PRAYERS.map((prayer) => [`offset_${prayer}`, String(profile.offsets[prayer])]),
+      ),
+    }));
+    setError("");
+    setExtensionPreview(null);
+    setRecalcPreview(null);
+    setMessage(
+      "Candidate Deggendorf astronomical profile loaded for review only. No settings or prayer times were saved.",
+    );
+  }
+
   function saveSettings() {
+    ++recalculationPreviewRequest.current;
     setError("");
     setMessage("");
     let payload: PrayerCalculationSettings;
@@ -167,12 +205,33 @@ export function PrayerEngineAdmin({
   function previewRecalculation() {
     if (!canUseServerActions || !recalcStart || !recalcEnd) return;
     setError("");
+    const request = ++recalculationPreviewRequest.current;
     startTransition(async () => {
       const result = await previewPrayerRecalculationAction(token, recalcStart, recalcEnd);
+      if (request !== recalculationPreviewRequest.current) return;
       if (!result.success || !result.data) { setError(result.error || "Preview failed"); return; }
       setRecalcPreview(result.data);
       setMessage(`Recalculation preview: ${result.data.changedRowCount} changed row(s), ${result.data.changedPrayerCount} changed prayer value(s).`);
     });
+  }
+
+  function downloadRecalculationCsv() {
+    if (!recalcPreview) return;
+    const csv = buildRecalculationCsv(recalcPreview);
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download =
+      "deggendorf-prayer-preview-" +
+      recalcPreview.startDate +
+      "-to-" +
+      recalcPreview.endDate +
+      ".csv";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   function commitRecalculation() {
@@ -214,11 +273,23 @@ export function PrayerEngineAdmin({
 
       <Card className="grid gap-4 p-5">
         <h3 className="font-extrabold">Calculation and shared Iqama settings</h3>
+        <div className="grid gap-2">
+          <Button type="button" onClick={loadDeggendorfReferenceProfile} disabled={isPending}>
+            Load Deggendorf reference calculation (review only)
+          </Button>
+          <p className="text-xs text-[var(--color-muted)]">
+            Date-independent astronomical parameters inferred from the October–November 2026
+            reference timetable. Review values and existing Iqama delays; this button makes
+            no database changes. Saving settings and applying a future schedule require
+            separate explicit actions.
+          </p>
+        </div>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="grid gap-1 text-sm font-bold">Latitude<input className={inputClass()} value={form.latitude} onChange={(e) => update("latitude", e.target.value)} inputMode="decimal" /></label>
           <label className="grid gap-1 text-sm font-bold">Longitude<input className={inputClass()} value={form.longitude} onChange={(e) => update("longitude", e.target.value)} inputMode="decimal" /></label>
           <label className="grid gap-1 text-sm font-bold">Timezone<select className={inputClass()} value={form.timezone} onChange={(e) => update("timezone", e.target.value)}>{CERTIFIED_PRAYER_TIMEZONES.map((timezone) => <option key={timezone} value={timezone}>{timezone}</option>)}</select></label>
-          <label className="grid gap-1 text-sm font-bold">Fajr angle<input className={inputClass()} type="number" step="0.1" value={form.fajrAngle} onChange={(e) => update("fajrAngle", e.target.value)} /></label>
+          <label className="grid gap-1 text-sm font-bold">Fajr angle<input className={inputClass()} type="number" step="0.01" value={form.fajrAngle} onChange={(e) => update("fajrAngle", e.target.value)} /></label>
+          <label className="grid gap-1 text-sm font-bold">Maghrib solar depression angle (0 = sunset)<input className={inputClass()} type="number" min="0" max="30" step="0.01" value={form.maghribAngle} onChange={(e) => update("maghribAngle", e.target.value)} /></label>
           <label className="grid gap-1 text-sm font-bold">Isha rule<select className={inputClass()} value={form.ishaRule} onChange={(e) => update("ishaRule", e.target.value)}><option value="angle">Angle</option><option value="fixed_minutes">Fixed minutes after Maghrib</option></select></label>
           {ishaFixed ? (
             <label className="grid gap-1 text-sm font-bold">Isha fixed minutes after Maghrib<input className={inputClass()} type="number" min={0} max={240} value={form.ishaMinutesAfterMaghrib} onChange={(e) => update("ishaMinutesAfterMaghrib", e.target.value)} /></label>
@@ -231,7 +302,7 @@ export function PrayerEngineAdmin({
 
         <div className="grid gap-3">
           <h4 className="font-bold">Calculation offsets (minutes)</h4>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{PRAYERS.map((prayer) => <label key={prayer} className="grid gap-1 text-sm font-bold">{prayer[0].toUpperCase() + prayer.slice(1)} offset<input className={inputClass()} type="number" min={-60} max={60} value={form[`offset_${prayer}`]} onChange={(e) => update(`offset_${prayer}`, e.target.value)} /></label>)}</div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{PRAYERS.map((prayer) => <label key={prayer} className="grid gap-1 text-sm font-bold">{prayer[0].toUpperCase() + prayer.slice(1)} offset<input className={inputClass()} type="number" min={-60} max={60} step="0.00001" value={form[`offset_${prayer}`]} onChange={(e) => update(`offset_${prayer}`, e.target.value)} /></label>)}</div>
         </div>
 
         <div className="grid gap-3">
@@ -258,10 +329,73 @@ export function PrayerEngineAdmin({
 
       <Card className="grid gap-4 p-5">
         <h3 className="font-extrabold">Recalculate Future Schedule</h3>
-        <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1 text-sm font-bold">Recalculation start<input className={inputClass()} type="date" value={recalcStart} onChange={(e) => setRecalcStart(e.target.value)} /></label><label className="grid gap-1 text-sm font-bold">Recalculation end<input className={inputClass()} type="date" value={recalcEnd} onChange={(e) => setRecalcEnd(e.target.value)} /></label></div>
+        <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1 text-sm font-bold">Recalculation start<input className={inputClass()} type="date" value={recalcStart} onChange={(e) => { ++recalculationPreviewRequest.current; setRecalcStart(e.target.value); setRecalcPreview(null); }} /></label><label className="grid gap-1 text-sm font-bold">Recalculation end<input className={inputClass()} type="date" value={recalcEnd} onChange={(e) => { ++recalculationPreviewRequest.current; setRecalcEnd(e.target.value); setRecalcPreview(null); }} /></label></div>
         <Button type="button" onClick={previewRecalculation} disabled={isPending || !canUseServerActions || !settings || !recalcStart || !recalcEnd}>Preview Recalculation</Button>
         <Button type="button" onClick={commitRecalculation} disabled={isPending || !recalcPreview}>Commit Recalculation</Button>
-        {recalcPreview ? <p className="text-sm">Diff ready: {recalcPreview.changedRowCount} row(s), {recalcPreview.changedPrayerCount} prayer value(s) change.</p> : null}
+        {recalcPreview ? (
+          <div className="grid gap-3">
+            <p className="text-sm">
+              Generated by the Prayer Engine for {recalcPreview.rows.length} calendar day(s),
+              {recalcPreview.startDate}–{recalcPreview.endDate}.{" "}
+              <strong>{recalcPreview.changedRowCount} changed or new days</strong>.
+              Sunrise is a reference event, not an obligatory prayer.
+            </p>
+            <Button type="button" onClick={downloadRecalculationCsv} disabled={isPending}>
+              Download complete daily comparison (CSV)
+            </Button>
+            <p className="text-xs text-[var(--color-muted)]">
+              Review every generated date and the previous values before approving.
+              Bold values are proposed engine results; changed cells show the previous time beneath.
+              This preview and CSV download do not write to Supabase.
+            </p>
+            <div
+              className="max-h-[32rem] overflow-auto rounded-xl border border-[var(--color-border)]"
+              role="region"
+              tabIndex={0}
+              aria-label="Generated prayer times for every date"
+            >
+              <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+                <thead className="sticky top-0 bg-white shadow-sm">
+                  <tr className="border-b border-[var(--color-border)]">
+                    <th scope="col" className="whitespace-nowrap px-3 py-3">Date</th>
+                    {PRAYERS.map((prayer) => (
+                      <th key={prayer} scope="col" className="whitespace-nowrap px-3 py-3">
+                        {prayer === "sunrise" ? "Sunrise (reference)" : prayer[0].toUpperCase() + prayer.slice(1)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {recalcPreview.rows.map((row) => (
+                    <tr key={row.date} className="border-b border-[var(--color-border)]">
+                      <th scope="row" className="whitespace-nowrap px-3 py-2 font-semibold">
+                        {row.date}
+                        {row.previous === null ? (
+                          <span className="block text-xs font-normal text-[var(--color-muted)]">New day</span>
+                        ) : null}
+                      </th>
+                      {PRAYERS.map((prayer) => {
+                        const changed = row.changedPrayers.includes(prayer);
+                        return (
+                          <td key={prayer} className="whitespace-nowrap px-3 py-2">
+                            <span className={changed ? "font-extrabold" : "font-semibold"}>
+                              {row.next[prayer]}
+                            </span>
+                            {changed && row.previous ? (
+                              <span className="block text-xs text-[var(--color-muted)]">
+                                Was {row.previous[prayer]}
+                              </span>
+                            ) : null}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
       </Card>
 
       {message ? <Card className="p-4 text-sm font-bold text-[var(--color-success)]">{message}</Card> : null}

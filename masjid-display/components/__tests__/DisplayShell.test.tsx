@@ -71,7 +71,10 @@ describe("DisplayShell", () => {
         })}
       />,
     );
-    expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
+    const qr = screen.getByTestId("prayerapp-qr");
+    expect(qr).toBeInTheDocument();
+    expect(document.querySelector(".display-header")).toContainElement(qr);
+    expect(document.querySelector(".display-footer")).not.toContainElement(qr);
     expect(screen.getByText(/TEST MODE/i)).toBeInTheDocument();
   });
 
@@ -112,10 +115,15 @@ describe("DisplayShell", () => {
       const prayerTime = cell.querySelector("time");
 
       expect(iqama).toHaveClass("prayer-iqama");
-      expect(iqama).toHaveTextContent(/^Iqama \+\d+ min$/);
+      expect(within(iqama).getByText("Iqama")).toBeInTheDocument();
+      expect(within(iqama).getByText(/^\d{2}:\d{2}$/)).toBeInTheDocument();
+      expect(within(iqama).getByText(/^\+\d+ min$/)).toBeInTheDocument();
       expect(prayerTime).toHaveClass("prayer-time");
       expect(iqama).not.toContainElement(prayerTime);
     }
+
+    expect(within(screen.getByTestId("prayer-iqama-fajr")).getByText("05:20")).toBeInTheDocument();
+    expect(within(screen.getByTestId("prayer-iqama-isha")).getByText("21:00")).toBeInTheDocument();
 
     expect(
       within(screen.getByTestId("prayer-sunrise")).queryByTestId("prayer-iqama-sunrise"),

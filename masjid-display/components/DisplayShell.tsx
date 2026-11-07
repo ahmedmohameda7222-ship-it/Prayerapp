@@ -2,7 +2,6 @@ import type { DisplayRuntimeViewModel } from "../lib/runtime/use-display-runtime
 import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { DisplayMain } from "./DisplayMain";
 import { Header } from "./Header";
-import { PersistentAppQr } from "./PersistentAppQr";
 import { PrayerStrip } from "./PrayerStrip";
 import { PresentationModeControl } from "./PresentationModeControl";
 import { StatusOverlay } from "./StatusOverlay";
@@ -45,7 +44,6 @@ export function DisplayShell({
         <div className="presentation-mode-slot">
           <PresentationModeControl />
         </div>
-        <PersistentAppQr publicAppUrl={vm.publicAppUrl} />
       </footer>
 
       <DiagnosticsPanel enabled={diagnosticsEnabled} vm={vm} />

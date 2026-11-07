@@ -32,6 +32,15 @@ function cellsForDay(
   ];
 }
 
+function iqamaTime(adhan: string, delayMinutes: number): string {
+  const [hours, minutes] = adhan.split(":").map(Number);
+  const minutesInDay = 24 * 60;
+  const total = ((hours * 60 + minutes + delayMinutes) % minutesInDay + minutesInDay) % minutesInDay;
+  const hour = String(Math.floor(total / 60)).padStart(2, "0");
+  const minute = String(total % 60).padStart(2, "0");
+  return hour + ":" + minute;
+}
+
 export function PrayerStrip({ vm }: { vm: DisplayRuntimeViewModel }) {
   if (!vm.feed) return null;
 
@@ -47,6 +56,7 @@ export function PrayerStrip({ vm }: { vm: DisplayRuntimeViewModel }) {
         <article
           className="prayer-cell"
           data-testid={`prayer-cell-${cell.key}`}
+          data-highlighted={vm.state?.prayer === cell.key ? "true" : undefined}
           key={cell.key}
         >
           <div
@@ -56,17 +66,24 @@ export function PrayerStrip({ vm }: { vm: DisplayRuntimeViewModel }) {
           >
             <div className="prayer-labels">
               <strong>{cell.labelDe}</strong>
-              <span dir="rtl">{cell.labelAr}</span>
+              <span lang="ar" dir="rtl">{cell.labelAr}</span>
             </div>
-            <time className="prayer-time">{cell.time}</time>
-            {cell.iqamaDelay === undefined ? null : (
-              <div
-                className="prayer-iqama"
-                data-testid={`prayer-iqama-${cell.key}`}
-              >
-                Iqama +{cell.iqamaDelay} min
+            <div className="prayer-times">
+              <div className="prayer-adhan">
+                <span>{cell.informational ? "Zeit" : "Adhan"}</span>
+                <time className="prayer-time">{cell.time}</time>
               </div>
-            )}
+              {cell.iqamaDelay === undefined ? null : (
+                <div
+                  className="prayer-iqama"
+                  data-testid={`prayer-iqama-${cell.key}`}
+                >
+                  <span>Iqama</span>
+                  <time>{iqamaTime(cell.time, cell.iqamaDelay)}</time>
+                  <small>+{cell.iqamaDelay} min</small>
+                </div>
+              )}
+            </div>
           </div>
         </article>
       ))}

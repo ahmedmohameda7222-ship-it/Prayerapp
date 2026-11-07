@@ -103,6 +103,26 @@ describe("GET /api/public/masjid-display", () => {
     expect(body).not.toContain("stack detail");
   });
 
+  it("logs safe schedule failures without leaking the reason in the public response", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      mocks.buildMasjidDisplayFeed.mockRejectedValue(
+        Object.assign(new Error("Published prayer schedule is missing the current day"), {
+          name: "DisplayFeedBuildError",
+        }),
+      );
+      const response = await GET(new Request("https://app.test/api/public/masjid-display"));
+      expect(response.status).toBe(503);
+      expect(log).toHaveBeenCalledWith("Masjid Display feed build failed", {
+        errorType: "DisplayFeedBuildError",
+        reason: "Published prayer schedule is missing the current day",
+      });
+      expect(await response.text()).not.toContain("current day");
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it("exports no mutation handlers", () => {
     const source = readFileSync(join(process.cwd(), "app/api/public/masjid-display/route.ts"), "utf8");
     for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {

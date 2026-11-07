@@ -319,12 +319,6 @@ function projectCampaign(item: DonationCampaign): DisplayCampaignDto | null {
   };
 }
 
-function expectedScheduleDates(startDate: string, endDate: string) {
-  const dates: string[] = [];
-  for (let date = startDate; date <= endDate; date = addDaysIso(date, 1)) dates.push(date);
-  return dates;
-}
-
 export async function buildMasjidDisplayFeed(
   now = new Date(),
   dependencies: FeedDependencies = defaultDependencies,
@@ -430,22 +424,47 @@ export async function buildMasjidDisplayFeed(
     ...new Set(displaySettings.azkarPlaylistIds.filter((id) => canonicalAzkarIds.has(id))),
   ];
 
-  const representedPrayers = prayers
+  const publishedPrayers = prayers
     .filter((item) => item.published && item.date >= startDate && item.date <= endDate)
     .sort((a, b) => a.date.localeCompare(b.date));
-  const schedule = representedPrayers.map(prayerDay);
-  const lastScheduleDate = schedule.at(-1)?.date;
-  const expectedDates = lastScheduleDate
-    ? expectedScheduleDates(startDate, lastScheduleDate)
-    : [];
-  if (
-    !lastScheduleDate ||
-    lastScheduleDate < today ||
-    schedule.length !== expectedDates.length ||
-    schedule.some((day, index) => day.date !== expectedDates[index])
-  ) {
-    throw new DisplayFeedBuildError("Published prayer schedule is incomplete for the display window");
+
+  // The Prayer Engine generates from the current mosque-local day forward.
+  // Yesterday's row may not exist on the first day of a new schedule; it is
+  // optional and must never make otherwise valid current-day prayers disappear.
+  const todayIndex = publishedPrayers.findIndex((item) => item.date === today);
+  if (todayIndex === -1) {
+    throw new DisplayFeedBuildError("Published prayer schedule is missing the current day");
   }
+
+  // A gap later in the window should not turn off today's prayer times, QR,
+  // announcements, or other valid published content. Only expose a contiguous
+  // verified prefix: never manufacture dates or jump across an unknown day.
+  const consecutiveFuturePrayers: PrayerTime[] = [];
+  for (const item of publishedPrayers.slice(todayIndex)) {
+    const expectedDate = addDaysIso(today, consecutiveFuturePrayers.length);
+    if (item.date !== expectedDate) {
+      console.warn("Masjid Display future prayer coverage has a gap", {
+        firstMissingDate: expectedDate,
+        nextAvailableDate: item.date,
+      });
+      break;
+    }
+    consecutiveFuturePrayers.push(item);
+  }
+
+  if (consecutiveFuturePrayers.at(-1)?.date !== endDate) {
+    console.warn("Masjid Display prayer coverage ends before the requested horizon", {
+      today,
+      lastAvailableDate: consecutiveFuturePrayers.at(-1)?.date,
+      requestedEndDate: endDate,
+    });
+  }
+
+  const yesterday = publishedPrayers.find((item) => item.date === startDate);
+  const representedPrayers = yesterday
+    ? [yesterday, ...consecutiveFuturePrayers]
+    : consecutiveFuturePrayers;
+  const schedule = representedPrayers.map(prayerDay);
 
   const additionalJumuah = representedPrayers
     .filter((item) => isFridayIso(item.date))

@@ -55,12 +55,6 @@ export function Header({ vm }: { vm: DisplayRuntimeViewModel }) {
   return (
     <header className="display-header">
       <div className="mosque-identity">
-        <span className="mosque-mark" aria-hidden="true">
-          <svg viewBox="0 0 64 64" fill="none">
-            <path d="M17 50V31c0-8 8-15 15-19 7 4 15 11 15 19v19" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" />
-            <path d="M8 51h48M24 51V37h16v14M32 12V6M11 51V25m-5 0h10m-5-9v9M53 51V25m-5 0h10m-5-9v9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
         <div className="mosque-name">
           <span className="mosque-kicker">GEBETSZEITEN · مواقيت الصلاة</span>
           <strong>{feed?.mosque.nameDe ?? "Prayerapp Masjid Display"}</strong>

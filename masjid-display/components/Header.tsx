@@ -1,4 +1,5 @@
 import type { DisplayRuntimeViewModel } from "../lib/runtime/use-display-runtime";
+import { PersistentAppQr } from "./PersistentAppQr";
 
 function formatClock(now: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-GB", {
@@ -46,8 +47,6 @@ function formatHijri(now: Date, timeZone: string): string {
     .map((type) => values[type] as string)
     .join(" ");
 }
-
-import { PersistentAppQr } from "./PersistentAppQr";
 
 export function Header({ vm }: { vm: DisplayRuntimeViewModel }) {
   const feed = vm.feed;

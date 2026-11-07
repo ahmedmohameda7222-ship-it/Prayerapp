@@ -184,6 +184,47 @@ describe("buildMasjidDisplayFeed", () => {
     expect(JSON.stringify(feed.prayers.schedule)).not.toContain("fajr_" + "iqama");
   });
 
+  it("keeps today's published prayers and display content when yesterday was never generated", async () => {
+    const source = deps();
+    source.getPrayerTimes.mockResolvedValue(prayerRows("2026-09-15", "2026-10-20"));
+
+    const feed = await buildMasjidDisplayFeed(
+      new Date("2026-09-15T10:00:00.000Z"),
+      source as never,
+    );
+
+    expect(feed.prayers.schedule[0].date).toBe("2026-09-15");
+    expect(feed.prayers.schedule.at(-1)?.date).toBe("2026-10-20");
+    expect(feed.announcements).toHaveLength(1);
+    expect(feed.azkar).toHaveLength(2);
+  });
+
+  it("preserves current prayer coverage and announcements across a future-day schedule gap", async () => {
+    const source = deps();
+    source.getPrayerTimes.mockResolvedValue(
+      prayerRows().filter((row) => row.date !== "2026-09-25"),
+    );
+
+    const feed = await buildMasjidDisplayFeed(
+      new Date("2026-09-15T10:00:00.000Z"),
+      source as never,
+    );
+
+    expect(feed.prayers.schedule[0].date).toBe("2026-09-14");
+    expect(feed.prayers.schedule.at(-1)?.date).toBe("2026-09-24");
+    expect(feed.prayers.schedule.every((day) => day.date < "2026-09-25")).toBe(true);
+    expect(feed.announcements).toHaveLength(1);
+  });
+
+  it("does not treat tomorrow's timetable as valid today's prayer coverage", async () => {
+    const source = deps();
+    source.getPrayerTimes.mockResolvedValue(prayerRows("2026-09-16", "2026-10-20"));
+
+    await expect(
+      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
+    ).rejects.toThrow(/current day/i);
+  });
+
   it("uses the persisted Prayer Engine timezone for Feed date windows and output", async () => {
     const source = deps();
     source.getPrayerSettings.mockResolvedValue({
@@ -392,14 +433,6 @@ describe("buildMasjidDisplayFeed", () => {
         new Date("2026-09-27T10:00:00.000Z"),
         source as never,
       ),
-    ).rejects.toBeInstanceOf(DisplayFeedBuildError);
-  });
-  it("rejects a religious snapshot with an internal prayer-date gap", async () => {
-    const source = deps();
-    source.getPrayerTimes.mockResolvedValue(prayerRows().filter((row) => row.date !== "2026-09-25"));
-
-    await expect(
-      buildMasjidDisplayFeed(new Date("2026-09-15T10:00:00.000Z"), source as never),
     ).rejects.toBeInstanceOf(DisplayFeedBuildError);
   });
 

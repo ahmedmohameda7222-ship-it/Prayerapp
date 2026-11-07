@@ -3,13 +3,13 @@
 }
 
 :root {
-  --display-bg-deep: #07130f;
-  --display-bg-mid: #0d2119;
-  --display-bg-soft: #14291f;
-  --display-ink: #f6f0e2;
-  --display-muted: #c8c2b3;
-  --display-accent: #cbb278;
-  --display-line: rgba(203, 178, 120, .3);
+  --display-bg-deep: #071713;
+  --display-bg-mid: #0c2821;
+  --display-bg-soft: #14382d;
+  --display-ink: #fcf7e9;
+  --display-muted: #c0cbc0;
+  --display-accent: #dec27e;
+  --display-line: rgba(222, 194, 126, .24);
   --display-panel: rgba(255, 255, 255, .035);
 }
 
@@ -27,71 +27,165 @@ body {
 }
 
 .display-shell {
-  min-height: calc(100vh - 8px);
+min-height: calc(100vh - 8px);
   min-height: calc(100dvh - 8px);
   width: calc(100% - 8px);
   margin: 4px;
   transform-origin: center;
-  padding: clamp(1.1rem, 2.5vmin, 2.8rem);
+  padding: clamp(.8rem, 1.75vmin, 2rem);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto auto;
-  gap: clamp(.85rem, 1.35vmin, 1.7rem);
+  gap: clamp(.55rem, .95vmin, 1rem);
   container-type: size;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 34%, rgba(203, 178, 120, .12), transparent 31%),
-    radial-gradient(circle at 10% 8%, rgba(78, 126, 101, .11), transparent 24%),
-    linear-gradient(145deg, var(--display-bg-soft) 0%, var(--display-bg-mid) 44%, var(--display-bg-deep) 100%);
-  border: .06rem solid rgba(203, 178, 120, .12);
-  border-radius: clamp(.45rem, .8vmin, .9rem);
-  box-shadow: inset 0 0 8rem rgba(0, 0, 0, .16);
+    radial-gradient(ellipse at 52% 46%, rgba(28, 78, 59, .18), transparent 58%),
+    linear-gradient(130deg, var(--display-bg-soft) 0%, var(--display-bg-mid) 46%, var(--display-bg-deep) 100%);
+  border: .06rem solid rgba(222, 194, 126, .18);
+  border-radius: clamp(.45rem, .75vmin, .8rem);
 }
 
 .display-header {
+min-height: clamp(8rem, 15vmin, 12rem);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, .82fr) auto auto;
   align-items: center;
-  gap: clamp(.75rem, 2vmin, 2rem);
+  gap: clamp(.8rem, 1.6vmin, 1.7rem);
+  padding: clamp(.45rem, 1.1vmin, 1.15rem) clamp(.6rem, 1.3vmin, 1.3rem);
+  border-bottom: .08rem solid var(--display-line);
 }
 
 .mosque-identity,
 .header-dates,
 .persistent-app-qr {
+min-width: 0;
   display: grid;
-  gap: clamp(.2rem, .6vmin, .65rem);
+  align-self: center;
+  justify-items: center;
+  gap: clamp(.25rem, .5vmin, .45rem);
+  width: clamp(7.5rem, 13.5vmin, 11.5rem);
+  color: var(--display-muted);
+  text-align: center;
 }
 
 .mosque-identity {
-  font-size: clamp(1.3rem, 2.4vmin, 2.5rem);
+min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(.8rem, 1.4vmin, 1.5rem);
+  font-size: clamp(1.35rem, 2.65vmin, 2.65rem);
   line-height: 1.15;
 }
 
 .mosque-identity span {
-  color: var(--display-muted);
+color: var(--display-muted);
 }
 
 .header-dates {
-  justify-items: center;
-  font-size: clamp(1rem, 1.75vmin, 1.7rem);
+min-width: 0;
+  justify-items: start;
+  gap: clamp(.35rem, .7vmin, .7rem);
+  padding-inline-start: clamp(.75rem, 1.4vmin, 1.5rem);
+  border-inline-start: .08rem solid var(--display-line);
+  font-size: clamp(.98rem, 1.7vmin, 1.55rem);
   color: var(--display-muted);
+  line-height: 1.3;
 }
 
 .header-clock {
-  justify-self: end;
-  min-width: 8ch;
+display: block;
   text-align: end;
+  min-width: 8ch;
   font-variant-numeric: tabular-nums;
-  font-size: clamp(2.8rem, 5.9vmin, 6.1rem);
+  font-size: clamp(2.65rem, 5.9vmin, 5.8rem);
+  font-weight: 720;
+  line-height: .98;
+  letter-spacing: -.04em;
+  white-space: nowrap;
+}
+
+
+.mosque-mark {
+  width: clamp(3.2rem, 6.7vmin, 6.3rem);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--display-accent) !important;
+  border: .08rem solid var(--display-line);
+  border-radius: 50%;
+  background: rgba(222, 194, 126, .035);
+}
+
+.mosque-mark svg {
+  width: 73%;
+  height: 73%;
+}
+
+.mosque-name {
+  min-width: 0;
+  display: grid;
+  gap: clamp(.2rem, .4vmin, .42rem);
+}
+
+.mosque-name strong {
+  font-weight: 720;
+  line-height: 1.13;
+}
+
+.mosque-kicker,
+.clock-caption {
+  color: var(--display-accent) !important;
+  font-size: clamp(.64rem, .95vmin, .94rem);
   font-weight: 700;
-  line-height: 1;
-  letter-spacing: -.025em;
+  letter-spacing: .08em;
+}
+
+.mosque-name-ar {
+  justify-self: start;
+  font-size: clamp(1.1rem, 2vmin, 1.9rem);
+  font-weight: 500;
+}
+
+.header-time {
+  min-width: 0;
+  display: grid;
+  gap: clamp(.4rem, .7vmin, .65rem);
+  justify-items: end;
 }
 
 .display-main {
-  min-height: 0;
+min-height: 0;
   display: grid;
   place-items: center;
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(.6rem, 1.1vmin, 1.1rem);
+  border: .08rem solid var(--display-line);
+  border-radius: clamp(.75rem, 1.25vmin, 1.25rem);
+  background: linear-gradient(160deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .012) 60%, rgba(0, 0, 0, .11));
+}
+
+
+.display-main::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  width: min(46%, 42rem);
+  height: 130%;
+  left: 50%;
+  top: 14%;
+  transform: translateX(-50%);
+  border: .08rem solid rgba(222, 194, 126, .14);
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0 / 24% 24% 0 0;
+}
+
+.display-main > :not(.status-overlay) {
+  position: relative;
+  z-index: 1;
 }
 
 .state-panel {
@@ -290,75 +384,121 @@ body {
 }
 
 .prayer-strip {
-  min-height: clamp(8.5rem, 16vmin, 13.5rem);
+min-height: clamp(7rem, 12vmin, 10.2rem);
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: clamp(.55rem, 1.05vmin, 1.1rem);
+  gap: clamp(.35rem, .65vmin, .65rem);
 }
 
 .prayer-cell {
-  min-width: 0;
-  padding: clamp(.75rem, 1.3vmin, 1.35rem);
+min-width: 0;
+  padding: clamp(.55rem, .95vmin, .95rem);
   border: .08rem solid var(--display-line);
-  border-radius: clamp(.7rem, 1.05vmin, 1.1rem);
+  border-top: .18rem solid rgba(222, 194, 126, .4);
+  border-radius: clamp(.4rem, .6vmin, .65rem);
   display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: clamp(.3rem, .6vmin, .65rem);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(255, 255, 255, .018));
-  box-shadow:
-    inset 0 1px rgba(255, 255, 255, .045),
-    0 .4rem 1.6rem rgba(0, 0, 0, .08);
-  text-align: center;
+  align-items: stretch;
+  background: linear-gradient(155deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .015));
+  text-align: start;
 }
 
 .prayer-cell-content {
-  width: 100%;
+width: 100%;
   min-width: 0;
   display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: clamp(.2rem, .45vmin, .5rem);
+  align-content: start;
+  gap: clamp(.6rem, 1.15vmin, 1.05rem);
 }
 
 .prayer-labels {
-  display: grid;
-  gap: .18rem;
-  font-size: clamp(1rem, 1.85vmin, 1.8rem);
-  line-height: 1.12;
+display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .45rem;
+  font-size: clamp(.98rem, 1.7vmin, 1.65rem);
+  line-height: 1.08;
 }
 
 .prayer-labels span {
-  color: var(--display-muted);
+color: var(--display-muted);
+  font-size: .9em;
 }
 
 .prayer-time {
-  display: block;
-  font-size: clamp(1.85rem, 3.5vmin, 3.4rem);
-  font-weight: 760;
+display: block;
+  font-size: clamp(1.55rem, 2.95vmin, 2.85rem);
+  font-weight: 735;
   line-height: .98;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -.02em;
+  letter-spacing: -.035em;
+  white-space: nowrap;
 }
 
 .prayer-iqama {
-  display: block;
-  width: 100%;
-  margin-top: clamp(.2rem, .4vmin, .4rem);
-  padding-top: clamp(.38rem, .65vmin, .68rem);
-  border-top: .06rem solid rgba(203, 178, 120, .22);
-  font-size: clamp(1rem, 1.55vmin, 1.45rem);
-  font-weight: 650;
-  line-height: 1.15;
+min-width: 0;
+  padding-inline-start: clamp(.45rem, .85vmin, .8rem);
+  border-inline-start: .06rem solid var(--display-line);
+  display: grid;
+  align-content: start;
+  gap: clamp(.2rem, .4vmin, .4rem);
+}
+
+
+.prayer-cell[data-highlighted="true"] {
+  border-color: rgba(222, 194, 126, .64);
+  border-top-color: var(--display-accent);
+  background: linear-gradient(160deg, rgba(222, 194, 126, .14), rgba(255, 255, 255, .02));
+}
+
+.prayer-times {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(.3rem, .6vmin, .55rem);
+}
+
+.prayer-cell-content[data-informational="true"] .prayer-times {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.prayer-adhan {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: clamp(.2rem, .4vmin, .4rem);
+}
+
+.prayer-adhan > span,
+.prayer-iqama > span {
   color: var(--display-muted);
+  font-size: clamp(.72rem, 1vmin, .95rem);
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: .03em;
+}
+
+.prayer-iqama time {
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.4rem, 2.6vmin, 2.45rem);
+  font-weight: 680;
+  line-height: 1;
+  letter-spacing: -.035em;
+  color: var(--display-accent);
+  white-space: nowrap;
+}
+
+.prayer-iqama small {
+  color: var(--display-muted);
+  font-size: clamp(.63rem, .85vmin, .83rem);
+  line-height: 1;
 }
 
 .display-footer {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: clamp(.75rem, 1.5vmin, 1.5rem);
+display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(.6rem, 1vmin, 1rem);
   min-height: 0;
 }
 
@@ -409,11 +549,29 @@ body {
 }
 
 .persistent-app-qr svg {
+display: block;
   width: 100%;
   height: auto;
   max-width: 100%;
   background: #fff;
-  border-radius: clamp(.35rem, .7vmin, .7rem);
+}
+
+
+.qr-frame {
+  width: 100%;
+  padding: clamp(.25rem, .4vmin, .4rem);
+  border-radius: clamp(.3rem, .55vmin, .55rem);
+  background: #fff;
+}
+
+.qr-caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4em;
+  flex-wrap: wrap;
+  font-size: clamp(.69rem, .93vmin, .9rem);
+  line-height: 1.12;
 }
 
 @container (max-width: 70rem) {
@@ -422,15 +580,25 @@ body {
   }
 
   .display-header {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .header-dates {
-    order: 3;
-    grid-column: 1 / -1;
-    grid-template-columns: 1fr 1fr;
-    justify-items: stretch;
-    text-align: center;
+    grid-column: 1;
+    grid-row: 2;
+    justify-items: start;
+    border-inline-start: none;
+    padding-inline-start: 0;
+  }
+
+  .header-time {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .persistent-app-qr {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .prayer-strip {
@@ -453,6 +621,26 @@ body {
 
   .prayer-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .display-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .mosque-mark {
+    display: none;
+  }
+
+  .header-clock {
+    font-size: clamp(2.15rem, 7vmin, 3.8rem);
+  }
+
+  .persistent-app-qr {
+    width: clamp(5.8rem, 17vmin, 9rem);
+  }
+
+  .prayer-times {
+    gap: .25rem;
   }
 
   .display-footer {

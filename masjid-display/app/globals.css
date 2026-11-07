@@ -105,23 +105,6 @@ display: block;
 }
 
 
-.mosque-mark {
-  width: clamp(3.2rem, 6.7vmin, 6.3rem);
-  aspect-ratio: 1;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  color: var(--display-accent) !important;
-  border: .08rem solid var(--display-line);
-  border-radius: 50%;
-  background: rgba(222, 194, 126, .035);
-}
-
-.mosque-mark svg {
-  width: 73%;
-  height: 73%;
-}
-
 .mosque-name {
   min-width: 0;
   display: grid;
@@ -625,10 +608,6 @@ display: block;
 
   .display-header {
     grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .mosque-mark {
-    display: none;
   }
 
   .header-clock {

@@ -6,7 +6,6 @@ import { PersistentAppQr } from "./PersistentAppQr";
 import { PrayerStrip } from "./PrayerStrip";
 import { PresentationModeControl } from "./PresentationModeControl";
 import { StatusOverlay } from "./StatusOverlay";
-import { TestModeBadge } from "./TestModeBadge";
 import { UrgentBar } from "./UrgentBar";
 
 export interface DisplayShellProps {
@@ -29,7 +28,6 @@ export function DisplayShell({
       <Header vm={vm} />
 
       <main className="display-main" aria-live="polite">
-        {vm.testMode ? <TestModeBadge /> : null}
         <DisplayMain vm={vm} />
         <StatusOverlay
           networkAvailable={vm.networkAvailable}

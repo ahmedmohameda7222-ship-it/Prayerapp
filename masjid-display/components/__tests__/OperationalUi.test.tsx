@@ -5,7 +5,6 @@ import type { DisplayRuntimeViewModel } from "../../lib/runtime/use-display-runt
 import { afterEach, describe, expect, it } from "vitest";
 import { DiagnosticsPanel } from "../DiagnosticsPanel";
 import { StatusOverlay } from "../StatusOverlay";
-import { TestModeBadge } from "../TestModeBadge";
 
 const feed = structuredClone(fixture) as MasjidDisplayFeedV1;
 
@@ -25,8 +24,6 @@ function vm(overrides: Partial<DisplayRuntimeViewModel> = {}): DisplayRuntimeVie
     networkAvailable: true,
     usingLkg: false,
     prayerScheduleStale: false,
-    testMode: false,
-    testPayload: null,
     publicAppUrl: feed.mosque.publicAppUrl,
     ...overrides,
   };
@@ -35,13 +32,6 @@ function vm(overrides: Partial<DisplayRuntimeViewModel> = {}): DisplayRuntimeVie
 afterEach(cleanup);
 
 describe("Plan 4 operational UI", () => {
-  it("renders the exact bilingual Test Mode badge", () => {
-    render(<TestModeBadge />);
-    expect(screen.getByTestId("test-mode-badge")).toHaveTextContent(
-      "TEST MODE / وضع الاختبار",
-    );
-  });
-
   it("shows non-blocking offline status while prayer coverage is still valid", () => {
     render(
       <StatusOverlay

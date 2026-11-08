@@ -35,17 +35,21 @@ function validDuration(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
-export function resolvePrayerState(
-  feed: MasjidDisplayFeedV1,
-  logicalNow: Date,
-): PrayerStateResolution {
-  for (const prayer of PRAYER_NAMES) {
-    if (!validDelay(feed.prayers.iqamaDelays[prayer])) {
-      return normal("MISSING_IQAMA_DELAY");
-    }
-  }
+// Feed snapshots are immutable: precompute DST-aware instants once per accepted
+// snapshot rather than rebuilding prayer entries on every clock tick.
+type PrayerCandidate = {
+  prayer: DisplayPrayerName;
+  prayerInstant: number;
+  iqamaInstant: number;
+  iqamaNowEnd: number;
+  prayerInProgressEnd: number;
+  lifecycleEnd: number;
+};
+const COMPILED_PRAYERS = new WeakMap<MasjidDisplayFeedV1, PrayerCandidate[]>();
 
-  const nowMs = logicalNow.getTime();
+function candidatesForFeed(feed: MasjidDisplayFeedV1): PrayerCandidate[] {
+  const cached = COMPILED_PRAYERS.get(feed);
+  if (cached) return cached;
   const candidates = feed.prayers.schedule
     .flatMap((day) =>
       PRAYER_NAMES.flatMap((prayer) => {
@@ -64,6 +68,22 @@ export function resolvePrayerState(
       }),
     )
     .sort((a, b) => b.prayerInstant - a.prayerInstant);
+  COMPILED_PRAYERS.set(feed, candidates);
+  return candidates;
+}
+
+export function resolvePrayerState(
+  feed: MasjidDisplayFeedV1,
+  logicalNow: Date,
+): PrayerStateResolution {
+  for (const prayer of PRAYER_NAMES) {
+    if (!validDelay(feed.prayers.iqamaDelays[prayer])) {
+      return normal("MISSING_IQAMA_DELAY");
+    }
+  }
+
+  const nowMs = logicalNow.getTime();
+  const candidates = candidatesForFeed(feed);
 
   for (const candidate of candidates) {
     const approachStart = candidate.prayerInstant - APPROACH_WINDOW_MS;

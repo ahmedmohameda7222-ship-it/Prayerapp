@@ -17,14 +17,12 @@ describe("Plan 4 verification workflow", () => {
     expect(source).toMatch(/push:\s*\n\s*branches:\s*\n(?:\s*- .+\n)*\s*- main\b/);
   });
 
-  it("re-runs when root Feed/Test Control integration authorities change", () => {
+  it("re-runs when root Feed integration authorities change", () => {
     const source = workflow();
 
     for (const requiredPath of [
       '"masjid-display/**"',
       '"app/api/public/masjid-display/**"',
-      '"app/api/public/masjid-display-test-control/**"',
-      '"app/admin/masjid-display-test/**"',
       '"lib/masjid-display/**"',
       '"lib/data/**"',
       '"lib/supabase/**"',

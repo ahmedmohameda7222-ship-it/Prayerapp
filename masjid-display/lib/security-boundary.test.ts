@@ -51,16 +51,13 @@ describe("Masjid Display TV security boundary", () => {
     expect(upstream).toContain("process.env.PRAYERAPP_ORIGIN");
     expect(upstream).not.toContain("NEXT_PUBLIC_PRAYERAPP_ORIGIN");
     expect(upstream).toContain('"/api/public/masjid-display"');
-    expect(upstream).toContain('"/api/public/masjid-display-test-control"');
+    expect(upstream).not.toContain("masjid-display-test-control");
     expect(upstream).toContain("ALLOWED_PATHS.has(path)");
     expect(upstream).not.toMatch(/request\.url|searchParams|get\(["']origin["']\)/i);
   });
 
-  it("keeps both TV proxy endpoints GET-only with generic failure responses", () => {
-    for (const route of [
-      "app/api/display-feed/route.ts",
-      "app/api/test-control/route.ts",
-    ]) {
+  it("keeps the production TV proxy GET-only with generic failure responses", () => {
+    for (const route of ["app/api/display-feed/route.ts"]) {
       const source = readFileSync(join(TV_ROOT, route), "utf8");
       expect(source).toMatch(/export async function GET\(/);
       for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {

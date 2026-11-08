@@ -40,8 +40,6 @@ function vm(overrides: Partial<DisplayRuntimeViewModel> = {}): DisplayRuntimeVie
     networkAvailable: true,
     usingLkg: false,
     prayerScheduleStale: false,
-    testMode: false,
-    testPayload: null,
     publicAppUrl: feed.mosque.publicAppUrl,
     ...overrides,
   };
@@ -50,7 +48,7 @@ function vm(overrides: Partial<DisplayRuntimeViewModel> = {}): DisplayRuntimeVie
 afterEach(() => cleanup());
 
 describe("DisplayShell", () => {
-  it("keeps the Prayerapp QR mounted across prayer and test states", () => {
+  it("keeps the Prayerapp QR mounted across prayer states", () => {
     const { rerender } = render(<DisplayShell vm={vm()} />);
     expect(screen.getByTestId("prayerapp-qr")).toHaveAttribute(
       "data-qr-value",
@@ -66,13 +64,10 @@ describe("DisplayShell", () => {
             degraded: false,
             degradedReason: null,
           },
-          testMode: true,
-          testPayload: { scenario: "iqama_now", id: "test-iqama", prayer: "asr" },
         })}
       />,
     );
     expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
-    expect(screen.getByText(/TEST MODE/i)).toBeInTheDocument();
   });
 
   it("uses the approved Prayerapp Umm al-Qura Hijri calendar semantics", () => {

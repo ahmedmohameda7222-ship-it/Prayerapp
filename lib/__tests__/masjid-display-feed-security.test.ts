@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const FIXTURE_PATH = "lib/masjid-display/__fixtures__/feed-v1.json";
@@ -58,24 +58,9 @@ describe("Masjid Display Feed public security boundary", () => {
 
 
 describe("Masjid Display Plan 5 attacker-perspective boundary", () => {
-  it("keeps public Test Control GET-only and Admin mutation behind existing authorization", () => {
-    const publicRoute = readFileSync("app/api/public/masjid-display-test-control/route.ts", "utf8");
-    const adminActions = readFileSync("app/admin/masjid-display-test/actions.ts", "utf8");
-
-    expect(publicRoute).toMatch(/export async function GET\(/);
-    for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
-      expect(publicRoute).not.toMatch(
-        new RegExp(`export\\s+(?:async\\s+)?function\\s+${method}\\b`),
-      );
-    }
-    expect(publicRoute).not.toContain("createServiceRoleClient");
-    expect(publicRoute).not.toContain(".from(");
-
-    expect(adminActions).toContain("requireAllowedAdminIdentity");
-    expect(adminActions).toContain('.from("masjid_display_test_state")');
-    expect(adminActions).not.toMatch(
-      /\.from\(["'](?:prayer_times|prayer_settings|announcements|events|donation_campaigns|jumuah_times)["']\)/,
-    );
+  it("does not expose the retired public TV Test Control endpoint", () => {
+    expect(existsSync("app/api/public/masjid-display-test-control/route.ts")).toBe(false);
+    expect(existsSync("app/admin/masjid-display-test/page.tsx")).toBe(false);
   });
 
   it("keeps the public Feed horizon and production source/output bounds explicit", () => {

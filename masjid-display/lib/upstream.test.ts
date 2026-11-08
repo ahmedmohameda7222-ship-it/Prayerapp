@@ -40,13 +40,13 @@ describe("Prayerapp upstream origin boundary", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await fetchPrayerappUpstream(
-      "/api/public/masjid-display-test-control",
-      new Request("https://attacker.example/api/test-control?origin=https://evil.example"),
+      "/api/public/masjid-display",
+      new Request("https://attacker.example/api/display-feed?origin=https://evil.example"),
       1_000,
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://donaumoschee.vercel.app/api/public/masjid-display-test-control",
+      "https://donaumoschee.vercel.app/api/public/masjid-display",
       expect.objectContaining({ method: "GET", redirect: "error" }),
     );
   });

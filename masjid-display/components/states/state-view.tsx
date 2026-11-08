@@ -14,13 +14,6 @@ export function prayerLabels(prayer: DisplayPrayerName | null) {
   return prayer ? PRAYER_LABELS[prayer] : null;
 }
 
-function payloadTarget(vm: DisplayRuntimeViewModel): Date | null {
-  const value = vm.testPayload?.targetAt;
-  if (typeof value !== "string") return null;
-  const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) ? new Date(timestamp) : null;
-}
-
 export function presentationTimezone(vm: DisplayRuntimeViewModel) {
   return vm.feed?.timezone ?? "Europe/Berlin";
 }
@@ -29,8 +22,6 @@ export function prayerTarget(
   vm: DisplayRuntimeViewModel,
   target: "prayer" | "iqama",
 ): Date | null {
-  const synthetic = payloadTarget(vm);
-  if (synthetic) return synthetic;
   if (!vm.feed || !vm.state?.prayer) return null;
 
   const date = localDateIso(vm.logicalNow, vm.feed.timezone);
@@ -46,8 +37,6 @@ export function prayerTarget(
 }
 
 export function fridayTarget(vm: DisplayRuntimeViewModel): Date | null {
-  const synthetic = payloadTarget(vm);
-  if (synthetic) return synthetic;
   if (!vm.feed || !vm.state) return null;
 
   const serviceId = vm.state.serviceId;

@@ -85,6 +85,34 @@ describe("self-service account deletion", () => {
     expect(mocks.fetch).not.toHaveBeenCalled();
   });
 
+  it("returns keyboard focus to Delete account after cancellation or Escape", async () => {
+    const user = userEvent.setup();
+    renderAccount();
+
+    const trigger = screen.getByRole("button", { name: "Delete account" });
+    let dialog = await openDeletionDialog(user);
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(trigger).toHaveFocus());
+
+    dialog = await openDeletionDialog(user);
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  it("still leaves a deleted account when the browser refuses to unsubscribe", async () => {
+    mocks.unsubscribe.mockRejectedValueOnce(new Error("Push service unavailable"));
+    const user = userEvent.setup();
+    renderAccount();
+
+    const dialog = await openDeletionDialog(user);
+    await user.click(within(dialog).getByRole("button", { name: "Delete account" }));
+
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/"));
+    expect(localStorage.getItem("masjid-el-rahman-push-v1")).toBeNull();
+    expect(mocks.signOut).toHaveBeenCalledWith({ scope: "local" });
+  });
+
   it("deletes only after confirmation, unsubscribes the current browser and clears its push identity", async () => {
     const user = userEvent.setup();
     renderAccount();

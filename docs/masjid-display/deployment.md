@@ -1,5 +1,7 @@
 # Masjid Display — Deployment, Rollback, and Operations
 
+> **Current operations (November 2026):** This document preserves historical Plan 6/7 deployment and rollback decisions, including superseded synthetic-control instructions. The production-only runtime since PR #117 has one TV Feed API and no synthetic test control. For all current releases and QA, follow [Current TV Production Operations](current-production-operations.md) and the current [Physical TV Certification](physical-tv-certification.md) instead. Do not reactivate historical test endpoints. Physical tests are not certified by this note.
+
 ## Plan 7 candidate workflow
 
 Plan 7 uses the existing TV project and preserves the stable production deployment while the feature branch is being certified. Vercel is intentionally configured to deploy `main` only; PR/feature-branch Preview deployments are disabled.

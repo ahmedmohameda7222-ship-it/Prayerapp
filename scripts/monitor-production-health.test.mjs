@@ -8,7 +8,7 @@ function feed(extra = {}) {
   return { schemaVersion: 1, timezone: 'Europe/Berlin', generatedAt: now.toISOString(), prayers: { schedule: [{date: today}] }, ...extra };
 }
 function json(value, status = 200, init = {}) {
-  return new Response(JSON.stringify(value), { status, headers: {'content-type':'application/json', ...init} });
+  return new Response(JSON.stringify(value), { status, headers: {'content-type':'application/json', date: now.toUTCString(), ...init} });
 }
 const root = 'https://donaumoschee.vercel.app/api/health';
 const tv = 'https://donaumoschee-tv.vercel.app/api/display-feed';
@@ -52,8 +52,28 @@ test('rejects a missing current-day prayer schedule', async () => {
   assert.equal((await checkProductionHealth({fetchImpl,now}))[1].ok,false);
 });
 
-test('rejects an outdated TV snapshot even if the clock date still matches', async () => {
-  const {fetchImpl} = mockFetch(undefined,json(feed({generatedAt:'2026-11-08T11:00:00Z'})));
+test('accepts a stable source-version generatedAt when the response Date is fresh', async () => {
+  const {fetchImpl} = mockFetch(undefined,json(feed({generatedAt:'2026-11-01T11:00:00Z'})));
+  assert.equal((await checkProductionHealth({fetchImpl,now}))[1].ok,true);
+});
+
+test('accepts a logical source-version generatedAt in year 9999 with current HTTP Date', async () => {
+  const {fetchImpl} = mockFetch(undefined,json(feed({generatedAt:'9999-01-01T00:00:00Z'})));
+  assert.equal((await checkProductionHealth({fetchImpl,now}))[1].ok,true);
+});
+
+test('rejects a stale HTTP Date even when generatedAt happens to be near now', async () => {
+  const {fetchImpl} = mockFetch(undefined,json(feed(),200,{date:'Sun, 08 Nov 2026 11:00:00 GMT'}));
+  assert.equal((await checkProductionHealth({fetchImpl,now}))[1].ok,false);
+});
+
+test('rejects missing HTTP Date rather than inventing a freshness signal', async () => {
+  const {fetchImpl} = mockFetch(undefined,json(feed(),200,{date:''}));
+  assert.equal((await checkProductionHealth({fetchImpl,now}))[1].ok,false);
+});
+
+test('rejects impossible future HTTP Date', async () => {
+  const {fetchImpl} = mockFetch(undefined,json(feed(),200,{date:'Sun, 08 Nov 2026 13:00:00 GMT'}));
   assert.equal((await checkProductionHealth({fetchImpl,now}))[1].ok,false);
 });
 

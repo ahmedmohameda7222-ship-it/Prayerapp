@@ -5,8 +5,8 @@ const MAX_FEED_AGE_MS = 15 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 10000;
 const PRAYER_NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 const CLOCK_NAMES = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
-const CLOCK_HH_MM = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;
-const DATE_YYYY_MM_DD = /^\\d{4}-\\d{2}-\\d{2}$/;
+const CLOCK_HH_MM = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const DATE_YYYY_MM_DD = /^\d{4}-\d{2}-\d{2}$/;
 const REVISION_SHA256 = /^[a-f0-9]{64}$/;
 const TARGETS = [
   { service: 'web', url: 'https://donaumoschee.vercel.app/api/health' },

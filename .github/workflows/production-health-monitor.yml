@@ -1,0 +1,45 @@
+name: Production Health Monitor
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/production-health-monitor.yml'
+      - 'scripts/monitor-production-health.mjs'
+      - 'scripts/monitor-production-health.test.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+      - name: Test monitoring probe without external requests
+        run: node --test scripts/monitor-production-health.test.mjs
+
+  monitor:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+      - name: Verify monitoring probe
+        run: node --test scripts/monitor-production-health.test.mjs
+      - name: Check public Web and TV endpoints read-only
+        run: node scripts/monitor-production-health.mjs

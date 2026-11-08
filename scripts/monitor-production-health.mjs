@@ -3,6 +3,11 @@ import { pathToFileURL } from 'node:url';
 const MAX_JSON_BYTES = 160 * 1024;
 const MAX_FEED_AGE_MS = 15 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 10000;
+const PRAYER_NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+const CLOCK_NAMES = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
+const CLOCK_HH_MM = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;
+const DATE_YYYY_MM_DD = /^\\d{4}-\\d{2}-\\d{2}$/;
+const REVISION_SHA256 = /^[a-f0-9]{64}$/;
 const TARGETS = [
   { service: 'web', url: 'https://donaumoschee.vercel.app/api/health' },
   { service: 'tv', url: 'https://donaumoschee-tv.vercel.app/api/display-feed' },
@@ -37,6 +42,53 @@ function mosqueLocalDate(now, timeZone) {
   return fields.year + '-' + fields.month + '-' + fields.day;
 }
 
+function validDate(value) {
+  if (typeof value !== 'string' || !DATE_YYYY_MM_DD.test(value)) return false;
+  const date = new Date(value + 'T00:00:00.000Z');
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function validBoundedNumbers(source, keys, min, max) {
+  return source && typeof source === 'object' && !Array.isArray(source)
+    && keys.every(key => Number.isInteger(source[key]) && source[key] >= min && source[key] <= max);
+}
+
+function validMaghribProgram(program) {
+  if (program === null) return true;
+  return program && typeof program === 'object' && !Array.isArray(program)
+    && typeof program.enabled === 'boolean'
+    && (program.lessonTitle === null || (typeof program.lessonTitle === 'string' && program.lessonTitle.trim() !== ''))
+    && (program.lessonDurationMinutes === null || (Number.isInteger(program.lessonDurationMinutes) && program.lessonDurationMinutes >= 1 && program.lessonDurationMinutes <= 240))
+    && (program.combinedIshaTime === null || CLOCK_HH_MM.test(program.combinedIshaTime));
+}
+
+function validPrayerDay(day) {
+  return day && typeof day === 'object' && !Array.isArray(day)
+    && validDate(day.date)
+    && CLOCK_NAMES.every(name => typeof day[name] === 'string' && CLOCK_HH_MM.test(day[name]))
+    && Boolean(validMaghribProgram(day.maghribProgram));
+}
+
+function validFeedCore(value) {
+  // These are the core fields the TV's Feed v1 consumer requires for rendering.
+  // The root producer remains the authority for the full published DTO contract.
+  const prayers = value.prayers;
+  const displaySettings = value.displaySettings;
+  const mosque = value.mosque;
+  return typeof value.snapshotRevision === 'string'
+    && REVISION_SHA256.test(value.snapshotRevision)
+    && mosque && typeof mosque === 'object' && !Array.isArray(mosque)
+    && ['nameAr', 'nameDe', 'address', 'publicAppUrl'].every(key => typeof mosque[key] === 'string' && mosque[key].trim().length > 0)
+    && Array.isArray(prayers?.schedule)
+    && prayers.schedule.length > 0
+    && prayers.schedule.every(validPrayerDay)
+    && Array.isArray(prayers.additionalJumuah)
+    && validBoundedNumbers(prayers.iqamaDelays, PRAYER_NAMES, 0, 180)
+    && validBoundedNumbers(displaySettings?.prayerDurations, PRAYER_NAMES, 2, 120)
+    && Array.isArray(displaySettings?.azkarPlaylistIds)
+    && ['azkar', 'announcements', 'events', 'campaigns'].every(key => Array.isArray(value[key]));
+}
+
 function validFeed(value, now, serverDate) {
   if (!value || value.schemaVersion !== 1 || typeof value.timezone !== 'string') return false;
   // Feed generatedAt is a stable logical content revision and can be in year 9999.
@@ -45,7 +97,8 @@ function validFeed(value, now, serverDate) {
   const servedAtMs = Date.parse(serverDate ?? '');
   if (!Number.isFinite(servedAtMs) || servedAtMs < now.getTime() - MAX_FEED_AGE_MS || servedAtMs > now.getTime() + 60000) return false;
   const localToday = mosqueLocalDate(now, value.timezone);
-  return Array.isArray(value.prayers?.schedule) && value.prayers.schedule.some(day => day?.date === localToday);
+  return validFeedCore(value)
+    && value.prayers.schedule.some(day => day.date === localToday);
 }
 
 export async function checkProductionHealth({fetchImpl = fetch, now = new Date()} = {}) {

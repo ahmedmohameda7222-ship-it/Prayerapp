@@ -40,7 +40,7 @@ export function DiagnosticsPanel({ enabled, vm }: DiagnosticsPanelProps) {
         <dd>{coverage(vm)}</dd>
         <dt>Flags</dt>
         <dd>
-          offline={String(!vm.networkAvailable)} lkg={String(vm.usingLkg)} test={String(vm.testMode)}
+          offline={String(!vm.networkAvailable)} lkg={String(vm.usingLkg)}
         </dd>
         <dt>Validation</dt>
         <dd>{diagnostics?.validationError ?? "none"}</dd>

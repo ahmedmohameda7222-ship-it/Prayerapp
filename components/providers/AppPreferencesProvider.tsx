@@ -106,11 +106,12 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     document.documentElement.style.colorScheme = "light";
     localStorage.setItem("deggendorf-app-preferences-v1", "{}");
     let active = true;
+    let latestCheck = 0;
 
-    const initialize = async () => {
+    const initialize = async (checkId: number) => {
       const preferences = readStoredPreferences();
       await Promise.resolve();
-      if (!active) return;
+      if (!active || checkId !== latestCheck) return;
       saveStored(preferences);
 
       if (isIos() && !isStandalone()) {
@@ -142,26 +143,43 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
 
       const registration = await navigator.serviceWorker.getRegistration("/");
       const subscription = await registration?.pushManager.getSubscription();
-      if (!active) return;
+      if (!active || checkId !== latestCheck) return;
       if (!subscription) {
         setPushStatus("disabled");
         return;
       }
       try {
         await syncSubscription(subscription, preferences);
-        if (active) setPushStatus("enabled");
+        if (active && checkId === latestCheck) setPushStatus("enabled");
       } catch {
-        if (active) setPushStatus("error");
+        if (active && checkId === latestCheck) setPushStatus("error");
       }
     };
-    void initialize().catch((error) => {
-      // Service Worker / PushManager lookups can reject on restricted browsers.
-      // Surface a recoverable state instead of leaving Push stuck on "checking".
-      if (!active) return;
-      console.warn("Push notification initialization failed", error);
-      setPushStatus("error");
-    });
-    return () => { active = false; };
+    const refresh = () => {
+      const checkId = ++latestCheck;
+      void initialize(checkId).catch((error) => {
+        // A Service Worker / PushManager lookup may fail after resume.
+        // A late failure from an older check must not override newer state.
+        if (!active || checkId !== latestCheck) return;
+        console.warn("Push notification initialization failed", error);
+        setPushStatus("error");
+      });
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      // BFCache restores do not remount React, so recheck external changes.
+      if (event.persisted) refresh();
+    };
+    refresh();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pageshow", onPageShow);
+    };
   }, [authLoading, saveStored, syncSubscription]);
 
   const enableNotifications = useCallback(async () => {

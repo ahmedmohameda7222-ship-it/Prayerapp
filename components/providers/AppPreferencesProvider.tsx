@@ -133,6 +133,12 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
         setPushStatus("denied");
         return;
       }
+      if (Notification.permission !== "granted") {
+        // A previously cached PushSubscription does not imply that the user
+        // still permits notifications. Never sync it as enabled until consent.
+        setPushStatus("disabled");
+        return;
+      }
 
       const registration = await navigator.serviceWorker.getRegistration("/");
       const subscription = await registration?.pushManager.getSubscription();
@@ -148,7 +154,13 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
         if (active) setPushStatus("error");
       }
     };
-    void initialize();
+    void initialize().catch((error) => {
+      // Service Worker / PushManager lookups can reject on restricted browsers.
+      // Surface a recoverable state instead of leaving Push stuck on "checking".
+      if (!active) return;
+      console.warn("Push notification initialization failed", error);
+      setPushStatus("error");
+    });
     return () => { active = false; };
   }, [authLoading, saveStored, syncSubscription]);
 

@@ -8,8 +8,6 @@ on:
     paths:
       - "masjid-display/**"
       - "app/api/public/masjid-display/**"
-      - "app/api/public/masjid-display-test-control/**"
-      - "app/admin/masjid-display-test/**"
       - "lib/masjid-display/**"
       - "lib/data/**"
       - "lib/supabase/**"
@@ -22,8 +20,6 @@ on:
     paths:
       - "masjid-display/**"
       - "app/api/public/masjid-display/**"
-      - "app/api/public/masjid-display-test-control/**"
-      - "app/admin/masjid-display-test/**"
       - "lib/masjid-display/**"
       - "lib/data/**"
       - "lib/supabase/**"

@@ -214,8 +214,9 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ endpoint: subscription.endpoint, browserId: stored.browserId }),
         });
-        await subscription.unsubscribe();
         if (!response.ok) throw new Error("Could not disable stored push subscription");
+        const unsubscribed = await subscription.unsubscribe();
+        if (!unsubscribed) throw new Error("Browser refused to unsubscribe from push notifications");
       }
       setPushStatus("disabled");
     } catch (error) {

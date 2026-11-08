@@ -235,17 +235,34 @@ function isStalePrayerPush(payload) {
 
 async function broadcastAdhanToOpenApp(payload) {
   if (payload.kind !== "adhan") return;
+
   const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-  for (const client of clients) {
-    client.postMessage({
-      type: "ADHAN_DUE",
-      tag: payload.tag,
-      prayer: payload.prayer,
-      date: payload.date,
-      eventId: payload.eventId,
-      dueAt: payload.dueAt,
-    });
-  }
+  // Admin routes do not mount AdhanAudioProvider. Only a single public
+  // window should receive playback instructions, otherwise separate tabs
+  // can play the same Adhan concurrently on one device.
+  const publicClients = clients.filter((client) => {
+    try {
+      const url = new URL(client.url);
+      return url.origin === self.location.origin
+        && url.pathname !== "/admin"
+        && !url.pathname.startsWith("/admin/");
+    } catch {
+      return false;
+    }
+  });
+  const target = publicClients.find((client) => client.focused)
+    || publicClients.find((client) => client.visibilityState === "visible")
+    || publicClients[0];
+  if (!target) return;
+
+  target.postMessage({
+    type: "ADHAN_DUE",
+    tag: payload.tag,
+    prayer: payload.prayer,
+    date: payload.date,
+    eventId: payload.eventId,
+    dueAt: payload.dueAt,
+  });
 }
 
 self.addEventListener("push", (event) => {

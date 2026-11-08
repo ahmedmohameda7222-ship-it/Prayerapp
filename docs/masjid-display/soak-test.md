@@ -24,20 +24,18 @@ Record observations for:
 - network disconnect and reconnect;
 - display sleep/wake;
 - browser background throttling/visibility return;
-- Test Mode start;
-- Test Mode scenario switch;
-- Test Mode Stop;
-- automatic Test Mode expiry;
-- repeated Feed polling;
-- repeated Test Control polling;
+- actual published prayer transitions and Iqama offset presentation;
+- 120-second Feed polling and ETag/304 response handling;
+- temporary feed failures and valid LKG use;
+- safe stale/update-needed display when current prayer coverage is unavailable;
 - memory/responsiveness over time;
 - black screen occurrence;
 - stale religious-state replay;
 - uncontrolled reload/reload loop;
 - frozen renderer;
-- synthetic Test data leakage into production Feed or LKG.
+- malformed or unsupported Feed replacing a valid LKG.
 
-Any black screen, stale religious-state replay, reload loop, frozen renderer, or Test data leakage blocks certification until corrected and the required soak is repeated on the corrected candidate.
+Any black screen, stale religious-state replay, reload loop, frozen renderer, or invalid Feed replacing LKG blocks certification until corrected and the required soak is repeated on the corrected candidate.
 
 ## Current results
 

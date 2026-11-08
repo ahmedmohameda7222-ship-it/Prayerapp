@@ -47,6 +47,8 @@ jobs:
       - run: npm test
       - name: Verify production health monitor behavior
         run: node --test scripts/monitor-production-health.test.mjs
+      - name: Verify current TV release operations guides
+        run: node --test scripts/verify-tv-runbooks.test.mjs
       - name: Typecheck root application
         run: npx tsc --noEmit
       - name: Verify Masjid Display producer/consumer contract

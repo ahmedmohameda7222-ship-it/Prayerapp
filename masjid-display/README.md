@@ -1,30 +1,28 @@
-# Masjid Display TV
+# Masjid Display TV — current production runtime
 
-The Masjid Display is an independent Next.js TV project inside the Prayerapp repository.
+This is the independent, browser-based mosque TV application in `masjid-display/`. The root Prayerapp provides published mosque content and prayer times; the TV consumes the public Feed v1 and renders the current religious state locally.
 
-## Project boundary
+## Deployment and API boundaries
 
-**Root Prayerapp (`/`)** owns Admin, Supabase, Prayer Engine data, public Feed v1, and public read-only Test Control.
+| Project | Responsibility | Production origin |
+| --- | --- | --- |
+| Root `donaumoschee` | Admin, prayer engine, Supabase, published Feed v1 | `https://donaumoschee.vercel.app` |
+| TV `donaumoschee-tv` | Same-origin public proxy, validated display, Last Known Good (LKG), logical clock, watchdog, diagnostics | `https://donaumoschee-tv.vercel.app` |
 
-**Masjid Display TV (`masjid-display/`)** owns the television UI, deterministic display state engine, Feed/LKG validation, server-side Prayerapp proxy, Test Mode rendering, diagnostics, and watchdog behavior.
+The TV browser requests **only** `GET /api/display-feed` for app data. The TV server forwards it to root `GET /api/public/masjid-display` using server-only `PRAYERAPP_ORIGIN`. Do not expose that variable as `NEXT_PUBLIC_` or add browser Supabase credentials. The TV has no prayer-calculation engine, audio runtime, or database client.
 
-The TV browser has no Supabase client, no service-role/browser secret, no prayer-calculation engine, and no audio runtime.
+Both independent Vercel projects deploy from approved `main` commits. Feature branches do not create Vercel previews under the existing main-only release policy.
 
-## Plan 6 Vercel live preview
+## Runtime expectations
 
-Approved project configuration:
+- The TV refreshes Feed every **120 seconds**, and immediately on online/visibility return; the logical clock and religious display transitions progress locally between requests.
+- `ETag` and `304 Not Modified` are supported. A validated snapshot may serve as LKG during transient failure; an invalid/oversized Feed never replaces it.
+- If no currently valid prayer schedule exists, show a safe stale/update-needed state rather than inventing times.
+- The displayed prayer strip contains Fajr, sunrise (informational), Dhuhr/Jumuah, Asr, Maghrib, and Isha. Normal prayers show an Iqama offset in minutes; Friday Jumuah and sunrise do not get invented Iqama offsets.
+- A persistent public app QR code is rendered when configured. Campaign QR is conditional on a published campaign with a donation URL.
+- Diagnostics are maintenance-only using `?diagnostics=1`, including feed schema/revision, time, coverage, last sync, LKG and validation error.
 
-- Vercel team: `Ahmed's projects`;
-- project name: `donaumoschee-tv`;
-- Git repository: `ahmedmohameda7222-ship-it/Prayerapp`;
-- Root Directory: `masjid-display`;
-- framework: Next.js;
-- candidate branch: `feat/masjid-display`;
-- server-only environment: `PRAYERAPP_ORIGIN=https://donaumoschee.vercel.app`.
-
-`PRAYERAPP_ORIGIN` is used only by the TV project's server route handlers. Do not expose it through a `NEXT_PUBLIC_` variable and do not append credentials, path, query, or fragment. The browser talks only to the TV's same-origin `/api/display-feed` and `/api/test-control` routes.
-
-## Local verification
+## Verification
 
 From `masjid-display/`:
 
@@ -36,17 +34,6 @@ npm run typecheck
 PRAYERAPP_ORIGIN=http://127.0.0.1:3000 npm run build
 ```
 
-The root release CI also runs these TV gates plus the producer/consumer Feed-v1 contract verifier.
+Root CI also verifies producer/consumer contract, root build, migrations and security. These automated gates do **not** certify real TV hardware, fullscreen behavior, QR scans or continuous soak.
 
-## Runtime model
-
-The browser polls production Feed through `/api/display-feed` and Test Control through `/api/test-control`. Valid Feed v1 snapshots may enter Last Known Good. Synthetic Test Mode data never enters LKG. On reconnect, visibility return, or wake, the runtime recalculates current state from current time/data and immediately refreshes instead of replaying expired transient states.
-
-Production dynamic Feed readers are row/record-size bounded, and the root producer fails closed rather than emitting a finalized public Feed larger than 128 KiB. An oversized or invalid response therefore cannot replace the TV's validated LKG.
-
-See `../docs/masjid-display/deployment.md` for deployment/rollback and `../docs/masjid-display/production-certification.md` for release status.
-
-
-## Plan 6 scope
-
-Plan 6 live-preview completion is separate from final production cutover. Historical ±1-minute calibration, destructive real-target legacy-Iqama cutover, physical TV/QR signoff, and 24/72-hour soak remain truthful operational follow-ups for Plan 7; they are not Plan 6 completion gates and are not claimed as executed here. See `../docs/masjid-display/production-certification.md` for preserved Plan 5 history.
+For the current production procedure use [Current TV Production Operations](../docs/masjid-display/current-production-operations.md). Hardware/QR acceptance remains recorded in [Physical TV Certification](../docs/masjid-display/physical-tv-certification.md), and extended operation in [Soak Test](../docs/masjid-display/soak-test.md). The older Plan 5–7 histories are archived evidence, not instructions to reactivate retired synthetic controls.

@@ -6,11 +6,16 @@ import { describe, expect, it, vi } from "vitest";
 type AdhanWindowClient = {
   focused: boolean;
   visibilityState: "visible" | "hidden";
+  url: string;
   postMessage: ReturnType<typeof vi.fn>;
 };
 
-function createWindowClient(focused: boolean, visibilityState: "visible" | "hidden"): AdhanWindowClient {
-  return { focused, visibilityState, postMessage: vi.fn() };
+function createWindowClient(
+  focused: boolean,
+  visibilityState: "visible" | "hidden",
+  path = "/",
+): AdhanWindowClient {
+  return { focused, visibilityState, url: `https://example.test${path}`, postMessage: vi.fn() };
 }
 
 function runPrayerPush(clients: AdhanWindowClient[], kind: "adhan" | "prayer-reminder" = "adhan") {
@@ -87,6 +92,26 @@ describe("Service Worker Adhan delivery across open tabs", () => {
     expect(firstVisible.postMessage).toHaveBeenCalledOnce();
     expect(hidden.postMessage).not.toHaveBeenCalled();
     expect(secondVisible.postMessage).not.toHaveBeenCalled();
+  });
+
+  it("never picks a focused admin tab that has no public audio runtime", async () => {
+    const admin = createWindowClient(true, "visible", "/admin/events");
+    const publicApp = createWindowClient(false, "visible", "/prayer-times");
+    const { completion, showNotification } = runPrayerPush([admin, publicApp]);
+    await completion;
+
+    expect(showNotification).toHaveBeenCalledOnce();
+    expect(publicApp.postMessage).toHaveBeenCalledOnce();
+    expect(admin.postMessage).not.toHaveBeenCalled();
+  });
+
+  it("does not send audio commands when only admin tabs are open", async () => {
+    const admin = createWindowClient(true, "visible", "/admin");
+    const { completion, showNotification } = runPrayerPush([admin]);
+    await completion;
+
+    expect(showNotification).toHaveBeenCalledOnce();
+    expect(admin.postMessage).not.toHaveBeenCalled();
   });
 
   it("still displays the system notification when no browser tab is open", async () => {

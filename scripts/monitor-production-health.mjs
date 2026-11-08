@@ -37,10 +37,13 @@ function mosqueLocalDate(now, timeZone) {
   return fields.year + '-' + fields.month + '-' + fields.day;
 }
 
-function validFeed(value, now) {
+function validFeed(value, now, serverDate) {
   if (!value || value.schemaVersion !== 1 || typeof value.timezone !== 'string') return false;
-  const generatedMs = Date.parse(value.generatedAt);
-  if (!Number.isFinite(generatedMs) || generatedMs < now.getTime() - MAX_FEED_AGE_MS || generatedMs > now.getTime() + 60000) return false;
+  // Feed generatedAt is a stable logical content revision and can be in year 9999.
+  // The forwarded HTTP Date is the correct signal for response freshness.
+  if (typeof value.generatedAt !== 'string' || !Number.isFinite(Date.parse(value.generatedAt))) return false;
+  const servedAtMs = Date.parse(serverDate ?? '');
+  if (!Number.isFinite(servedAtMs) || servedAtMs < now.getTime() - MAX_FEED_AGE_MS || servedAtMs > now.getTime() + 60000) return false;
   const localToday = mosqueLocalDate(now, value.timezone);
   return Array.isArray(value.prayers?.schedule) && value.prayers.schedule.some(day => day?.date === localToday);
 }
@@ -61,7 +64,7 @@ export async function checkProductionHealth({fetchImpl = fetch, now = new Date()
       const json = await readBoundedJson(response);
       const ok = service === 'web'
         ? json?.status === 'ok' && json?.database === 'ok'
-        : validFeed(json, now);
+        : validFeed(json, now, response.headers.get('date'));
       return {service, ok, reason: ok ? 'healthy' : 'invalid_health_payload'};
     } catch {
       // Deliberately do not log response bodies, URLs with credentials, or provider errors.

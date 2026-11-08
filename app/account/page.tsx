@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, BookHeart, ChevronRight, LogOut, Scale, Settings, ShieldCheck, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -20,6 +20,17 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const deleteTriggerContainerRef = useRef<HTMLDivElement>(null);
+  const deletionDialogOpenedRef = useRef(false);
+
+  useEffect(() => {
+    if (confirmDeleteOpen) {
+      deletionDialogOpenedRef.current = true;
+    } else if (deletionDialogOpenedRef.current && !busy) {
+      deletionDialogOpenedRef.current = false;
+      deleteTriggerContainerRef.current?.querySelector("button")?.focus();
+    }
+  }, [busy, confirmDeleteOpen]);
 
   async function signOut() {
     if (busy) return;
@@ -147,7 +158,7 @@ export default function AccountPage() {
               {t("phase1.signOut")}
             </Button>
 
-            <div className="border-t border-[var(--app-divider)] pt-4">
+            <div ref={deleteTriggerContainerRef} className="border-t border-[var(--app-divider)] pt-4">
               <Button disabled={busy} variant="ghost" className="w-full border-red-200 text-red-800" onClick={() => { setError(""); setConfirmDeleteOpen(true); }}>
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
                 {t("phase1.deleteAccount")}

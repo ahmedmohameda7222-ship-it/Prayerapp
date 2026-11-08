@@ -1,6 +1,6 @@
 # Masjid Display — Physical TV / QR Certification
 
-Status: PLAN 7 PHYSICAL CERTIFICATION PENDING
+Status: CURRENT PRODUCTION HARDWARE CERTIFICATION — NOT EXECUTED
 
 Physical release evidence is recorded by **hardware + browser/runtime + resolution + scaling + viewing distance**, not by vendor-specific code assumptions. Amazon Fire TV / Silk is a primary expected university target, but the implementation remains standards-based. Existing Samsung-TV evidence is secondary compatibility evidence only.
 
@@ -34,7 +34,7 @@ Record these fields for the actual university release runtime:
 | Arabic RTL/shaping | NOT EXECUTED | Physical visual confirmation |
 | German clipping/overflow | NOT EXECUTED | Physical visual confirmation |
 | Prayer Strip readability | NOT EXECUTED | Practical-distance observation |
-| Separate Iqama row/block | NOT EXECUTED | Five normal prayers separated; Sunrise and Friday Jumuah excluded |
+| Separate Iqama offset row/block | NOT EXECUTED | Show configured offsets for normal prayers, not invented absolute Iqama times; Sunrise and Friday Jumuah excluded |
 | Clock/countdown readability | NOT EXECUTED | Practical-distance observation |
 | Content and urgent/status readability | NOT EXECUTED | No essential state is obscured |
 | QR safe area | NOT EXECUTED | Quiet zone and full code visible |
@@ -46,26 +46,26 @@ Record these fields for the actual university release runtime:
 
 ## Fullscreen operating procedure
 
-1. Open the exact Plan 7 candidate on the target TV/browser at the intended resolution and 100% zoom/scaling unless the actual deployment requires a documented alternative.
+1. Open the exact current production candidate on the target TV/browser at the intended resolution and 100% zoom/scaling unless the actual deployment requires a documented alternative.
 2. While not fullscreen, locate the native **Vollbild / ملء الشاشة** button.
 3. Activate it with the normal browser interaction available on the target: pointer/touch, keyboard Enter/Space, or the TV remote's ordinary focused-button action.
 4. Confirm fullscreen is requested only from that user gesture. The application must never auto-enter fullscreen on load.
 5. If the browser permits the standard Fullscreen API, confirm browser chrome/navigation UI disappears as far as that runtime supports and the setup control disappears.
 6. Exit fullscreen using the browser/device's normal exit mechanism. Confirm the setup control returns and the display remains operational.
 7. If the Fullscreen API is unavailable or denied, confirm the concise fallback instruction appears and use the browser/device's own fullscreen or presentation command if one exists. Do not treat lack of programmatic fullscreen as a renderer failure when the documented fallback works.
-8. Confirm fullscreen entry/exit does not change Test Mode, prayer state, content rotation, QR content, LKG behavior, logical clock, diagnostics, or urgent overlays.
+8. Confirm fullscreen entry/exit does not change prayer state, content rotation, QR content, LKG behavior, logical clock, diagnostics, or urgent overlays.
 
 No vendor-specific user-agent branch is required or expected. A compatibility workaround may be added only after the actual target demonstrates a standards incompatibility, and then only with narrow regression coverage.
 
 ## Physical execution sequence
 
-1. After the independent Planner squash-merges the approved PR to `main`, let the existing `donaumoschee-tv` project deploy that merged `main` commit. Record the production deployment ID, production URL, and attached commit SHA. Do not create a PR/feature-branch Preview.
+1. Identify the exact approved `main` commit deployed independently by `donaumoschee` and `donaumoschee-tv`. Record both production deployment IDs, URLs, and attached SHAs. Do not create a PR/feature-branch Preview.
 2. Execute the fullscreen procedure above on the actual university target runtime.
 3. Inspect header, Arabic/German text, clock, content, Prayer Strip, separate Iqama row, urgent/status overlays, persistent QR safe area, and pixel-shift behavior at practical viewing distance.
-4. Run the deterministic Admin Test Mode checklist in `docs/masjid-display/test-mode-demo.md`.
+4. Review the live `?diagnostics=1` panel against the current published Feed: schema, applied timezone, prayer-date coverage, sync, clock offset and LKG state. Do not use retired synthetic controls.
 5. Scan the persistent Prayerapp QR with a real phone/camera and record the resolved URL.
-6. Run a safe HTTPS Campaign Test Mode scenario, scan its Campaign QR with a real phone/camera, and record the resolved URL.
-7. After a valid LKG exists, temporarily interrupt network connectivity. Confirm safe LKG behavior, restore connectivity, and confirm automatic current-state refresh with no stale religious/test-state replay.
+6. If a real approved campaign with a donation URL is currently published, scan its Campaign QR with a real phone/camera and verify the approved HTTPS target. If none is published, record this conditional check as NOT EXECUTED; do not publish synthetic campaign content for QA.
+7. After a valid LKG exists, temporarily interrupt network connectivity. Confirm safe LKG behavior, restore connectivity, and confirm automatic current-state refresh with no stale religious-state replay.
 8. Background/sleep the browser/device where possible, return it to visible state, and confirm logical time/state refresh.
 9. Record each executed result. Anything not actually executed remains `NOT EXECUTED`.
 

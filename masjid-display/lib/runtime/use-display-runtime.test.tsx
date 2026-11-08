@@ -7,14 +7,6 @@ import { loadLkg } from "../lkg";
 import { resolveDisplayState } from "../state/resolve-display-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const testControl = vi.hoisted(() => ({
-  current: { active: false } as Record<string, unknown>,
-}));
-
-vi.mock("./use-test-control", () => ({
-  useTestControl: () => testControl.current,
-}));
-
 import { nextClockTickDelay, useDisplayRuntime } from "./use-display-runtime";
 
 const STORAGE_KEY = "masjid-display-lkg-v1";
@@ -58,7 +50,6 @@ describe("useDisplayRuntime", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-15T18:00:05.000Z"));
     localStorage.clear();
-    testControl.current = { active: false };
   });
 
   afterEach(() => {
@@ -90,7 +81,7 @@ describe("useDisplayRuntime", () => {
     expect(result.current.usingLkg).toBe(true);
   });
 
-  it("renders LKG first, polls every 60s, and keeps LKG after invalid 200", async () => {
+  it("renders LKG first, polls every 120s, and keeps LKG after invalid 200", async () => {
     const validFeed = cloneFeed();
     seedLkg(validFeed);
     const fetchMock = vi
@@ -111,7 +102,7 @@ describe("useDisplayRuntime", () => {
     expect(result.current.diagnostics?.validationError).toMatch(/validation/i);
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(60_000);
+      await vi.advanceTimersByTimeAsync(120_000);
     });
     expect(result.current.feed?.snapshotRevision).toBe(validFeed.snapshotRevision);
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -172,7 +163,7 @@ describe("useDisplayRuntime", () => {
     expect(result.current.usingLkg).toBe(true);
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(60_000);
+      await vi.advanceTimersByTimeAsync(120_000);
     });
     expect(result.current.feed?.snapshotRevision).toBe(validFeed.snapshotRevision);
     expect(result.current.networkAvailable).toBe(false);
@@ -296,7 +287,7 @@ describe("useDisplayRuntime", () => {
     const syncedAt = result.current.diagnostics?.lastSyncAt;
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(60_000);
+      await vi.advanceTimersByTimeAsync(120_000);
     });
 
     expect(result.current.feed?.snapshotRevision).toBe(freshFeed.snapshotRevision);
@@ -373,226 +364,6 @@ describe("useDisplayRuntime", () => {
     expect(result.current.feed?.snapshotRevision).toBe(freshFeed.snapshotRevision);
     expect(loadLkg()?.snapshot.snapshotRevision).toBe(freshFeed.snapshotRevision);
     expect(loadLkg()?.etag).toBe('"fresh"');
-  });
-
-  it.each([
-    ["normal", { titleAr: "الوضع الطبيعي", titleDe: "Normalbetrieb", messageAr: "اختبار", messageDe: "Test" }, "ANNOUNCEMENT"],
-    ["special_display", { titleAr: "عرض خاص", titleDe: "Sonderanzeige", messageAr: "خاص", messageDe: "Spezial" }, "SPECIAL"],
-    ["event", { titleAr: "فعالية", titleDe: "Veranstaltung", descriptionAr: "وصف", descriptionDe: "Beschreibung", locationAr: "قاعة", locationDe: "Saal", startsAt: "2026-09-15T18:30:00.000Z" }, "EVENT"],
-    ["campaign", { titleAr: "حملة", titleDe: "Kampagne", descriptionAr: "تبرع", descriptionDe: "Spende", donationUrl: "https://example.invalid/test-donation" }, "CAMPAIGN"],
-    ["azkar", { azkarId: "test-azkar", arabicText: "سُبْحَانَ اللَّهِ", germanText: "Gepriesen sei Allah" }, "AZKAR"],
-    ["long_bilingual", { titleAr: "عنوان", titleDe: "Titel", messageAr: "نص عربي طويل", messageDe: "Langer deutscher Text" }, "ANNOUNCEMENT"],
-  ] as const)(
-    "builds a synthetic renderer view for %s Test Mode",
-    async (scenario, payloadFields, expectedKind) => {
-      const realFeed = cloneFeed();
-      seedLkg(realFeed);
-      vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
-      testControl.current = {
-        active: true,
-        scenario,
-        startedAt: "2026-09-15T18:00:00.000Z",
-        expiresAt: "2026-09-15T18:15:00.000Z",
-        publicAppUrl: "https://prayer.example/",
-        payload: {
-          scenario,
-          id: `test-${scenario}`,
-          ...payloadFields,
-        },
-      };
-
-      const { result } = renderHook(() => useDisplayRuntime());
-
-      expect(result.current.testMode).toBe(true);
-      expect(result.current.state?.kind).toBe("NORMAL");
-      expect(result.current.content).not.toBeNull();
-      expect(result.current.normalSlide?.kind).toBe(expectedKind);
-      expect(loadLkg()?.snapshot.snapshotRevision).toBe(realFeed.snapshotRevision);
-    },
-  );
-
-  it("builds a campaign-without-QR synthetic renderer view", () => {
-    const realFeed = cloneFeed();
-    seedLkg(realFeed);
-    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
-    testControl.current = {
-      active: true,
-      scenario: "campaign_without_qr",
-      startedAt: "2026-09-15T18:00:00.000Z",
-      expiresAt: "2026-09-15T18:15:00.000Z",
-      publicAppUrl: null,
-      payload: {
-        scenario: "campaign_without_qr",
-        id: "test-campaign-without-qr",
-        titleAr: "حملة بلا رمز",
-        titleDe: "Kampagne ohne QR",
-        descriptionAr: "تبرع تجريبي",
-        descriptionDe: "Testspende",
-      },
-    };
-
-    const { result } = renderHook(() => useDisplayRuntime());
-
-    expect(result.current.testMode).toBe(true);
-    expect(result.current.normalSlide).toEqual({
-      kind: "CAMPAIGN",
-      itemId: "test-campaign-without-qr",
-    });
-    expect(result.current.content?.campaigns).toHaveLength(1);
-    expect(result.current.content?.campaigns[0]?.donationUrl).toBeNull();
-  });
-
-  it.each([
-    ["friday_first_countdown", 0, "FRIDAY_MODE"],
-    ["friday_next_countdown", 1, "FRIDAY_MODE"],
-    ["jumuah_now", 1, "JUMUAH_NOW"],
-  ] as const)(
-    "preserves the %s synthetic Jumuah service identity",
-    (scenario, serviceIndex, expectedKind) => {
-      const realFeed = cloneFeed();
-      seedLkg(realFeed);
-      vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
-      testControl.current = {
-        active: true,
-        scenario,
-        startedAt: "2026-09-15T18:00:00.000Z",
-        expiresAt: "2026-09-15T18:15:00.000Z",
-        publicAppUrl: "https://prayer.example/",
-        payload: {
-          scenario,
-          id: `test-${scenario}`,
-          prayer: "dhuhr",
-          targetAt:
-            scenario === "jumuah_now" ? undefined : "2026-09-15T18:10:00.000Z",
-          serviceIndex,
-        },
-      };
-
-      const { result } = renderHook(() => useDisplayRuntime());
-
-      expect(result.current.state).toMatchObject({
-        kind: expectedKind,
-        serviceIndex,
-      });
-    },
-  );
-
-  it("builds synthetic urgent content and suppresses production urgent items", () => {
-    const realFeed = cloneFeed();
-    seedLkg(realFeed);
-    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
-    testControl.current = {
-      active: true,
-      scenario: "urgent",
-      startedAt: "2026-09-15T18:00:00.000Z",
-      expiresAt: "2026-09-15T18:15:00.000Z",
-      publicAppUrl: "https://prayer.example/",
-      payload: {
-        scenario: "urgent",
-        id: "test-urgent",
-        titleAr: "تنبيه تجريبي",
-        titleDe: "Testwarnung",
-        messageAr: "رسالة تجريبية",
-        messageDe: "Testmeldung",
-      },
-    };
-
-    const { result } = renderHook(() => useDisplayRuntime());
-
-    expect(result.current.urgent).toHaveLength(1);
-    expect(result.current.urgent[0]?.id).toBe("test-urgent");
-    expect(result.current.urgent.some((item) => item.id === realFeed.announcements[0]?.id)).toBe(false);
-  });
-
-  it("forces synthetic offline operational flags without changing the real LKG", async () => {
-    const realFeed = cloneFeed();
-    seedLkg(realFeed);
-    vi.stubGlobal(
-      "fetch",
-      vi.fn<typeof fetch>().mockResolvedValue(
-        new Response(null, { status: 304, headers: { date: SERVER_DATE } }),
-      ),
-    );
-    testControl.current = {
-      active: true,
-      scenario: "offline",
-      startedAt: "2026-09-15T18:00:00.000Z",
-      expiresAt: "2026-09-15T18:15:00.000Z",
-      publicAppUrl: "https://prayer.example/",
-      payload: {
-        scenario: "offline",
-        id: "test-offline",
-        titleAr: "وضع عدم الاتصال",
-        titleDe: "Offlinemodus",
-        messageAr: "اختبار",
-        messageDe: "Test",
-      },
-    };
-
-    const { result } = renderHook(() => useDisplayRuntime());
-    await flushEffects();
-
-    expect(result.current.testMode).toBe(true);
-    expect(result.current.networkAvailable).toBe(false);
-    expect(result.current.usingLkg).toBe(true);
-    expect(result.current.content).not.toBeNull();
-    expect(result.current.normalSlide?.kind).toBe("ANNOUNCEMENT");
-    expect(loadLkg()?.snapshot.snapshotRevision).toBe(realFeed.snapshotRevision);
-  });
-
-  it("keeps the validated production Prayerapp URL when active Test Control omits it", async () => {
-    const realFeed = cloneFeed();
-    seedLkg(realFeed);
-    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
-    testControl.current = {
-      active: true,
-      scenario: "campaign_without_qr",
-      startedAt: "2026-09-15T18:00:00.000Z",
-      expiresAt: "2026-09-15T18:15:00.000Z",
-      publicAppUrl: null,
-      payload: {
-        scenario: "campaign_without_qr",
-        id: "test-no-control-url",
-        titleAr: "حملة بلا رمز",
-        titleDe: "Kampagne ohne QR",
-        descriptionAr: "تبرع تجريبي",
-        descriptionDe: "Testspende",
-      },
-    };
-
-    const { result } = renderHook(() => useDisplayRuntime());
-    await flushEffects();
-
-    expect(result.current.testMode).toBe(true);
-    expect(result.current.publicAppUrl).toBe(realFeed.mosque.publicAppUrl);
-    expect(loadLkg()?.snapshot.snapshotRevision).toBe(realFeed.snapshotRevision);
-  });
-
-  it("applies test override without persisting it and returns to fresh real state", async () => {
-    const realFeed = cloneFeed();
-    seedLkg(realFeed);
-    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
-    testControl.current = {
-      active: true,
-      scenario: "iqama_now",
-      startedAt: "2026-09-15T18:00:00.000Z",
-      expiresAt: "2026-09-15T18:15:00.000Z",
-      publicAppUrl: "https://prayer.example/",
-      payload: { scenario: "iqama_now", id: "test-iqama", prayer: "asr" },
-    };
-
-    const { result, rerender } = renderHook(() => useDisplayRuntime());
-    await flushEffects();
-    expect(result.current.testMode).toBe(true);
-    expect(result.current.state?.kind).toBe("IQAMA_NOW");
-    expect(result.current.urgent).toEqual([]);
-    expect(result.current.publicAppUrl).toBe("https://prayer.example/");
-    expect(loadLkg()?.snapshot.snapshotRevision).toBe(realFeed.snapshotRevision);
-
-    testControl.current = { active: false };
-    rerender();
-    expect(result.current.testMode).toBe(false);
-    expect(result.current.state).toEqual(resolveDisplayState(realFeed, result.current.logicalNow));
   });
 
   it("does not use periodic hard reload as a recovery mechanism", () => {

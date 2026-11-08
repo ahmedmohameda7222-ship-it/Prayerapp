@@ -97,8 +97,8 @@ function validFeed(value, now, serverDate) {
   const servedAtMs = Date.parse(serverDate ?? '');
   if (!Number.isFinite(servedAtMs) || servedAtMs < now.getTime() - MAX_FEED_AGE_MS || servedAtMs > now.getTime() + 60000) return false;
   const localToday = mosqueLocalDate(now, value.timezone);
-  return validFeedCore(value)
-    && value.prayers.schedule.some(day => day.date === localToday);
+  return Boolean(validFeedCore(value)
+    && value.prayers.schedule.some(day => day.date === localToday));
 }
 
 export async function checkProductionHealth({fetchImpl = fetch, now = new Date()} = {}) {

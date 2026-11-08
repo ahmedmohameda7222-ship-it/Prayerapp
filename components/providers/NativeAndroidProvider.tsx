@@ -95,7 +95,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   const { session, loading: authLoading } = usePublicAuth();
   const sessionUserId = session?.user?.id ?? null;
   const sessionAccessToken = session?.access_token ?? null;
-  const { pushStatus, enableNotifications } = useAppPreferences();
+  const { pushStatus, permission: browserNotificationPermission, enableNotifications } = useAppPreferences();
   const { locale } = useLocale();
   const [status, setStatus] = useState<NativeBridgeStatus | null>(null);
   const [bridgeState, setBridgeState] = useState<NativeBridgeState>("probing");
@@ -110,6 +110,7 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   const enrollmentAttemptRef = useRef<NativeEnrollmentAttempt | null>(null);
   const sessionUserIdRef = useRef<string | null>(sessionUserId);
   const nativeUpdateRequiredRef = useRef(false);
+  const fallbackPushAttemptedRef = useRef(false);
   const pendingTests = useRef(new Map<string, PendingTest>());
   const nativeSecretPrivate = supportsNativeSecretPrivate(status);
   const nativeAuthorityGeneration = supportsNativeAuthorityGeneration(status);
@@ -328,9 +329,20 @@ export function NativeAndroidProvider({ children }: { children: React.ReactNode 
   }, [accountRevision, channelRevision, syncConfiguration]);
 
   useEffect(() => {
-    if (!status?.notificationPermission || pushStatus === "enabled" || pushStatus === "checking") return;
+    if (!status?.notificationPermission) {
+      fallbackPushAttemptedRef.current = false;
+      return;
+    }
+    // Android native permission alone cannot grant browser Push permission.
+    // Never retry automatically after refusal, failure, or a changed callback.
+    if (
+      browserNotificationPermission !== "granted"
+      || pushStatus !== "disabled"
+      || fallbackPushAttemptedRef.current
+    ) return;
+    fallbackPushAttemptedRef.current = true;
     void enableNotifications();
-  }, [enableNotifications, pushStatus, status?.notificationPermission]);
+  }, [browserNotificationPermission, enableNotifications, pushStatus, status?.notificationPermission]);
 
   useEffect(() => {
     if (

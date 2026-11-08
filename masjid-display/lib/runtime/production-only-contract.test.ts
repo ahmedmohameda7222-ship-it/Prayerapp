@@ -10,16 +10,16 @@ const root = process.cwd();
 describe("production TV runtime efficiency and isolation", () => {
   it("reuses converted prayer instants between clock ticks for the same feed", () => {
     const feed = structuredClone(fixture) as MasjidDisplayFeedV1;
-    const dateTimeFormat = vi.spyOn(Intl, "DateTimeFormat");
+    const dateTimeFormat = vi.spyOn(Intl.DateTimeFormat.prototype, "formatToParts");
     try {
       resolvePrayerState(feed, new Date("2026-09-15T18:00:00.000Z"));
-      const initialConstructionCount = dateTimeFormat.mock.calls.length;
-      expect(initialConstructionCount).toBeGreaterThan(0);
+      const initialConversionCount = dateTimeFormat.mock.calls.length;
+      expect(initialConversionCount).toBeGreaterThan(0);
       resolvePrayerState(feed, new Date("2026-09-15T18:00:01.000Z"));
-      expect(dateTimeFormat).toHaveBeenCalledTimes(initialConstructionCount);
+      expect(dateTimeFormat).toHaveBeenCalledTimes(initialConversionCount);
 
       resolvePrayerState(structuredClone(feed), new Date("2026-09-15T18:00:02.000Z"));
-      expect(dateTimeFormat.mock.calls.length).toBeGreaterThan(initialConstructionCount);
+      expect(dateTimeFormat.mock.calls.length).toBeGreaterThan(initialConversionCount);
     } finally {
       dateTimeFormat.mockRestore();
     }

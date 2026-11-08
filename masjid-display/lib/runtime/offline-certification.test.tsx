@@ -11,10 +11,6 @@ import { loadLkg } from "../lkg";
 import { resolveDisplayState } from "../state/resolve-display-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("./use-test-control", () => ({
-  useTestControl: () => ({ active: false }),
-}));
-
 import { useDisplayRuntime } from "./use-display-runtime";
 
 const STORAGE_KEY = "masjid-display-lkg-v1";
@@ -132,7 +128,7 @@ describe("Masjid Display offline/LKG production certification", () => {
 
     for (let index = 0; index < 4; index += 1) {
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(60_000);
+        await vi.advanceTimersByTimeAsync(120_000);
       });
       expect(loadLkg()?.snapshot.snapshotRevision).toBe(valid.snapshotRevision);
     }

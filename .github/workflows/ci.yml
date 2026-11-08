@@ -45,6 +45,8 @@ jobs:
       - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm test
+      - name: Verify production health monitor behavior
+        run: node --test scripts/monitor-production-health.test.mjs
       - name: Typecheck root application
         run: npx tsc --noEmit
       - name: Verify Masjid Display producer/consumer contract

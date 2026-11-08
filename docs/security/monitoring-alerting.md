@@ -70,3 +70,17 @@ The user authorized safe non-destructive test events where supported; no connect
 - After a security-sensitive migration: rerun semantic schema verifier/advisors and review API/Postgres logs.
 - After dependency-lock changes: rerun OSV, production npm audit and SBOM.
 - Quarterly or after an incident: review thresholds, owners, retention assumptions and alert-delivery destinations.
+
+
+## Automated public Web/TV health monitoring — 2026-11-08 candidate
+
+The repository's `.github/workflows/production-health-monitor.yml` schedules a **read-only** check at minutes 7, 22, 37, and 52 of each hour (UTC), supports manual `workflow_dispatch`, and performs one initial check on the merge-to-`main` push that adds or changes the probe. Scheduled GitHub Actions are best-effort and may run late; they are not a guaranteed 15-minute SLA.
+
+- Web: `GET https://donaumoschee.vercel.app/api/health` must return HTTP 200 with JSON `status: "ok"` and `database: "ok"`.
+- TV: `GET https://donaumoschee-tv.vercel.app/api/display-feed` must return HTTP 200 with Feed v1, a fresh forwarded **HTTP Date response header** (at most 15 minutes old), and a prayer-schedule date for **today in the feed's applied timezone**. Feed `generatedAt` is a stable logical source-version identifier, potentially in year 9999, and is deliberately **not** used to measure freshness.
+- Both checks run independently with a 10-second request deadline, a 160-KiB JSON limit, cache bypass, and redirect rejection. Output contains only service labels and generic result reasons — no response bodies, credentials, account data, or admin routes.
+- A failure makes the workflow run **red**; maintainers can review the failed GitHub Actions run. **Actual email/push/pager delivery is not configured or demonstrated by this code.** GitHub notification subscriptions and external paging remain an operational setup/test gate.
+- The check does not call the authenticated prayer cron, manipulate Supabase, publish changes, or check physical-device iOS/Android audio. Use the separate cron HTTP-response, native-delivery and device evidence gates for those paths.
+- No Backup/Recovery work is included. Do not promote this candidate to "active verified monitoring" until the workflow is merged and at least one successful scheduled/manual live run has been inspected.
+
+This monitor is intentionally scoped to reachability and religious-feed freshness. It cannot certify browser rendering, physical TV, real Push delivery, or alert notification delivery.

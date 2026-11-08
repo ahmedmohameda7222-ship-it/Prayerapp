@@ -36,8 +36,6 @@ function vm(
     networkAvailable: true,
     usingLkg: false,
     prayerScheduleStale: false,
-    testMode: false,
-    testPayload: null,
     publicAppUrl: feed.mosque.publicAppUrl,
     ...overrides,
   };

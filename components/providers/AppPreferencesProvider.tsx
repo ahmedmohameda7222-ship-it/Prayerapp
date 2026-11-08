@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/lib/i18n/context";
 import { usePublicAuth } from "@/components/providers/AuthProvider";
 import type { AdhanPrayer } from "@/lib/adhan-audio";
@@ -72,6 +72,10 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
   const [pushStatus, setPushStatus] = useState<PushStatus>("checking");
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
   const [busy, setBusy] = useState(false);
+  // A foreground recheck must not overwrite a manual enable/disable result.
+  const latestPushCheck = useRef(0);
+  const inFlightPushChecks = useRef(new Set<Promise<void>>());
+  const changingPushSubscription = useRef(false);
 
   const saveStored = useCallback((next: StoredPreferences) => {
     setStored(next);
@@ -107,10 +111,10 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
     localStorage.setItem("deggendorf-app-preferences-v1", "{}");
     let active = true;
 
-    const initialize = async () => {
+    const initialize = async (checkId: number) => {
       const preferences = readStoredPreferences();
       await Promise.resolve();
-      if (!active) return;
+      if (!active || checkId !== latestPushCheck.current) return;
       saveStored(preferences);
 
       if (isIos() && !isStandalone()) {
@@ -142,35 +146,61 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
 
       const registration = await navigator.serviceWorker.getRegistration("/");
       const subscription = await registration?.pushManager.getSubscription();
-      if (!active) return;
+      if (!active || checkId !== latestPushCheck.current) return;
       if (!subscription) {
         setPushStatus("disabled");
         return;
       }
       try {
         await syncSubscription(subscription, preferences);
-        if (active) setPushStatus("enabled");
+        if (active && checkId === latestPushCheck.current) setPushStatus("enabled");
       } catch {
-        if (active) setPushStatus("error");
+        if (active && checkId === latestPushCheck.current) setPushStatus("error");
       }
     };
-    void initialize().catch((error) => {
-      // Service Worker / PushManager lookups can reject on restricted browsers.
-      // Surface a recoverable state instead of leaving Push stuck on "checking".
-      if (!active) return;
-      console.warn("Push notification initialization failed", error);
-      setPushStatus("error");
-    });
-    return () => { active = false; };
+    const refresh = () => {
+      // The manual operation owns the push state until it settles.
+      if (changingPushSubscription.current) return;
+      const checkId = ++latestPushCheck.current;
+      const check = initialize(checkId);
+      inFlightPushChecks.current.add(check);
+      void check.catch((error) => {
+        // A Service Worker / PushManager lookup may fail after resume.
+        // A late failure from an older check must not override newer state.
+        if (!active || checkId !== latestPushCheck.current) return;
+        console.warn("Push notification initialization failed", error);
+        setPushStatus("error");
+      }).finally(() => {
+        inFlightPushChecks.current.delete(check);
+      });
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      // BFCache restores do not remount React, so recheck external changes.
+      if (event.persisted) refresh();
+    };
+    refresh();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pageshow", onPageShow);
+    };
   }, [authLoading, saveStored, syncSubscription]);
 
   const enableNotifications = useCallback(async () => {
-    if (busy || authLoading) return false;
+    if (busy || authLoading || changingPushSubscription.current) return false;
     const preferences = stored || readStoredPreferences();
     if (!stored) saveStored(preferences);
 
+    changingPushSubscription.current = true;
+    latestPushCheck.current += 1;
     setBusy(true);
     try {
+      // Do not await before requestPermission: it needs the user's activation.
       if (isIos() && !isStandalone()) {
         setPushStatus("ios-install-required");
         return false;
@@ -210,14 +240,20 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
       setPushStatus("error");
       return false;
     } finally {
+      changingPushSubscription.current = false;
       setBusy(false);
     }
   }, [authLoading, busy, saveStored, stored, syncSubscription]);
 
   const disableNotifications = useCallback(async () => {
-    if (!stored || busy || !isSupported()) return;
+    if (!stored || busy || changingPushSubscription.current || !isSupported()) return;
+    changingPushSubscription.current = true;
+    latestPushCheck.current += 1;
     setBusy(true);
     try {
+      // A pending resume POST could re-enable the server row after DELETE.
+      // Let all already-started checks settle before disabling the endpoint.
+      await Promise.allSettled([...inFlightPushChecks.current]);
       const registration = await navigator.serviceWorker.getRegistration("/");
       const subscription = await registration?.pushManager.getSubscription();
       if (subscription) {
@@ -235,6 +271,7 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
       console.warn("Push notification disable failed", error);
       setPushStatus("error");
     } finally {
+      changingPushSubscription.current = false;
       setBusy(false);
     }
   }, [busy, stored]);

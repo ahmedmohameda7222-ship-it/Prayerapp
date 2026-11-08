@@ -19,6 +19,7 @@ export default function AccountPage() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   async function signOut() {
     if (busy) return;
@@ -46,7 +47,7 @@ export default function AccountPage() {
   }
 
   async function deleteAccount() {
-    if (!session?.access_token || busy || !window.confirm(t("phase1.deleteConfirm"))) return;
+    if (!session?.access_token || busy || !confirmDeleteOpen) return;
     setBusy(true);
     setError("");
     try {
@@ -55,11 +56,38 @@ export default function AccountPage() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!response.ok) throw new Error("Delete failed");
-      const client = createClient();
-      await client?.auth.signOut({ scope: "local" });
+
+      setConfirmDeleteOpen(false);
+
+      // The server has removed account-associated subscriptions. Remove the
+      // browser's own subscription as well so a later session cannot reuse it.
+      try {
+        if ("serviceWorker" in navigator) {
+          const registration = await navigator.serviceWorker.getRegistration("/");
+          const subscription = await registration?.pushManager.getSubscription();
+          await subscription?.unsubscribe();
+        }
+      } catch (cleanupError) {
+        console.warn("Browser push cleanup after account deletion failed", cleanupError);
+      }
+      try {
+        localStorage.removeItem("masjid-el-rahman-push-v1");
+      } catch {
+        // Storage availability must not prevent leaving a deleted account.
+      }
+
+      // Account deletion has succeeded on the server. Local sign-out errors
+      // must not leave the user stuck on the account screen.
+      try {
+        const client = createClient();
+        await client?.auth.signOut({ scope: "local" });
+      } catch (signOutError) {
+        console.warn("Local sign-out after account deletion failed", signOutError);
+      }
       router.replace("/");
       router.refresh();
     } catch {
+      setConfirmDeleteOpen(false);
       setError(t("phase1.authError"));
     } finally {
       setBusy(false);
@@ -120,10 +148,55 @@ export default function AccountPage() {
             </Button>
 
             <div className="border-t border-[var(--app-divider)] pt-4">
-              <Button disabled={busy} variant="ghost" className="w-full border-red-200 text-red-800" onClick={() => void deleteAccount()}>
+              <Button disabled={busy} variant="ghost" className="w-full border-red-200 text-red-800" onClick={() => { setError(""); setConfirmDeleteOpen(true); }}>
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
                 {t("phase1.deleteAccount")}
               </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {confirmDeleteOpen ? (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+            <div
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="account-delete-title"
+              aria-describedby="account-delete-description"
+              className="w-full max-w-md rounded-[20px] border border-[var(--app-divider)] bg-[var(--app-surface)] p-6 shadow-2xl"
+              onKeyDown={(event) => {
+                if (event.key === "Escape" && !busy) {
+                  event.preventDefault();
+                  setConfirmDeleteOpen(false);
+                } else if (event.key === "Tab") {
+                  const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
+                  const first = buttons[0];
+                  const last = buttons[buttons.length - 1];
+                  if (first && last && event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                  } else if (first && last && !event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                  }
+                }
+              }}
+            >
+              <h2 id="account-delete-title" className="text-lg font-bold text-[var(--app-text)]">
+                {t("phase1.deleteAccount")}
+              </h2>
+              <p id="account-delete-description" className="mt-3 text-sm leading-6 text-[var(--app-text-secondary)]">
+                {t("phase1.deleteConfirm")}
+              </p>
+              <div className="mt-6 flex flex-wrap justify-end gap-3">
+                <Button type="button" autoFocus variant="ghost" disabled={busy} onClick={() => setConfirmDeleteOpen(false)}>
+                  {t("common.cancel")}
+                </Button>
+                <Button type="button" disabled={busy} className="bg-red-700 text-white" onClick={() => void deleteAccount()}>
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  {t("phase1.deleteAccount")}
+                </Button>
+              </div>
             </div>
           </div>
         ) : null}

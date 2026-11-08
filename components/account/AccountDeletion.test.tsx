@@ -90,11 +90,11 @@ describe("self-service account deletion", () => {
     renderAccount();
 
     const trigger = screen.getByRole("button", { name: "Delete account" });
-    let dialog = await openDeletionDialog(user);
+    const dialog = await openDeletionDialog(user);
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(trigger).toHaveFocus());
 
-    dialog = await openDeletionDialog(user);
+    await openDeletionDialog(user);
     await user.keyboard("{Escape}");
     await waitFor(() => expect(trigger).toHaveFocus());
     expect(mocks.fetch).not.toHaveBeenCalled();

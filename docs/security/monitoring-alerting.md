@@ -74,7 +74,7 @@ The user authorized safe non-destructive test events where supported; no connect
 
 ## Automated public Web/TV health monitoring — 2026-11-08 candidate
 
-The repository's `.github/workflows/production-health-monitor.yml` schedules a **read-only** check at minutes 7, 22, 37, and 52 of each hour (UTC), and supports manual `workflow_dispatch`. Scheduled GitHub Actions are best-effort and may run late; they are not a guaranteed 15-minute SLA.
+The repository's `.github/workflows/production-health-monitor.yml` schedules a **read-only** check at minutes 7, 22, 37, and 52 of each hour (UTC), supports manual `workflow_dispatch`, and performs one initial check on the merge-to-`main` push that adds or changes the probe. Scheduled GitHub Actions are best-effort and may run late; they are not a guaranteed 15-minute SLA.
 
 - Web: `GET https://donaumoschee.vercel.app/api/health` must return HTTP 200 with JSON `status: "ok"` and `database: "ok"`.
 - TV: `GET https://donaumoschee-tv.vercel.app/api/display-feed` must return HTTP 200 with Feed v1, a recently generated timestamp (at most 15 minutes old), and a prayer-schedule date for **today in the feed's applied timezone**.

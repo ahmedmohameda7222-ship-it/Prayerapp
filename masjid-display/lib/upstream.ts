@@ -1,10 +1,7 @@
-export type PrayerappUpstreamPath =
-  | "/api/public/masjid-display"
-  | "/api/public/masjid-display-test-control";
+export type PrayerappUpstreamPath = "/api/public/masjid-display";
 
 const ALLOWED_PATHS = new Set<PrayerappUpstreamPath>([
   "/api/public/masjid-display",
-  "/api/public/masjid-display-test-control",
 ]);
 
 function configuredOrigin(): string {

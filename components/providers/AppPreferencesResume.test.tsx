@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { AppPreferencesProvider, useAppPreferences } from "./AppPreferencesProvider";
 
 const mocks = vi.hoisted(() => ({
@@ -25,8 +25,11 @@ const subscription = {
 };
 
 function Status() {
-  const { pushStatus, permission } = useAppPreferences();
-  return <output data-testid="push-status">{pushStatus}:{permission}</output>;
+  const { pushStatus, permission, disableNotifications } = useAppPreferences();
+  return <>
+    <output data-testid="push-status">{pushStatus}:{permission}</output>
+    <button type="button" onClick={() => void disableNotifications()}>Disable</button>
+  </>;
 }
 
 function renderStatus() {
@@ -115,6 +118,60 @@ describe("PWA Push state after returning from background or iOS Home Screen", ()
     await waitFor(() => expect(screen.getByTestId("push-status")).toHaveTextContent("enabled:granted"));
     expect(mocks.requestPermission).not.toHaveBeenCalled();
     expect(mocks.fetch).toHaveBeenCalledWith("/api/push/subscriptions", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("waits for an in-flight resume POST before server disable, keeping notifications disabled", async () => {
+    const unsubscribe = vi.fn().mockResolvedValue(true);
+    mocks.getSubscription.mockResolvedValue({ ...subscription, unsubscribe });
+    renderStatus();
+    await waitFor(() => expect(screen.getByTestId("push-status")).toHaveTextContent("enabled:granted"));
+
+    mocks.fetch.mockClear();
+    let resolveSync!: (result: { ok: boolean }) => void;
+    const pendingSync = new Promise<{ ok: boolean }>((resolve) => { resolveSync = resolve; });
+    mocks.fetch.mockImplementation((_url, init) => (
+      init?.method === "POST" ? pendingSync : Promise.resolve({ ok: true })
+    ));
+
+    document.dispatchEvent(new Event("visibilitychange"));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(
+      "/api/push/subscriptions", expect.objectContaining({ method: "POST" }),
+    ));
+    fireEvent.click(screen.getByRole("button", { name: "Disable" }));
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+    // A pending POST must finish before DELETE or it can re-enable the server's subscription.
+    expect(mocks.fetch.mock.calls.map(([, init]) => init?.method)).toEqual(["POST"]);
+    await act(async () => { resolveSync({ ok: true }); await pendingSync; });
+
+    await waitFor(() => expect(screen.getByTestId("push-status")).toHaveTextContent("disabled:granted"));
+    expect(mocks.fetch.mock.calls.map(([, init]) => init?.method)).toEqual(["POST", "DELETE"]);
+    expect(unsubscribe).toHaveBeenCalledOnce();
+  });
+
+  it("does not start a background subscription sync during a manual disable", async () => {
+    const unsubscribe = vi.fn().mockResolvedValue(true);
+    mocks.getSubscription.mockResolvedValue({ ...subscription, unsubscribe });
+    renderStatus();
+    await waitFor(() => expect(screen.getByTestId("push-status")).toHaveTextContent("enabled:granted"));
+
+    mocks.fetch.mockClear();
+    let resolveDelete!: (result: { ok: boolean }) => void;
+    const pendingDelete = new Promise<{ ok: boolean }>((resolve) => { resolveDelete = resolve; });
+    mocks.fetch.mockImplementation((_url, init) => (
+      init?.method === "DELETE" ? pendingDelete : Promise.resolve({ ok: true })
+    ));
+    fireEvent.click(screen.getByRole("button", { name: "Disable" }));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(
+      "/api/push/subscriptions", expect.objectContaining({ method: "DELETE" }),
+    ));
+    document.dispatchEvent(new Event("visibilitychange"));
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(mocks.fetch.mock.calls.map(([, init]) => init?.method)).toEqual(["DELETE"]);
+
+    await act(async () => { resolveDelete({ ok: true }); await pendingDelete; });
+    await waitFor(() => expect(screen.getByTestId("push-status")).toHaveTextContent("disabled:granted"));
+    expect(unsubscribe).toHaveBeenCalledOnce();
   });
 
   it("does not refresh permission while hidden until the app becomes visible", async () => {

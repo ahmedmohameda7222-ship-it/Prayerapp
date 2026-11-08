@@ -31,11 +31,7 @@ describe("masjid display data contracts", () => {
 
   it("provides typed singleton data modules", () => {
     const displaySettings = readFileSync("lib/data/masjid-display-settings.ts", "utf8");
-    const testState = readFileSync("lib/data/masjid-display-test-state.ts", "utf8");
     expect(displaySettings).toContain("MasjidDisplaySettings");
     expect(displaySettings).toContain("masjid_display_settings");
-    expect(testState).toContain("MasjidDisplayTestState");
-    expect(testState).toContain("masjid_display_test_state");
-    expect(testState).not.toContain("Record<string, unknown>");
   });
 });

@@ -145,3 +145,24 @@ test('treats network exceptions as failures and still checks the next service', 
   const r = await checkProductionHealth({fetchImpl:async (_url) => {calls++; if(calls===1) throw new Error('secret failure'); return json(feed());},now});
   assert.equal(r[0].ok,false); assert.equal(r[1].ok,true); assert.ok(!JSON.stringify(r).includes('secret failure'));
 });
+
+test('rejects invalid optional Friday extra without requiring any extra Jumuah rows', async () => {
+  const baseline = feed();
+  const {fetchImpl: validFetch} = mockFetch(undefined, json(baseline));
+  assert.equal((await checkProductionHealth({fetchImpl: validFetch, now}))[1].ok, true);
+
+  const invalid = feed();
+  invalid.prayers.additionalJumuah = [{
+    id: 'extra-1', date: '2026-11-13', prayerTime: '25:99',
+  }];
+  const {fetchImpl} = mockFetch(undefined, json(invalid));
+  const result = await checkProductionHealth({fetchImpl, now});
+  assert.equal(result[1].ok, false);
+});
+
+test('rejects duplicate prayer schedule dates that the TV Feed v1 consumer refuses', async () => {
+  const invalid = feed();
+  invalid.prayers.schedule.push({...invalid.prayers.schedule[0]});
+  const {fetchImpl} = mockFetch(undefined, json(invalid));
+  assert.equal((await checkProductionHealth({fetchImpl, now}))[1].ok, false);
+});

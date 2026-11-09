@@ -72,7 +72,7 @@ function validationErrorKey(error: AdditionalJumuahValidationError) {
 
 function isPrimaryServiceId(id: string) { return id.startsWith("primary:"); }
 
-async function validateAgainstPrimary(client: ServerClient, data: ParsedJumuah, editingId?: string) {
+async function validateAgainstPrimary(client: ServerClient, data: Pick<ParsedJumuah, "date" | "prayerTime">, editingId?: string) {
   const [{ data: primary, error: primaryError }, { data: existing, error: existingError }] = await Promise.all([
     client.from("prayer_times").select("date,dhuhr").eq("date", data.date).maybeSingle(),
     client.from("jumuah_times").select("id,prayer_time").eq("date", data.date),
@@ -147,6 +147,18 @@ export async function togglePublishJumuahAction(token: string, id: string, publi
   catch { return { success: false, error: "admin.errors.invalidInput" }; }
   return runAuditedAction(token, { action: "jumuah.publish", entityType: "jumuah_service", entityId, metadata: { published: nextPublished } }, async () => {
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
+    if (nextPublished) {
+      // Legacy extras may have become invalid after the authoritative Dhuhr changed.
+      // Validate at publication time so Admin cannot announce a Web/TV-hidden service.
+      const { data: existing, error: lookupError } = await client
+        .from("jumuah_times").select("date,prayer_time").eq("id", entityId).maybeSingle();
+      if (lookupError || !existing) return { success: false, error: "admin.errors.toggleFailed" };
+      const validationError = await validateAgainstPrimary(client, {
+        date: String(existing.date),
+        prayerTime: String(existing.prayer_time),
+      }, entityId);
+      if (validationError) return { success: false, error: validationError };
+    }
     const { data: result, error } = await client.from("jumuah_times").update({ published: nextPublished }).eq("id", entityId).select().single();
     if (error || !result) return { success: false, error: "admin.errors.toggleFailed" };
     invalidateJumuahPublicCache();

@@ -41,7 +41,8 @@ describe("Friday Admin V2 contract", () => {
   it("persists optional khateeb metadata compatibly with the legacy NOT NULL column", () => {
     const actions = source("app/admin/jumuah/actions.ts");
 
-    expect(actions).toContain('khateeb_name: data.khateebName?.trim() || ""');
+    expect(actions).toContain('khateeb_name: data.khateebName');
+    expect(actions).toContain('khateebName: parseAdminText(data.khateebName ?? "", { field: "khateebName", max: 160 })');
     expect(actions).toContain("khutbah_time: null");
   });
 
@@ -52,7 +53,7 @@ describe("Friday Admin V2 contract", () => {
     expect(page).toContain("primaryTime={selectedPrayer.dhuhr}");
     expect(table).toContain("primaryTime: string");
     expect(table).toContain("legacyInvalid");
-    expect(table).toContain('data-legacy-invalid="true"');
+    expect(table).toContain('data-legacy-invalid={legacyInvalid ? "true" : undefined}');
     expect(table).toContain("onCorrectLegacy");
     expect(table).not.toContain("item.khutbahTime");
   });

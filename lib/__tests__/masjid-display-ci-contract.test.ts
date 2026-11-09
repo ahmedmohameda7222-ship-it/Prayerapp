@@ -23,6 +23,23 @@ describe("root CI Masjid Display release contract", () => {
     expect(workflow).toContain(") values (\n            'legacy-test@local.invalid'");
   });
 
+  it("runs live Web/TV integration when Friday Admin and primary scheduling logic change", () => {
+    const workflow = readFileSync(".github/workflows/masjid-display-verify.yml", "utf8");
+    const eventTriggers = workflow.split("\npermissions:")[0];
+    for (const changedPath of [
+      "app/admin/jumuah/**",
+      "app/friday/**",
+      "components/friday/**",
+      "lib/friday.ts",
+      "lib/admin-jumuah-validation.ts",
+    ]) {
+      const quotedPath = JSON.stringify(changedPath);
+      expect(eventTriggers.split(quotedPath).length - 1, changedPath).toBe(2);
+    }
+    expect(workflow).toContain("verify-two-app-integration:");
+    expect(workflow).toContain('TWO_APP_INTEGRATION: "1"');
+  });
+
   it("enforces root, TV, and cross-project verification without replacing existing root gates", () => {
     const workflow = readFileSync(workflowPath, "utf8");
 

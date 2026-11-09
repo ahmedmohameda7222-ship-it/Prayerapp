@@ -7,6 +7,9 @@ on:
       - feat/masjid-display
     paths:
       - "masjid-display/**"
+      - "app/admin/jumuah/**"
+      - "lib/friday.ts"
+      - "lib/admin-jumuah-validation.ts"
       - "app/api/public/masjid-display/**"
       - "lib/masjid-display/**"
       - "lib/data/**"
@@ -19,6 +22,9 @@ on:
   pull_request:
     paths:
       - "masjid-display/**"
+      - "app/admin/jumuah/**"
+      - "lib/friday.ts"
+      - "lib/admin-jumuah-validation.ts"
       - "app/api/public/masjid-display/**"
       - "lib/masjid-display/**"
       - "lib/data/**"

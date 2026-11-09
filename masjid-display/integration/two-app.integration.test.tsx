@@ -2,6 +2,9 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DisplayShell } from "../components/DisplayShell";
 import { loadLkg } from "../lib/lkg";
+import { resolveFridayState } from "../lib/state/friday-state";
+import { isFridayIso, localDateIso, zonedDateTime } from "../lib/time";
+import { validateFeedV1 } from "../lib/validate-feed";
 import { useDisplayRuntime } from "../lib/runtime/use-display-runtime";
 
 const integrationDescribe =
@@ -97,6 +100,34 @@ integrationDescribe("live Prayerapp + Masjid Display integration", () => {
       expect(conditional.status).toBe(304);
       expect(conditional.headers.get("etag")).toBe(etag);
       expect(await conditional.text()).toBe("");
+    },
+    15_000,
+  );
+
+  it(
+    "derives Primary Friday from Dhuhr when no optional extra Jumuah records exist",
+    async () => {
+      const response = await nativeFetch(`${TV_BASE_URL}/api/display-feed`);
+      expect(response.status).toBe(200);
+
+      const feed = validateFeedV1(await response.json());
+      expect(feed.prayers.additionalJumuah).toHaveLength(0);
+
+      const today = localDateIso(new Date(), feed.timezone);
+      const friday = feed.prayers.schedule.find(
+        (day) => day.date >= today && isFridayIso(day.date),
+      );
+      expect(friday).toBeDefined();
+      if (!friday) throw new Error("Integration seed must cover the next Friday");
+
+      const primaryInstant = zonedDateTime(friday.date, friday.dhuhr, feed.timezone);
+      expect(
+        resolveFridayState(feed, new Date(primaryInstant.getTime() - 30 * 60_000)),
+      ).toEqual({
+        kind: "FRIDAY_MODE",
+        serviceId: `primary:${friday.date}`,
+        serviceIndex: 0,
+      });
     },
     15_000,
   );

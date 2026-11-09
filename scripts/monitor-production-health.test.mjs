@@ -5,7 +5,29 @@ import { checkProductionHealth } from './monitor-production-health.mjs';
 const now = new Date('2026-11-08T12:00:00Z');
 const today = '2026-11-08';
 function feed(extra = {}) {
-  return { schemaVersion: 1, timezone: 'Europe/Berlin', generatedAt: now.toISOString(), prayers: { schedule: [{date: today}] }, ...extra };
+  const delays = {fajr:20, dhuhr:15, asr:15, maghrib:5, isha:10};
+  const durations = {fajr:10, dhuhr:10, asr:10, maghrib:10, isha:10};
+  return {
+    schemaVersion: 1,
+    snapshotRevision: 'a'.repeat(64),
+    timezone: 'Europe/Berlin',
+    generatedAt: now.toISOString(),
+    mosque: {
+      nameAr: 'مسجد', nameDe: 'Moschee', address: 'Deggendorf',
+      publicAppUrl: 'https://donaumoschee.vercel.app',
+    },
+    prayers: {
+      schedule: [{
+        date: today, fajr:'05:30', sunrise:'07:10', dhuhr:'12:10',
+        asr:'14:45', maghrib:'16:55', isha:'18:25', maghribProgram:null,
+      }],
+      iqamaDelays: delays,
+      additionalJumuah: [],
+    },
+    displaySettings: {prayerDurations: durations, azkarPlaylistIds: []},
+    azkar: [], announcements: [], events: [], campaigns: [],
+    ...extra,
+  };
 }
 function json(value, status = 200, init = {}) {
   return new Response(JSON.stringify(value), { status, headers: {'content-type':'application/json', date: now.toUTCString(), ...init} });
@@ -50,6 +72,35 @@ test('rejects unsupported TV schema', async () => {
 test('rejects a missing current-day prayer schedule', async () => {
   const {fetchImpl} = mockFetch(undefined,json(feed({prayers:{schedule:[{date:'2026-11-07'}]}})));
   assert.equal((await checkProductionHealth({fetchImpl,now}))[1].ok,false);
+});
+
+
+
+test('rejects a nominally dated current-day prayer row that is missing required times', async () => {
+  const payload = feed();
+  payload.prayers.schedule = [{date: today}];
+  const {fetchImpl} = mockFetch(undefined, json(payload));
+  assert.equal((await checkProductionHealth({fetchImpl, now}))[1].ok, false);
+});
+
+test('rejects an invalid required current-day prayer clock value', async () => {
+  const payload = feed();
+  payload.prayers.schedule[0].fajr = '24:99';
+  const {fetchImpl} = mockFetch(undefined, json(payload));
+  assert.equal((await checkProductionHealth({fetchImpl, now}))[1].ok, false);
+});
+
+test('rejects a missing or invalid Iqama delay for the daily prayers', async () => {
+  const payload = feed();
+  payload.prayers.iqamaDelays.maghrib = undefined;
+  const {fetchImpl} = mockFetch(undefined, json(payload));
+  assert.equal((await checkProductionHealth({fetchImpl, now}))[1].ok, false);
+});
+
+test('rejects a feed missing mandatory TV display settings and content arrays', async () => {
+  const payload = feed({displaySettings: null, events: null});
+  const {fetchImpl} = mockFetch(undefined, json(payload));
+  assert.equal((await checkProductionHealth({fetchImpl, now}))[1].ok, false);
 });
 
 test('accepts a stable source-version generatedAt when the response Date is fresh', async () => {

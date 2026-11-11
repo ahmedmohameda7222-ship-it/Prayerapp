@@ -69,6 +69,25 @@ function validPrayerDay(day) {
     && Boolean(validMaghribProgram(day.maghribProgram));
 }
 
+function validOptionalFridayServices(services) {
+  if (!Array.isArray(services)) return false;
+  const seenIds = new Set();
+  for (const service of services) {
+    if (!service || typeof service !== 'object' || Array.isArray(service)) return false;
+    const keys = Object.keys(service);
+    if (keys.length !== 3 || !['id', 'date', 'prayerTime'].every(key => keys.includes(key))) return false;
+    if (typeof service.id !== 'string' || service.id.trim().length === 0 || seenIds.has(service.id)) return false;
+    if (!validDate(service.date) || typeof service.prayerTime !== 'string' || !CLOCK_HH_MM.test(service.prayerTime)) return false;
+    seenIds.add(service.id);
+  }
+  // No additional Friday services is normal; Primary always comes from Dhuhr.
+  return true;
+}
+
+function ascendingUniqueDays(schedule) {
+  return schedule.every((day, index) => index === 0 || day.date > schedule[index - 1].date);
+}
+
 function validFeedCore(value) {
   // These are the core fields the TV's Feed v1 consumer requires for rendering.
   // The root producer remains the authority for the full published DTO contract.
@@ -82,7 +101,8 @@ function validFeedCore(value) {
     && Array.isArray(prayers?.schedule)
     && prayers.schedule.length > 0
     && prayers.schedule.every(validPrayerDay)
-    && Array.isArray(prayers.additionalJumuah)
+    && ascendingUniqueDays(prayers.schedule)
+    && validOptionalFridayServices(prayers.additionalJumuah)
     && validBoundedNumbers(prayers.iqamaDelays, PRAYER_NAMES, 0, 180)
     && validBoundedNumbers(displaySettings?.prayerDurations, PRAYER_NAMES, 2, 120)
     && Array.isArray(displaySettings?.azkarPlaylistIds)

@@ -31,7 +31,7 @@ describe("Prayer Engine full-year seasonal and DST regression", () => {
       const row = calculatePrayerTimes(date, validSettings);
       expect(row.date).toBe(date);
       const times = KEYS.map((key) => {
-        expect(row[key], `${date} ${key}`).toMatch(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/);
+        expect(row[key], `${date} ${key}`).toMatch(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
         return minuteOfDay(row[key]);
       });
       for (let index = 1; index < times.length; index += 1) {

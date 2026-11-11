@@ -305,6 +305,29 @@ jobs:
             now()
           from bounds,
             generate_series(today - 1, today + 35, interval '1 day') as day;
+
+          -- Local CI fixture only: the nearest Friday keeps zero extras;
+          -- a later Friday proves two Admin-managed extra service slots make
+          -- it through the real Prayerapp producer and Masjid Display proxy.
+          with later_friday as (
+            select (now() at time zone 'Europe/Berlin')::date
+              + ((5 - extract(dow from (now() at time zone 'Europe/Berlin')::date)::int + 7) % 7)
+              + 7 as service_date
+          )
+          insert into public.jumuah_times (
+            date, prayer_time, location_name, location_address,
+            language, published, updated_at
+          )
+          select
+            later_friday.service_date,
+            extra.prayer_time,
+            'Integration Mosque',
+            'Integrationstraße 1',
+            'de',
+            true,
+            now()
+          from later_friday
+          cross join (values ('14:00'), ('15:00')) as extra(prayer_time);
           SQL
       - name: Start Prayerapp and Masjid Display
         run: |

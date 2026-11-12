@@ -26,7 +26,7 @@ function browserResponse(response: Response): Response {
 }
 
 function createWorker(fetchImpl: (request: Request) => Promise<Response>) {
-  const listeners = new Map<string, (event: any) => void>();
+  const listeners = new Map<string, (event: unknown) => void>();
   const stores = new Map<string, Map<string, Response>>();
   const key = (request: string | Request) => new URL(typeof request === "string" ? request : request.url, origin).href;
   const caches = {
@@ -58,7 +58,7 @@ function createWorker(fetchImpl: (request: Request) => Promise<Response>) {
   const worker = {
     location: { origin }, clients: { claim: async () => undefined },
     skipWaiting: async () => undefined,
-    addEventListener: (name: string, handler: (event: any) => void) => listeners.set(name, handler),
+    addEventListener: (name: string, handler: (event: unknown) => void) => listeners.set(name, handler),
   };
   runInNewContext(readFileSync(join(process.cwd(), "public/sw.js"), "utf8"), {
     self: worker, caches, fetch: fetchImpl,

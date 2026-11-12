@@ -15,7 +15,7 @@ const iqama = { fajr: 20, dhuhr: 10, asr: 10, maghrib: 5, isha: 10 };
 describe("offline prayer snapshot public data boundary", () => {
   it("retains only the published daily times and approved public iqama values", () => {
     const result = buildPublicOfflineSchedule({
-      rows: [day, { ...day, id: "unpublished", date: "2026-11-14", published: false }],
+      rows: [day, { ...day, id: "unpublished", date: "2026-11-14", published: false }, { ...day, id: "qa-mock", date: "2026-11-15", note: "SUPABASE_QA_MOCK" }],
       timezone: "Europe/Berlin", iqamaDelays: iqama,
       fetchedAt: "2026-11-12T15:00:00.000Z",
     });
@@ -31,6 +31,7 @@ describe("offline prayer snapshot public data boundary", () => {
     });
     expect(JSON.stringify(result)).not.toContain("private-database-row-id");
     expect(JSON.stringify(result)).not.toContain("unpublished");
+    expect(JSON.stringify(result)).not.toContain("qa-mock");
   });
 
   it("rejects duplicated, unsorted or corrupt published prayer dates instead of caching incorrect prayers", () => {

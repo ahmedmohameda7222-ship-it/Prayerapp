@@ -266,10 +266,14 @@ self.addEventListener("fetch", (event) => {
         await storeResponse(PAGE_CACHE, request, response, 40);
         return response;
       } catch {
+        const offlineHome = await caches.match(OFFLINE_URL);
+        // The previous SSR homepage only embedded a 30-day snapshot and may
+        // be outdated. On disconnected app launch prefer the annual offline
+        // dashboard over a cached stale root HTML response.
+        if (url.pathname === "/" && offlineHome) return offlineHome;
         return (
           (await caches.match(request)) ||
-          (url.pathname === "/" ? await caches.match("/") : undefined) ||
-          (await caches.match(OFFLINE_URL)) ||
+          offlineHome ||
           new Response("You are offline", { status: 503, headers: { "Content-Type": "text/plain" } })
         );
       }

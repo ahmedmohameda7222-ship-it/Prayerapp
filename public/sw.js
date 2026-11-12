@@ -152,8 +152,8 @@ async function networkFirstAsset(request, target) {
 
 const OFFLINE_PRAYER_NAMES = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"];
 const OFFLINE_IQAMA_NAMES = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
-const OFFLINE_CLOCK = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;
-const OFFLINE_DATE = /^\\d{4}-\\d{2}-\\d{2}$/;
+const OFFLINE_CLOCK = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const OFFLINE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function validOfflinePrayerSnapshot(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)

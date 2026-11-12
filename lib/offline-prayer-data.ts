@@ -72,3 +72,28 @@ export function buildPublicOfflineSchedule({
     rows: publicRows,
   };
 }
+
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The existing published-snapshot RPC accepts no more than 93 days per range. */
+export function splitOfflinePrayerRange(
+  today: string,
+  daysAfter = 365,
+): Array<{ from: string; through: string }> {
+  if (!validDate(today) || !Number.isInteger(daysAfter) || daysAfter < 0 || daysAfter > 365) {
+    throw new Error("Invalid offline prayer range");
+  }
+
+  const midnightUtc = Date.parse(today + "T00:00:00Z");
+  const last = midnightUtc + daysAfter * DAY_MS;
+  const result: Array<{ from: string; through: string }> = [];
+  for (let first = midnightUtc - DAY_MS; first <= last; first += 90 * DAY_MS) {
+    const through = Math.min(first + 89 * DAY_MS, last);
+    result.push({
+      from: new Date(first).toISOString().slice(0, 10),
+      through: new Date(through).toISOString().slice(0, 10),
+    });
+  }
+  return result;
+}

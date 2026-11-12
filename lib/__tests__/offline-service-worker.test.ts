@@ -57,7 +57,7 @@ function createWorker(fetchImpl: (request: Request) => Promise<Response>) {
   };
   const worker = {
     location: { origin }, clients: { claim: async () => undefined },
-    skipWaiting: async () => undefined,
+    skipWaiting: vi.fn(async () => undefined),
     addEventListener: (name: string, handler: (event: unknown) => void) => listeners.set(name, handler),
   };
   runInNewContext(readFileSync(join(process.cwd(), "public/sw.js"), "utf8"), {
@@ -84,10 +84,25 @@ function createWorker(fetchImpl: (request: Request) => Promise<Response>) {
       headers: { "content-type": "text/html" },
     }));
   }
-  return { request, caches, stores, seedOfflinePage };
+  async function install() {
+    let completion: Promise<unknown> | undefined;
+    listeners.get("install")?.({ waitUntil: (promise: Promise<unknown>) => { completion = promise; } });
+    if (!completion) throw new Error("Missing install listener");
+    await completion;
+  }
+  return { request, caches, stores, seedOfflinePage, install, skipWaiting: worker.skipWaiting };
 }
 
 describe("public PWA and Android TWA offline read-only cache", () => {
+  it("refuses worker activation when any essential offline dashboard asset cannot be precached", async () => {
+    const worker = createWorker(async (request) => {
+      if (request.url.endsWith("/offline.css")) throw new Error("critical stylesheet unavailable");
+      return browserResponse(new Response("ready", { status: 200 }));
+    });
+    await expect(worker.install()).rejects.toThrow("critical stylesheet unavailable");
+    expect(worker.skipWaiting).not.toHaveBeenCalled();
+  });
+
   it("stores a verified public prayer schedule online then serves it after network loss", async () => {
     let online = true;
     const network = vi.fn(async () => {

@@ -14,4 +14,8 @@
     <string name="prayer_asr">العصر</string>
     <string name="prayer_maghrib">المغرب</string>
     <string name="prayer_isha">العشاء</string>
+    <string name="offline_first_launch_title">يلزم الاتصال بالإنترنت</string>
+    <string name="offline_first_launch_body">افتح التطبيق مرة واحدة مع الإنترنت لحفظ مواقيت المسجد. بعدها يمكنك عرض المواقيت المحفوظة بدون اتصال.</string>
+    <string name="offline_first_launch_retry">إعادة المحاولة</string>
+    <string name="offline_first_launch_still_offline">ما زلت غير متصل. فعّل الواي فاي أو بيانات الهاتف وأعد المحاولة.</string>
 </resources>

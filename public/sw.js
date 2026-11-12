@@ -1,13 +1,17 @@
 const CACHE_PREFIX = "deggendorf-prayer";
-const VERSION = "v18";
+const VERSION = "v19";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${VERSION}`;
 const IMAGE_CACHE = `${CACHE_PREFIX}-images-${VERSION}`;
 const PAGE_CACHE = `${CACHE_PREFIX}-pages-${VERSION}`;
-const OFFLINE_URL = "/offline";
+const DATA_CACHE = `${CACHE_PREFIX}-offline-prayers-${VERSION}`;
+const OFFLINE_URL = "/offline.html";
+const OFFLINE_PRAYER_API = "/api/offline/prayer-schedule";
+const CRITICAL_OFFLINE_ASSETS = [OFFLINE_URL, "/offline.js", "/offline.css"];
 const PRECACHE_ASSETS = [
-  "/",
   OFFLINE_URL,
+  "/offline.js",
+  "/offline.css",
   "/manifest.webmanifest",
   "/assets/app-icon-192.png",
   "/assets/app-icon-512.png",
@@ -20,14 +24,19 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    Promise.all([
-      caches.open(SHELL_CACHE).then((cache) =>
-        Promise.allSettled(PRECACHE_ASSETS.map((asset) => cache.add(asset)))
-      ),
-      self.skipWaiting(),
-    ])
-  );
+  event.waitUntil((async () => {
+    const shell = await caches.open(SHELL_CACHE);
+    // Never activate and delete previous-version caches until all resources
+    // needed to render the standalone offline prayer dashboard exist locally.
+    // If a critical file is unavailable, let installation fail and retain the
+    // currently active worker and its cache.
+    await Promise.all(CRITICAL_OFFLINE_ASSETS.map((asset) => shell.add(asset)));
+    await Promise.allSettled(PRECACHE_ASSETS
+      .filter((asset) => !CRITICAL_OFFLINE_ASSETS.includes(asset))
+      .map((asset) => shell.add(asset)));
+    await networkFirstOfflinePrayerSnapshot(new Request(new URL(OFFLINE_PRAYER_API, self.location.origin), { credentials: "omit" })).catch(() => undefined);
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", (event) => {
@@ -36,7 +45,7 @@ self.addEventListener("activate", (event) => {
       caches.keys().then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key.startsWith(CACHE_PREFIX) && ![SHELL_CACHE, STATIC_CACHE, IMAGE_CACHE, PAGE_CACHE].includes(key))
+            .filter((key) => key.startsWith(CACHE_PREFIX) && ![SHELL_CACHE, STATIC_CACHE, IMAGE_CACHE, PAGE_CACHE, DATA_CACHE].includes(key))
             .map((key) => caches.delete(key))
         )
       ),
@@ -146,7 +155,82 @@ async function networkFirstAsset(request, target) {
   }
 }
 
+
+const OFFLINE_PRAYER_NAMES = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"];
+const OFFLINE_IQAMA_NAMES = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+const OFFLINE_CLOCK = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const OFFLINE_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function validOfflinePrayerSnapshot(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)
+    || Object.keys(data).length !== 5
+    || !["schemaVersion", "timezone", "fetchedAt", "iqamaDelays", "rows"].every(key => Object.hasOwn(data, key))
+    || data.schemaVersion !== 1 || typeof data.timezone !== "string"
+    || data.timezone.length === 0 || data.timezone.length > 100
+    || typeof data.fetchedAt !== "string" || !Number.isFinite(Date.parse(data.fetchedAt))
+    || Date.parse(data.fetchedAt) > Date.now() + 5 * 60_000
+    || Date.now() - Date.parse(data.fetchedAt) > 370 * 24 * 60 * 60_000
+    || !Array.isArray(data.rows) || data.rows.length > 400) return false;
+  try { new Intl.DateTimeFormat("en", { timeZone: data.timezone }); } catch { return false; }
+  const delays = data.iqamaDelays;
+  if (delays !== null && (!delays || typeof delays !== "object" || Array.isArray(delays)
+    || Object.keys(delays).length !== 5
+    || !OFFLINE_IQAMA_NAMES.every(key => Number.isInteger(delays[key]) && delays[key] >= 0 && delays[key] <= 180))) return false;
+
+  let previous = "";
+  for (const day of data.rows) {
+    if (!day || typeof day !== "object" || Array.isArray(day)
+      || Object.keys(day).length !== 7 || typeof day.date !== "string"
+      || !OFFLINE_DATE.test(day.date) || day.date <= previous
+      || !OFFLINE_PRAYER_NAMES.every(key => typeof day[key] === "string" && OFFLINE_CLOCK.test(day[key]))) return false;
+    const parsedDate = new Date(day.date + "T00:00:00Z");
+    if (!Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== day.date) return false;
+    previous = day.date;
+  }
+  return true;
+}
+
+async function readValidOfflineSnapshot(response) {
+  if (!response || response.status !== 200 || !isCacheable(response)
+    || !(response.headers.get("content-type") || "").toLowerCase().includes("application/json")) return false;
+  const declaredBytes = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredBytes) && declaredBytes > 192 * 1024) return false;
+  try {
+    const body = await response.clone().text();
+    if (body.length > 192 * 1024) return false;
+    return validOfflinePrayerSnapshot(JSON.parse(body));
+  } catch {
+    return false;
+  }
+}
+
+async function networkFirstOfflinePrayerSnapshot(request) {
+  const key = new Request(new URL(OFFLINE_PRAYER_API, self.location.origin), { credentials: "omit" });
+  try {
+    const response = await fetchWithTimeout(request, 8000);
+    if (await readValidOfflineSnapshot(response)) {
+      await storeResponse(DATA_CACHE, key, response, 1);
+      return response;
+    }
+    // A temporarily unhealthy server must not overwrite the last verified
+    // public schedule. Invalid 200 bodies are never stored either.
+  } catch {
+    // Offline or timeout: try the previously verified public snapshot.
+  }
+  const cache = await caches.open(DATA_CACHE);
+  const cached = await cache.match(key);
+  if (cached && await readValidOfflineSnapshot(cached)) return cached;
+  return new Response(JSON.stringify({ error: "Offline prayer times unavailable" }), {
+    status: 503,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
+}
+
 self.addEventListener("message", (event) => {
+  if (event.data?.type === "REFRESH_OFFLINE_PRAYERS") {
+    event.waitUntil(networkFirstOfflinePrayerSnapshot(new Request(new URL(OFFLINE_PRAYER_API, self.location.origin), { credentials: "omit" })).then(() => undefined));
+    return;
+  }
   if (event.data?.type !== "CACHE_RESOURCES" || !Array.isArray(event.data.urls)) return;
 
   event.waitUntil((async () => {
@@ -173,19 +257,30 @@ self.addEventListener("message", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || isPrivateOrDataRequest(request)) return;
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname === OFFLINE_PRAYER_API && !url.search && request.method === "GET"
+    && !request.headers.has("authorization")) {
+    event.respondWith(networkFirstOfflinePrayerSnapshot(request));
+    return;
+  }
+  if (isPrivateOrDataRequest(request)) return;
 
   if (request.mode === "navigate") {
     event.respondWith((async () => {
       try {
         const response = await fetchWithTimeout(request);
+        if (response.status >= 500) throw new Error("Public page unavailable");
         await storeResponse(PAGE_CACHE, request, response, 40);
         return response;
       } catch {
+        const offlineHome = await caches.match(OFFLINE_URL);
+        // The previous SSR homepage only embedded a 30-day snapshot and may
+        // be outdated. On disconnected app launch prefer the annual offline
+        // dashboard over a cached stale root HTML response.
+        if (url.pathname === "/" && offlineHome) return offlineHome;
         return (
           (await caches.match(request)) ||
-          (url.pathname === "/" ? await caches.match("/") : undefined) ||
-          (await caches.match(OFFLINE_URL)) ||
+          offlineHome ||
           new Response("You are offline", { status: 503, headers: { "Content-Type": "text/plain" } })
         );
       }

@@ -14,6 +14,17 @@ const prayerSnapshot = {
   }],
 };
 
+// Node's synthetic Response has type "default"; a same-origin browser
+// fetch intercepted by a Service Worker has type "basic".
+function browserResponse(response: Response): Response {
+  Object.defineProperty(response, "type", { value: "basic", configurable: true });
+  const clone = response.clone.bind(response);
+  Object.defineProperty(response, "clone", {
+    value: () => browserResponse(clone()),
+  });
+  return response;
+}
+
 function createWorker(fetchImpl: (request: Request) => Promise<Response>) {
   const listeners = new Map<string, (event: any) => void>();
   const stores = new Map<string, Map<string, Response>>();
@@ -75,7 +86,7 @@ describe("public PWA and Android TWA offline read-only cache", () => {
     let online = true;
     const network = vi.fn(async () => {
       if (!online) throw new Error("no-network");
-      return Response.json(prayerSnapshot, { headers: { "cache-control": "public, max-age=0, must-revalidate" } });
+      return browserResponse(Response.json(prayerSnapshot, { headers: { "cache-control": "public, max-age=0, must-revalidate" } }));
     });
     const worker = createWorker(network);
     const path = "/api/offline/prayer-schedule";
@@ -91,8 +102,8 @@ describe("public PWA and Android TWA offline read-only cache", () => {
     let online = true;
     const worker = createWorker(async () => {
       if (!online) throw new Error("no-network");
-      return Response.json({ ...prayerSnapshot, rows: [{ ...prayerSnapshot.rows[0], fajr: "99:99" }] },
-        { headers: { "cache-control": "public, max-age=0, must-revalidate" } });
+      return browserResponse(Response.json({ ...prayerSnapshot, rows: [{ ...prayerSnapshot.rows[0], fajr: "99:99" }] },
+        { headers: { "cache-control": "public, max-age=0, must-revalidate" } }));
     });
     const path = "/api/offline/prayer-schedule";
     expect((await worker.request(path))?.status).toBe(200);

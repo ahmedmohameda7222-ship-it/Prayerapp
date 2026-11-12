@@ -7,6 +7,7 @@ const PAGE_CACHE = `${CACHE_PREFIX}-pages-${VERSION}`;
 const DATA_CACHE = `${CACHE_PREFIX}-offline-prayers-${VERSION}`;
 const OFFLINE_URL = "/offline.html";
 const OFFLINE_PRAYER_API = "/api/offline/prayer-schedule";
+const CRITICAL_OFFLINE_ASSETS = [OFFLINE_URL, "/offline.js", "/offline.css"];
 const PRECACHE_ASSETS = [
   OFFLINE_URL,
   "/offline.js",
@@ -23,15 +24,19 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    Promise.all([
-      caches.open(SHELL_CACHE).then((cache) =>
-        Promise.allSettled(PRECACHE_ASSETS.map((asset) => cache.add(asset)))
-      ),
-      networkFirstOfflinePrayerSnapshot(new Request(new URL(OFFLINE_PRAYER_API, self.location.origin), { credentials: "omit" })).catch(() => undefined),
-      self.skipWaiting(),
-    ])
-  );
+  event.waitUntil((async () => {
+    const shell = await caches.open(SHELL_CACHE);
+    // Never activate and delete previous-version caches until all resources
+    // needed to render the standalone offline prayer dashboard exist locally.
+    // If a critical file is unavailable, let installation fail and retain the
+    // currently active worker and its cache.
+    await Promise.all(CRITICAL_OFFLINE_ASSETS.map((asset) => shell.add(asset)));
+    await Promise.allSettled(PRECACHE_ASSETS
+      .filter((asset) => !CRITICAL_OFFLINE_ASSETS.includes(asset))
+      .map((asset) => shell.add(asset)));
+    await networkFirstOfflinePrayerSnapshot(new Request(new URL(OFFLINE_PRAYER_API, self.location.origin), { credentials: "omit" })).catch(() => undefined);
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", (event) => {

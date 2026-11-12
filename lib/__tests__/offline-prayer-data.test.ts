@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPublicOfflineSchedule } from "../offline-prayer-data";
+import { buildPublicOfflineSchedule, splitOfflinePrayerRange } from "../offline-prayer-data";
 import type { PrayerTime } from "../types";
 
 const day: PrayerTime = {
@@ -58,5 +58,42 @@ describe("offline prayer snapshot public data boundary", () => {
     expect(() => buildPublicOfflineSchedule({ ...base, timezone: "Not/A_Zone" })).toThrow();
     expect(() => buildPublicOfflineSchedule({ ...base, timezone: "Europe/Berlin", iqamaDelays: { ...iqama, asr: -1 } })).toThrow();
     expect(() => buildPublicOfflineSchedule({ ...base, timezone: "Europe/Berlin", fetchedAt: "bad-date" })).toThrow();
+  });
+});
+
+describe("bounded Supabase offline snapshot RPC ranges", () => {
+  it("covers a full year, without exceeding the 93-day existing RPC limit", () => {
+    const ranges = splitOfflinePrayerRange("2026-11-12", 365);
+    expect(ranges).toHaveLength(5);
+    expect(ranges[0].from).toBe("2026-11-11");
+    expect(ranges[ranges.length - 1].through).toBe("2027-11-12");
+    for (const range of ranges) {
+      const difference = (Date.parse(range.through) - Date.parse(range.from)) / 86400000;
+      expect(difference).toBeLessThanOrEqual(93);
+    }
+    const allDays = ranges.flatMap(range => {
+      const dates = [];
+      for (let t = Date.parse(range.from); t <= Date.parse(range.through); t += 86400000) {
+        dates.push(new Date(t).toISOString().slice(0, 10));
+      }
+      return dates;
+    });
+    expect(allDays).toHaveLength(367);
+    expect(new Set(allDays).size).toBe(367);
+  });
+
+  it("preserves leap day and contiguous calendar dates across DST", () => {
+    const ranges = splitOfflinePrayerRange("2028-02-28", 365);
+    const allDays = ranges.flatMap(range => {
+      const dates = [];
+      for (let t = Date.parse(range.from); t <= Date.parse(range.through); t += 86400000) {
+        dates.push(new Date(t).toISOString().slice(0, 10));
+      }
+      return dates;
+    });
+    expect(allDays).toContain("2028-02-29");
+    expect(allDays).toContain("2028-03-26");
+    expect(allDays).toContain("2028-10-29");
+    expect(allDays).toHaveLength(367);
   });
 });

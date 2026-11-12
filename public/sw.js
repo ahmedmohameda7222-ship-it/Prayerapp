@@ -10,6 +10,7 @@ const OFFLINE_PRAYER_API = "/api/offline/prayer-schedule";
 const PRECACHE_ASSETS = [
   OFFLINE_URL,
   "/offline.js",
+  "/offline.css",
   "/manifest.webmanifest",
   "/assets/app-icon-192.png",
   "/assets/app-icon-512.png",

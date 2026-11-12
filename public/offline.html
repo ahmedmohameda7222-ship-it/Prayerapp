@@ -6,40 +6,7 @@
   <meta name="theme-color" content="#005a52" />
   <meta name="robots" content="noindex" />
   <title>Prayerapp · Offline</title>
-  <style>
-    :root { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color-scheme: light; color: #17332e; background: #f5f8f6; }
-    * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; padding: 0 16px 38px; }
-    button, a { font: inherit; }
-    button { cursor: pointer; }
-    .container { max-width: 620px; margin: 0 auto; }
-    .header { background: #005a52; color: #fff; margin: 0 -16px 18px; padding: calc(20px + env(safe-area-inset-top)) 18px 24px; }
-    .identity { display: flex; align-items: center; gap: 12px; max-width: 620px; margin: 0 auto; }
-    .identity img { width: 50px; height: 50px; border-radius: 12px; background: #fff; }
-    h1 { font-size: 1.3rem; margin: 0; font-weight: 750; }
-    .sub { font-size: .85rem; margin: 6px 0 0; opacity: .86; }
-    .notice { display: flex; gap: 10px; padding: 14px; border-radius: 14px; background: #fff5df; border: 1px solid #e9ce8e; margin-bottom: 14px; line-height: 1.5; font-size: .9rem; }
-    .notice strong { font-weight: 700; }
-    .card { background: white; border: 1px solid #dbe8e3; border-radius: 17px; padding: 18px; margin: 12px 0; box-shadow: 0 2px 14px #18352a0b; }
-    .card h2 { margin: 0 0 13px; font-size: 1.08rem; }
-    .meta { font-size: .8rem; color: #55756c; margin: 8px 0 0; line-height: 1.6; }
-    .days { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .days button, #retry { border: 1px solid #b6cfc6; border-radius: 10px; background: #f4faf7; color: #005a52; font-weight: 650; padding: 9px 12px; }
-    .days button:disabled { opacity: .35; cursor: default; }
-    .days strong { font-size: 1rem; text-align: center; }
-    .prayer-row { display: grid; grid-template-columns: minmax(110px,1fr) 66px 108px; gap: 10px; align-items: center; padding: 13px 0; border-bottom: 1px solid #e8efec; }
-    .prayer-row:last-child { border-bottom: 0; }
-    .prayer-row .prayer { font-weight: 600; }
-    .prayer-row .time { text-align: center; direction: ltr; font-variant-numeric: tabular-nums; font-weight: 750; color: #005a52; }
-    .prayer-row .iqama { font-size: .82rem; color: #64796f; text-align: end; direction: ltr; }
-    .prayer-row .iqama b { color: #31574a; font-weight: 650; }
-    .empty { line-height: 1.65; color: #65766d; padding: 16px 0; }
-    .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
-    .actions a { color: #005a52; text-decoration: underline; text-underline-offset: 3px; padding: 8px 0; }
-    #retry { background: #005a52; color: white; border-color: #005a52; }
-    [hidden] { display: none !important; }
-    @media (max-width: 370px) { .prayer-row { grid-template-columns: minmax(80px,1fr) 58px 95px; gap: 4px; font-size: .91rem; } }
-  </style>
+  <link rel="stylesheet" href="/offline.css" />
   <script src="/offline.js" defer></script>
 </head>
 <body>

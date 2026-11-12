@@ -1,5 +1,6 @@
 import type { PrayerIqamaDelays } from "@/lib/prayer-engine/types";
 import type { PrayerTime } from "@/lib/types";
+import { isPrayerScheduleQaRow } from "@/lib/launch-data-readiness";
 
 const CLOCK = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -54,7 +55,13 @@ export function buildPublicOfflineSchedule({
   const publicRows: OfflinePrayerDay[] = [];
   let previousDate = "";
   for (const row of rows) {
-    if (row.published !== true) continue;
+    if (row.published !== true || isPrayerScheduleQaRow({
+      note: row.note,
+      note_ar: row.noteAr,
+      note_en: row.noteEn,
+      note_de: row.noteDe,
+      note_tr: row.noteTr,
+    })) continue;
     if (!validDate(row.date) || row.date <= previousDate ||
         NAMES.some(name => typeof row[name] !== "string" || !CLOCK.test(row[name]))) {
       throw new Error("Invalid published prayer row for offline cache");

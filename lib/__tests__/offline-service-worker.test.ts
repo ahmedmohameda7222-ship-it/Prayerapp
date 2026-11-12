@@ -155,6 +155,12 @@ describe("public PWA and Android TWA offline read-only cache", () => {
 });
 
 describe("offline dashboard and content security policy", () => {
+  it("never invents separate Friday Dhuhr Iqama times for the primary Jumuah service", () => {
+    const client = readFileSync(join(process.cwd(), "public/offline.js"), "utf8");
+    expect(client).toContain('!(isFriday && name === "dhuhr")');
+    expect(client).toContain("copy.friday");
+  });
+
   it("loads its HTML, stylesheet and JavaScript from versioned same-origin assets", () => {
     const html = readFileSync(join(process.cwd(), "public/offline.html"), "utf8");
     const sw = readFileSync(join(process.cwd(), "public/sw.js"), "utf8");

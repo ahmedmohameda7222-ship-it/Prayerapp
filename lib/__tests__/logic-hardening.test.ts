@@ -105,7 +105,7 @@ describe("logic hardening", () => {
 
   it("makes mutable PWA assets network-first after a new deploy", () => {
     const sw = source("public/sw.js");
-    expect(sw).toMatch(/const VERSION = "v\\d+";/);
+    expect(sw).toMatch(/const VERSION = "v\d+";/);
     expect(sw).toContain("networkFirstAsset(request, target)");
     expect(sw).toContain('url.pathname.startsWith("/_next/static/")');
   });

@@ -263,6 +263,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith((async () => {
       try {
         const response = await fetchWithTimeout(request);
+        if (response.status >= 500) throw new Error("Public page unavailable");
         await storeResponse(PAGE_CACHE, request, response, 40);
         return response;
       } catch {

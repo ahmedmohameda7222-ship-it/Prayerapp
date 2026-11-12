@@ -153,3 +153,22 @@ describe("public PWA and Android TWA offline read-only cache", () => {
     expect(await worker.request("/api/offline/prayer-schedule", { authorization: "Bearer secret" })).toBeNull();
   });
 });
+
+describe("offline dashboard and content security policy", () => {
+  it("loads its HTML, stylesheet and JavaScript from versioned same-origin assets", () => {
+    const html = readFileSync(join(process.cwd(), "public/offline.html"), "utf8");
+    const sw = readFileSync(join(process.cwd(), "public/sw.js"), "utf8");
+    expect(html).toContain('href="/offline.css"');
+    expect(html).toContain('src="/offline.js"');
+    expect(html).not.toContain("<style>");
+    expect(html).not.toContain("<script>");
+    expect(sw).toContain('"/offline.css"');
+  });
+
+  it("keeps nonce CSP on app routes but permits only same-origin external assets on standalone offline page", () => {
+    const proxy = readFileSync(join(process.cwd(), "proxy.ts"), "utf8");
+    expect(proxy).toContain('request.nextUrl.pathname === "/offline.html"');
+    expect(proxy).toContain("script-src 'self'; style-src 'self'");
+    expect(proxy).toContain("buildContentSecurityPolicy(nonce)");
+  });
+});

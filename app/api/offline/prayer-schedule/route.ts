@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getPublishedPrayerScheduleSnapshot } from "@/lib/data/prayer-schedule-snapshot";
 import { getPrayerRuntimeAuthority } from "@/lib/data/prayer-settings";
-import { buildPublicOfflineSchedule } from "@/lib/offline-prayer-data";
+import { buildPublicOfflineSchedule, splitOfflinePrayerRange } from "@/lib/offline-prayer-data";
+import { APP_TIME_ZONE, todayIso } from "@/lib/date-utils";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,14 +18,24 @@ const ERROR_HEADERS = { "Cache-Control": "no-store" };
 export async function GET() {
   try {
     const now = new Date();
-    const [snapshot, authority] = await Promise.all([
-      getPublishedPrayerScheduleSnapshot({ now, daysBefore: 1, daysAfter: 365 }),
-      getPrayerRuntimeAuthority().catch(() => null),
-    ]);
+    const authority = await getPrayerRuntimeAuthority().catch(() => null);
+    const timezone = authority?.timezone ?? APP_TIME_ZONE;
+    const ranges = splitOfflinePrayerRange(todayIso(now, timezone));
+    // The production RPC enforces a strict <=93-day maximum. Read bounded,
+    // contiguous public ranges without changing any production schema.
+    const snapshots = await Promise.all(ranges.map(({ from, through }) =>
+      getPublishedPrayerScheduleSnapshot({ from, through }),
+    ));
+    if (snapshots.some((snapshot, index) =>
+      snapshot.timezone !== timezone
+      || snapshot.from !== ranges[index].from
+      || snapshot.through !== ranges[index].through)) {
+      throw new Error("Prayer timezone changed during offline snapshot retrieval");
+    }
     return NextResponse.json(buildPublicOfflineSchedule({
-      rows: snapshot.rows,
-      timezone: snapshot.timezone,
-      iqamaDelays: authority?.timezone === snapshot.timezone ? authority.iqamaDelays : null,
+      rows: snapshots.flatMap(snapshot => snapshot.rows),
+      timezone,
+      iqamaDelays: authority?.timezone === timezone ? authority.iqamaDelays : null,
       fetchedAt: now.toISOString(),
     }), { headers: PUBLIC_CACHE_HEADERS });
   } catch {

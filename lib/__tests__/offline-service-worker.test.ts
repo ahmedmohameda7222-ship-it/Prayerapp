@@ -66,8 +66,14 @@ function createWorker(fetchImpl: (request: Request) => Promise<Response>) {
   });
   async function request(path: string, headers?: HeadersInit) {
     let response: Promise<Response> | undefined;
+    const incoming = new Request(origin + path, { headers });
+    if (!path.startsWith("/api/")) {
+      // FetchEvent navigation requests have mode=navigate (not constructible
+      // through Node's Request constructor), so model it explicitly.
+      Object.defineProperty(incoming, "mode", { value: "navigate" });
+    }
     listeners.get("fetch")?.({
-      request: new Request(origin + path, { headers }),
+      request: incoming,
       respondWith: (result: Promise<Response>) => { response = result; },
     });
     return response ? await response : null;
@@ -115,6 +121,18 @@ describe("public PWA and Android TWA offline read-only cache", () => {
     const worker = createWorker(async () => { throw new Error("no-network"); });
     await worker.seedOfflinePage();
     const result = await worker.request("/events");
+    expect(result?.status).toBe(200);
+    expect(await result?.text()).toContain("Offline prayers");
+  });
+
+  it("prioritizes the dedicated offline yearly dashboard for offline home launches over stale cached SSR", async () => {
+    const worker = createWorker(async () => { throw new Error("no-network"); });
+    await worker.seedOfflinePage();
+    const pages = await worker.caches.open("deggendorf-prayer-pages-v19");
+    await pages.put("/", new Response("<h1>Stale old home</h1>", {
+      headers: { "content-type": "text/html" },
+    }));
+    const result = await worker.request("/");
     expect(result?.status).toBe(200);
     expect(await result?.text()).toContain("Offline prayers");
   });

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { OfflineStatusBanner } from "./OfflineStatusBanner";
 
 vi.mock("@/lib/i18n/context", () => ({
-  useLocale: () => "en",
+  useLocale: () => ({ locale: "en" }),
 }));
 
 afterEach(() => {

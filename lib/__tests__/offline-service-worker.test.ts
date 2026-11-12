@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const origin = "https://example.test";
 const prayerSnapshot = {
-  schemaVersion: 1, timezone: "Europe/Berlin", fetchedAt: "2026-11-12T15:00:00.000Z",
+  schemaVersion: 1, timezone: "Europe/Berlin", fetchedAt: new Date(Date.now() - 60_000).toISOString(),
   iqamaDelays: { fajr: 20, dhuhr: 10, asr: 10, maghrib: 5, isha: 10 },
   rows: [{
     date: "2026-11-13", fajr: "05:32", sunrise: "07:18",
@@ -112,7 +112,7 @@ describe("public PWA and Android TWA offline read-only cache", () => {
         { headers: { "cache-control": "public, max-age=0, must-revalidate" } }));
     });
     const path = "/api/offline/prayer-schedule";
-    expect((await worker.request(path))?.status).toBe(200);
+    expect((await worker.request(path))?.status).toBe(503);
     online = false;
     expect((await worker.request(path))?.status).toBe(503);
   });

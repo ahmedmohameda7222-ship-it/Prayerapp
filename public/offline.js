@@ -102,6 +102,7 @@
       return;
     }
 
+    const isFriday = new Date(current.date + "T12:00:00Z").getUTCDay() === 5;
     for (const name of NAMES) {
       const row = document.createElement("div");
       row.className = "prayer-row";
@@ -114,7 +115,7 @@
       const iqama = document.createElement("span");
       iqama.className = "iqama";
       const delay = snapshot.iqamaDelays?.[name];
-      if (name !== "sunrise" && Number.isInteger(delay) && delay >= 0) {
+      if (name !== "sunrise" && !(isFriday && name === "dhuhr") && Number.isInteger(delay) && delay >= 0) {
         const label = document.createElement("span");
         label.textContent = copy.iqama + " ";
         const clock = document.createElement("b");
@@ -125,7 +126,7 @@
       container.append(row);
     }
     // Canonical primary Friday is always published Dhuhr; never invent extras.
-    if (new Date(current.date + "T12:00:00Z").getUTCDay() === 5) {
+    if (isFriday) {
       const friday = document.createElement("p");
       friday.className = "meta";
       friday.textContent = copy.friday;

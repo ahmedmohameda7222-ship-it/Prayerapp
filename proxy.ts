@@ -23,7 +23,12 @@ function buildContentSecurityPolicy(nonce: string) {
 
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
+  // The standalone offline dashboard is a static public HTML file. It cannot
+  // receive a per-request nonce from Next.js, so allow only external same-origin
+  // script/styles for this route while preserving the nonce CSP everywhere else.
+  const contentSecurityPolicy = request.nextUrl.pathname === "/offline.html"
+    ? "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+    : buildContentSecurityPolicy(nonce);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);

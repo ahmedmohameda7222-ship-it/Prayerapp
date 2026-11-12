@@ -19,6 +19,7 @@ export function ServiceWorkerRegistrar() {
     }
 
     let registration: ServiceWorkerRegistration | undefined;
+    let lastOfflineRefreshAt = 0;
     const captureInstallPrompt = (event: Event) => {
       event.preventDefault();
       window.__pwaInstallPrompt = event as BeforeInstallPromptEvent;
@@ -43,9 +44,16 @@ export function ServiceWorkerRegistrar() {
         });
       controller.postMessage({ type: "CACHE_RESOURCES", urls });
     };
+    const refreshOfflineSnapshot = () => {
+      const worker = navigator.serviceWorker.controller || registration?.active;
+      if (!worker || !navigator.onLine || Date.now() - lastOfflineRefreshAt < 15 * 60_000) return;
+      lastOfflineRefreshAt = Date.now();
+      worker.postMessage({ type: "REFRESH_OFFLINE_PRAYERS" });
+    };
     const markOfflineReadiness = () => {
       document.documentElement.dataset.offlineReady = navigator.serviceWorker.controller ? "controlled" : "registered";
       warmLoadedResources();
+      refreshOfflineSnapshot();
     };
     const register = async () => {
       try {
@@ -60,17 +68,26 @@ export function ServiceWorkerRegistrar() {
         console.warn("Service worker registration failed", error);
       }
     };
-    const updateWhenOnline = () => registration?.update().catch(() => undefined);
+    const updateWhenOnline = () => {
+      void registration?.update().catch(() => undefined);
+      lastOfflineRefreshAt = 0;
+      refreshOfflineSnapshot();
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshOfflineSnapshot();
+    };
 
     void register();
     window.addEventListener("beforeinstallprompt", captureInstallPrompt);
     window.addEventListener("online", updateWhenOnline);
     window.addEventListener("load", warmLoadedResources);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     navigator.serviceWorker.addEventListener("controllerchange", markOfflineReadiness);
     return () => {
       window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
       window.removeEventListener("online", updateWhenOnline);
       window.removeEventListener("load", warmLoadedResources);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
       navigator.serviceWorker.removeEventListener("controllerchange", markOfflineReadiness);
     };
   }, []);

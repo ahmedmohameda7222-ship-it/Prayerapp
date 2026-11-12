@@ -137,6 +137,14 @@ describe("public PWA and Android TWA offline read-only cache", () => {
     expect(await result?.text()).toContain("Offline prayers");
   });
 
+  it("uses the offline public dashboard during a server-side 503, not just a disconnected network", async () => {
+    const worker = createWorker(async () => new Response("Unavailable", { status: 503 }));
+    await worker.seedOfflinePage();
+    const response = await worker.request("/");
+    expect(response?.status).toBe(200);
+    expect(await response?.text()).toContain("Offline prayers");
+  });
+
   it("does not intercept account, admin, private or authenticated API requests", async () => {
     const worker = createWorker(async () => Response.json(prayerSnapshot));
     expect(await worker.request("/api/account/delete")).toBeNull();

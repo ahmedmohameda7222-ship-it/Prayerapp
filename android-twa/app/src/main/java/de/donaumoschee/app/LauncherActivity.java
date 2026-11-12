@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -114,7 +116,8 @@ public final class LauncherActivity extends Activity {
         }
 
         if (OfflineLaunchPolicy.shouldShowOfflineFallback(
-                getPreferences(MODE_PRIVATE).getBoolean(ONLINE_LAUNCH_COMPLETED_KEY, false),
+                getPreferences(MODE_PRIVATE).getBoolean(ONLINE_LAUNCH_COMPLETED_KEY, false)
+                        || isExistingAppUpgrade(),
                 hasValidatedNetwork())) {
             showFirstLaunchOfflineFallback();
             return;
@@ -126,6 +129,21 @@ public final class LauncherActivity extends Activity {
     private void startTwa() {
         bridgeHandler = new BridgeHandler(getApplicationContext(), this::postMessage);
         bindAndLaunch();
+    }
+
+    /**
+     * Older releases did not record ONLINE_LAUNCH_COMPLETED_KEY. On an upgrade,
+     * let the browser try its existing Service Worker cache rather than forcing
+     * a misleading fresh-install connection screen.
+     */
+    @SuppressWarnings("deprecation")
+    private boolean isExistingAppUpgrade() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return info.lastUpdateTime > info.firstInstallTime;
+        } catch (PackageManager.NameNotFoundException error) {
+            return false;
+        }
     }
 
     private boolean hasValidatedNetwork() {

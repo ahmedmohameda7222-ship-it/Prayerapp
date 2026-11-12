@@ -18,7 +18,7 @@ export function OfflineStatusBanner() {
     const refresh = () => setOnline(navigator.onLine);
     refresh();
     window.addEventListener("online", refresh);
-    window.addEventListener("offline", () => setOnline(false));
+    window.addEventListener("offline", offline);
     return () => {
       window.removeEventListener("online", refresh);
       window.removeEventListener("offline", offline);

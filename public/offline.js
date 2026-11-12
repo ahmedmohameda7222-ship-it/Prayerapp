@@ -174,7 +174,7 @@
     }
   });
   byId("retry").addEventListener("click", () => {
-    if (navigator.onLine) window.location.assign("/");
+    if (navigator.onLine) window.location.href = "/";
     else void loadSavedSchedule();
   });
   window.addEventListener("online", () => { void loadSavedSchedule(); });

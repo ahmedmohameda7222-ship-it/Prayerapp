@@ -1,8 +1,8 @@
 import type { PrayerIqamaDelays } from "@/lib/prayer-engine/types";
 import type { PrayerTime } from "@/lib/types";
 
-const CLOCK = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;
-const DATE = /^\\d{4}-\\d{2}-\\d{2}$/;
+const CLOCK = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const NAMES = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"] as const;
 const IQAMA_NAMES = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
 

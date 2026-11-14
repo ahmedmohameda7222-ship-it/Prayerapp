@@ -52,7 +52,7 @@ describe("offline content eligibility", () => {
     expect(isCampaignActive(campaign, berlin("12:00:00"), "Europe/Berlin")).toBe(false);
   });
 
-  it("uses current Azkar category and falls back to any selected item", () => {
+  it("uses only the current time-of-day Azkar, never another daypart as fallback", () => {
     const current = feed();
     current.displaySettings.azkarPlaylistIds = ["test-azkar-morning", "test-azkar-evening"];
 
@@ -64,9 +64,56 @@ describe("offline content eligibility", () => {
     ]);
 
     current.displaySettings.azkarPlaylistIds = ["test-azkar-evening"];
-    expect(activeDisplayContent(current, berlin("09:00:00")).azkar.map((item) => item.id)).toEqual([
-      "test-azkar-evening",
-    ]);
+    expect(activeDisplayContent(current, berlin("09:00:00")).azkar).toEqual([]);
+    expect(activeDisplayContent(current, berlin("13:00:00")).azkar).toEqual([]);
+    expect(activeDisplayContent(current, berlin("16:00:00")).azkar.map((item) => item.id)).toEqual(["test-azkar-evening"]);
+  });
+
+  it("keeps morning, evening and sleep Azkar in their respective Berlin time windows", () => {
+    const current = feed();
+    const sample = current.azkar[0];
+    current.azkar = [
+      { ...sample, id: "morning", category: "Morning" },
+      { ...sample, id: "evening", category: "Evening" },
+      { ...sample, id: "sleep", category: "Sleep" },
+    ];
+    current.displaySettings.azkarPlaylistIds = current.azkar.map((item) => item.id);
+    const idsAt = (value: string) =>
+      activeDisplayContent(current, berlin(value)).azkar.map((item) => item.id);
+
+    expect(idsAt("03:59:59")).toEqual(["sleep"]);
+    expect(idsAt("04:00:00")).toEqual(["morning"]);
+    expect(idsAt("11:59:59")).toEqual(["morning"]);
+    expect(idsAt("12:00:00")).toEqual([]);
+    expect(idsAt("14:59:59")).toEqual([]);
+    expect(idsAt("15:00:00")).toEqual(["evening"]);
+    expect(idsAt("21:59:59")).toEqual(["evening"]);
+    expect(idsAt("22:00:00")).toEqual(["sleep"]);
+  });
+
+  it("shows Friday Azkar together with the correct daypart, except in the post-prayer window", () => {
+    const current = feed();
+    const sample = current.azkar[0];
+    current.azkar = [
+      { ...sample, id: "morning", category: "Morning" },
+      { ...sample, id: "evening", category: "Evening" },
+      { ...sample, id: "sleep", category: "Sleep" },
+      { ...sample, id: "friday", category: "Friday" },
+      { ...sample, id: "after-prayer", category: "After Prayer" },
+    ];
+    current.displaySettings.azkarPlaylistIds = current.azkar.map((item) => item.id);
+    const friday = (time: string) => new Date(`2026-09-18T${time}+02:00`);
+    const idsAt = (value: string) =>
+      activeDisplayContent(current, friday(value)).azkar.map((item) => item.id);
+
+    expect(idsAt("09:00:00")).toEqual(expect.arrayContaining(["morning", "friday"]));
+    expect(idsAt("09:00:00")).toHaveLength(2);
+    expect(idsAt("13:00:00")).toEqual(["friday"]);
+    expect(idsAt("13:40:00")).toEqual(["after-prayer"]);
+    expect(idsAt("19:00:00")).toEqual(expect.arrayContaining(["evening", "friday"]));
+    expect(idsAt("19:00:00")).toHaveLength(2);
+    expect(idsAt("23:00:00")).toEqual(expect.arrayContaining(["sleep", "friday"]));
+    expect(idsAt("23:00:00")).toHaveLength(2);
   });
 
   it("marks stale prayer horizon without inventing prayer content", () => {

@@ -8,6 +8,8 @@ export function IqamaNow({ vm }: { vm: DisplayRuntimeViewModel }) {
       titleDe="Iqama"
       titleAr="إقامة الصلاة"
       prayer={vm.state?.prayer}
+      supportDe="Beginn jetzt"
+      supportAr="الإقامة الآن"
       now={vm.logicalNow}
       timezone={presentationTimezone(vm)}
     />

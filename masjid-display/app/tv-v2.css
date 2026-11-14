@@ -311,3 +311,17 @@
 .tv-v2 .maghrib-program-slide:has(.maghrib-lesson:only-child) {grid-template-columns:minmax(0,1fr)}
 .tv-v2 .event-date time {display:grid;justify-items:center}
 .tv-v2 .event-content .event-meta span[lang="ar"] {font-family:"Noto Naskh Arabic","Amiri",serif}
+
+/* Fatal boundary may render without the normal TV shell. */
+.display-error-shell {
+  min-height:100dvh;
+  background:radial-gradient(ellipse at center,#12372f,#061713 75%);
+  color:#f6f1e7;
+  font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+  gap:clamp(.75rem,2vmin,2rem);
+}
+.display-error-shell button {
+  border:1px solid #c4ab72;border-radius:.8rem;
+  background:#173c31;color:#f6f1e7;
+  padding:.8rem 1.5rem;
+}

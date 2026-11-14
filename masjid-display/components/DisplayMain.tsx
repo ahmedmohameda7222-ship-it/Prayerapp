@@ -1,6 +1,6 @@
 import type { DisplayRuntimeViewModel } from "../lib/runtime/use-display-runtime";
 import type { NormalSlide } from "../lib/scheduler";
-import { isFridayIso, localDateIso, zonedDateTime } from "../lib/time";
+import { NextPrayerSlide } from "./content/NextPrayerSlide";
 import { AnnouncementSlide } from "./content/AnnouncementSlide";
 import { AfterPrayerBoard } from "./content/AfterPrayerBoard";
 import { AzkarSlide } from "./content/AzkarSlide";
@@ -17,6 +17,7 @@ import { PrayerTimeNow } from "./states/PrayerTimeNow";
 import { WaitingForIqama } from "./states/WaitingForIqama";
 
 function renderNormalSlide(vm: DisplayRuntimeViewModel, slide: NormalSlide | null) {
+  if (slide?.kind === "NEXT_PRAYER") return <NextPrayerSlide vm={vm} />;
   if (!slide || !vm.content) return null;
 
   switch (slide.kind) {
@@ -60,51 +61,6 @@ function renderNormalSlide(vm: DisplayRuntimeViewModel, slide: NormalSlide | nul
   }
 }
 
-function NextPrayerFallback({ vm }: { vm: DisplayRuntimeViewModel }) {
-  const feed = vm.feed;
-  const prayers = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
-  const labels = {
-    fajr: { ar: "الفجر", de: "Fajr" },
-    dhuhr: { ar: "الظهر", de: "Dhuhr" },
-    asr: { ar: "العصر", de: "Asr" },
-    maghrib: { ar: "المغرب", de: "Maghrib" },
-    isha: { ar: "العشاء", de: "Isha" },
-  };
-  const upcoming = feed?.prayers.schedule
-    .filter((day) => day.date >= localDateIso(vm.logicalNow, feed.timezone))
-    .slice(0, 2)
-    .flatMap((day) => prayers.map((prayer) => ({
-    prayer, date: day.date, time: day[prayer],
-    instant: zonedDateTime(day.date, day[prayer], feed.timezone).getTime(),
-  })))
-    .filter((entry) => entry.instant > vm.logicalNow.getTime())
-    .sort((a,b) => a.instant - b.instant)[0];
-
-  const de = upcoming
-    ? upcoming.prayer === "dhuhr" && isFridayIso(upcoming.date) ? "Jumuah" : labels[upcoming.prayer].de
-    : null;
-  const ar = upcoming
-    ? upcoming.prayer === "dhuhr" && isFridayIso(upcoming.date) ? "الجمعة" : labels[upcoming.prayer].ar
-    : null;
-
-  return (
-    <section className="tv-empty">
-      <span className="hero-kicker">GEBETSZEITEN · مواقيت الصلاة</span>
-      <h2 lang="ar" dir="rtl">الصلاة القادمة</h2>
-      <p lang="de">Nächstes Gebet</p>
-      {upcoming && ar && de ? (
-        <>
-          <h2 lang="ar" dir="rtl">{ar}</h2>
-          <p>{de}</p>
-          <output className="state-countdown">{upcoming.time}</output>
-        </>
-      ) : (
-        <p>Gebetszeiten werden aktualisiert · يتم تحديث المواقيت</p>
-      )}
-    </section>
-  );
-}
-
 export function DisplayMain({ vm }: { vm: DisplayRuntimeViewModel }) {
   const state = vm.state;
   if (!state) return (
@@ -116,7 +72,7 @@ export function DisplayMain({ vm }: { vm: DisplayRuntimeViewModel }) {
 
   switch (state.kind) {
     case "NORMAL":
-      return renderNormalSlide(vm, vm.normalSlide) ?? <NextPrayerFallback vm={vm} />;
+      return renderNormalSlide(vm, vm.normalSlide) ?? <NextPrayerSlide vm={vm} />;
     case "POST_PRAYER_AZKAR":
       return <AfterPrayerBoard vm={vm} />;
     case "PRAYER_APPROACHING":

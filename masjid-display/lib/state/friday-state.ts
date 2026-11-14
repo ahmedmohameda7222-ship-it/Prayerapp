@@ -4,7 +4,7 @@ import { isFridayIso, localDateIso, zonedDateTime } from "../time";
 const MINUTE_MS = 60_000;
 const PRIMARY_FOCUS_MS = 60 * MINUTE_MS;
 const ADDITIONAL_FOCUS_MS = 10 * MINUTE_MS;
-const JUMUAH_HOLD_MS = 30 * MINUTE_MS;
+export const JUMUAH_HOLD_MS = 30 * MINUTE_MS;
 
 export type FridayStateResolution =
   | { kind: "FRIDAY_MODE"; serviceId: string; serviceIndex: number }

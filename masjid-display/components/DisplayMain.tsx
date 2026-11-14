@@ -1,6 +1,6 @@
 import type { DisplayRuntimeViewModel } from "../lib/runtime/use-display-runtime";
 import type { NormalSlide } from "../lib/scheduler";
-import { isFridayIso, zonedDateTime } from "../lib/time";
+import { isFridayIso, localDateIso, zonedDateTime } from "../lib/time";
 import { AnnouncementSlide } from "./content/AnnouncementSlide";
 import { AfterPrayerBoard } from "./content/AfterPrayerBoard";
 import { AzkarSlide } from "./content/AzkarSlide";
@@ -70,7 +70,10 @@ function NextPrayerFallback({ vm }: { vm: DisplayRuntimeViewModel }) {
     maghrib: { ar: "المغرب", de: "Maghrib" },
     isha: { ar: "العشاء", de: "Isha" },
   };
-  const upcoming = feed?.prayers.schedule.flatMap((day) => prayers.map((prayer) => ({
+  const upcoming = feed?.prayers.schedule
+    .filter((day) => day.date >= localDateIso(vm.logicalNow, feed.timezone))
+    .slice(0, 2)
+    .flatMap((day) => prayers.map((prayer) => ({
     prayer, date: day.date, time: day[prayer],
     instant: zonedDateTime(day.date, day[prayer], feed.timezone).getTime(),
   })))

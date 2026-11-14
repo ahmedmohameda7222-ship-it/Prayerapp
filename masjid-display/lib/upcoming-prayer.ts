@@ -118,6 +118,13 @@ export function getUpcomingPrayer(
   )[0];
   if (!next) return null;
 
-  const { instantMs: _instantMs, ...display } = next;
-  return display;
+  return {
+    date: next.date,
+    prayer: next.prayer,
+    serviceNumber: next.serviceNumber,
+    labelAr: next.labelAr,
+    labelDe: next.labelDe,
+    adhanTime: next.adhanTime,
+    iqamaTime: next.iqamaTime,
+  };
 }

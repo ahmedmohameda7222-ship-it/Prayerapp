@@ -29,11 +29,13 @@ export function DisplayShell({
 
       <main className="display-main tv-hero" data-testid="tv-hero" data-layout={vm.state?.kind.toLowerCase().replaceAll("_", "-") ?? "initial-loading"} aria-live="polite">
         <DisplayMain vm={vm} />
-        <StatusOverlay
-          networkAvailable={vm.networkAvailable}
-          usingLkg={vm.usingLkg}
-          prayerScheduleStale={vm.prayerScheduleStale}
-        />
+        {vm.feed ? (
+          <StatusOverlay
+            networkAvailable={vm.networkAvailable}
+            usingLkg={vm.usingLkg}
+            prayerScheduleStale={vm.prayerScheduleStale}
+          />
+        ) : null}
       </main>
 
       <UrgentBar items={vm.urgent} logicalNow={vm.logicalNow} />

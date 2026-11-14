@@ -5,5 +5,5 @@ import type { DisplayAzkarDto } from "./feed-types";
 export function azkarNeedsLanguageSeparation(
   item: Pick<DisplayAzkarDto, "arabicText" | "translationDe">,
 ): boolean {
-  return item.arabicText.length > 240 || item.translationDe.length > 420;
+  return (item.arabicText?.length ?? 0) > 240 || (item.translationDe?.length ?? 0) > 420;
 }

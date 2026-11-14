@@ -44,13 +44,13 @@ describe("context-aware TV Azkar selection", () => {
     feed.prayers.additionalJumuah = [
       { id: "second", date: "2026-09-18", prayerTime: "15:00" },
     ];
-    expect(activeDisplayContent(feed, friday("11:00:00")).azkar.map((a) => a.id)).toEqual(["friday"]);
+    expect(activeDisplayContent(feed, friday("11:00:00")).azkar.map((a) => a.id)).toEqual(["morning", "friday"]);
     // Jumuah #1 13:10 + 30-minute display hold => normal resumes at 13:40.
     expect(activeDisplayContent(feed, friday("13:40:00")).azkar.map((a) => a.id)).toEqual(["after-prayer"]);
     expect(activeDisplayContent(feed, friday("13:55:00")).azkar.map((a) => a.id)).toEqual(["friday"]);
     // Second Jumuah holds to 15:30.
     expect(activeDisplayContent(feed, friday("15:30:00")).azkar.map((a) => a.id)).toEqual(["after-prayer"]);
-    expect(activeDisplayContent(feed, friday("15:45:00")).azkar.map((a) => a.id)).toEqual(["friday"]);
+    expect(activeDisplayContent(feed, friday("15:45:00")).azkar.map((a) => a.id)).toEqual(["evening", "friday"]);
   });
 
   it("never displays Travel/After Prayer/Friday Azkar at an unrelated weekday time merely as fallback", () => {
@@ -60,10 +60,10 @@ describe("context-aware TV Azkar selection", () => {
     expect(activeDisplayContent(feed, weekday("17:10:00")).azkar.map((a) => a.id)).toEqual(["after-prayer"]);
   });
 
-  it("keeps a selected ambient category as fallback without inventing unselected Azkar", () => {
+  it("does not replace missing morning Azkar with evening Azkar", () => {
     const feed = configuredFeed();
     feed.displaySettings.azkarPlaylistIds = ["evening", "after-prayer"];
-    expect(activeDisplayContent(feed, weekday("09:00:00")).azkar.map((a) => a.id)).toEqual(["evening"]);
+    expect(activeDisplayContent(feed, weekday("09:00:00")).azkar).toEqual([]);
     expect(activeDisplayContent(feed, weekday("17:11:00")).azkar.map((a) => a.id)).toEqual(["after-prayer"]);
   });
 });

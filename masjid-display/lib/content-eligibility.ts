@@ -46,7 +46,6 @@ function eventEnd(item: DisplayEventDto, timezone: string): Date {
 const MINUTE_MS = 60_000;
 const AFTER_PRAYER_AZKAR_WINDOW_MS = 15 * MINUTE_MS;
 const PRAYER_NAMES = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
-const AMBIENT_CATEGORIES = new Set<DisplayAzkarCategory>(["Morning", "Evening", "Sleep"]);
 type CompletedPrayerWindow = { startMs: number; endMs: number };
 
 // Like prayer-state.ts, this depends only on the immutable, validated Feed.
@@ -97,7 +96,7 @@ function afterPrayerAzkarActive(feed: MasjidDisplayFeedV1, now: Date): boolean {
   return afterPrayerWindows(feed).some(({ startMs, endMs }) => nowMs >= startMs && nowMs < endMs);
 }
 
-function azkarCategory(now: Date, timezone: string): DisplayAzkarCategory {
+function azkarCategory(now: Date, timezone: string): DisplayAzkarCategory | null {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-US", {
       timeZone: timezone,
@@ -110,9 +109,8 @@ function azkarCategory(now: Date, timezone: string): DisplayAzkarCategory {
 
   const hour = Number(parts.hour);
   if (hour >= 4 && hour < 12) return "Morning";
-  if (hour >= 15 && hour < 22) return "Evening";
-  if (hour >= 22 || hour < 4) return "Sleep";
-  return "Morning";
+  if (hour >= 15 || hour < 4) return "Evening";
+  return null;
 }
 
 export function isAnnouncementActive(item: DisplayAnnouncementDto, now: Date): boolean {
@@ -143,20 +141,21 @@ export function activeDisplayContent(feed: MasjidDisplayFeedV1, now: Date): Acti
   const selectedAzkar = feed.azkar
     .filter((item) => playlist.has(item.id))
     .sort((left, right) => left.sortOrder - right.sortOrder);
-  const category = azkarCategory(now, feed.timezone);
-  // Context-specific Azkar must never leak into unrelated periods through a
-  // broad fallback. Friday Dhikr remains preferred throughout Friday except
-  // for the short post-congregational window.
-  const preferences: DisplayAzkarCategory[] = [
-    ...(afterPrayerAzkarActive(feed, now) ? ["After Prayer" as const] : []),
-    ...(isFridayIso(currentDate) ? ["Friday" as const] : []),
-    category,
-  ];
-  const preferredAzkar = preferences
-    .map((preferred) => selectedAzkar.filter((item) => item.category === preferred))
-    .find((items) => items.length > 0);
+  const daypart = azkarCategory(now, feed.timezone);
+  const isFriday = isFridayIso(currentDate);
+  // Special Friday Dhikr complements, rather than replaces, the correct
+  // morning/evening/night category. At midday there is no generic daypart.
+  // Never fall back to a different day's or time's contextual Azkar.
+  const scheduledAzkar = selectedAzkar.filter(
+    (item) => item.category === daypart || (isFriday && item.category === "Friday"),
+  );
+  const postPrayerAzkar = selectedAzkar.filter((item) => item.category === "After Prayer");
+  // Post-congregational Dhikr takes priority in its established 15-minute
+  // window without changing Adhan, Iqama or Friday prayer display states.
   const eligibleAzkar =
-    preferredAzkar ?? selectedAzkar.filter((item) => AMBIENT_CATEGORIES.has(item.category));
+    postPrayerAzkar.length > 0 && afterPrayerAzkarActive(feed, now)
+      ? postPrayerAzkar
+      : scheduledAzkar;
 
   const activeAnnouncements = feed.announcements.filter((item) => isAnnouncementActive(item, now));
   const urgentAnnouncements = activeAnnouncements.filter((item) => item.isUrgent);

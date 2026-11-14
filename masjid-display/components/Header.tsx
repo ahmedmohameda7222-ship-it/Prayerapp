@@ -1,4 +1,5 @@
 import type { DisplayRuntimeViewModel } from "../lib/runtime/use-display-runtime";
+import { MosqueIcon } from "./MosqueIcon";
 
 function formatClock(now: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-GB", {
@@ -54,7 +55,7 @@ export function Header({ vm }: { vm: DisplayRuntimeViewModel }) {
   return (
     <header className="display-header tv-header">
       <div className="mosque-brand">
-        <span className="mosque-seal" aria-hidden="true">۞</span>
+        <span className="mosque-seal"><MosqueIcon /></span>
         <div className="mosque-identity">
           <strong>{feed?.mosque.nameDe ?? "Prayerapp Masjid Display"}</strong>
           {feed ? <span dir="rtl" lang="ar">{feed.mosque.nameAr}</span> : null}

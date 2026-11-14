@@ -32,7 +32,7 @@ body {
   width: calc(100% - 8px);
   margin: 4px;
   transform-origin: center;
-  padding: clamp(1.1rem, 2.5vmin, 2.8rem);
+  padding: clamp(1.4rem, 3.2vmin, 3.2rem);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto auto;
   gap: clamp(.85rem, 1.35vmin, 1.7rem);
@@ -532,4 +532,112 @@ body {
 .display-error-shell button {
   font: inherit;
   padding: .7rem 1.1rem;
+}
+
+
+/* Masjid TV: distinguish the upcoming prayer while leaving sunrise informational.
+   Keep the entire six-cell strip visible during content and all prayer states. */
+.prayer-cell[data-next="true"] {
+  border-color: rgba(238, 207, 137, .84);
+  background: linear-gradient(180deg, rgba(203, 178, 120, .18), rgba(203, 178, 120, .075));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .1), 0 0 1.4rem rgba(203, 178, 120, .14);
+}
+
+.prayer-cell[data-next="true"] .prayer-time {
+  color: #f8e4af;
+}
+
+.prayer-iqama {
+  font-size: clamp(1.1rem, 1.75vmin, 1.65rem);
+}
+
+/* Source-backed Azkar need a different reading hierarchy from announcements.
+   The Arabic is primary; German translation, source and repeat count remain visible. */
+.azkar-slide {
+  width: min(100%, 108rem);
+  gap: clamp(.5rem, 1.25vmin, 1.35rem);
+  padding: clamp(.8rem, 1.7vmin, 1.8rem);
+  border: .06rem solid rgba(203, 178, 120, .2);
+  border-radius: clamp(.75rem, 1.2vmin, 1.25rem);
+  background: rgba(7, 22, 16, .26);
+}
+
+.azkar-category {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  column-gap: clamp(.75rem, 2vmin, 2rem);
+  row-gap: .25rem;
+  color: var(--display-accent);
+  font-size: clamp(1.15rem, 2vmin, 2rem);
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.azkar-category span + span {
+  color: var(--display-muted);
+  font-weight: 600;
+}
+
+.azkar-slide .azkar-arabic,
+.azkar-slide .azkar-german {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.azkar-slide .azkar-arabic {
+  font-size: clamp(2.2rem, 5.2vmin, 5.4rem);
+  line-height: 1.48;
+}
+
+.azkar-slide .azkar-german {
+  font-size: clamp(1.25rem, 2.5vmin, 2.6rem);
+  line-height: 1.34;
+  color: var(--display-muted);
+}
+
+.azkar-slide-long {
+  gap: clamp(.3rem, .75vmin, .85rem);
+}
+
+.azkar-slide-long .azkar-arabic {
+  font-size: clamp(1.45rem, 3vmin, 3rem);
+  line-height: 1.35;
+}
+
+.azkar-slide-long .azkar-german {
+  font-size: clamp(1.05rem, 1.8vmin, 1.9rem);
+  line-height: 1.27;
+}
+
+.azkar-attribution {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .35rem clamp(.75rem, 1.4vmin, 1.4rem);
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.azkar-attribution .content-meta {
+  font-size: clamp(.85rem, 1.2vmin, 1.2rem);
+  line-height: 1.25;
+}
+
+/* A visual separator helps a large, bilingual mosque announcement read as
+   two coherent translations instead of one continuous line of content. */
+.bilingual-slide > section:first-child {
+  padding-inline-end: clamp(.5rem, 1.3vmin, 1.3rem);
+  border-inline-end: .06rem solid rgba(203, 178, 120, .22);
+}
+
+@container (max-width: 44rem) {
+  .bilingual-slide > section:first-child {
+    padding-inline-end: 0;
+    padding-block-end: .65rem;
+    border-inline-end: 0;
+    border-block-end: .06rem solid rgba(203, 178, 120, .22);
+  }
 }

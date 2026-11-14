@@ -11,7 +11,7 @@ export function PrayerApproaching({ vm }: { vm: DisplayRuntimeViewModel }) {
       target={prayerTarget(vm, "prayer")}
       now={vm.logicalNow}
       timezone={presentationTimezone(vm)}
-      showTargetTime={false}
+      targetLabel="Adhan / الأذان"
     />
   );
 }

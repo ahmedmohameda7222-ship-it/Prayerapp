@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { DisplayPrayerName } from "../../lib/feed-types";
 import type { DisplayRuntimeViewModel } from "../../lib/runtime/use-display-runtime";
 import { localDateIso, zonedDateTime } from "../../lib/time";
@@ -99,6 +100,11 @@ export function StateFrame({
   timezone,
   targetLabel,
   showTargetTime = true,
+  nameDe,
+  nameAr,
+  supportDe,
+  supportAr,
+  extra,
 }: {
   testId: string;
   titleDe: string;
@@ -109,24 +115,30 @@ export function StateFrame({
   timezone: string;
   targetLabel?: string;
   showTargetTime?: boolean;
+  nameDe?: string;
+  nameAr?: string;
+  supportDe?: string;
+  supportAr?: string;
+  extra?: ReactNode;
 }) {
-  const labels = prayerLabels(prayer ?? null);
-  const targetTime = showTargetTime
-    ? formatTargetTime(target ?? null, timezone)
-    : null;
+  const labels = nameDe && nameAr ? { de: nameDe, ar: nameAr } : prayerLabels(prayer ?? null);
+  const targetTime = showTargetTime ? formatTargetTime(target ?? null, timezone) : null;
   const countdown = formatCountdown(target ?? null, now);
 
   return (
     <section className="state-panel" data-testid={testId}>
       <div className="state-copy">
-        <p className="state-eyebrow">{titleDe}</p>
-        <p className="state-eyebrow" dir="rtl">{titleAr}</p>
+        <p className="state-eyebrow" lang="de">{titleDe}</p>
+        <p className="state-eyebrow" dir="rtl" lang="ar">{titleAr}</p>
       </div>
       {labels ? (
         <div className="state-prayer-name">
-          <strong>{labels.de}</strong>
-          <strong dir="rtl">{labels.ar}</strong>
+          <strong lang="de">{labels.de}</strong>
+          <strong dir="rtl" lang="ar">{labels.ar}</strong>
         </div>
+      ) : null}
+      {countdown ? (
+        <output className="state-countdown" data-testid="state-countdown">{countdown}</output>
       ) : null}
       {targetTime ? (
         <div className="state-target">
@@ -134,11 +146,13 @@ export function StateFrame({
           <time data-testid="state-target-time">{targetTime}</time>
         </div>
       ) : null}
-      {countdown ? (
-        <output className="state-countdown" data-testid="state-countdown">
-          {countdown}
-        </output>
+      {supportDe || supportAr ? (
+        <div className="state-support">
+          {supportDe ? <span lang="de">{supportDe}</span> : null}
+          {supportAr ? <span dir="rtl" lang="ar">{supportAr}</span> : null}
+        </div>
       ) : null}
+      {extra}
     </section>
   );
 }

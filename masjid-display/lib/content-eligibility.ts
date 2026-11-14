@@ -9,6 +9,7 @@ import type {
 } from "./feed-types";
 import { isFridayIso, localDateIso, zonedDateTime } from "./time";
 import { resolvePostPrayerWindow } from "./state/post-prayer-state";
+import { selectedPostPrayerAzkar } from "./post-prayer-selection";
 
 export interface ActiveContent {
   prayerDay: DisplayPrayerDay | null;
@@ -96,13 +97,13 @@ export function activeDisplayContent(feed: MasjidDisplayFeedV1, now: Date): Acti
   const scheduledAzkar = selectedAzkar.filter(
     (item) => item.category === daypart || (isFriday && item.category === "Friday"),
   );
-  const postPrayerAzkar = selectedAzkar.filter((item) => item.category === "After Prayer");
-  // Post-congregational Dhikr takes priority in its established 15-minute
-  // window without changing Adhan, Iqama or Friday prayer display states.
-  const eligibleAzkar =
-    postPrayerAzkar.length > 0 && resolvePostPrayerWindow(feed, now) !== null
-      ? postPrayerAzkar
-      : scheduledAzkar;
+  const afterPrayer = resolvePostPrayerWindow(feed, now);
+  const postPrayerAzkar = afterPrayer
+    ? selectedPostPrayerAzkar(feed, afterPrayer.prayer)
+    : [];
+  // A fixed four-minute context replaces regular Azkar only if it has
+  // content applicable to this completed prayer.
+  const eligibleAzkar = postPrayerAzkar.length > 0 ? postPrayerAzkar : scheduledAzkar;
 
   const activeAnnouncements = feed.announcements.filter((item) => isAnnouncementActive(item, now));
   const urgentAnnouncements = activeAnnouncements.filter((item) => item.isUrgent);

@@ -93,4 +93,40 @@ describe("deterministic normal scheduler", () => {
     expect(resolveNormalSlide(source, at(0), basis)?.kind).toBe("ANNOUNCEMENT");
     expect(resolveNormalSlide(source, at(30), basis)?.kind).toBe("EVENT");
   });
+  it("gives each language its own full Azkar slot for long bilingual text", () => {
+    const source = active({
+      azkar: [
+        {
+          id: "long-azkar",
+          category: "Morning",
+          arabicText: "أذكار طويلة ".repeat(40),
+          translationDe: "Lange Übersetzung ".repeat(40),
+          source: "Source",
+          repeatCount: 1,
+          sortOrder: 1,
+        },
+        {
+          id: "short-azkar",
+          category: "Morning",
+          arabicText: "ذكر",
+          translationDe: "Dhikr",
+          source: "Source",
+          repeatCount: 1,
+          sortOrder: 2,
+        },
+      ],
+      announcements: [{ id: "a1" } as ActiveContent["announcements"][number]],
+    });
+
+    expect(resolveNormalSlide(source, at(0), basis)).toMatchObject({
+      kind: "AZKAR", itemId: "long-azkar", language: "ar",
+    });
+    expect(resolveNormalSlide(source, at(20), basis)).toMatchObject({
+      kind: "AZKAR", itemId: "long-azkar", language: "de",
+    });
+    expect(resolveNormalSlide(source, at(40), basis)).toEqual({
+      kind: "AZKAR", itemId: "short-azkar",
+    });
+  });
+
 });

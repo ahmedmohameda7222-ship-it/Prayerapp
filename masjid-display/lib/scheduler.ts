@@ -1,4 +1,5 @@
 import type { ActiveContent } from "./content-eligibility";
+import { azkarNeedsLanguageSeparation } from "./azkar-presentation";
 
 export interface SchedulerBasis {
   epochMs: number;
@@ -16,6 +17,7 @@ export type NormalSlideKind =
 export interface NormalSlide {
   kind: NormalSlideKind;
   itemId: string | null;
+  language?: "ar" | "de";
 }
 
 const SLOT_MS = 10_000;
@@ -35,8 +37,16 @@ function slotIndex(now: Date, basis: SchedulerBasis): number {
 
 function azkarSlide(active: ActiveContent, occurrence: number): NormalSlide | null {
   if (active.azkar.length === 0) return null;
-  const item = active.azkar[positiveMod(occurrence, active.azkar.length)];
-  return { kind: "AZKAR", itemId: item.id };
+
+  const readingFrames = active.azkar.flatMap((item): NormalSlide[] =>
+    azkarNeedsLanguageSeparation(item)
+      ? [
+          { kind: "AZKAR", itemId: item.id, language: "ar" },
+          { kind: "AZKAR", itemId: item.id, language: "de" },
+        ]
+      : [{ kind: "AZKAR", itemId: item.id }],
+  );
+  return readingFrames[positiveMod(occurrence, readingFrames.length)];
 }
 
 function generalFamilies(active: ActiveContent): GeneralFamily[] {

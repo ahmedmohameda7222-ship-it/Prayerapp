@@ -20,7 +20,7 @@ function renderNormalSlide(vm: DisplayRuntimeViewModel, slide: NormalSlide | nul
   switch (slide.kind) {
     case "AZKAR": {
       const item = vm.content.azkar.find((entry) => entry.id === slide.itemId);
-      return item ? <AzkarSlide item={item} /> : null;
+      return item ? <AzkarSlide item={item} language={slide.language} /> : null;
     }
     case "SPECIAL": {
       const item = vm.content.specialAnnouncements.find((entry) => entry.id === slide.itemId);

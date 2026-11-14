@@ -1,12 +1,6 @@
-import type { DisplayAzkarDto, DisplayPrayerName } from "../../lib/feed-types";
+import { selectedPostPrayerAzkar } from "../../lib/post-prayer-selection";
 import type { DisplayRuntimeViewModel } from "../../lib/runtime/use-display-runtime";
 import { resolvePostPrayerWindow } from "../../lib/state/post-prayer-state";
-
-function appliesToPrayer(item: DisplayAzkarDto, prayer: DisplayPrayerName | null): boolean {
-  if (item.id === "after-prayer-fajr-maghrib-tahlil") return prayer === "fajr" || prayer === "maghrib";
-  if (item.id === "after-prayer-fajr-ilm-rizq-amal") return prayer === "fajr";
-  return true;
-}
 
 function remainingDisplayTime(endMs: number, now: Date): string {
   const seconds = Math.max(0, Math.ceil((endMs - now.getTime()) / 1_000));
@@ -19,14 +13,7 @@ export function AfterPrayerBoard({ vm }: { vm: DisplayRuntimeViewModel }) {
   const window = resolvePostPrayerWindow(vm.feed, vm.logicalNow);
   if (!window) return null;
 
-  const selected = new Set(vm.feed.displaySettings.azkarPlaylistIds);
-  const items = vm.feed.azkar
-    .filter((item) =>
-      item.category === "After Prayer" &&
-      selected.has(item.id) &&
-      appliesToPrayer(item, vm.state?.prayer ?? window.prayer),
-    )
-    .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+  const items = selectedPostPrayerAzkar(vm.feed, vm.state?.prayer ?? window.prayer);
 
   if (items.length === 0) return null;
 

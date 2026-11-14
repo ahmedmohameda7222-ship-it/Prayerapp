@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./tv-v2.css";
 
 export const metadata: Metadata = {
   title: "Prayerapp Masjid Display",

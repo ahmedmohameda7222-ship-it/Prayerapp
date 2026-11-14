@@ -26,7 +26,7 @@ vi.mock("@/lib/security/admin-audit", () => ({
   completeAdminAudit: mocks.completeAudit,
 }));
 
-import { toggleActiveCampaignAction } from "./actions";
+import { createDonationCampaignAction, toggleActiveCampaignAction } from "./actions";
 
 describe("Donation campaign activation concurrency", () => {
   beforeEach(() => {
@@ -87,5 +87,101 @@ describe("Donation campaign activation concurrency", () => {
       error: "Campaign changed concurrently; reload and retry",
     });
     expect(mocks.sendAdminContentPush).not.toHaveBeenCalled();
+  });
+});
+
+
+const completeCampaign = {
+  titleAr: "تبرع للمسجد",
+  titleEn: "",
+  titleDe: "Spende für die Moschee",
+  titleTr: "",
+  descriptionAr: "وصف الحملة",
+  descriptionEn: "",
+  descriptionDe: "Spendenaktion für die Moschee",
+  descriptionTr: "",
+  targetAmount: "250",
+  collectedAmount: "0",
+  startDate: "2026-11-14",
+  endDate: "",
+  donationUrl: "",
+  isActive: "true",
+  isFeatured: "false",
+};
+
+describe("Donation campaign creation validation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.beginAudit.mockResolvedValue({ id: "audit" });
+    mocks.completeAudit.mockImplementation(async (_audit, result) => result);
+  });
+
+  it("identifies target amount instead of returning a generic invalid input error", async () => {
+    const result = await createDonationCampaignAction("token", {
+      ...completeCampaign,
+      targetAmount: "0",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "admin.errors.positiveTargetRequired",
+    });
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("identifies an invalid end-date range instead of a generic invalid input error", async () => {
+    const result = await createDonationCampaignAction("token", {
+      ...completeCampaign,
+      endDate: "2026-11-13",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "admin.errors.endDateAfterStart",
+    });
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("identifies an HTTP donation URL rather than a generic error", async () => {
+    const result = await createDonationCampaignAction("token", {
+      ...completeCampaign,
+      donationUrl: "http://example.com/donate",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "admin.errors.validHttpsUrlRequired",
+    });
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("creates a valid active bilingual campaign with optional fields empty", async () => {
+    let inserted: Record<string, unknown> | null = null;
+    mocks.from.mockReturnValueOnce({
+      insert: vi.fn((data: Record<string, unknown>) => {
+        inserted = data;
+        return {
+          select: () => ({
+            single: async () => ({
+              data: { id: "00000000-0000-4000-8000-000000000001", title: data.title, is_active: true },
+              error: null,
+            }),
+          }),
+        };
+      }),
+    });
+    mocks.sendAdminContentPush.mockResolvedValue(undefined);
+
+    const result = await createDonationCampaignAction("token", completeCampaign);
+
+    expect(result).toEqual({ success: true });
+    expect(inserted).toMatchObject({
+      title_ar: completeCampaign.titleAr,
+      title_de: completeCampaign.titleDe,
+      description_de: completeCampaign.descriptionDe,
+      target_amount: 250,
+      collected_amount: 0,
+      is_active: true,
+    });
   });
 });

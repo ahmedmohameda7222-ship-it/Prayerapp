@@ -7,6 +7,7 @@ import { sendAdminContentPush } from "@/lib/push/web-push";
 import { validateDisplayAdminPublishableContent } from "@/lib/masjid-display/content-validation";
 import { adminActionError, beginAdminAudit, completeAdminAudit, type AdminAuditEvent } from "@/lib/security/admin-audit";
 import {
+  AdminInputError,
   parseAdminBoolean,
   parseAdminDate,
   parseAdminMonth,
@@ -65,7 +66,7 @@ function parseDonationSettings(data: Record<string, string>) {
 function parseCampaign(data: Record<string, string>) {
   const startDate = parseAdminDate(data.startDate, "startDate");
   const endDate = data.endDate ? parseAdminDate(data.endDate, "endDate") : null;
-  if (endDate && endDate < startDate) throw new Error("admin.errors.invalidInput");
+  if (endDate && endDate < startDate) throw new AdminInputError("endDate");
   return {
     titleAr: parseAdminText(data.titleAr, { field: "titleAr", max: 200, required: true }),
     titleEn: parseAdminText(data.titleEn ?? "", { field: "titleEn", max: 200 }),
@@ -81,6 +82,31 @@ function parseCampaign(data: Record<string, string>) {
     isActive: data.isActive ? parseAdminBoolean(data.isActive, "isActive") : false,
     isFeatured: data.isFeatured ? parseAdminBoolean(data.isFeatured, "isFeatured") : false,
   };
+}
+
+function campaignInputError(error: unknown): string {
+  if (!(error instanceof AdminInputError)) {
+    return adminActionError(error, "admin.errors.invalidInput");
+  }
+
+  switch (error.field) {
+    case "titleAr":
+      return "admin.errors.arabicTitleRequired";
+    case "descriptionAr":
+      return "admin.errors.arabicDescriptionRequired";
+    case "targetAmount":
+      return "admin.errors.positiveTargetRequired";
+    case "collectedAmount":
+      return "admin.errors.nonNegativeCollectedRequired";
+    case "startDate":
+      return "admin.errors.startDateRequired";
+    case "endDate":
+      return "admin.errors.endDateAfterStart";
+    case "donationUrl":
+      return "admin.errors.validHttpsUrlRequired";
+    default:
+      return "admin.errors.invalidInput";
+  }
 }
 
 function campaignValidationError(parsed: ReturnType<typeof parseCampaign>): string | undefined {
@@ -105,7 +131,7 @@ export async function updateDonationSettingsAction(token: string, data: Record<s
 
 export async function createDonationCampaignAction(token: string, data: Record<string, string>): Promise<ActionResult> {
   return runAuditedAction(token, { action: "donation.campaign.create", entityType: "donation_campaign" }, async () => {
-    let parsed; try { parsed = parseCampaign(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    let parsed; try { parsed = parseCampaign(data); } catch (error) { return { success: false, error: campaignInputError(error) }; }
     const validationError = campaignValidationError(parsed); if (validationError) return { success: false, error: validationError };
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const db = {
@@ -126,7 +152,7 @@ export async function createDonationCampaignAction(token: string, data: Record<s
 export async function updateDonationCampaignAction(token: string, id: string, data: Record<string, string>): Promise<ActionResult> {
   let entityId: string; try { entityId = parseAdminUuid(id, "id"); } catch { return { success: false, error: "admin.errors.invalidInput" }; }
   return runAuditedAction(token, { action: "donation.campaign.update", entityType: "donation_campaign", entityId }, async () => {
-    let parsed; try { parsed = parseCampaign(data); } catch (error) { return { success: false, error: adminActionError(error, "admin.errors.invalidInput") }; }
+    let parsed; try { parsed = parseCampaign(data); } catch (error) { return { success: false, error: campaignInputError(error) }; }
     const validationError = campaignValidationError(parsed); if (validationError) return { success: false, error: validationError };
     const client = createServerClient(); if (!client) return { success: false, error: "admin.errors.supabaseNotConfigured" };
     const { data: previous } = await client.from("donation_campaigns").select("is_active").eq("id", entityId).maybeSingle();

@@ -9,6 +9,8 @@ type FieldConfig = {
   labelKey: string;
   textarea?: boolean;
   requiredArabic?: boolean;
+  requiredGerman?: boolean;
+  maxLength?: number;
 };
 
 const languages: Array<{ locale: Locale; labelKey: string }> = [
@@ -44,7 +46,7 @@ export function LocalizedContentFields({
           <div className="grid gap-3 md:grid-cols-2">
             {fields.map((field) => {
               const key = localizedFormKey(field.base, locale);
-              const required = locale === "ar" && field.requiredArabic;
+              const required = (locale === "ar" && field.requiredArabic) || (locale === "de" && field.requiredGerman);
               const inputClass = "min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50";
               return (
                 <label key={key} className={`grid gap-1 text-sm font-bold text-[var(--color-emerald)] ${field.textarea ? "md:col-span-2" : ""}`}>
@@ -53,6 +55,7 @@ export function LocalizedContentFields({
                     <textarea
                       required={required}
                       rows={3}
+                      maxLength={field.maxLength}
                       value={form[key] || ""}
                       onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
                       disabled={disabled}
@@ -62,6 +65,7 @@ export function LocalizedContentFields({
                     <input
                       type="text"
                       required={required}
+                      maxLength={field.maxLength}
                       value={form[key] || ""}
                       onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
                       disabled={disabled}

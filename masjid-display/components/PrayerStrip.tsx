@@ -36,7 +36,8 @@ function cellsForDay(
 export function PrayerStrip({ vm }: { vm: DisplayRuntimeViewModel }) {
   if (!vm.feed) return null;
 
-  const localDate = localDateIso(vm.logicalNow, vm.feed.timezone);
+  const timezone = vm.feed.timezone;
+  const localDate = localDateIso(vm.logicalNow, timezone);
   const day = vm.feed.prayers.schedule.find((entry) => entry.date === localDate);
   if (!day) return null;
 
@@ -81,7 +82,7 @@ export function PrayerStrip({ vm }: { vm: DisplayRuntimeViewModel }) {
                 className="prayer-iqama"
                 data-testid={`prayer-iqama-${cell.key}`}
               >
-                Iqama {formatIqamaTime(localDate, cell.time, cell.iqamaDelay, vm.feed.timezone)}
+                Iqama {formatIqamaTime(localDate, cell.time, cell.iqamaDelay, timezone)}
               </div>
             )}
           </div>

@@ -8,6 +8,7 @@ import { createLogicalClock } from "../logical-clock";
 import { resolveNormalSlide, type NormalSlide } from "../scheduler";
 import { resolveDisplayState, type DisplayStateResolution } from "../state/resolve-display-state";
 import { validateFeedV1 } from "../validate-feed";
+import { getUpcomingPrayer } from "../upcoming-prayer";
 
 export interface DisplayRuntimeDiagnostics {
   lastAttemptAt: string | null;
@@ -211,7 +212,7 @@ export function useDisplayRuntime(): DisplayRuntimeViewModel {
     return resolveNormalSlide(productionContent, logicalNow, {
       epochMs: Date.parse(feed.generatedAt),
       revision: feed.snapshotRevision,
-    });
+    }, !productionContent.prayerScheduleStale && getUpcomingPrayer(feed, logicalNow) !== null);
   }, [feed, logicalNow, productionContent, productionState?.kind]);
 
   return {

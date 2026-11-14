@@ -229,8 +229,8 @@ export default function AdminDonationsPage() {
           <form onSubmit={handleCampaignSubmit} className="grid gap-4 md:grid-cols-2">
             <LocalizedContentFields
               fields={[
-                { base: "title", labelKey: "admin.title", requiredArabic: true },
-                { base: "description", labelKey: "admin.description", textarea: true, requiredArabic: true },
+                { base: "title", labelKey: "admin.title", requiredArabic: true, requiredGerman: campaignForm.isActive === "true", maxLength: 200 },
+                { base: "description", labelKey: "admin.description", textarea: true, requiredArabic: true, requiredGerman: campaignForm.isActive === "true", maxLength: 5_000 },
               ]}
               form={campaignForm}
               setForm={setCampaignForm}
@@ -245,7 +245,7 @@ export default function AdminDonationsPage() {
             ].map(({ key, labelKey, type, optional }) => (
               <label key={key} className="grid gap-1 text-sm font-bold text-[var(--color-emerald)]">
                 {labelKey.startsWith("admin.") ? t(labelKey) : labelKey}
-                <input type={type} required={!optional} value={campaignForm[key]} onChange={(event) => setCampaignForm((current) => ({ ...current, [key]: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
+                <input type={type} required={!optional} min={key === "targetAmount" ? 0.01 : key === "collectedAmount" ? 0 : key === "endDate" ? campaignForm.startDate || undefined : undefined} max={type === "number" ? 100_000_000 : undefined} step={type === "number" ? "0.01" : undefined} pattern={key === "donationUrl" ? "https://.*" : undefined} title={key === "donationUrl" ? t("admin.errors.validHttpsUrlRequired") : undefined} value={campaignForm[key]} onChange={(event) => setCampaignForm((current) => ({ ...current, [key]: event.target.value }))} disabled={!hasSupabase || isPending} className="min-h-11 rounded-2xl border border-[var(--color-border)] bg-[var(--color-cream)] px-3 text-[var(--color-charcoal)] outline-none focus:border-[var(--color-gold)] disabled:opacity-50" />
               </label>
             ))}
             <div className="flex flex-wrap gap-4 md:col-span-2">

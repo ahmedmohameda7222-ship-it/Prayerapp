@@ -37,6 +37,18 @@ describe("TV Azkar presentation", () => {
     expect(container.querySelector(".azkar-slide")).toHaveClass("azkar-slide-long");
     expect(screen.getByText("Hisn al-Muslim")).toBeInTheDocument();
   });
+  it("does not force both long-language paragraphs into the same TV frame", () => {
+    const long = dhikr("Morning", "اللهم اهدنا ".repeat(45));
+    long.translationDe = "Deutscher Text ".repeat(35);
+    const { rerender } = render(<AzkarSlide item={long} language="ar" />);
+    expect(screen.getByText(long.arabicText)).toBeInTheDocument();
+    expect(screen.queryByText(long.translationDe)).not.toBeInTheDocument();
+
+    rerender(<AzkarSlide item={long} language="de" />);
+    expect(screen.getByText(long.translationDe)).toBeInTheDocument();
+    expect(screen.queryByText(long.arabicText)).not.toBeInTheDocument();
+  });
+
 });
 
 describe("TV Prayer Strip orientation", () => {

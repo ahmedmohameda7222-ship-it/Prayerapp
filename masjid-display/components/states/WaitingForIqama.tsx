@@ -11,7 +11,7 @@ export function WaitingForIqama({ vm }: { vm: DisplayRuntimeViewModel }) {
       target={prayerTarget(vm, "iqama")}
       now={vm.logicalNow}
       timezone={presentationTimezone(vm)}
-      showTargetTime={false}
+      targetLabel="Iqama / الإقامة"
     />
   );
 }

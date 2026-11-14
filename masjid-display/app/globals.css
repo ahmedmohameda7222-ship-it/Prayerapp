@@ -641,3 +641,16 @@ body {
     border-block-end: .06rem solid rgba(203, 178, 120, .22);
   }
 }
+
+/* One-language frames give long Dhikr materially more room than split text. */
+.azkar-slide-single {
+  gap: clamp(.55rem, 1.35vmin, 1.45rem);
+}
+.azkar-slide-single .azkar-arabic {
+  font-size: clamp(1.65rem, 3.8vmin, 4.3rem);
+  line-height: 1.43;
+}
+.azkar-slide-single .azkar-german {
+  font-size: clamp(1.4rem, 3vmin, 3.3rem);
+  line-height: 1.42;
+}

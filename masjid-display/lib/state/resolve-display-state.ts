@@ -1,5 +1,6 @@
 import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "../feed-types";
 import { localDateIso } from "../time";
+import { selectedPostPrayerAzkar } from "../post-prayer-selection";
 import { resolveFridayState } from "./friday-state";
 import { resolvePrayerState } from "./prayer-state";
 import { resolvePostPrayerWindow } from "./post-prayer-state";
@@ -58,12 +59,8 @@ export function resolveDisplayState(
     };
   }
 
-  const hasSelectedPostPrayer = feed.azkar.some(
-    (item) => item.category === "After Prayer" &&
-      feed.displaySettings.azkarPlaylistIds.includes(item.id),
-  );
-  const afterPrayer = hasSelectedPostPrayer ? resolvePostPrayerWindow(feed, logicalNow) : null;
-  if (afterPrayer) {
+  const afterPrayer = resolvePostPrayerWindow(feed, logicalNow);
+  if (afterPrayer && selectedPostPrayerAzkar(feed, afterPrayer.prayer).length > 0) {
     return {
       kind: "POST_PRAYER_AZKAR",
       prayer: afterPrayer.prayer,

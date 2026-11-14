@@ -41,6 +41,19 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(screen.getByTestId("tv-hero")).toBeInTheDocument();
   });
 
+  it("shows a neutral loading composition until the first trusted Feed arrives", () => {
+    render(<DisplayShell vm={{ ...vm(null), feed: null, prayerScheduleStale: true, publicAppUrl: null }} />);
+    expect(screen.getByText("جاري تحميل شاشة المسجد")).toBeInTheDocument();
+    expect(screen.getByText("Daten werden geladen")).toBeInTheDocument();
+    expect(screen.queryByText(/UPDATE REQUIRED/)).not.toBeInTheDocument();
+  });
+
+  it("uses real next prayer data when NORMAL has no announcements or Azkar", () => {
+    render(<DisplayShell vm={{ ...vm(), logicalNow: new Date("2026-09-15T08:00:00Z") }} />);
+    expect(screen.getByText("الصلاة القادمة")).toBeInTheDocument();
+    expect(screen.getByText("Nächstes Gebet")).toBeInTheDocument();
+  });
+
   it("labels the prayer states with distinct V2 hero variants", () => {
     const variants = ["PRAYER_APPROACHING","PRAYER_TIME_NOW","WAITING_FOR_IQAMA","IQAMA_NOW","PRAYER_IN_PROGRESS","FRIDAY_MODE","JUMUAH_NOW"] as const;
     for (const kind of variants) {

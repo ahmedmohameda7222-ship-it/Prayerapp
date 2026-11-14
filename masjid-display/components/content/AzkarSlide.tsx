@@ -1,4 +1,5 @@
 import type { DisplayAzkarCategory, DisplayAzkarDto } from "../../lib/feed-types";
+import { azkarNeedsLanguageSeparation } from "../../lib/azkar-presentation";
 
 const CATEGORY_TITLES: Record<DisplayAzkarCategory, { ar: string; de: string }> = {
   Morning: { ar: "أذكار الصباح", de: "Morgen-Dhikr" },
@@ -9,13 +10,14 @@ const CATEGORY_TITLES: Record<DisplayAzkarCategory, { ar: string; de: string }> 
   Travel: { ar: "أذكار السفر", de: "Reise-Dhikr" },
 };
 
-export function AzkarSlide({ item }: { item: DisplayAzkarDto }) {
+export function AzkarSlide({ item, language }: { item: DisplayAzkarDto; language?: "ar" | "de" }) {
   const label = CATEGORY_TITLES[item.category];
-  const longCopy = item.arabicText.length > 240 || item.translationDe.length > 420;
+  const longCopy = azkarNeedsLanguageSeparation(item);
+  const visibleLanguage = longCopy ? language : undefined;
 
   return (
     <article
-      className={`content-slide azkar-slide${longCopy ? " azkar-slide-long" : ""}`}
+      className={`content-slide azkar-slide${longCopy ? " azkar-slide-long" : ""}${visibleLanguage ? " azkar-slide-single" : ""}`}
       data-azkar-category={item.category}
       lang="ar"
     >
@@ -23,8 +25,12 @@ export function AzkarSlide({ item }: { item: DisplayAzkarDto }) {
         <span dir="rtl" lang="ar">{label.ar}</span>
         <span lang="de">{label.de}</span>
       </div>
-      <p className="azkar-arabic" dir="rtl" lang="ar">{item.arabicText}</p>
-      <p className="azkar-german" lang="de">{item.translationDe}</p>
+      {visibleLanguage !== "de" ? (
+        <p className="azkar-arabic" dir="rtl" lang="ar">{item.arabicText}</p>
+      ) : null}
+      {visibleLanguage !== "ar" ? (
+        <p className="azkar-german" lang="de">{item.translationDe}</p>
+      ) : null}
       <div className="azkar-attribution">
         <p className="content-meta">{item.source}</p>
         {item.repeatCount > 1 ? (

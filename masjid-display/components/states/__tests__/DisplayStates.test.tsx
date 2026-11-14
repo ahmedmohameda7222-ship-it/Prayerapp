@@ -151,7 +151,7 @@ describe("Display religious state renderers", () => {
 
     let main = screen.getByRole("main");
     expect(within(main).getByText(/Jumuah 1/i)).toBeInTheDocument();
-    expect(within(main).getByText(/الجمعة/)).toBeInTheDocument();
+    expect(within(main).getAllByText(/الجمعة/).length).toBeGreaterThanOrEqual(2);
     expect(within(main).getByTestId("state-target-time")).toHaveTextContent("13:10");
 
     const additionalNow = new Date("2026-09-18T12:55:00.000Z");

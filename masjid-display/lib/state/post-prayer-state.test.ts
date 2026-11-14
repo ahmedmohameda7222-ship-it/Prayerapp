@@ -52,6 +52,14 @@ describe("fixed four-minute after-prayer TV state", () => {
     expect(resolveDisplayState(feed, at("2026-09-15", "17:10:01")).kind).toBe("NORMAL");
   });
 
+  it("does not show an empty board when the selected item applies only after Fajr", () => {
+    const feed = configured();
+    feed.azkar[0].id = "after-prayer-fajr-ilm-rizq-amal";
+    feed.displaySettings.azkarPlaylistIds = ["after-prayer-fajr-ilm-rizq-amal"];
+    expect(resolveDisplayState(feed, at("2026-09-15", "17:10:01")).kind).toBe("NORMAL");
+    expect(resolveDisplayState(feed, at("2026-09-15", "05:30:01")).kind).toBe("POST_PRAYER_AZKAR");
+  });
+
   it("keeps the regular prayer and Friday precedence while the board would otherwise be eligible", () => {
     const feed = configured();
     feed.prayers.schedule.find((d) => d.date === "2026-09-15")!.maghrib = "17:12";

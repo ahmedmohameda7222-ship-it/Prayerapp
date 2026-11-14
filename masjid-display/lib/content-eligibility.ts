@@ -109,8 +109,7 @@ function azkarCategory(now: Date, timezone: string): DisplayAzkarCategory | null
 
   const hour = Number(parts.hour);
   if (hour >= 4 && hour < 12) return "Morning";
-  if (hour >= 15 && hour < 22) return "Evening";
-  if (hour >= 22 || hour < 4) return "Sleep";
+  if (hour >= 15 || hour < 4) return "Evening";
   return null;
 }
 

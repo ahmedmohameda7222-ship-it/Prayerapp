@@ -26,6 +26,29 @@ describe("deterministic normal scheduler", () => {
     expect(resolveNormalSlide(active(), at(30), basis)).toBeNull();
   });
 
+  it("adds Next Prayer as a normal ten-second slot, alternating with Azkar and announcements", () => {
+    const source = active({
+      azkar: [{ id: "z1" } as ActiveContent["azkar"][number]],
+      announcements: [{ id: "a1" } as ActiveContent["announcements"][number]],
+    });
+    expect([0,10,20,30,40,50].map((n) => resolveNormalSlide(source, at(n), basis, true)?.kind)).toEqual([
+      "AZKAR", "NEXT_PRAYER", "AZKAR", "ANNOUNCEMENT", "AZKAR", "NEXT_PRAYER",
+    ]);
+    expect(resolveNormalSlide(source, at(10), basis, true)).toEqual({
+      kind: "NEXT_PRAYER",
+      itemId: null,
+    });
+    expect(resolveNormalSlide(source, at(19), basis, true)?.kind).toBe("NEXT_PRAYER");
+  });
+
+  it("still includes Next Prayer without other normal content when the Feed has future services", () => {
+    expect(resolveNormalSlide(active(), at(0), basis, true)).toEqual({
+      kind: "NEXT_PRAYER",
+      itemId: null,
+    });
+    expect(resolveNormalSlide(active(), at(10), basis, false)).toBeNull();
+  });
+
   it("changes optional content only on stable 10 second epochs", () => {
     const source = active({
       azkar: [{ id: "z1" } as ActiveContent["azkar"][number]],

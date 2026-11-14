@@ -12,7 +12,8 @@ export type NormalSlideKind =
   | "ANNOUNCEMENT"
   | "EVENT"
   | "CAMPAIGN"
-  | "MAGHRIB_PROGRAM";
+  | "MAGHRIB_PROGRAM"
+  | "NEXT_PRAYER";
 
 export interface NormalSlide {
   kind: NormalSlideKind;
@@ -49,8 +50,11 @@ function azkarSlide(active: ActiveContent, occurrence: number): NormalSlide | nu
   return readingFrames[positiveMod(occurrence, readingFrames.length)];
 }
 
-function generalFamilies(active: ActiveContent): GeneralFamily[] {
+function generalFamilies(active: ActiveContent, includeNextPrayer = false): GeneralFamily[] {
   const families: GeneralFamily[] = [];
+  if (includeNextPrayer) {
+    families.push({ kind: "NEXT_PRAYER", ids: ["next-prayer"] });
+  }
   if (active.specialAnnouncements.length > 0) {
     families.push({ kind: "SPECIAL", ids: active.specialAnnouncements.map((item) => item.id) });
   }
@@ -72,34 +76,35 @@ function generalFamilies(active: ActiveContent): GeneralFamily[] {
   return families;
 }
 
-function generalSlide(active: ActiveContent, occurrence: number): NormalSlide | null {
-  const families = generalFamilies(active);
+function generalSlide(active: ActiveContent, occurrence: number, includeNextPrayer = false): NormalSlide | null {
+  const families = generalFamilies(active, includeNextPrayer);
   if (families.length === 0) return null;
 
   const familyIndex = positiveMod(occurrence, families.length);
   const family = families[familyIndex];
   const familyOccurrence = Math.floor(occurrence / families.length);
   const itemId = family.ids[positiveMod(familyOccurrence, family.ids.length)];
-  return { kind: family.kind, itemId };
+  return { kind: family.kind, itemId: family.kind === "NEXT_PRAYER" ? null : itemId };
 }
 
 export function resolveNormalSlide(
   active: ActiveContent,
   now: Date,
   basis: SchedulerBasis,
+  includeNextPrayer = false,
 ): NormalSlide | null {
   const slot = slotIndex(now, basis);
   const hasAzkar = active.azkar.length > 0;
-  const hasGeneral = generalFamilies(active).length > 0;
+  const hasGeneral = generalFamilies(active, includeNextPrayer).length > 0;
 
   if (hasAzkar && hasGeneral) {
     const occurrence = Math.floor(slot / 2);
     return positiveMod(slot, 2) === 0
       ? azkarSlide(active, occurrence)
-      : generalSlide(active, occurrence);
+      : generalSlide(active, occurrence, includeNextPrayer);
   }
 
   if (hasAzkar) return azkarSlide(active, slot);
-  if (hasGeneral) return generalSlide(active, slot);
+  if (hasGeneral) return generalSlide(active, slot, includeNextPrayer);
   return null;
 }

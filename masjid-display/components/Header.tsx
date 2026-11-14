@@ -52,10 +52,13 @@ export function Header({ vm }: { vm: DisplayRuntimeViewModel }) {
   const timeZone = feed?.timezone ?? "Europe/Berlin";
 
   return (
-    <header className="display-header">
-      <div className="mosque-identity">
-        <strong>{feed?.mosque.nameDe ?? "Prayerapp Masjid Display"}</strong>
-        {feed ? <span dir="rtl">{feed.mosque.nameAr}</span> : null}
+    <header className="display-header tv-header">
+      <div className="mosque-brand">
+        <span className="mosque-seal" aria-hidden="true">۞</span>
+        <div className="mosque-identity">
+          <strong>{feed?.mosque.nameDe ?? "Prayerapp Masjid Display"}</strong>
+          {feed ? <span dir="rtl" lang="ar">{feed.mosque.nameAr}</span> : null}
+        </div>
       </div>
 
       <div className="header-dates">

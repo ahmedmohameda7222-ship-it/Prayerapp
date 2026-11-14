@@ -98,7 +98,7 @@ describe("DisplayShell", () => {
     expect(within(dhuhr).queryByText(/Iqama/i)).not.toBeInTheDocument();
   });
 
-  it("renders normal Iqama delays as separate rows while Sunrise stays informational", () => {
+  it("renders absolute Iqama clock times as separate rows while Sunrise stays informational", () => {
     render(<DisplayShell vm={vm({ logicalNow: weekdayNoon })} />);
 
     for (const prayer of ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const) {
@@ -107,7 +107,7 @@ describe("DisplayShell", () => {
       const prayerTime = cell.querySelector("time");
 
       expect(iqama).toHaveClass("prayer-iqama");
-      expect(iqama).toHaveTextContent(/^Iqama \+\d+ min$/);
+      expect(iqama).toHaveTextContent(/^Iqama \d{2}:\d{2}$/);
       expect(prayerTime).toHaveClass("prayer-time");
       expect(iqama).not.toContainElement(prayerTime);
     }

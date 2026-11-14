@@ -69,7 +69,7 @@ describe("offline content eligibility", () => {
     expect(activeDisplayContent(current, berlin("16:00:00")).azkar.map((item) => item.id)).toEqual(["test-azkar-evening"]);
   });
 
-  it("keeps morning, evening and sleep Azkar in their respective Berlin time windows", () => {
+  it("uses Morning and Evening at the correct Berlin hours and never shows Sleep Azkar", () => {
     const current = feed();
     const sample = current.azkar[0];
     current.azkar = [
@@ -81,14 +81,16 @@ describe("offline content eligibility", () => {
     const idsAt = (value: string) =>
       activeDisplayContent(current, berlin(value)).azkar.map((item) => item.id);
 
-    expect(idsAt("03:59:59")).toEqual(["sleep"]);
+    expect(idsAt("03:59:59")).toEqual(["evening"]);
     expect(idsAt("04:00:00")).toEqual(["morning"]);
     expect(idsAt("11:59:59")).toEqual(["morning"]);
     expect(idsAt("12:00:00")).toEqual([]);
     expect(idsAt("14:59:59")).toEqual([]);
     expect(idsAt("15:00:00")).toEqual(["evening"]);
     expect(idsAt("21:59:59")).toEqual(["evening"]);
-    expect(idsAt("22:00:00")).toEqual(["sleep"]);
+    expect(idsAt("22:00:00")).toEqual(["evening"]);
+    expect(idsAt("23:59:59")).toEqual(["evening"]);
+    expect(idsAt("02:00:00")).not.toContain("sleep");
   });
 
   it("shows Friday Azkar together with the correct daypart, except in the post-prayer window", () => {
@@ -112,8 +114,9 @@ describe("offline content eligibility", () => {
     expect(idsAt("13:40:00")).toEqual(["after-prayer"]);
     expect(idsAt("19:00:00")).toEqual(expect.arrayContaining(["evening", "friday"]));
     expect(idsAt("19:00:00")).toHaveLength(2);
-    expect(idsAt("23:00:00")).toEqual(expect.arrayContaining(["sleep", "friday"]));
+    expect(idsAt("23:00:00")).toEqual(expect.arrayContaining(["evening", "friday"]));
     expect(idsAt("23:00:00")).toHaveLength(2);
+    expect(idsAt("23:00:00")).not.toContain("sleep");
   });
 
   it("marks stale prayer horizon without inventing prayer content", () => {

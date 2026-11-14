@@ -1,6 +1,7 @@
 import type { DisplayRuntimeViewModel } from "../lib/runtime/use-display-runtime";
 import type { NormalSlide } from "../lib/scheduler";
 import { AnnouncementSlide } from "./content/AnnouncementSlide";
+import { AfterPrayerBoard } from "./content/AfterPrayerBoard";
 import { AzkarSlide } from "./content/AzkarSlide";
 import { CampaignSlide } from "./content/CampaignSlide";
 import { EventSlide } from "./content/EventSlide";
@@ -65,6 +66,8 @@ export function DisplayMain({ vm }: { vm: DisplayRuntimeViewModel }) {
   switch (state.kind) {
     case "NORMAL":
       return renderNormalSlide(vm, vm.normalSlide);
+    case "POST_PRAYER_AZKAR":
+      return <AfterPrayerBoard vm={vm} />;
     case "PRAYER_APPROACHING":
       return <PrayerApproaching vm={vm} />;
     case "PRAYER_TIME_NOW":

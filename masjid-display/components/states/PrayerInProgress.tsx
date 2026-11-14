@@ -8,6 +8,8 @@ export function PrayerInProgress({ vm }: { vm: DisplayRuntimeViewModel }) {
       titleDe="Gebet läuft"
       titleAr="الصلاة قائمة"
       prayer={vm.state?.prayer}
+      supportDe="Bitte Ruhe bewahren"
+      supportAr="يرجى التزام الهدوء"
       now={vm.logicalNow}
       timezone={presentationTimezone(vm)}
     />

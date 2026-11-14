@@ -41,12 +41,12 @@ describe("TV Azkar presentation", () => {
     const long = dhikr("Morning", "اللهم اهدنا ".repeat(45));
     long.translationDe = "Deutscher Text ".repeat(35);
     const { rerender } = render(<AzkarSlide item={long} language="ar" />);
-    expect(screen.getByText(long.arabicText)).toBeInTheDocument();
-    expect(screen.queryByText(long.translationDe)).not.toBeInTheDocument();
+    expect(screen.getByText((_, node) => node?.tagName === "P" && node.textContent === long.arabicText)).toBeInTheDocument();
+    expect(screen.queryByText((_, node) => node?.tagName === "P" && node.textContent === long.translationDe)).not.toBeInTheDocument();
 
     rerender(<AzkarSlide item={long} language="de" />);
-    expect(screen.getByText(long.translationDe)).toBeInTheDocument();
-    expect(screen.queryByText(long.arabicText)).not.toBeInTheDocument();
+    expect(screen.getByText((_, node) => node?.tagName === "P" && node.textContent === long.translationDe)).toBeInTheDocument();
+    expect(screen.queryByText((_, node) => node?.tagName === "P" && node.textContent === long.arabicText)).not.toBeInTheDocument();
   });
 
 });

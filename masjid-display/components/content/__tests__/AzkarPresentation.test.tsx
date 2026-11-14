@@ -33,7 +33,7 @@ describe("TV Azkar presentation", () => {
   it("marks long Arabic Azkar for a TV fitting strategy without clipping their full source text", () => {
     const value = "اللهم اهدنا إلى الصراط المستقيم ".repeat(22);
     const { container } = render(<AzkarSlide item={dhikr("Morning", value)} />);
-    expect(screen.getByText(value)).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.tagName === "P" && element.textContent === value)).toBeInTheDocument();
     expect(container.querySelector(".azkar-slide")).toHaveClass("azkar-slide-long");
     expect(screen.getByText("Hisn al-Muslim")).toBeInTheDocument();
   });

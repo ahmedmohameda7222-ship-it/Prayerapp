@@ -35,8 +35,8 @@ describe("context-aware TV Azkar selection", () => {
     // Asr 16:45, Iqama +15, in-progress duration +10 => finishes 17:10.
     expect(activeDisplayContent(feed, weekday("17:09:59")).azkar.map((a) => a.id)).not.toEqual(["after-prayer"]);
     expect(activeDisplayContent(feed, weekday("17:10:00")).azkar.map((a) => a.id)).toEqual(["after-prayer"]);
-    expect(activeDisplayContent(feed, weekday("17:24:59")).azkar.map((a) => a.id)).toEqual(["after-prayer"]);
-    expect(activeDisplayContent(feed, weekday("17:25:00")).azkar.map((a) => a.id)).toEqual(["evening"]);
+    expect(activeDisplayContent(feed, weekday("17:13:59")).azkar.map((a) => a.id)).toEqual(["after-prayer"]);
+    expect(activeDisplayContent(feed, weekday("17:14:00")).azkar.map((a) => a.id)).toEqual(["evening"]);
   });
 
   it("shows Friday Azkar on Friday, but gives priority to After Prayer after Jumuah", () => {

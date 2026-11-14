@@ -21,29 +21,33 @@ export function DisplayShell({
 }: DisplayShellProps) {
   return (
     <section
-      className="display-shell"
+      className="display-shell tv-v2"
       data-testid="display-shell"
       style={{ transform: `translate3d(${pixelShift.x}px, ${pixelShift.y}px, 0)` }}
     >
       <Header vm={vm} />
 
-      <main className="display-main" aria-live="polite">
+      <main className="display-main tv-hero" data-testid="tv-hero" data-layout={vm.state?.kind.toLowerCase().replaceAll("_", "-") ?? "initial-loading"} aria-live="polite">
         <DisplayMain vm={vm} />
-        <StatusOverlay
-          networkAvailable={vm.networkAvailable}
-          usingLkg={vm.usingLkg}
-          prayerScheduleStale={vm.prayerScheduleStale}
-        />
+        {vm.feed ? (
+          <StatusOverlay
+            networkAvailable={vm.networkAvailable}
+            usingLkg={vm.usingLkg}
+            prayerScheduleStale={vm.prayerScheduleStale}
+          />
+        ) : null}
       </main>
 
       <UrgentBar items={vm.urgent} logicalNow={vm.logicalNow} />
-      <PrayerStrip vm={vm} />
+      <div className="tv-prayer-dock" data-testid="tv-prayer-dock">
+        <PrayerStrip vm={vm} />
+        <PersistentAppQr publicAppUrl={vm.publicAppUrl} />
+      </div>
 
       <footer className="display-footer">
         <div className="presentation-mode-slot">
           <PresentationModeControl />
         </div>
-        <PersistentAppQr publicAppUrl={vm.publicAppUrl} />
       </footer>
 
       <DiagnosticsPanel enabled={diagnosticsEnabled} vm={vm} />

@@ -8,7 +8,8 @@ import type {
   MasjidDisplayFeedV1,
 } from "./feed-types";
 import { isFridayIso, localDateIso, zonedDateTime } from "./time";
-import { JUMUAH_HOLD_MS } from "./state/friday-state";
+import { resolvePostPrayerWindow } from "./state/post-prayer-state";
+import { selectedPostPrayerAzkar } from "./post-prayer-selection";
 
 export interface ActiveContent {
   prayerDay: DisplayPrayerDay | null;
@@ -41,59 +42,6 @@ function eventStart(item: DisplayEventDto, timezone: string): Date {
 function eventEnd(item: DisplayEventDto, timezone: string): Date {
   if (item.endTime) return zonedDateTime(item.date, item.endTime, timezone);
   return new Date(zonedDateTime(addIsoDay(item.date), "00:00", timezone).getTime() - 1);
-}
-
-const MINUTE_MS = 60_000;
-const AFTER_PRAYER_AZKAR_WINDOW_MS = 15 * MINUTE_MS;
-const PRAYER_NAMES = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
-type CompletedPrayerWindow = { startMs: number; endMs: number };
-
-// Like prayer-state.ts, this depends only on the immutable, validated Feed.
-// Avoid rebuilding hundreds of timezone-aware instants every second.
-const AFTER_PRAYER_WINDOWS = new WeakMap<MasjidDisplayFeedV1, CompletedPrayerWindow[]>();
-
-function afterPrayerWindows(feed: MasjidDisplayFeedV1): CompletedPrayerWindow[] {
-  const cached = AFTER_PRAYER_WINDOWS.get(feed);
-  if (cached) return cached;
-
-  const windows: CompletedPrayerWindow[] = [];
-  const addWindow = (endMs: number) => {
-    windows.push({ startMs: endMs, endMs: endMs + AFTER_PRAYER_AZKAR_WINDOW_MS });
-  };
-
-  for (const day of feed.prayers.schedule) {
-    for (const prayer of PRAYER_NAMES) {
-      if (prayer === "dhuhr" && isFridayIso(day.date)) continue;
-      const prayerAt = zonedDateTime(day.date, day[prayer], feed.timezone).getTime();
-      const delay = feed.prayers.iqamaDelays[prayer];
-      const duration = feed.displaySettings.prayerDurations[prayer];
-      addWindow(prayerAt + (delay + duration) * MINUTE_MS);
-    }
-
-    if (!isFridayIso(day.date)) continue;
-    const primaryAt = zonedDateTime(day.date, day.dhuhr, feed.timezone).getTime();
-    addWindow(primaryAt + JUMUAH_HOLD_MS);
-
-    // The first Friday service is the stored Dhuhr time. Extras are Admin-only.
-    const uniqueAdditionalTimes = new Set<string>();
-    for (const extra of feed.prayers.additionalJumuah) {
-      if (
-        extra.date !== day.date ||
-        extra.prayerTime <= day.dhuhr ||
-        uniqueAdditionalTimes.has(extra.prayerTime)
-      ) continue;
-      uniqueAdditionalTimes.add(extra.prayerTime);
-      addWindow(zonedDateTime(extra.date, extra.prayerTime, feed.timezone).getTime() + JUMUAH_HOLD_MS);
-    }
-  }
-
-  AFTER_PRAYER_WINDOWS.set(feed, windows);
-  return windows;
-}
-
-function afterPrayerAzkarActive(feed: MasjidDisplayFeedV1, now: Date): boolean {
-  const nowMs = now.getTime();
-  return afterPrayerWindows(feed).some(({ startMs, endMs }) => nowMs >= startMs && nowMs < endMs);
 }
 
 function azkarCategory(now: Date, timezone: string): DisplayAzkarCategory | null {
@@ -149,13 +97,13 @@ export function activeDisplayContent(feed: MasjidDisplayFeedV1, now: Date): Acti
   const scheduledAzkar = selectedAzkar.filter(
     (item) => item.category === daypart || (isFriday && item.category === "Friday"),
   );
-  const postPrayerAzkar = selectedAzkar.filter((item) => item.category === "After Prayer");
-  // Post-congregational Dhikr takes priority in its established 15-minute
-  // window without changing Adhan, Iqama or Friday prayer display states.
-  const eligibleAzkar =
-    postPrayerAzkar.length > 0 && afterPrayerAzkarActive(feed, now)
-      ? postPrayerAzkar
-      : scheduledAzkar;
+  const afterPrayer = resolvePostPrayerWindow(feed, now);
+  const postPrayerAzkar = afterPrayer
+    ? selectedPostPrayerAzkar(feed, afterPrayer.prayer)
+    : [];
+  // A fixed four-minute context replaces regular Azkar only if it has
+  // content applicable to this completed prayer.
+  const eligibleAzkar = postPrayerAzkar.length > 0 ? postPrayerAzkar : scheduledAzkar;
 
   const activeAnnouncements = feed.announcements.filter((item) => isAnnouncementActive(item, now));
   const urgentAnnouncements = activeAnnouncements.filter((item) => item.isUrgent);

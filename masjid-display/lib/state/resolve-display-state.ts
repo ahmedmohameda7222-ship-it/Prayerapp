@@ -1,7 +1,9 @@
 import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "../feed-types";
 import { localDateIso } from "../time";
+import { selectedPostPrayerAzkar } from "../post-prayer-selection";
 import { resolveFridayState } from "./friday-state";
 import { resolvePrayerState } from "./prayer-state";
+import { resolvePostPrayerWindow } from "./post-prayer-state";
 
 export type DisplayStateKind =
   | "NORMAL"
@@ -10,6 +12,7 @@ export type DisplayStateKind =
   | "WAITING_FOR_IQAMA"
   | "IQAMA_NOW"
   | "PRAYER_IN_PROGRESS"
+  | "POST_PRAYER_AZKAR"
   | "FRIDAY_MODE"
   | "JUMUAH_NOW";
 
@@ -47,10 +50,29 @@ export function resolveDisplayState(
   }
 
   const prayer = resolvePrayerState(feed, logicalNow);
+  if (prayer.kind !== "NORMAL" || prayer.degradedReason) {
+    return {
+      kind: prayer.kind,
+      prayer: prayer.prayer,
+      degraded: prayer.degradedReason !== null,
+      degradedReason: prayer.degradedReason,
+    };
+  }
+
+  const afterPrayer = resolvePostPrayerWindow(feed, logicalNow);
+  if (afterPrayer && selectedPostPrayerAzkar(feed, afterPrayer.prayer).length > 0) {
+    return {
+      kind: "POST_PRAYER_AZKAR",
+      prayer: afterPrayer.prayer,
+      degraded: false,
+      degradedReason: null,
+    };
+  }
+
   return {
-    kind: prayer.kind,
-    prayer: prayer.prayer,
-    degraded: prayer.degradedReason !== null,
-    degradedReason: prayer.degradedReason,
+    kind: "NORMAL",
+    prayer: null,
+    degraded: false,
+    degradedReason: null,
   };
 }

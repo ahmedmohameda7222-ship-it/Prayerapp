@@ -13,7 +13,8 @@ export function PersistentAppQr({ publicAppUrl }: { publicAppUrl: string | null 
         size={256}
         title="Prayerapp öffnen / افتح التطبيق"
       />
-      <span>Prayerapp öffnen / افتح التطبيق</span>
+      <span lang="de">Prayerapp öffnen</span>
+      <span lang="ar" dir="rtl">افتح التطبيق</span>
     </aside>
   );
 }

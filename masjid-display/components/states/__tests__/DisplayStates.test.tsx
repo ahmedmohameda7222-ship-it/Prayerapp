@@ -106,7 +106,7 @@ describe("Display religious state renderers", () => {
     const main = screen.getByRole("main");
     expect(within(main).getByText("Asr")).toBeInTheDocument();
     expect(within(main).getByText("العصر")).toBeInTheDocument();
-    expect(within(main).queryByTestId("state-target-time")).not.toBeInTheDocument();
+    expect(within(main).getByTestId("state-target-time")).toHaveTextContent("16:45");
     expect(within(main).getByTestId("state-countdown")).toHaveTextContent("05:00");
   });
 
@@ -128,7 +128,7 @@ describe("Display religious state renderers", () => {
     const main = screen.getByRole("main");
     expect(within(main).getByText(/Iqama in/i)).toBeInTheDocument();
     expect(within(main).getByText(/الإقامة بعد/)).toBeInTheDocument();
-    expect(within(main).queryByTestId("state-target-time")).not.toBeInTheDocument();
+    expect(within(main).getByTestId("state-target-time")).toHaveTextContent("17:00");
     expect(within(main).getByTestId("state-countdown")).toHaveTextContent("10:00");
   });
 
@@ -151,7 +151,7 @@ describe("Display religious state renderers", () => {
 
     let main = screen.getByRole("main");
     expect(within(main).getByText(/Jumuah 1/i)).toBeInTheDocument();
-    expect(within(main).getByText(/الجمعة/)).toBeInTheDocument();
+    expect(within(main).getAllByText(/الجمعة/).length).toBeGreaterThanOrEqual(2);
     expect(within(main).getByTestId("state-target-time")).toHaveTextContent("13:10");
 
     const additionalNow = new Date("2026-09-18T12:55:00.000Z");
@@ -196,6 +196,7 @@ describe("Display religious state renderers", () => {
     const main = screen.getByRole("main");
     expect(within(main).getByText(/Jumuah jetzt/i)).toBeInTheDocument();
     expect(within(main).getByText(/صلاة الجمعة الآن/)).toBeInTheDocument();
+    expect(within(main).getByText("Jumuah")).toBeInTheDocument();
     expect(within(main).queryByText(/Iqama/i)).not.toBeInTheDocument();
   });
 });

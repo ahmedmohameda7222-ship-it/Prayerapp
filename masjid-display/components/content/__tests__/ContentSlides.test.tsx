@@ -69,7 +69,7 @@ describe("normal rotating content renderers", () => {
     expect(container.querySelector("marquee")).toBeNull();
   });
 
-  it("groups two short event cards but falls back to one when selected copy is long", () => {
+  it("focuses one large selected event, never squeezing two event cards beside each other", () => {
     const feed = cloneFeed();
     const now = new Date("2026-09-15T10:00:00.000Z");
     const { rerender } = render(
@@ -79,9 +79,9 @@ describe("normal rotating content renderers", () => {
     );
 
     let main = screen.getByRole("main");
-    expect(within(main).getAllByTestId("event-card")).toHaveLength(2);
+    expect(within(main).getAllByTestId("event-card")).toHaveLength(1);
     expect(within(main).getByText("Aktuelle Veranstaltung")).toBeInTheDocument();
-    expect(within(main).getByText("Kommende Veranstaltung")).toBeInTheDocument();
+    expect(within(main).queryByText("Kommende Veranstaltung")).not.toBeInTheDocument();
 
     const longFeed = cloneFeed();
     longFeed.events[0].descriptionAr = "وصف طويل ".repeat(45);
@@ -138,10 +138,10 @@ describe("normal rotating content renderers", () => {
     );
 
     const main = screen.getByRole("main");
-    expect(within(main).getAllByText(event.date)).toHaveLength(2);
+    expect(within(main).getByTestId("event-date")).toHaveAttribute("dateTime", event.date);
   });
 
-  it("groups two short campaigns when readable", () => {
+  it("focuses one donation campaign with a readable progress meter", () => {
     const feed = cloneFeed();
     feed.campaigns[1].startDate = "2026-09-01";
     feed.campaigns[1].endDate = null;
@@ -156,7 +156,8 @@ describe("normal rotating content renderers", () => {
       />,
     );
 
-    expect(within(screen.getByRole("main")).getAllByTestId("campaign-card")).toHaveLength(2);
+    expect(within(screen.getByRole("main")).getAllByTestId("campaign-card")).toHaveLength(1);
+    expect(within(screen.getByRole("main")).getByRole("progressbar")).toHaveAttribute("aria-valuemax", "100");
   });
 
   it("omits a campaign QR without a donation URL and encodes the exact URL when present", () => {

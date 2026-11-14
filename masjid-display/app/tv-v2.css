@@ -1,0 +1,327 @@
+/* Prayerapp TV V2. Real data/components, visual specification:
+   docs/superpowers/specs/2026-11-14-tv-layout-v2-design.md.
+   Layout architecture is fluid 16:9; no viewport-specific fixed pixels. */
+.tv-v2 {
+  --v2-bg: #061713;
+  --v2-panel: #0b2a22;
+  --v2-gold: #dac58a;
+  --v2-white: #f6f1e7;
+  --v2-muted: #b8c9bc;
+  width: calc(100% - 8px);
+  height: calc(100dvh - 8px);
+  min-height: 0;
+  margin: 4px;
+  padding: clamp(.85rem, 2.7vmin, 2.2rem) clamp(.95rem, 3vmin, 2.9rem) clamp(.5rem, 1.3vmin, 1.25rem);
+  grid-template-rows: auto minmax(0,1fr) auto minmax(0,auto) auto;
+  gap: clamp(.35rem, 1.1vmin, .95rem);
+  background:
+    radial-gradient(ellipse 50% 55% at 48% 44%,rgba(16,74,61,.38),transparent 87%),
+    radial-gradient(ellipse 40% 38% at 99% 0%,rgba(135,106,51,.075),transparent 75%),
+    linear-gradient(138deg,#08241c,#071e18 56%,#061713);
+  border: 1px solid #c1ad7540;
+  border-radius: clamp(.3rem,.75vmin,.9rem);
+  color: var(--v2-white);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.tv-v2::before,
+.tv-v2::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  width: 28vw;
+  height: 64vh;
+  opacity: .16;
+  background-image:
+    linear-gradient(30deg,transparent 47%,#4a8768 48%,transparent 49%),
+    linear-gradient(150deg,transparent 47%,#4a8768 48%,transparent 49%);
+  background-size: 4.5vmin 4.5vmin;
+}
+.tv-v2::before {left: -17vw;top: 18%;mask-image:linear-gradient(90deg,#000,transparent)}
+.tv-v2::after {right: -17vw;top: 11%;mask-image:linear-gradient(270deg,#000,transparent)}
+
+.tv-v2 .display-header {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr);
+  gap:clamp(.4rem,1.5vmin,1.5rem);
+  align-items:center;
+  border-bottom:1px solid #bda56e8c;
+  padding-bottom:clamp(.45rem,1.5vmin,1.35rem);
+}
+.tv-v2 .mosque-brand {display:flex;align-items:center;gap:clamp(.55rem,1.55vmin,1.65rem);min-width:0}
+.tv-v2 .mosque-seal {
+  width:clamp(2.4rem,6.25vmin,4.8rem);
+  height:clamp(2.4rem,6.25vmin,4.8rem);
+  flex:none;display:grid;place-items:center;
+  border:2px solid #d5bc83;border-radius:50%;
+  color:#e9d4a4;font:600 clamp(1.4rem,3.25vmin,2.9rem)/1 serif;
+}
+.tv-v2 .mosque-identity {min-width:0;gap:.16rem;font-size:clamp(1.2rem,2.7vmin,2.1rem);line-height:1.15}
+.tv-v2 .mosque-identity strong {font-weight:700;white-space:normal;overflow-wrap:break-word}
+.tv-v2 .mosque-identity span {color:#c6d2c5;font-size:.7em;line-height:1.45;justify-self:start}
+.tv-v2 .header-dates {font-size:clamp(.85rem,2.15vmin,1.6rem);color:#e6e2d5;line-height:1.32;gap:.15rem}
+.tv-v2 .header-dates span {color:#c6ba96;font-size:.86em}
+.tv-v2 .header-clock {
+  font-size:clamp(2.45rem,6.6vmin,5.1rem);
+  line-height:1;font-weight:760;letter-spacing:-.04em;
+  white-space:nowrap;min-width:0;
+}
+
+/* Hero stays large; board/rail/footer never overlay it. */
+.tv-v2 .tv-hero {min-width:0;min-height:0;overflow:hidden;padding:clamp(.2rem,.7vmin,.8rem) clamp(.35rem,1vmin,1rem);position:relative}
+.tv-v2 .state-panel {
+  width:min(100%,90rem);
+  height:100%;
+  max-height:100%;
+  min-height:0;
+  margin:auto;
+  padding:clamp(.65rem,1.7vmin,2rem);
+  gap:clamp(.35rem,1.2vmin,1.2rem);
+  align-content:center;
+  border:0;
+}
+.tv-v2 .state-copy {gap:clamp(.2rem,.4vmin,.45rem)}
+.tv-v2 .state-eyebrow {font-size:clamp(1.35rem,3.15vmin,2.7rem);font-weight:680;line-height:1.2;color:#d9c58c}
+.tv-v2 .state-prayer-name {display:grid;justify-items:center;gap:0;font-size:clamp(3.3rem,8vmin,7rem);line-height:1.13}
+.tv-v2 .state-prayer-name strong:first-child {font-size:.6em;color:#c9d9cb;font-weight:700}
+.tv-v2 .state-prayer-name strong[dir="rtl"] {font-family:"Noto Naskh Arabic","Amiri",serif;font-weight:700;color:#fff3d9;line-height:1.34}
+.tv-v2 .state-countdown {
+  font-size:clamp(4.6rem,14.6vmin,11.5rem);
+  color:#fff0c9;
+  line-height:1.0;
+  font-weight:780;
+  text-shadow:0 0 2.6rem #baa26022;
+}
+.tv-v2 .state-target {font-size:clamp(1.25rem,2.7vmin,2.2rem);gap:clamp(.5rem,1vmin,1rem);color:#c2d2c5}
+.tv-v2 .state-target time {font-size:clamp(1.75rem,3.3vmin,3.3rem);color:#f3e4c4}
+.tv-v2 .state-support {color:#c7d8c9;font-size:clamp(1.05rem,2.15vmin,2.05rem);line-height:1.3;text-align:center}
+.tv-v2 .state-friday-numbers {display:flex;gap:clamp(.5rem,1vmin,1.2rem);justify-content:center;flex-wrap:wrap}
+.tv-v2 .state-friday-numbers span {border:1px solid #9e8e658a;border-radius:.75rem;background:#15382d;padding:.4rem 1rem;font-size:clamp(1rem,1.8vmin,1.8rem)}
+.tv-v2 .state-friday-numbers .active {border-color:#dac285;background:#6b57308f}
+.tv-v2 .tv-hero[data-layout="prayer-in-progress"] .state-panel {opacity:.92}
+.tv-v2 .tv-hero[data-layout="prayer-in-progress"] .state-prayer-name {font-size:clamp(3.3rem,7.3vmin,6.8rem)}
+.tv-v2 .tv-hero[data-layout="iqama-now"] .state-eyebrow,
+.tv-v2 .tv-hero[data-layout="prayer-time-now"] .state-eyebrow,
+.tv-v2 .tv-hero[data-layout="jumuah-now"] .state-eyebrow {color:#f1da9a;font-size:clamp(1.8rem,4.2vmin,3.8rem)}
+.tv-v2 .tv-hero[data-layout="friday-mode"] .state-countdown {font-size:clamp(4.5rem,13vmin,10.5rem)}
+.tv-v2 .tv-hero[data-layout="jumuah-now"] .state-panel {gap:clamp(.7rem,2.5vmin,2rem)}
+
+/* This dock reproduces the preview's six prayers + separate APP QR. */
+.tv-v2 .tv-prayer-dock {width:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(7.5rem,13.4vmin,11.5rem);gap:clamp(.45rem,1vmin,1.2rem);min-height:0;align-items:stretch}
+.tv-v2 .prayer-strip {min-height:clamp(7.25rem,16.2vmin,11.8rem);grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(.35rem,.95vmin,1rem)}
+.tv-v2 .prayer-cell {
+  padding:clamp(.2rem,1vmin,.8rem) clamp(.1rem,.5vmin,.5rem);
+  gap:0;border:1px solid #6e947b85;
+  border-radius:clamp(.5rem,1.4vmin,1rem);
+  background:linear-gradient(180deg,#163d33d9,#0a2b24d6);
+  box-shadow:none;
+}
+.tv-v2 .prayer-cell[data-next="true"] {
+  border:2px solid #dbc282;
+  background:linear-gradient(180deg,#665628d4,#263c2b);
+  box-shadow:inset 0 2px #f5e6b028;
+}
+.tv-v2 .prayer-cell[data-next="true"] .prayer-time {color:#fff1c8}
+.tv-v2 [data-informational="true"] {opacity:.76}
+.tv-v2 .prayer-labels {font-size:clamp(.78rem,1.9vmin,1.65rem);line-height:1.12;gap:clamp(.06rem,.3vmin,.3rem)}
+.tv-v2 .prayer-labels span {font-size:.85em;color:#cbd8cb}
+.tv-v2 .prayer-time {font-size:clamp(1.65rem,3.95vmin,3.4rem);font-weight:790;line-height:1.13;letter-spacing:-.035em}
+.tv-v2 .prayer-iqama {
+  font-size:clamp(.66rem,1.5vmin,1.2rem);
+  padding:clamp(.1rem,.4vmin,.32rem) clamp(.1rem,.5vmin,.45rem);
+  margin-top:clamp(.1rem,.45vmin,.4rem);
+  border-top:0;border-radius:.45rem;
+  background:#ffffff16;color:#dadccc;
+  white-space:nowrap;line-height:1.2;
+}
+.tv-v2 .persistent-app-qr {
+  width:100%;height:100%;
+  align-items:center;justify-items:center;align-content:center;
+  padding-left:clamp(.35rem,1vmin,1rem);
+  border-left:1px solid #9989557a;gap:clamp(.25rem,.6vmin,.65rem);
+  font-size:clamp(.6rem,1.15vmin,.94rem);
+  color:#dce8de;
+}
+.tv-v2 .persistent-app-qr svg {
+  width:clamp(5.6rem,10.4vmin,8.25rem);height:auto;max-width:100%;
+  background:white;border-radius:.35rem;aspect-ratio:1;
+}
+.tv-v2 .display-footer {min-height:0;align-items:center;justify-content:flex-start;font-size:clamp(.65rem,1vmin,.9rem)}
+.tv-v2 .presentation-mode-control button {
+  min-height:0;padding:clamp(.25rem,.6vmin,.45rem) clamp(.55rem,1vmin,.95rem);
+  font-size:clamp(.7rem,1.1vmin,1rem);
+  border-color:#a58b5477;background:#23392c75;
+}
+
+/* Common content layouts from approved review: panel, quiet bilingual and source. */
+.tv-v2 .content-slide,
+.tv-v2 .content-card-grid {
+  width:min(100%,96rem);height:100%;max-height:100%;
+  padding:clamp(1rem,2.3vmin,2.4rem);
+  gap:clamp(.55rem,1.6vmin,1.6rem);
+}
+.tv-v2 .announcement-slide,
+.tv-v2 .special-display-slide,
+.tv-v2 .azkar-slide {
+  border:1px solid #947e527d;
+  border-radius:clamp(.9rem,2.1vmin,1.6rem);
+  background:#09251fc9;
+  box-shadow:inset 0 1px #c1b18730;
+  max-width:95rem;
+}
+.tv-v2 .announcement-slide:before {content:"إعلانات المسجد  ·  MITTEILUNG";display:block;grid-column:1/-1;font-size:clamp(.85rem,2.0vmin,1.7rem);font-weight:700;color:#ccb883;text-align:center;line-height:1.2}
+.tv-v2 .special-display-slide {border-color:#d3bb83;background:linear-gradient(180deg,#193a2e,#09241e)}
+.tv-v2 .special-display-slide:before {content:"إعلان خاص  ·  WICHTIGE MITTEILUNG";display:block;grid-column:1/-1;font-size:clamp(.92rem,2.05vmin,1.8rem);font-weight:750;color:#edcd8d;text-align:center}
+.tv-v2 .content-slide h2 {font-size:clamp(1.8rem,4.5vmin,4.2rem);line-height:1.33;font-weight:700}
+.tv-v2 .bilingual-slide {grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;column-gap:clamp(1rem,3vmin,3rem)}
+.tv-v2 .bilingual-slide > section:first-child {border-inline-end:1px solid #b79f6970;padding-inline-end:clamp(.55rem,2vmin,2rem)}
+.tv-v2 .bilingual-slide > section {font-size:clamp(1.15rem,2.8vmin,2.4rem);line-height:1.4}
+.tv-v2 .azkar-slide {display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(.3rem,1.25vmin,1.25rem);text-align:center}
+.tv-v2 .azkar-category {font-size:clamp(1.1rem,2.25vmin,1.8rem)}
+.tv-v2 .azkar-arabic {font-family:"Noto Naskh Arabic","Amiri",serif;font-size:clamp(2rem,5.2vmin,4.5rem);line-height:1.47}
+.tv-v2 .azkar-german {font-size:clamp(1.25rem,2.6vmin,2.2rem);line-height:1.35}
+.tv-v2 .azkar-slide-long .azkar-arabic {font-size:clamp(1.55rem,3.5vmin,3.4rem)}
+.tv-v2 .azkar-slide-long .azkar-german {font-size:clamp(1.1rem,2.25vmin,2.2rem)}
+.tv-v2 .content-meta {font-size:clamp(.8rem,1.3vmin,1.2rem)}
+.tv-v2 .azkar-attribution {gap:clamp(.4rem,1vmin,1rem)}
+
+/* Fixed display after the congregation: 2x4 or 3x6 index, never a slide carousel. */
+.tv-v2 .after-wrapper {width:100%;height:100%;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:clamp(.5rem,1.4vmin,1.3rem)}
+.tv-v2 .after-heading {display:flex;align-items:center;justify-content:space-between;gap:clamp(.5rem,2vmin,2rem);padding:0 clamp(.4rem,1vmin,1rem)}
+.tv-v2 .after-title {margin:0;font:700 clamp(2rem,4.2vmin,3.4rem)/1.3 "Noto Naskh Arabic","Amiri",serif}
+.tv-v2 .after-subtitle {margin:0;color:#cfb985;font-size:clamp(.85rem,1.8vmin,1.4rem)}
+.tv-v2 .after-fixed-status {display:flex;align-items:center;gap:clamp(.3rem,.9vmin,.7rem);border:1px solid #baa16a90;background:#725d2d4d;color:#f1dfab;border-radius:.7rem;padding:clamp(.25rem,.7vmin,.6rem) clamp(.5rem,1vmin,1rem);white-space:nowrap;font-size:clamp(.95rem,1.9vmin,1.6rem)}
+.tv-v2 .after-grid {min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:clamp(.4rem,1.1vmin,.9rem);direction:rtl}
+.tv-v2 .after-cell {min-width:0;min-height:0;display:grid;grid-template-columns:minmax(1.6rem,2.3vmin) minmax(0,1fr) auto;align-items:center;gap:clamp(.2rem,.8vmin,.8rem);padding:clamp(.25rem,.9vmin,.8rem) clamp(.35rem,1vmin,1rem);background:#133c30a8;border:1px solid #6888797d;border-radius:clamp(.45rem,1.1vmin,.85rem);overflow:hidden;text-align:right}
+.tv-v2 .after-copy {min-width:0;min-height:0;display:grid;align-content:center;gap:clamp(.05rem,.3vmin,.3rem)}
+.tv-v2 .after-number {color:#c6ab70;font:700 clamp(.85rem,2vmin,1.5rem) ui-monospace,monospace}
+.tv-v2 .after-ar {font:560 clamp(1.2rem,2.65vmin,2.15rem)/1.28 "Noto Naskh Arabic","Amiri",serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tv-v2 .after-de {font-size:clamp(.66rem,1.35vmin,1.1rem);color:#bcd0c2;line-height:1.16;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.tv-v2 .after-source {display:none}
+.tv-v2 .after-repeat {flex:none;color:#e5cb85;border:1px solid #a68b5285;padding:clamp(.17rem,.55vmin,.45rem) clamp(.24rem,.75vmin,.6rem);border-radius:.5rem;font-size:clamp(.7rem,1.6vmin,1.3rem);white-space:nowrap}
+.tv-v2 .after-wrapper[data-density="full"] .after-grid {grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr));gap:clamp(.22rem,.7vmin,.55rem)}
+.tv-v2 .after-wrapper[data-density="full"] .after-cell {grid-template-columns:clamp(1.3rem,1.8vmin,1.6rem) minmax(0,1fr) auto;padding:clamp(.1rem,.4vmin,.35rem) clamp(.2rem,.55vmin,.55rem)}
+.tv-v2 .after-wrapper[data-density="full"] .after-ar {font-size:clamp(.86rem,1.8vmin,1.5rem);-webkit-line-clamp:1}
+.tv-v2 .after-wrapper[data-density="full"] .after-de {font-size:clamp(.6rem,1vmin,.9rem)}
+.tv-v2 .after-wrapper[data-density="full"] .after-number {font-size:clamp(.65rem,1.15vmin,1rem)}
+.tv-v2 .after-wrapper[data-density="full"] .after-repeat {font-size:clamp(.65rem,1.2vmin,1rem);padding:.1rem .35rem}
+
+/* Donation, events and Maghrib programme have their own full hero compositions. */
+.tv-v2 .event-layout {display:grid;grid-template-columns:minmax(12rem,26%) minmax(0,1fr);align-items:center;gap:clamp(1rem,3vmin,3rem);width:100%;height:100%;max-width:95rem}
+.tv-v2 .event-date {border:1px solid #aa925f;border-radius:1.3rem;background:#193d329c;display:grid;align-content:center;justify-items:center;padding:clamp(1rem,2.5vmin,2.6rem);text-align:center}
+.tv-v2 .event-day {font-size:clamp(4rem,11vmin,9rem);line-height:1;font-weight:760}
+.tv-v2 .event-month {font-size:clamp(1.5rem,3.6vmin,3rem);color:#dfc58e;font-weight:650}
+.tv-v2 .event-content {display:grid;justify-items:center;text-align:center;gap:clamp(.35rem,1.1vmin,1rem)}
+.tv-v2 .event-content h2 {font:720 clamp(2rem,5.5vmin,5rem)/1.35 "Noto Naskh Arabic","Amiri",serif;margin:0}
+.tv-v2 .event-content h3 {font-size:clamp(1.5rem,4vmin,3.5rem);color:#e5d4a5;margin:0}
+.tv-v2 .event-content p {margin:0;font-size:clamp(1rem,2.1vmin,1.9rem)}
+.tv-v2 .event-meta {display:flex;gap:clamp(.4rem,1.3vmin,1.2rem);justify-content:center;margin-top:clamp(.4rem,1.5vmin,1.5rem);flex-wrap:wrap}
+.tv-v2 .event-meta span {border:1px solid #9aaf9b87;padding:clamp(.35rem,1vmin,.85rem) clamp(.5rem,1.2vmin,1rem);border-radius:.75rem;background:#10362a;font-size:clamp(.85rem,1.9vmin,1.65rem)}
+.tv-v2 .campaign-layout {width:100%;height:100%;max-width:97rem;display:grid;grid-template-columns:minmax(0,1fr) clamp(11rem,24%,19rem);gap:clamp(.75rem,3vmin,3rem);align-items:center}
+.tv-v2 .campaign-text {text-align:center;min-width:0}
+.tv-v2 .campaign-text h2 {font:700 clamp(2rem,5.5vmin,5rem)/1.28 "Noto Naskh Arabic","Amiri",serif;margin:0}
+.tv-v2 .campaign-text h3 {font-size:clamp(1.45rem,3.5vmin,3.1rem);font-weight:700;color:#e6d2a4;margin:0}
+.tv-v2 .campaign-text p {font-size:clamp(.95rem,2.3vmin,1.9rem);color:#c7d7c9;line-height:1.4;margin:clamp(.3rem,1vmin,1rem) 0}
+.tv-v2 .campaign-progress-track {height:clamp(.7rem,2vmin,1.7rem);border:1px solid #baa067;border-radius:3rem;overflow:hidden;background:#0d271d;margin:clamp(.8rem,2vmin,1.7rem) 0 clamp(.35rem,1vmin,1rem)}
+.tv-v2 .campaign-progress-track span {display:block;height:100%;background:linear-gradient(90deg,#b2934e,#efd399);border-radius:3rem}
+.tv-v2 .campaign-progress {font-size:clamp(1.5rem,3.6vmin,3rem)}
+.tv-v2 .campaign-percent {color:#d8c18b;font-size:clamp(.95rem,1.9vmin,1.7rem)}
+.tv-v2 .campaign-donation-qr {border-left:1px solid #9e956383;padding-left:clamp(.5rem,1.7vmin,1.5rem);text-align:center}
+.tv-v2 .campaign-donation-qr svg {width:100%;height:auto;max-width:clamp(10rem,22vmin,18rem);border:clamp(.4rem,.9vmin,.75rem) solid white;border-radius:.55rem;background:white}
+.tv-v2 .campaign-donation-qr h3 {font-size:clamp(1.2rem,2.7vmin,2.4rem);color:#edd39c;margin:.4rem 0}
+.tv-v2 .campaign-donation-qr p {font-size:clamp(.75rem,1.25vmin,1.15rem);margin:0;color:#aec2b0}
+.tv-v2 .maghrib-program-slide {display:grid;grid-template-columns:1fr 1fr;align-items:center;text-align:center;gap:clamp(1rem,3vmin,2.5rem)}
+.tv-v2 .maghrib-program-slide .maghrib-lesson {font-size:clamp(1.4rem,2.7vmin,2.7rem)}
+.tv-v2 .maghrib-program-slide h2 {font:720 clamp(2rem,5.4vmin,4.6rem)/1.3 "Noto Naskh Arabic","Amiri",serif}
+.tv-v2 .maghrib-program-slide .maghrib-combined {border:1px solid #a99360;border-radius:1.5rem;background:#173c31;padding:clamp(.8rem,2.3vmin,2rem)}
+.tv-v2 .maghrib-program-slide .maghrib-combined strong {font-size:clamp(3.5rem,9vmin,7rem);line-height:1.2;color:#f2dfac}
+.tv-v2 .maghrib-program-slide .maghrib-combined p {font-size:clamp(1rem,2.2vmin,2rem)}
+.tv-v2 .hero-kicker {font-size:clamp(.95rem,2.05vmin,1.8rem);font-weight:700;color:#d7c08b}
+.tv-v2 .urgent-bar {border-color:#bd9460;background:linear-gradient(90deg,#3d3020e6,#172c26dd);padding:clamp(.35rem,.9vmin,.7rem);max-height:clamp(2.5rem,6vmin,5.5rem);overflow:hidden}
+.tv-v2 .urgent-item {font-size:clamp(.85rem,1.7vmin,1.5rem)}
+.tv-v2 .status-overlay {border-color:#d3bd80;background:#112a23ed;font-size:clamp(.9rem,1.5vmin,1.35rem)}
+.tv-v2 .status-overlay-alert {border-color:#d69a66;background:#3e281cfa;font-size:clamp(1rem,1.8vmin,1.6rem)}
+.tv-v2 .tv-empty {height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(.4rem,1.2vmin,1rem);text-align:center}
+.tv-v2 .tv-empty h2 {font-size:clamp(2rem,4.5vmin,4rem);margin:0}
+.tv-v2 .tv-empty p {font-size:clamp(1.25rem,2.5vmin,2.2rem);color:#c2d0c4;margin:0}
+
+/* Full HD and HD TV viewport constraints. Preserves 6-card single-line rail. */
+@media (max-width: 1250px) and (min-aspect-ratio: 1.5) {
+  .tv-v2 .display-header {grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
+  .tv-v2 .mosque-seal {display:none}
+  .tv-v2 .prayer-strip {grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+@media (max-width: 820px), (max-aspect-ratio: 1.4) {
+  .tv-v2 {height:auto;min-height:100dvh;overflow:visible;grid-template-rows:auto minmax(18rem,1fr) auto auto auto}
+  .tv-v2 .display-header {grid-template-columns:1fr auto}
+  .tv-v2 .header-dates {grid-column:1 / -1;order:3}
+  .tv-v2 .tv-prayer-dock {grid-template-columns:minmax(0,1fr)}
+  .tv-v2 .prayer-strip {grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tv-v2 .persistent-app-qr {border-left:0;border-top:1px solid #9989557a;padding:1rem}
+  .tv-v2 .campaign-layout,.tv-v2 .event-layout,.tv-v2 .maghrib-program-slide {grid-template-columns:1fr}
+  .tv-v2 .after-wrapper[data-density="full"] .after-grid {grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}
+}
+
+/* Production data layouts: each content type has a distinct hierarchy. */
+.tv-v2 .announcement-slide[lang],
+.tv-v2 .special-display-slide[lang] {
+  grid-template-columns:minmax(0,1fr);
+  align-content:center;
+  justify-items:center;
+  text-align:center;
+}
+.tv-v2 .announcement-slide[lang] > div,
+.tv-v2 .special-display-slide[lang] > div {
+  max-width:85%;
+  font-size:clamp(1.3rem,3.1vmin,2.9rem);
+  line-height:1.5;
+}
+.tv-v2 .event-languages,
+.tv-v2 .campaign-bilingual {
+  display:grid;
+  justify-items:center;
+  gap:clamp(.45rem,1.1vmin,1.15rem);
+  width:100%;min-width:0;
+}
+.tv-v2 .event-languages > section,
+.tv-v2 .campaign-bilingual > section {
+  display:grid;justify-items:center;gap:clamp(.3rem,.75vmin,.7rem);
+  width:100%;min-width:0;
+}
+.tv-v2 .event-languages > section h2,
+.tv-v2 .campaign-bilingual > section h2 {
+  font:700 clamp(1.8rem,4.25vmin,3.8rem)/1.25 "Noto Naskh Arabic","Amiri",serif;
+  margin:0;
+}
+.tv-v2 .event-languages > section[lang="de"] h2,
+.tv-v2 .campaign-bilingual > section[lang="de"] h2 {
+  font-family:"Segoe UI",Arial,sans-serif;
+  font-size:clamp(1.45rem,3.3vmin,2.9rem);color:#e6d2a4;
+}
+.tv-v2 .event-languages > section > div,
+.tv-v2 .campaign-bilingual > section > div {
+  font-size:clamp(.9rem,1.9vmin,1.65rem);
+  color:#c7d7c9;line-height:1.36;max-width:90%;
+}
+.tv-v2 .event-languages[lang],
+.tv-v2 .campaign-bilingual[lang] {gap:clamp(.4rem,1.4vmin,1.3rem)}
+.tv-v2 .campaign-layout.no-donation-url {grid-template-columns:minmax(0,1fr);max-width:75rem;margin:auto}
+.tv-v2 .maghrib-program-slide:has(.maghrib-lesson:only-child) {grid-template-columns:minmax(0,1fr)}
+.tv-v2 .event-date time {display:grid;justify-items:center}
+.tv-v2 .event-content .event-meta span[lang="ar"] {font-family:"Noto Naskh Arabic","Amiri",serif}
+
+/* Fatal boundary may render without the normal TV shell. */
+.display-error-shell {
+  min-height:100dvh;
+  background:radial-gradient(ellipse at center,#12372f,#061713 75%);
+  color:#f6f1e7;
+  font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+  gap:clamp(.75rem,2vmin,2rem);
+}
+.display-error-shell button {
+  border:1px solid #c4ab72;border-radius:.8rem;
+  background:#173c31;color:#f6f1e7;
+  padding:.8rem 1.5rem;
+}

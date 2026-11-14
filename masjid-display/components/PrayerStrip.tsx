@@ -1,6 +1,7 @@
 import type { DisplayPrayerDay, DisplayPrayerName } from "../lib/feed-types";
 import type { DisplayRuntimeViewModel } from "../lib/runtime/use-display-runtime";
 import { isFridayIso, localDateIso, zonedDateTime } from "../lib/time";
+import { formatIqamaTime } from "../lib/upcoming-prayer";
 
 interface PrayerCell {
   key: "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
@@ -80,7 +81,7 @@ export function PrayerStrip({ vm }: { vm: DisplayRuntimeViewModel }) {
                 className="prayer-iqama"
                 data-testid={`prayer-iqama-${cell.key}`}
               >
-                Iqama +{cell.iqamaDelay} min
+                Iqama {formatIqamaTime(localDate, cell.time, cell.iqamaDelay, vm.feed.timezone)}
               </div>
             )}
           </div>

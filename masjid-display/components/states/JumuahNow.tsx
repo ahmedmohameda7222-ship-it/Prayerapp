@@ -8,6 +8,10 @@ export function JumuahNow({ vm }: { vm: DisplayRuntimeViewModel }) {
       testId="prayer-state-jumuah-now"
       titleDe={`Jumuah jetzt — ${serviceNumber}`}
       titleAr="صلاة الجمعة الآن"
+      nameDe="Jumuah"
+      nameAr="الجمعة"
+      supportDe="Die Freitagspredigt und das Gebet haben begonnen"
+      supportAr="بدأت خطبة وصلاة الجمعة"
       now={vm.logicalNow}
       timezone={presentationTimezone(vm)}
     />

@@ -22,8 +22,8 @@ function configured(): MasjidDisplayFeedV1 {
 }
 const at = (date: string, time: string) => new Date(`${date}T${time}+02:00`);
 
-describe("fixed four-minute after-prayer TV state", () => {
-  it("starts after congregational completion and stops at 240 seconds, never after the old 15-minute window", () => {
+describe("reading-time after-prayer TV state", () => {
+  it("starts after congregational completion and stops at the selected dhikr reading time", () => {
     const feed = configured();
     expect(resolveDisplayState(feed, at("2026-09-15", "17:10:29")).kind).toBe("PRAYER_IN_PROGRESS");
     expect(resolvePostPrayerWindow(feed, at("2026-09-15", "17:09:59"))).toBeNull();
@@ -31,19 +31,19 @@ describe("fixed four-minute after-prayer TV state", () => {
       kind: "POST_PRAYER_AZKAR",
       prayer: "asr",
     });
-    expect(resolveDisplayState(feed, at("2026-09-15", "17:14:29")).kind).toBe("POST_PRAYER_AZKAR");
-    expect(resolveDisplayState(feed, at("2026-09-15", "17:14:30")).kind).toBe("NORMAL");
+    expect(resolveDisplayState(feed, at("2026-09-15", "17:10:47")).kind).toBe("POST_PRAYER_AZKAR");
+    expect(resolveDisplayState(feed, at("2026-09-15", "17:10:48")).kind).toBe("NORMAL");
   });
 
-  it("offers 240 seconds after primary and additional Friday services without inventing Iqama", () => {
+  it("offers the selected reading duration after each Friday service without inventing Iqama", () => {
     const feed = configured();
     expect(resolveDisplayState(feed, at("2026-09-18", "13:39:59")).kind).toBe("JUMUAH_NOW");
     expect(resolveDisplayState(feed, at("2026-09-18", "13:40:00"))).toMatchObject({
       kind: "POST_PRAYER_AZKAR", prayer: "dhuhr",
     });
-    expect(resolveDisplayState(feed, at("2026-09-18", "13:44:00")).kind).toBe("NORMAL");
+    expect(resolveDisplayState(feed, at("2026-09-18", "13:40:18")).kind).toBe("NORMAL");
     expect(resolveDisplayState(feed, at("2026-09-18", "15:30:00")).kind).toBe("POST_PRAYER_AZKAR");
-    expect(resolveDisplayState(feed, at("2026-09-18", "15:34:00")).kind).toBe("NORMAL");
+    expect(resolveDisplayState(feed, at("2026-09-18", "15:30:18")).kind).toBe("NORMAL");
   });
 
   it("does not enter a post-prayer screen when no After Prayer Azkar were selected", () => {

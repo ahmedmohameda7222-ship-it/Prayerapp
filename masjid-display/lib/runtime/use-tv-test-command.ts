@@ -18,7 +18,13 @@ export function useTvTestCommand(): TvTestCommand | null {
         const response = await fetch("/api/tv-test", { cache: "no-store" });
         if (!response.ok) return;
         const payload: unknown = await response.json();
-        if (!disposed) setCommand(parseTvTestStatus(payload, new Date()));
+        // The TV's wall clock can drift. Prefer the trusted same-origin
+        // response Date; the presentation also revalidates against the
+        // Feed-corrected logical clock before showing any test.
+        const serverDate = response.headers.get("date");
+        const parsedServerDate = serverDate ? Date.parse(serverDate) : NaN;
+        const checkNow = Number.isFinite(parsedServerDate) ? new Date(parsedServerDate) : new Date();
+        if (!disposed) setCommand(parseTvTestStatus(payload, checkNow));
       } catch {
         // Never extend a stale test command if the network is unavailable.
       } finally {

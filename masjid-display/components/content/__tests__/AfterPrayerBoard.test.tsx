@@ -73,7 +73,9 @@ describe("sequential, readable after-prayer TV dhikr", () => {
     expect(screen.queryByText(Array(180).fill("Allah").join(" "))).not.toBeInTheDocument();
     rerender(<AfterPrayerBoard vm={{ ...vm, logicalNow: new Date("2026-09-15T17:12:30+02:00") }} />);
     expect(screen.getByTestId("after-prayer-item")).toHaveAttribute("data-language", "de");
-    expect(screen.getByText(Array(180).fill("Allah").join(" "))).toBeInTheDocument();
+    expect(screen.getByTestId("after-prayer-page")).toHaveTextContent(/Seite \d+ \/ \d+/);
+    expect(screen.getByTestId("after-prayer-item")).toHaveTextContent("Allah Allah");
+    expect(screen.queryByText(Array(180).fill("Allah").join(" "))).not.toBeInTheDocument();
   });
 
   it("can rotate all 18 source items without rendering a truncated grid", () => {

@@ -1,15 +1,31 @@
 import type { DisplayAzkarDto } from "./feed-types";
 
+function wordCount(value: string): number {
+  return value.trim().split(/\s+/u).filter(Boolean).length;
+}
+
+/** Long Qur'an passages need separate Arabic and German reading pages. */
+export function needsSeparatedDhikr(item: DisplayAzkarDto): boolean {
+  return item.arabicText.length > 240 || item.translationDe.length > 320;
+}
+
+function languageReadingSeconds(item: DisplayAzkarDto) {
+  return {
+    arabic: wordCount(item.arabicText) / 1.6,
+    german: wordCount(item.translationDe) / 2,
+  };
+}
+
 /**
- * One source-ordered after-prayer dhikr occupies a full-screen reading slide.
- * The two languages are read together (not added); repetitions add recitation
- * time. A 33x item therefore stays materially longer than a single item.
+ * Source-ordered dhikr reading duration. Short bilingual slides can be read
+ * side by side; long slides give each language its own time. Repetitions
+ * receive additional time instead of a fixed four-minute global timeout.
  */
 export function durationForDhikr(item: DisplayAzkarDto): number {
-  const words = (value: string) => value.trim().split(/\s+/u).filter(Boolean).length;
-  const readingSeconds = Math.ceil(Math.max(
-    words(item.arabicText) / 1.6, words(item.translationDe) / 2,
-  ));
+  const reading = languageReadingSeconds(item);
+  const readingSeconds = Math.ceil(needsSeparatedDhikr(item)
+    ? reading.arabic + reading.german
+    : Math.max(reading.arabic, reading.german));
   const repeats = Number.isFinite(item.repeatCount)
     ? Math.max(1, Math.min(33, Math.floor(item.repeatCount)))
     : 1;
@@ -24,10 +40,11 @@ export interface AfterPrayerSlide {
   item: DisplayAzkarDto;
   index: number;
   count: number;
+  language: "both" | "ar" | "de";
   endsAtMs: number;
 }
 
-/** Pure absolute-time lookup: TV wake/reload will never reset the slide. */
+/** Absolute-time resolution survives sleep, refresh and late joining without resetting a dhikr. */
 export function activeAfterPrayerSlide(
   items: readonly DisplayAzkarDto[],
   startMs: number,
@@ -36,8 +53,23 @@ export function activeAfterPrayerSlide(
   if (!Number.isFinite(startMs) || !Number.isFinite(nowMs) || nowMs < startMs) return null;
   let end = startMs;
   for (let index = 0; index < items.length; index += 1) {
-    end += durationForDhikr(items[index]);
-    if (nowMs < end) return { item: items[index], index, count: items.length, endsAtMs: end };
+    const item = items[index];
+    const itemStartMs = end;
+    const durationMs = durationForDhikr(item);
+    end += durationMs;
+    if (nowMs >= end) continue;
+
+    if (needsSeparatedDhikr(item)) {
+      const reading = languageReadingSeconds(item);
+      const totalReading = reading.arabic + reading.german;
+      const estimatedArabicMs = Math.round(durationMs * reading.arabic / Math.max(1, totalReading) / 1_000) * 1_000;
+      const arabicEndsAtMs = itemStartMs + Math.max(1_000, Math.min(durationMs - 1_000, estimatedArabicMs));
+      return nowMs < arabicEndsAtMs
+        ? { item, index, count: items.length, language: "ar", endsAtMs: arabicEndsAtMs }
+        : { item, index, count: items.length, language: "de", endsAtMs: end };
+    }
+
+    return { item, index, count: items.length, language: "both", endsAtMs: end };
   }
   return null;
 }

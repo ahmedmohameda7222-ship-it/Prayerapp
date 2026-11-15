@@ -38,6 +38,10 @@ describe("large rotating after-prayer reading slide", () => {
     expect(screen.queryByText("لا تظهر")).not.toBeInTheDocument();
     expect(screen.getByText("×3")).toBeInTheDocument();
     expect(screen.getByTestId("after-prayer-progress")).toHaveTextContent("01 / 02");
+    expect(screen.getByTestId("after-prayer-counter")).toContainElement(screen.getByTestId("after-prayer-progress"));
+    expect(screen.getByTestId("after-prayer-titles")).toHaveTextContent("أذكار ما بعد الصلاة");
+    expect(screen.getByTestId("after-prayer-titles")).toHaveTextContent("Dhikr nach dem Gebet");
+    expect(screen.getByTestId("after-prayer-item")).toContainElement(screen.getByTestId("after-prayer-copy"));
     expect(screen.getByTestId("after-slide-remaining")).toHaveTextContent("00:11");
 
     rerender(<AfterPrayerBoard vm={{ ...vm, logicalNow: new Date("2026-09-15T17:10:41+02:00") }} />);
@@ -77,6 +81,8 @@ describe("large rotating after-prayer reading slide", () => {
     const slide = screen.getByTestId("after-prayer-item");
     expect(slide).toHaveAttribute("data-language", "both");
     expect(slide).toHaveAttribute("data-density", "long");
+    expect(within(slide).getByTestId("after-prayer-copy")).toContainElement(within(slide).getByText(arabic));
+    expect(within(slide).getByTestId("after-prayer-copy")).toContainElement(within(slide).getByText(german));
     expect(within(slide).getByText(arabic)).toBeInTheDocument();
     expect(within(slide).getByText(german)).toBeInTheDocument();
     expect(screen.getByTestId("after-prayer-progress")).toHaveTextContent("01 / 01");

@@ -2,6 +2,7 @@ import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "../feed-types";
 import { activeDisplayContent, type ActiveContent } from "../content-eligibility";
 import { resolveNormalSlide, type NormalSlide, type NormalSlideKind } from "../scheduler";
 import { resolveDisplayState } from "../state/resolve-display-state";
+import { IQAMA_ANNOUNCEMENT_MS, prayerBlackoutEndMs } from "../state/prayer-lifecycle";
 import { isFridayIso, localDateIso, zonedDateTime } from "../time";
 import type { DisplayRuntimeViewModel } from "./use-display-runtime";
 
@@ -95,8 +96,8 @@ function stageInstant(
     case "PRAYER_TIME_NOW": return adhan + 1_000;
     case "WAITING_FOR_IQAMA": return iqama - 90_000;
     case "IQAMA_NOW": return iqama + 1_000;
-    case "PRAYER_IN_PROGRESS": return iqama + 121_000;
-    case "POST_PRAYER_AZKAR": return iqama + duration * MINUTE + 15_000;
+    case "PRAYER_IN_PROGRESS": return iqama + IQAMA_ANNOUNCEMENT_MS + 1_000;
+    case "POST_PRAYER_AZKAR": return prayerBlackoutEndMs(prayer, iqama) + 15_000;
     default: return null;
   }
 }

@@ -47,7 +47,7 @@ describe("approved static After Prayer TV board", () => {
 
   it("shows the correct remaining time against the absolute end of the congregational window", () => {
     render(<AfterPrayerBoard vm={viewModel()} />);
-    expect(screen.getByTestId("after-prayer-remaining")).toHaveTextContent("03:00");
+    expect(screen.getByTestId("after-prayer-remaining")).toHaveTextContent("03:30");
   });
 
   it("retains full Arabic and German text in source and supports a dense index of up to 18 items", () => {

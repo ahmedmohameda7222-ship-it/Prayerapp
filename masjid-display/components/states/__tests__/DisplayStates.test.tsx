@@ -44,6 +44,19 @@ function vm(
 afterEach(() => cleanup());
 
 describe("Display religious state renderers", () => {
+  it("announces the Adhan with the prayer name and no redundant 00:00 countdown", () => {
+    render(<DisplayShell vm={vm(new Date("2026-09-15T14:45:00Z"), {
+      state: { kind: "PRAYER_TIME_NOW", prayer: "asr", degraded: false, degradedReason: null },
+    })} />);
+    const main = screen.getByRole("main");
+    expect(within(main).getByText("حان الآن موعد أذان صلاة")).toBeInTheDocument();
+    expect(within(main).getByText("Jetzt ist Zeit für den Adhan zum Gebet")).toBeInTheDocument();
+    expect(within(main).getByText("العصر")).toBeInTheDocument();
+    expect(within(main).getByText("Asr")).toBeInTheDocument();
+    expect(within(main).getByTestId("state-target-time")).toHaveTextContent("16:45");
+    expect(within(main).queryByTestId("state-countdown")).not.toBeInTheDocument();
+  });
+
   it("renders Iqama Now bilingually and suppresses the normal rotating slide", () => {
     const now = new Date("2026-09-15T14:55:00.000Z");
     render(
@@ -62,7 +75,7 @@ describe("Display religious state renderers", () => {
 
     const main = screen.getByRole("main");
     expect(within(main).getByText(/Iqama/i)).toBeInTheDocument();
-    expect(within(main).getByText(/إقامة الصلاة/)).toBeInTheDocument();
+    expect(within(main).getByText(/حان الآن موعد إقامة صلاة/)).toBeInTheDocument();
     expect(within(main).queryByText("Aktuelle Veranstaltung")).not.toBeInTheDocument();
   });
 
@@ -82,10 +95,9 @@ describe("Display religious state renderers", () => {
       />,
     );
 
-    const main = screen.getByRole("main");
-    expect(within(main).getByText(/Gebet läuft/i)).toBeInTheDocument();
-    expect(within(main).getByText(/الصلاة قائمة/)).toBeInTheDocument();
-    expect(within(main).queryByText("Spendenkampagne")).not.toBeInTheDocument();
+    expect(screen.getByTestId("prayer-blackout")).toBeInTheDocument();
+    expect(screen.queryByRole("main")).not.toBeInTheDocument();
+    expect(screen.queryByText("Spendenkampagne")).not.toBeInTheDocument();
   });
 
   it("renders prayer-approaching countdown from logical time to the stored prayer instant", () => {
@@ -194,9 +206,8 @@ describe("Display religious state renderers", () => {
     );
 
     const main = screen.getByRole("main");
-    expect(within(main).getByText(/Jumuah jetzt/i)).toBeInTheDocument();
-    expect(within(main).getByText(/صلاة الجمعة الآن/)).toBeInTheDocument();
-    expect(within(main).getByText("Jumuah")).toBeInTheDocument();
-    expect(within(main).queryByText(/Iqama/i)).not.toBeInTheDocument();
+    expect(within(main).getByTestId("friday-german-khutbah")).toBeInTheDocument();
+    expect(within(main).getByText("Keine veröffentlichte deutsche Freitagspredigt vorhanden.")).toBeInTheDocument();
+    expect(within(main).queryByText(/صلاة الجمعة الآن|Iqama/)).not.toBeInTheDocument();
   });
 });

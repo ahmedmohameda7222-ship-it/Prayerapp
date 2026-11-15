@@ -528,3 +528,57 @@
   letter-spacing: .05em;
   pointer-events: none;
 }
+
+/* Published Friday sermon: readable German text only, with fixed prayer rail. */
+.tv-v2 .friday-khutbah-slide {
+  width: min(100%, 95rem);
+  height: 100%;
+  min-height: 0;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: clamp(.45rem, 1.25vmin, 1.15rem);
+  padding: clamp(.6rem, 1.4vmin, 1.3rem) clamp(1rem, 2vmin, 2rem);
+  background: linear-gradient(180deg, #103227b8, #0a221c88);
+  border: 1px solid #b69b638a;
+  border-radius: clamp(.85rem, 1.8vmin, 1.5rem);
+  overflow: hidden;
+}
+
+.tv-v2 .friday-khutbah-title {
+  margin: 0;
+  max-width: 90%;
+  color: #f6e6b9;
+  font-size: clamp(1.7rem, 3.8vmin, 3.5rem);
+  font-weight: 760;
+  line-height: 1.23;
+  overflow-wrap: break-word;
+}
+
+.tv-v2 .friday-khutbah-body {
+  margin: 0;
+  width: min(100%, 85rem);
+  min-height: 0;
+  color: #f8f6ef;
+  font-size: clamp(1.3rem, 2.85vmin, 2.6rem);
+  font-weight: 540;
+  line-height: 1.42;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  overflow: hidden;
+}
+
+.tv-v2 .friday-khutbah-pagination {
+  margin: 0;
+  color: #c9c29b;
+  font-size: clamp(.85rem, 1.55vmin, 1.4rem);
+}
+
+.tv-v2 .friday-khutbah-unavailable {
+  color: #cadbd0;
+  font-size: clamp(1.5rem, 2.8vmin, 2.4rem);
+  line-height: 1.35;
+}

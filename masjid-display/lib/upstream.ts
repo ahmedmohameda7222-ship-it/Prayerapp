@@ -1,8 +1,9 @@
-export type PrayerappUpstreamPath = "/api/public/masjid-display" | "/api/public/masjid-tv-test";
+export type PrayerappUpstreamPath = "/api/public/masjid-display" | "/api/public/masjid-tv-test" | "/api/public/masjid-tv-khutbah";
 
 const ALLOWED_PATHS = new Set<PrayerappUpstreamPath>([
   "/api/public/masjid-display",
   "/api/public/masjid-tv-test",
+  "/api/public/masjid-tv-khutbah",
 ]);
 
 function configuredOrigin(): string {
@@ -35,6 +36,7 @@ export async function fetchPrayerappUpstream(
   path: PrayerappUpstreamPath,
   request: Request,
   timeoutMs: number,
+  fridayDate?: string,
 ): Promise<Response> {
   if (!ALLOWED_PATHS.has(path)) {
     throw new Error("Unsupported Prayerapp upstream path");
@@ -46,7 +48,11 @@ export async function fetchPrayerappUpstream(
     headers.set("if-none-match", ifNoneMatch);
   }
 
-  return fetch(`${configuredOrigin()}${path}`, {
+  // Build a fixed, validated date suffix without ever reading URLs from the request.
+  const suffix = fridayDate ? `?date=${encodeURIComponent(fridayDate)}` : "";
+  const url = `${configuredOrigin()}${path}${suffix}`;
+
+  return fetch(url, {
     method: "GET",
     headers,
     cache: "no-store",

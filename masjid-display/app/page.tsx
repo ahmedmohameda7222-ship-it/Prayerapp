@@ -4,6 +4,8 @@ import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { DisplayShell } from "../components/DisplayShell";
 import { pixelShiftForEpoch } from "../lib/pixel-shift";
 import { useDisplayRuntime } from "../lib/runtime/use-display-runtime";
+import { useGermanFridayKhutbah } from "../lib/runtime/use-german-friday-khutbah";
+import { localDateIso } from "../lib/time";
 import { useTvTestCommand } from "../lib/runtime/use-tv-test-command";
 import { applyTvTestCommand, parseTvTestStatus } from "../lib/runtime/tv-test-presenter";
 import { createWatchdog } from "../lib/runtime/watchdog";
@@ -34,7 +36,14 @@ export default function Home() {
     { active: remoteCommand !== null, command: remoteCommand },
     liveVm.logicalNow,
   );
-  const vm = applyTvTestCommand(liveVm, activeTest);
+  const presentationVm = applyTvTestCommand(liveVm, activeTest);
+  // Preload published German sermon during Friday countdown as well, so a
+  // brief network outage at Jumuah start does not lose already fetched text.
+  const fridayDate = (presentationVm.state?.kind === "FRIDAY_MODE" || presentationVm.state?.kind === "JUMUAH_NOW") && presentationVm.feed
+    ? localDateIso(presentationVm.logicalNow, presentationVm.feed.timezone)
+    : null;
+  const germanKhutbah = useGermanFridayKhutbah(fridayDate);
+  const vm = { ...presentationVm, fridayKhutbah: germanKhutbah };
   const watchdog = useMemo(
     () => createWatchdog({ hardFailureMs: WATCHDOG_HARD_FAILURE_MS }),
     [],

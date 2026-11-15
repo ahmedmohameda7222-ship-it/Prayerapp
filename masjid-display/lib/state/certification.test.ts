@@ -59,7 +59,7 @@ describe("Masjid Display state production certification", () => {
       kind: "PRAYER_IN_PROGRESS",
       prayer,
     });
-    expect(resolvePrayerState(feed, local("18:20:00"))).toMatchObject({ kind: "NORMAL" });
+    expect(resolvePrayerState(feed, local("18:20:30"))).toMatchObject({ kind: "NORMAL" });
   });
 
   it.each([
@@ -74,12 +74,12 @@ describe("Masjid Display state production certification", () => {
     expect(resolvePrayerState(prayerFeed("asr", { delay }), local(time)).kind).toBe(kind);
   });
 
-  it("ends Prayer In Progress from the original Iqama instant", () => {
+  it("ends Prayer In Progress after 30s notice and the complete 10-minute blackout", () => {
     const feed = prayerFeed("asr", { delay: 10, duration: 3 });
-    expect(resolvePrayerState(feed, local("18:11:59")).kind).toBe("IQAMA_NOW");
-    expect(resolvePrayerState(feed, local("18:12:00")).kind).toBe("PRAYER_IN_PROGRESS");
-    expect(resolvePrayerState(feed, local("18:12:59")).kind).toBe("PRAYER_IN_PROGRESS");
-    expect(resolvePrayerState(feed, local("18:13:00")).kind).toBe("NORMAL");
+    expect(resolvePrayerState(feed, local("18:10:29")).kind).toBe("IQAMA_NOW");
+    expect(resolvePrayerState(feed, local("18:10:30")).kind).toBe("PRAYER_IN_PROGRESS");
+    expect(resolvePrayerState(feed, local("18:20:29")).kind).toBe("PRAYER_IN_PROGRESS");
+    expect(resolvePrayerState(feed, local("18:20:30")).kind).toBe("NORMAL");
   });
 
   it("never creates a prayer lifecycle for Sunrise", () => {

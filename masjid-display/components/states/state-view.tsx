@@ -100,6 +100,7 @@ export function StateFrame({
   timezone,
   targetLabel,
   showTargetTime = true,
+  showCountdown = true,
   nameDe,
   nameAr,
   supportDe,
@@ -115,6 +116,7 @@ export function StateFrame({
   timezone: string;
   targetLabel?: string;
   showTargetTime?: boolean;
+  showCountdown?: boolean;
   nameDe?: string;
   nameAr?: string;
   supportDe?: string;
@@ -123,7 +125,7 @@ export function StateFrame({
 }) {
   const labels = nameDe && nameAr ? { de: nameDe, ar: nameAr } : prayerLabels(prayer ?? null);
   const targetTime = showTargetTime ? formatTargetTime(target ?? null, timezone) : null;
-  const countdown = formatCountdown(target ?? null, now);
+  const countdown = showCountdown ? formatCountdown(target ?? null, now) : null;
 
   return (
     <section className="state-panel" data-testid={testId}>

@@ -21,6 +21,16 @@ export function DisplayShell({
   testMode = null,
   pixelShift = { x: 0, y: 0 },
 }: DisplayShellProps) {
+  // Congregation blackout bypasses the entire shell. It must be literally black:
+  // no clock, prayer rail, QR, diagnostics, alerts, controls, pixel shift or badge.
+  if (vm.state?.kind === "PRAYER_IN_PROGRESS") {
+    return (
+      <div
+        data-testid="prayer-blackout"
+        style={{ position: "fixed", inset: "0", backgroundColor: "#000000", zIndex: 2147483647 }}
+      />
+    );
+  }
   const isPostPrayer = vm.state?.kind === "POST_PRAYER_AZKAR";
 
   return (
@@ -49,7 +59,7 @@ export function DisplayShell({
         ) : null}
       </main>
 
-      <UrgentBar items={vm.urgent} logicalNow={vm.logicalNow} />
+      <UrgentBar items={vm.state?.kind === "JUMUAH_NOW" ? [] : vm.urgent} logicalNow={vm.logicalNow} />
       {!isPostPrayer ? (
         <div className="tv-prayer-dock" data-testid="tv-prayer-dock">
           <PrayerStrip vm={vm} />

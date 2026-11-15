@@ -20,14 +20,14 @@ const DAILY: { scenario: TvTestScenario; label: string; description: string }[] 
   { scenario: "PRAYER_APPROACHING", label: "Adhan Countdown", description: "Last two minutes before the selected prayer" },
   { scenario: "PRAYER_TIME_NOW", label: "Adhan Now", description: "Show the Adhan announcement" },
   { scenario: "WAITING_FOR_IQAMA", label: "Iqama Countdown", description: "Final countdown before Iqama" },
-  { scenario: "IQAMA_NOW", label: "Iqama Now", description: "Show the Iqama announcement" },
-  { scenario: "PRAYER_IN_PROGRESS", label: "Prayer in Progress", description: "Current live prayer-in-progress layout" },
+  { scenario: "IQAMA_NOW", label: "Iqama Now (30s)", description: "Announce Iqama for 30 seconds, then switch fully black" },
+  { scenario: "PRAYER_IN_PROGRESS", label: "Black Screen — Prayer", description: "Black screen with all TV elements hidden during the congregation" },
   { scenario: "POST_PRAYER_AZKAR", label: "After Prayer Azkar", description: "Fixed four-minute Hisn al-Muslim board" },
 ];
 
 const OTHER: { scenario: TvTestScenario; label: string; description: string }[] = [
   { scenario: "FRIDAY_MODE", label: "Friday Countdown", description: "First upcoming Friday service countdown" },
-  { scenario: "JUMUAH_NOW", label: "Friday Now", description: "Current live Jumuah state (sermon integration pending)" },
+  { scenario: "JUMUAH_NOW", label: "German Friday Khutbah", description: "Show the published German Friday sermon from the Admin" },
   { scenario: "NORMAL", label: "Normal Rotation", description: "Real published eligible content, ten-second slides" },
   { scenario: "NEXT_PRAYER", label: "Next Prayer", description: "Show upcoming Adhan and Iqama" },
   { scenario: "AZKAR", label: "Normal Azkar", description: "Published morning/evening Azkar" },

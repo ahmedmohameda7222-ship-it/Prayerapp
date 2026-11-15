@@ -99,7 +99,7 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
   });
 
   it("labels the prayer states with distinct V2 hero variants", () => {
-    const variants = ["PRAYER_APPROACHING","PRAYER_TIME_NOW","WAITING_FOR_IQAMA","IQAMA_NOW","PRAYER_IN_PROGRESS","FRIDAY_MODE","JUMUAH_NOW"] as const;
+    const variants = ["PRAYER_APPROACHING","PRAYER_TIME_NOW","WAITING_FOR_IQAMA","IQAMA_NOW","FRIDAY_MODE","JUMUAH_NOW"] as const;
     for (const kind of variants) {
       const { unmount } = render(<DisplayShell vm={vm({
         kind, prayer: kind.startsWith("FRIDAY") || kind === "JUMUAH_NOW" ? null : "asr",

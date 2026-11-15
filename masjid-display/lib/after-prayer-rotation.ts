@@ -9,6 +9,34 @@ export function needsSeparatedDhikr(item: DisplayAzkarDto): boolean {
   return item.arabicText.length > 240 || item.translationDe.length > 320;
 }
 
+/** Wrap complete text on word boundaries so no slide silently cuts off a verse. */
+export function paginateDhikrText(raw: string, maxChars: number): string[] {
+  const limit = Math.max(40, Math.floor(maxChars));
+  const words = raw.trim().split(/\s+/u).filter(Boolean);
+  const pages: string[] = [];
+  let current = "";
+
+  for (const original of words) {
+    let word = original;
+    while (word.length > limit) {
+      if (current) {
+        pages.push(current);
+        current = "";
+      }
+      pages.push(word.slice(0, limit));
+      word = word.slice(limit);
+    }
+    if (!word) continue;
+    if (current && current.length + 1 + word.length > limit) {
+      pages.push(current);
+      current = "";
+    }
+    current = current ? `${current} ${word}` : word;
+  }
+  if (current) pages.push(current);
+  return pages;
+}
+
 function languageReadingSeconds(item: DisplayAzkarDto) {
   return {
     arabic: wordCount(item.arabicText) / 1.6,
@@ -41,6 +69,10 @@ export interface AfterPrayerSlide {
   index: number;
   count: number;
   language: "both" | "ar" | "de";
+  pageIndex: number;
+  pageCount: number;
+  textAr: string | null;
+  textDe: string | null;
   endsAtMs: number;
 }
 
@@ -52,6 +84,7 @@ export function activeAfterPrayerSlide(
 ): AfterPrayerSlide | null {
   if (!Number.isFinite(startMs) || !Number.isFinite(nowMs) || nowMs < startMs) return null;
   let end = startMs;
+
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index];
     const itemStartMs = end;
@@ -59,17 +92,47 @@ export function activeAfterPrayerSlide(
     end += durationMs;
     if (nowMs >= end) continue;
 
-    if (needsSeparatedDhikr(item)) {
-      const reading = languageReadingSeconds(item);
-      const totalReading = reading.arabic + reading.german;
-      const estimatedArabicMs = Math.round(durationMs * reading.arabic / Math.max(1, totalReading) / 1_000) * 1_000;
-      const arabicEndsAtMs = itemStartMs + Math.max(1_000, Math.min(durationMs - 1_000, estimatedArabicMs));
-      return nowMs < arabicEndsAtMs
-        ? { item, index, count: items.length, language: "ar", endsAtMs: arabicEndsAtMs }
-        : { item, index, count: items.length, language: "de", endsAtMs: end };
+    const shared = { item, index, count: items.length };
+    if (!needsSeparatedDhikr(item)) {
+      return {
+        ...shared, language: "both", pageIndex: 0, pageCount: 1,
+        textAr: item.arabicText, textDe: item.translationDe, endsAtMs: end,
+      };
     }
 
-    return { item, index, count: items.length, language: "both", endsAtMs: end };
+    const arabicPages = paginateDhikrText(item.arabicText, 170);
+    const germanPages = paginateDhikrText(item.translationDe, 260);
+    const reading = languageReadingSeconds(item);
+    const totalReading = reading.arabic + reading.german;
+    const estimatedArabicMs = Math.round(durationMs * reading.arabic / Math.max(1, totalReading) / 1_000) * 1_000;
+    const arabicBudgetMs = Math.max(1_000, Math.min(durationMs - 1_000, estimatedArabicMs));
+    const arabicEndMs = itemStartMs + arabicBudgetMs;
+
+    if (nowMs < arabicEndMs && arabicPages.length > 0) {
+      const elapsed = nowMs - itemStartMs;
+      const localIndex = Math.min(arabicPages.length - 1, Math.floor(elapsed * arabicPages.length / arabicBudgetMs));
+      const pageEndsAtMs = itemStartMs + Math.ceil((localIndex + 1) * arabicBudgetMs / arabicPages.length);
+      return {
+        ...shared, language: "ar", pageIndex: localIndex,
+        pageCount: arabicPages.length + germanPages.length,
+        textAr: arabicPages[localIndex], textDe: null, endsAtMs: pageEndsAtMs,
+      };
+    }
+
+    if (germanPages.length > 0) {
+      const germanStartMs = arabicEndMs;
+      const germanDurationMs = end - germanStartMs;
+      const localIndex = Math.min(germanPages.length - 1, Math.max(0,
+        Math.floor((nowMs - germanStartMs) * germanPages.length / Math.max(1, germanDurationMs)),
+      ));
+      const pageEndsAtMs = germanStartMs + Math.ceil((localIndex + 1) * germanDurationMs / germanPages.length);
+      return {
+        ...shared, language: "de", pageIndex: arabicPages.length + localIndex,
+        pageCount: arabicPages.length + germanPages.length,
+        textAr: null, textDe: germanPages[localIndex], endsAtMs: pageEndsAtMs,
+      };
+    }
+    return null;
   }
   return null;
 }

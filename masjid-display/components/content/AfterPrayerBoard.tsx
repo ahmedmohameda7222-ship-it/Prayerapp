@@ -1,4 +1,4 @@
-import { activeAfterPrayerSlide } from "../../lib/after-prayer-rotation";
+import { activeAfterPrayerSlide, needsSeparatedDhikr } from "../../lib/after-prayer-rotation";
 import { selectedPostPrayerAzkar } from "../../lib/post-prayer-selection";
 import type { DisplayRuntimeViewModel } from "../../lib/runtime/use-display-runtime";
 import { resolvePostPrayerWindow } from "../../lib/state/post-prayer-state";
@@ -18,8 +18,8 @@ export function AfterPrayerBoard({ vm }: { vm: DisplayRuntimeViewModel }) {
   const slide = activeAfterPrayerSlide(items, window.startMs, vm.logicalNow.getTime());
   if (!slide) return null;
 
-  const { item, index, count } = slide;
-  const density = item.arabicText.length > 240 || item.translationDe.length > 320
+  const { item, index, count, language } = slide;
+  const density = needsSeparatedDhikr(item)
     ? "long"
     : item.arabicText.length > 110 || item.translationDe.length > 170
       ? "medium"
@@ -43,9 +43,9 @@ export function AfterPrayerBoard({ vm }: { vm: DisplayRuntimeViewModel }) {
           <time data-testid="after-prayer-remaining">{remainingDisplayTime(slide.endsAtMs, vm.logicalNow)}</time>
         </div>
       </div>
-      <article className="after-active-slide" data-testid="after-prayer-item" aria-live="off">
-        <div lang="ar" dir="rtl" className="after-active-ar">{item.arabicText}</div>
-        <div lang="de" className="after-active-de">{item.translationDe}</div>
+      <article className="after-active-slide" data-testid="after-prayer-item" data-language={language} aria-live="off">
+        {language !== "de" ? <div lang="ar" dir="rtl" className="after-active-ar">{item.arabicText}</div> : null}
+        {language !== "ar" ? <div lang="de" className="after-active-de">{item.translationDe}</div> : null}
         <div className="after-active-meta">
           <span>{item.source}</span>
           {item.repeatCount > 1 ? (

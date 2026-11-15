@@ -103,7 +103,7 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(legibility).toContain("grid-template-rows: auto minmax(0, 1fr)");
   });
 
-  it("places the Stay Awake button with fullscreen and retains it in dedicated post-prayer mode", () => {
+  it("keeps the Stay Awake preference across full-screen post-prayer and blackout states without overlaying Quran", () => {
     const onToggle = vi.fn();
     const setup = { requested: false, status: "pending" as const, onToggle };
     const { rerender } = render(<DisplayShell vm={vm()} stayAwake={setup} />);
@@ -123,7 +123,7 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
         feed: postPrayerFeed, logicalNow: new Date("2026-09-15T17:11:00+02:00") }}
       stayAwake={setup}
     />);
-    expect(screen.getByRole("button", { name: /Stay Awake/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Stay Awake/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
     expect(screen.queryByTestId("header-clock")).not.toBeInTheDocument();
 
@@ -133,6 +133,8 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     />);
     expect(screen.queryByRole("button", { name: /Stay Awake/i })).not.toBeInTheDocument();
     expect(screen.getByTestId("prayer-blackout")).toBeInTheDocument();
+    rerender(<DisplayShell vm={vm()} stayAwake={{ ...setup, requested: true, status: "active" }} />);
+    expect(screen.getByRole("button", { name: /Stay Awake/i })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows Fire TV browser Wake Lock status only in opt-in diagnostics", () => {

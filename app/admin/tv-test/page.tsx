@@ -189,7 +189,7 @@ export default function TvTestAdminPage() {
           </div>
           <p className="mt-4 text-sm text-[var(--color-muted)]">
             Only real published Feed content is used. If a content family is empty, no demo item is invented.
-            Friday sermons in German and the new prayer blackout are separate features not yet deployed on this branch.
+            German Friday sermons appear only when published in Admin; otherwise the TV shows a German unavailable notice. The approved prayer blackout is active for the five daily prayers.
           </p>
         </Card>
       </div>

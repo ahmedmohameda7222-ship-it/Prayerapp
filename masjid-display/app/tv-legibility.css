@@ -240,6 +240,7 @@
 .tv-v2 .announcement-slide::before,
 .tv-v2 .special-display-slide::before {
   font-size: clamp(1.35rem, 2.5vmin, 2.35rem);
+  font-family: var(--tv-font-arabic);
   line-height: 1.23;
 }
 .tv-v2 .event-content h2,

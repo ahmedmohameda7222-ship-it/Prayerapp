@@ -31,17 +31,39 @@ export function DisplayShell({
       />
     );
   }
-  const isPostPrayer = vm.state?.kind === "POST_PRAYER_AZKAR";
+  // The post-prayer display is its own fullscreen tree. None of the normal
+  // mosque Header, prayer dock, status overlay, urgent bar or footer is mounted.
+  if (vm.state?.kind === "POST_PRAYER_AZKAR") {
+    return (
+      <section
+        className="display-shell tv-v2 post-prayer-display"
+        data-testid="display-shell"
+        data-display-mode="post-prayer"
+        data-dedicated-post-prayer="true"
+        data-tv-test={testMode ? "active" : undefined}
+        style={{ transform: `translate3d(${pixelShift.x}px, ${pixelShift.y}px, 0)` }}
+      >
+        <main className="display-main tv-hero" data-testid="tv-hero" data-layout="post-prayer-azkar" aria-live="polite">
+          <DisplayMain vm={vm} />
+          {testMode ? (
+            <aside className="tv-test-badge" role="status" data-testid="tv-test-badge">
+              TV TEST MODE · {testMode}
+            </aside>
+          ) : null}
+        </main>
+        <DiagnosticsPanel enabled={diagnosticsEnabled} vm={vm} />
+      </section>
+    );
+  }
 
   return (
     <section
       className="display-shell tv-v2"
       data-testid="display-shell"
       data-tv-test={testMode ? "active" : undefined}
-      data-display-mode={isPostPrayer ? "post-prayer" : undefined}
       style={{ transform: `translate3d(${pixelShift.x}px, ${pixelShift.y}px, 0)` }}
     >
-      {!isPostPrayer ? <Header vm={vm} /> : null}
+      <Header vm={vm} />
 
       <main className="display-main tv-hero" data-testid="tv-hero" data-layout={vm.state?.kind.toLowerCase().replaceAll("_", "-") ?? "initial-loading"} aria-live="polite">
         {testMode ? (
@@ -50,7 +72,7 @@ export function DisplayShell({
           </aside>
         ) : null}
         <DisplayMain vm={vm} />
-        {vm.feed && !isPostPrayer ? (
+        {vm.feed ? (
           <StatusOverlay
             networkAvailable={vm.networkAvailable}
             usingLkg={vm.usingLkg}
@@ -59,23 +81,17 @@ export function DisplayShell({
         ) : null}
       </main>
 
-      {!isPostPrayer ? (
-        <UrgentBar items={vm.state?.kind === "JUMUAH_NOW" ? [] : vm.urgent} logicalNow={vm.logicalNow} />
-      ) : null}
-      {!isPostPrayer ? (
-        <div className="tv-prayer-dock" data-testid="tv-prayer-dock">
-          <PrayerStrip vm={vm} />
-          <PersistentAppQr publicAppUrl={vm.publicAppUrl} />
-        </div>
-      ) : null}
+      <UrgentBar items={vm.state?.kind === "JUMUAH_NOW" ? [] : vm.urgent} logicalNow={vm.logicalNow} />
+      <div className="tv-prayer-dock" data-testid="tv-prayer-dock">
+        <PrayerStrip vm={vm} />
+        <PersistentAppQr publicAppUrl={vm.publicAppUrl} />
+      </div>
 
-      {!isPostPrayer ? (
-        <footer className="display-footer">
-          <div className="presentation-mode-slot">
-            <PresentationModeControl />
-          </div>
-        </footer>
-      ) : null}
+      <footer className="display-footer">
+        <div className="presentation-mode-slot">
+          <PresentationModeControl />
+        </div>
+      </footer>
 
       <DiagnosticsPanel enabled={diagnosticsEnabled} vm={vm} />
     </section>

@@ -6,6 +6,7 @@ import { PersistentAppQr } from "./PersistentAppQr";
 import { PrayerStrip } from "./PrayerStrip";
 import { PresentationModeControl } from "./PresentationModeControl";
 import { StatusOverlay } from "./StatusOverlay";
+import { StayAwakeControl, type StayAwakeControlProps } from "./StayAwakeControl";
 import { UrgentBar } from "./UrgentBar";
 
 export interface DisplayShellProps {
@@ -13,6 +14,7 @@ export interface DisplayShellProps {
   diagnosticsEnabled?: boolean;
   testMode?: string | null;
   pixelShift?: { x: number; y: number };
+  stayAwake?: StayAwakeControlProps;
 }
 
 export function DisplayShell({
@@ -20,6 +22,7 @@ export function DisplayShell({
   diagnosticsEnabled = false,
   testMode = null,
   pixelShift = { x: 0, y: 0 },
+  stayAwake,
 }: DisplayShellProps) {
   // Congregation blackout bypasses the entire shell. It must be literally black:
   // no clock, prayer rail, QR, diagnostics, alerts, controls, pixel shift or badge.
@@ -90,6 +93,7 @@ export function DisplayShell({
       <footer className="display-footer">
         <div className="presentation-mode-slot">
           <PresentationModeControl />
+          {stayAwake ? <StayAwakeControl {...stayAwake} /> : null}
         </div>
       </footer>
 

@@ -672,3 +672,49 @@
     font-size: clamp(1.6rem, 3.65vmin, 3.2rem);
   }
 }
+
+
+/* Keep the single-gesture Stay Awake control reachable with a Fire TV remote.
+   Native Fire TV kiosk can keep the Activity awake without a browser API. */
+.tv-v2 .presentation-mode-slot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: clamp(.3rem, .75vmin, .75rem);
+  flex-wrap: wrap;
+}
+.tv-v2 .stay-awake-control {
+  display: grid;
+  gap: .2rem;
+  justify-items: start;
+  min-width: 0;
+}
+.tv-v2 .stay-awake-button {
+  font-family: var(--tv-font-latin);
+  font-size: clamp(1.05rem, 1.85vmin, 1.65rem);
+  font-weight: 800;
+  line-height: 1.12;
+  border: .12rem solid #c1a66a;
+  background: #214638;
+  color: #fff4d5;
+  border-radius: .55rem;
+  padding: .45rem .9rem;
+  cursor: pointer;
+}
+.tv-v2 .stay-awake-button[aria-pressed="true"] {
+  border-color: #a3d9ae;
+  background: #285b3e;
+}
+.tv-v2 .stay-awake-button:focus-visible {
+  outline: .16rem solid #fff;
+  outline-offset: .15rem;
+}
+.tv-v2 .stay-awake-status {
+  font-family: var(--tv-font-latin);
+  font-size: clamp(.8rem, 1.4vmin, 1.2rem);
+  max-width: min(50vw, 25rem);
+  line-height: 1.2;
+}
+.tv-v2 .stay-awake-status[role="alert"] {
+  color: #ffd0a4;
+}

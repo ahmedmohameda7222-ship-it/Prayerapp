@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DisplayAzkarDto } from "./feed-types";
-import { activeAfterPrayerSlide, afterPrayerTotalMs, durationForDhikr } from "./after-prayer-rotation";
+import { activeAfterPrayerSlide, afterPrayerTotalMs, durationForDhikr, paginateDhikrText } from "./after-prayer-rotation";
 
 const first: DisplayAzkarDto = {
   id: "first", category: "After Prayer", arabicText: "أستغفر الله",
@@ -47,6 +47,29 @@ describe("post-prayer rotating dhikr reading-time schedule", () => {
     expect(activeAfterPrayerSlide([long], start, start + 40_000)).toMatchObject({ language: "ar" });
     expect(activeAfterPrayerSlide([long], start, start + 120_000)).toMatchObject({ language: "de" });
     expect(activeAfterPrayerSlide([long], start, start + 163_000)).toBeNull();
+  });
+
+  it("paginates full long text on word boundaries without any clipping or omitted words", () => {
+    const arabic = Array.from({ length: 120 }, (_, index) => `ذكر${index}`).join(" ");
+    const german = Array.from({ length: 120 }, (_, index) => `Wort${index}`).join(" ");
+    const arabicPages = paginateDhikrText(arabic, 170);
+    const germanPages = paginateDhikrText(german, 260);
+    expect(arabicPages.length).toBeGreaterThan(2);
+    expect(germanPages.length).toBeGreaterThan(2);
+    expect(arabicPages.every((page) => page.length <= 170)).toBe(true);
+    expect(germanPages.every((page) => page.length <= 260)).toBe(true);
+    expect(arabicPages.join(" ")).toBe(arabic);
+    expect(germanPages.join(" ")).toBe(german);
+
+    const long = { ...first, arabicText: arabic, translationDe: german, repeatCount: 1 };
+    const start = Date.parse("2026-09-15T17:10:30+02:00");
+    const atStart = activeAfterPrayerSlide([long], start, start);
+    const later = activeAfterPrayerSlide([long], start, start + 30_000);
+    expect(atStart).toMatchObject({ language: "ar", pageIndex: 0 });
+    expect(later?.pageIndex).toBeGreaterThan(0);
+    expect(atStart?.textAr).toBe(arabicPages[0]);
+    expect(atStart?.textAr).not.toBe(arabic);
+    expect(later?.textAr).not.toBe(atStart?.textAr);
   });
 
   it("never invents a slide for an empty selection", () => {

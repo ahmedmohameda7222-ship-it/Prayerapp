@@ -9,6 +9,7 @@ import { localDateIso } from "../lib/time";
 import { useTvTestCommand } from "../lib/runtime/use-tv-test-command";
 import { applyTvTestCommand, parseTvTestStatus } from "../lib/runtime/tv-test-presenter";
 import { createWatchdog } from "../lib/runtime/watchdog";
+import { installScreenWakeLock } from "../lib/runtime/screen-wake-lock";
 
 const PIXEL_SHIFT_EPOCH_MS = 10 * 60_000;
 const WATCHDOG_CHECK_MS = 30_000;
@@ -28,6 +29,8 @@ function diagnosticsOnServer() {
 }
 
 export default function Home() {
+  // Best-effort platform Wake Lock. Does not spoof remote input or override Fire OS.
+  useEffect(() => installScreenWakeLock(), []);
   const liveVm = useDisplayRuntime();
   const remoteCommand = useTvTestCommand();
   // Read test status independently from the production Feed; expire locally

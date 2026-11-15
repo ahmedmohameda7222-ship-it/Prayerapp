@@ -229,7 +229,8 @@
   overflow: hidden;
 }
 .tv-v2[data-display-mode="post-prayer"] .after-active-ar {
-  max-width: 100%; font: 680 clamp(2.6rem, 7.2vmin, 6.3rem)/1.42 "Noto Naskh Arabic", "Amiri", serif;
+  max-width: 100%; font-size: clamp(2.6rem, 7.2vmin, 6.3rem);
+  font-weight: 680; line-height: 1.42; font-family: "Noto Naskh Arabic", "Amiri", serif;
   white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .tv-v2[data-display-mode="post-prayer"] .after-active-de {

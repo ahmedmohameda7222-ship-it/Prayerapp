@@ -29,7 +29,7 @@ function setup(prayer: DisplayPrayerName): MasjidDisplayFeedV1 {
 
 describe("30-second Iqama followed by fully black congregational prayer", () => {
   it.each(Object.entries(minutes) as [DisplayPrayerName,number][])(
-    "%s shows 30s Iqama, %i minutes blackout, then exactly four minutes After Prayer",
+    "%s shows 30s Iqama, %i minutes blackout, then the complete selected reading playlist",
     (prayer, blackoutMinutes) => {
       const feed = setup(prayer);
       const midnight = local("18:10:00").getTime();
@@ -47,13 +47,13 @@ describe("30-second Iqama followed by fully black congregational prayer", () => 
       expect(resolvePostPrayerWindow(feed, at(blackoutEnd - 1))).toBeNull();
       expect(resolvePostPrayerWindow(feed, at(blackoutEnd))).toMatchObject({
         prayer, startMs: midnight + blackoutEnd,
-        endMs: midnight + blackoutEnd + 240_000,
+        endMs: midnight + blackoutEnd + 11_000,
       });
       expect(resolveDisplayState(feed, at(blackoutEnd))).toMatchObject({
         kind: "POST_PRAYER_AZKAR", prayer,
       });
-      expect(resolveDisplayState(feed, at(blackoutEnd + 239_999)).kind).toBe("POST_PRAYER_AZKAR");
-      expect(resolvePostPrayerWindow(feed, at(blackoutEnd + 240_000))).toBeNull();
+      expect(resolveDisplayState(feed, at(blackoutEnd + 10_999)).kind).toBe("POST_PRAYER_AZKAR");
+      expect(resolvePostPrayerWindow(feed, at(blackoutEnd + 11_000))).toBeNull();
     },
   );
 

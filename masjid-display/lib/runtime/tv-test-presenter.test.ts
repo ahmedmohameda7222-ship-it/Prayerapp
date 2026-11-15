@@ -10,7 +10,7 @@ const end = "2026-09-15T10:03:00.000Z";
 
 function vm(now = "2026-09-15T10:00:15.000Z"): DisplayRuntimeViewModel {
   return {
-    feed,
+    feed: structuredClone(feed),
     logicalNow: new Date(now),
     state: { kind: "NORMAL", prayer: null, degraded: false, degradedReason: null },
     content: null,

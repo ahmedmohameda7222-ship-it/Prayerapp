@@ -54,11 +54,6 @@ export function DisplayShell({
             </aside>
           ) : null}
         </main>
-        {stayAwake ? (
-          <div className="tv-stay-awake-corner">
-            <StayAwakeControl {...stayAwake} />
-          </div>
-        ) : null}
         <DiagnosticsPanel enabled={diagnosticsEnabled} vm={vm} />
       </section>
     );

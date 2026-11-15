@@ -86,6 +86,12 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(css).toMatch(/\.tv-v2 \.prayer-iqama\s*\{[^}]*font-size:\s*clamp\(/);
   });
 
+  it("shows Fire TV browser Wake Lock support only in opt-in diagnostics", () => {
+    render(<DisplayShell vm={{ ...vm(), wakeLockStatus: "unsupported" }} diagnosticsEnabled />);
+    expect(screen.getByTestId("wake-lock-status")).toHaveTextContent("unsupported");
+    expect(screen.getByText("Browser Wake Lock (best effort)")).toBeInTheDocument();
+  });
+
   it("shows a neutral loading composition until the first trusted Feed arrives", () => {
     render(<DisplayShell vm={{ ...vm(null), feed: null, prayerScheduleStale: true, publicAppUrl: null }} />);
     expect(screen.getByText("جاري تحميل شاشة المسجد")).toBeInTheDocument();

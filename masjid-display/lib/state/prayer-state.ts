@@ -1,10 +1,10 @@
 import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "../feed-types";
 import { isFridayIso, zonedDateTime } from "../time";
+import { IQAMA_ANNOUNCEMENT_MS, prayerBlackoutEndMs } from "./prayer-lifecycle";
 
 const MINUTE_MS = 60_000;
 const APPROACH_WINDOW_MS = 10 * MINUTE_MS;
 const PRAYER_TIME_NOW_MAX_MS = 2 * MINUTE_MS;
-const IQAMA_NOW_MS = 2 * MINUTE_MS;
 const PRAYER_NAMES: DisplayPrayerName[] = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 
 export type PrayerStateKind =
@@ -60,8 +60,8 @@ function candidatesForFeed(feed: MasjidDisplayFeedV1): PrayerCandidate[] {
 
         const prayerInstant = zonedDateTime(day.date, day[prayer], feed.timezone).getTime();
         const iqamaInstant = prayerInstant + delay * MINUTE_MS;
-        const iqamaNowEnd = iqamaInstant + IQAMA_NOW_MS;
-        const prayerInProgressEnd = iqamaInstant + duration * MINUTE_MS;
+        const iqamaNowEnd = iqamaInstant + IQAMA_ANNOUNCEMENT_MS;
+        const prayerInProgressEnd = prayerBlackoutEndMs(prayer, iqamaInstant);
         const lifecycleEnd = Math.max(iqamaNowEnd, prayerInProgressEnd);
 
         return [{ prayer, prayerInstant, iqamaInstant, iqamaNowEnd, prayerInProgressEnd, lifecycleEnd }];

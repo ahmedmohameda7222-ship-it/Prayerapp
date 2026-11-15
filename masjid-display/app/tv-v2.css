@@ -508,3 +508,23 @@
   line-height: 1.22;
   -webkit-line-clamp: 2;
 }
+
+
+/* Physical-TV admin rehearsal: visible distinction from real prayer times.
+   Never shown unless a currently valid short-lived server command exists. */
+.tv-v2 .tv-test-badge {
+  position: absolute;
+  z-index: 30;
+  top: clamp(.2rem, .55vmin, .55rem);
+  left: clamp(.25rem, .7vmin, .7rem);
+  max-width: calc(100% - 2rem);
+  padding: clamp(.2rem,.45vmin,.45rem) clamp(.45rem,1vmin,.95rem);
+  border: 2px solid #e7ba64;
+  background: #483a1de8;
+  color: #fff2cd;
+  border-radius: .55rem;
+  font-size: clamp(.75rem, 1.15vmin, 1.1rem);
+  font-weight: 800;
+  letter-spacing: .05em;
+  pointer-events: none;
+}

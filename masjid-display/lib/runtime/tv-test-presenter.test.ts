@@ -52,7 +52,7 @@ describe("TV Test command reader", () => {
       const preview = applyTvTestCommand(vm(), command(scenario, "asr"));
       expect(preview.state).toMatchObject({ kind: scenario, prayer: "asr" });
     }
-    const withAfterPrayer = vm();
+    const withAfterPrayer = vm("2026-09-15T10:00:02.000Z");
     withAfterPrayer.feed!.azkar.push({
       id: "after-test", category: "After Prayer",
       arabicText: "أستغفر الله", translationDe: "Ich bitte Allah um Vergebung",
@@ -62,6 +62,9 @@ describe("TV Test command reader", () => {
     const afterTest = applyTvTestCommand(withAfterPrayer, command("POST_PRAYER_AZKAR", "asr"));
     expect(afterTest.state).toMatchObject({ kind: "POST_PRAYER_AZKAR", prayer: "asr" });
     expect(afterTest.tvTestUnavailableReason).toBeUndefined();
+    // One short 11-second item genuinely ends before the 180s rehearsal TTL.
+    const finished = applyTvTestCommand(vm("2026-09-15T10:00:15.000Z"), command("POST_PRAYER_AZKAR", "asr"));
+    expect(finished.state?.kind).toBe("NORMAL");
   });
 
   it("shows an unavailable-case notice rather than mislabeling a real different prayer state", () => {

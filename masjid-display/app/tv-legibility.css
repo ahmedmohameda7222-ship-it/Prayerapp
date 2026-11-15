@@ -718,16 +718,3 @@
 .tv-v2 .stay-awake-status[role="alert"] {
   color: #ffd0a4;
 }
-.tv-v2 .tv-stay-awake-corner {
-  position: absolute;
-  bottom: clamp(.15rem, .45vmin, .45rem);
-  inset-inline-start: clamp(.15rem, .45vmin, .45rem);
-  z-index: 3;
-  max-width: 34vw;
-}
-.tv-v2[data-display-mode="post-prayer"] .tv-stay-awake-corner .stay-awake-button {
-  font-size: clamp(.95rem, 1.65vmin, 1.3rem);
-}
-.tv-v2[data-display-mode="post-prayer"] .tv-stay-awake-corner .stay-awake-status {
-  font-size: clamp(.65rem, 1.05vmin, .88rem);
-}

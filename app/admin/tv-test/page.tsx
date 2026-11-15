@@ -22,7 +22,7 @@ const DAILY: { scenario: TvTestScenario; label: string; description: string }[] 
   { scenario: "WAITING_FOR_IQAMA", label: "Iqama Countdown", description: "Final countdown before Iqama" },
   { scenario: "IQAMA_NOW", label: "Iqama Now (30s)", description: "Announce Iqama for 30 seconds, then switch fully black" },
   { scenario: "PRAYER_IN_PROGRESS", label: "Black Screen — Prayer", description: "Black screen with all TV elements hidden during the congregation" },
-  { scenario: "POST_PRAYER_AZKAR", label: "After Prayer Azkar", description: "Fixed four-minute Hisn al-Muslim board" },
+  { scenario: "POST_PRAYER_AZKAR", label: "After Prayer Azkar", description: "One large dhikr at a time; duration follows Arabic/German reading time and repetitions" },
 ];
 
 const OTHER: { scenario: TvTestScenario; label: string; description: string }[] = [

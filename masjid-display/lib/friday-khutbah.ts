@@ -20,7 +20,7 @@ export function parseGermanKhutbah(payload: unknown, date: string): GermanFriday
 }
 
 /** Break on word boundaries, not letter counts or arbitrary CSS truncation. */
-export function paginateGermanKhutbah(raw: string, maxChars = 780): string[] {
+export function paginateGermanKhutbah(raw: string, maxChars = 480): string[] {
   const limit = Math.max(40, Math.floor(maxChars));
   const words = raw.trim().replace(/\s+/g, " ").split(" ").filter(Boolean);
   const pages: string[] = [];

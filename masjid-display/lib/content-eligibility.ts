@@ -101,7 +101,7 @@ export function activeDisplayContent(feed: MasjidDisplayFeedV1, now: Date): Acti
   const postPrayerAzkar = afterPrayer
     ? selectedPostPrayerAzkar(feed, afterPrayer.prayer)
     : [];
-  // A fixed four-minute context replaces regular Azkar only if it has
+  // The completed prayer's full reading-time playlist replaces regular Azkar only if it has
   // content applicable to this completed prayer.
   const eligibleAzkar = postPrayerAzkar.length > 0 ? postPrayerAzkar : scheduledAzkar;
 

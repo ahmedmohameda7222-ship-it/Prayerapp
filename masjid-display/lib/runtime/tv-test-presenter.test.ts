@@ -47,20 +47,24 @@ describe("TV Test command reader", () => {
     expect(raw.state?.kind).toBe("NORMAL");
   });
 
-  it("selects authentic Iqama, prayer in progress and fixed post-prayer board", () => {
+  it("selects authentic Iqama, prayer blackout and rotating post-prayer dhikr", () => {
     for (const scenario of ["WAITING_FOR_IQAMA", "IQAMA_NOW", "PRAYER_IN_PROGRESS"]) {
       const preview = applyTvTestCommand(vm(), command(scenario, "asr"));
       expect(preview.state).toMatchObject({ kind: scenario, prayer: "asr" });
     }
-    const withAfterPrayer = vm();
+    const withAfterPrayer = vm("2026-09-15T10:00:02.000Z");
     withAfterPrayer.feed!.azkar.push({
       id: "after-test", category: "After Prayer",
       arabicText: "أستغفر الله", translationDe: "Ich bitte Allah um Vergebung",
       source: "Hisn al-Muslim 66", repeatCount: 3, sortOrder: 1,
     });
     withAfterPrayer.feed!.displaySettings.azkarPlaylistIds.push("after-test");
-    expect(applyTvTestCommand(withAfterPrayer, command("POST_PRAYER_AZKAR", "asr")).state)
-      .toMatchObject({ kind: "POST_PRAYER_AZKAR", prayer: "asr" });
+    const afterTest = applyTvTestCommand(withAfterPrayer, command("POST_PRAYER_AZKAR", "asr"));
+    expect(afterTest.state).toMatchObject({ kind: "POST_PRAYER_AZKAR", prayer: "asr" });
+    expect(afterTest.tvTestUnavailableReason).toBeUndefined();
+    // One short 11-second item genuinely ends before the 180s rehearsal TTL.
+    const finished = applyTvTestCommand({ ...withAfterPrayer, logicalNow: new Date("2026-09-15T10:00:15.000Z") }, command("POST_PRAYER_AZKAR", "asr"));
+    expect(finished.state?.kind).toBe("NORMAL");
   });
 
   it("shows an unavailable-case notice rather than mislabeling a real different prayer state", () => {

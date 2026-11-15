@@ -59,7 +59,7 @@ export function DisplayShell({
         ) : null}
       </main>
 
-      <UrgentBar items={vm.urgent} logicalNow={vm.logicalNow} />
+      <UrgentBar items={vm.state?.kind === "JUMUAH_NOW" ? [] : vm.urgent} logicalNow={vm.logicalNow} />
       {!isPostPrayer ? (
         <div className="tv-prayer-dock" data-testid="tv-prayer-dock">
           <PrayerStrip vm={vm} />

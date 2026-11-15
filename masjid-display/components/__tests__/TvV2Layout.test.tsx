@@ -137,6 +137,20 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(screen.getByRole("button", { name: /Stay Awake/i })).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("restores the original Fullscreen-only controls and TV coordinates, without Stay Awake", () => {
+    render(<DisplayShell vm={vm()} />);
+    expect(screen.getByRole("button", { name: /Vollbild/i })).toBeInTheDocument();
+
+    const shellSource = readFileSync(path.join(process.cwd(), "components/DisplayShell.tsx"), "utf8");
+    const pageSource = readFileSync(path.join(process.cwd(), "app/page.tsx"), "utf8");
+    const legibility = readFileSync(path.join(process.cwd(), "app/tv-legibility.css"), "utf8");
+
+    expect(shellSource).not.toContain("StayAwakeControl");
+    expect(pageSource).not.toContain("toggleStayAwake");
+    expect(legibility).not.toContain(".tv-v2 .presentation-mode-slot {");
+    expect(legibility).not.toContain(".tv-v2 .stay-awake-control");
+  });
+
   it("shows Fire TV browser Wake Lock status only in opt-in diagnostics", () => {
     render(<DisplayShell vm={{ ...vm(), wakeLockStatus: "unsupported" }} diagnosticsEnabled />);
     expect(screen.getByTestId("wake-lock-status")).toHaveTextContent("unsupported");

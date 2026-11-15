@@ -260,6 +260,16 @@
   font-size: clamp(1.25rem, 2.6vmin, 2.4rem); line-height: 1.25;
 }
 
+/* Very long source verses have separately timed Arabic / German pages. */
+.tv-v2[data-display-mode="post-prayer"] .after-active-slide[data-language="ar"] .after-active-ar {
+  font-size: clamp(2.5rem, 6.4vmin, 6.1rem);
+  line-height: 1.38;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-active-slide[data-language="de"] .after-active-de {
+  font-size: clamp(1.7rem, 4.1vmin, 3.75rem);
+  line-height: 1.35;
+}
+
 
 /* Donation, events and Maghrib programme have their own full hero compositions. */
 .tv-v2 .event-layout {display:grid;grid-template-columns:minmax(12rem,26%) minmax(0,1fr);align-items:center;gap:clamp(1rem,3vmin,3rem);width:100%;height:100%;max-width:95rem}

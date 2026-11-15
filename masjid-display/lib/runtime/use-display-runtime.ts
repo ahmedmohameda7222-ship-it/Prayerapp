@@ -33,6 +33,7 @@ export interface DisplayRuntimeViewModel {
   usingLkg: boolean;
   prayerScheduleStale: boolean;
   publicAppUrl: string | null;
+  tvTestUnavailableReason?: string;
   diagnostics?: DisplayRuntimeDiagnostics;
 }
 

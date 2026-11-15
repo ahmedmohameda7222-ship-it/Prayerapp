@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fixture from "../__fixtures__/feed-v1.json";
 import type { MasjidDisplayFeedV1 } from "../feed-types";
 import type { DisplayRuntimeViewModel } from "../runtime/use-display-runtime";
-import { applyTvTestCommand, parseTvTestStatus } from "./tv-test-presenter";
+import { applyTvTestCommand, parseTvTestStatus, type TvTestCommand } from "./tv-test-presenter";
 
 const feed = structuredClone(fixture) as MasjidDisplayFeedV1;
 const start = "2026-09-15T10:00:00.000Z";
@@ -22,8 +22,9 @@ function vm(now = "2026-09-15T10:00:15.000Z"): DisplayRuntimeViewModel {
     publicAppUrl: feed.mosque.publicAppUrl,
   };
 }
-function command(scenario: string, prayer: string | null = null) {
-  return { scenario, prayer, startedAt: start, expiresAt: end };
+function command(scenario: string, prayer: string | null = null): TvTestCommand {
+  // Tests intentionally supply invalid runtime strings to test fail-closed parsing.
+  return { scenario: scenario as TvTestCommand["scenario"], prayer: prayer as TvTestCommand["prayer"], startedAt: start, expiresAt: end };
 }
 
 describe("TV Test command reader", () => {

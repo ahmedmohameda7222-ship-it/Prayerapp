@@ -78,9 +78,9 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
 
   it("uses distance-first header, prayer rail and untruncated large dhikr styles", () => {
     const css = readFileSync(path.join(process.cwd(), "app/tv-v2.css"), "utf8");
-    expect(css).toMatch(/\.tv-v2 \.header-clock \{[^}]*font-size:\s*clamp\(3\.2rem,\s*7\.5vmin/s);
-    expect(css).toMatch(/\.tv-v2 \.prayer-time \{[^}]*font-size:\s*clamp\(2\.3rem,\s*5\.45vmin/s);
-    expect(css).toMatch(/\.tv-v2 \.azkar-arabic \{[^}]*font-size:\s*clamp\(3\.1rem,\s*7\.1vmin/s);
+    expect(css).toMatch(/\.tv-v2 \.header-clock \{[^}]*font-size:\s*clamp\(3\.2rem,\s*7\.5vmin/);
+    expect(css).toMatch(/\.tv-v2 \.prayer-time \{[^}]*font-size:\s*clamp\(2\.3rem,\s*5\.45vmin/);
+    expect(css).toMatch(/\.tv-v2 \.azkar-arabic \{[^}]*font-size:\s*clamp\(3\.1rem,\s*7\.1vmin/);
     expect(css).toContain('.tv-v2 .after-dhikr-ar');
     expect(css).toContain('.tv-v2 .after-dhikr-de');
     expect(css).not.toContain('-webkit-line-clamp');

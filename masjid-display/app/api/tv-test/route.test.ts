@@ -33,8 +33,8 @@ describe("GET /api/tv-test", () => {
   });
 
   it("never exposes write methods on the public TV status endpoint", async () => {
-    const module = await import("./route");
-    expect("POST" in module).toBe(false);
+    const routeModule = await import("./route");
+    expect("POST" in routeModule).toBe(false);
     expect("PUT" in module).toBe(false);
     expect("DELETE" in module).toBe(false);
   });

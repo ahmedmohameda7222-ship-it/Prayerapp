@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { DisplayShell } from "../components/DisplayShell";
 import { pixelShiftForEpoch } from "../lib/pixel-shift";
 import { useDisplayRuntime } from "../lib/runtime/use-display-runtime";
@@ -9,7 +9,7 @@ import { localDateIso } from "../lib/time";
 import { useTvTestCommand } from "../lib/runtime/use-tv-test-command";
 import { applyTvTestCommand, parseTvTestStatus } from "../lib/runtime/tv-test-presenter";
 import { createWatchdog } from "../lib/runtime/watchdog";
-import { installScreenWakeLock, type TvWakeLockStatus } from "../lib/runtime/screen-wake-lock";
+import { installScreenWakeLock, type ScreenWakeLockHandle, type TvWakeLockStatus } from "../lib/runtime/screen-wake-lock";
 
 const PIXEL_SHIFT_EPOCH_MS = 10 * 60_000;
 const WATCHDOG_CHECK_MS = 30_000;
@@ -31,7 +31,27 @@ function diagnosticsOnServer() {
 export default function Home() {
   // Best-effort platform Wake Lock. Does not spoof remote input or override Fire OS.
   const [wakeLockStatus, setWakeLockStatus] = useState<TvWakeLockStatus>("pending");
-  useEffect(() => installScreenWakeLock(setWakeLockStatus), []);
+  const [stayAwakeRequested, setStayAwakeRequested] = useState(false);
+  const screenWakeRef = useRef<ScreenWakeLockHandle | null>(null);
+
+  useEffect(() => {
+    const handle = installScreenWakeLock(setWakeLockStatus);
+    screenWakeRef.current = handle;
+    setStayAwakeRequested(handle.isStayAwakeRequested());
+    return () => {
+      screenWakeRef.current = null;
+      handle();
+    };
+  }, []);
+
+  const toggleStayAwake = useCallback(() => {
+    const handle = screenWakeRef.current;
+    if (!handle) return;
+    const next = !handle.isStayAwakeRequested();
+    if (next) handle.requestStayAwake();
+    else handle.stopStayAwake();
+    setStayAwakeRequested(next);
+  }, []);
   const liveVm = useDisplayRuntime();
   const remoteCommand = useTvTestCommand();
   // Read test status independently from the production Feed; expire locally
@@ -99,6 +119,7 @@ export default function Home() {
       testMode={activeTest && liveVm.feed ? activeTest.scenario : null}
       diagnosticsEnabled={diagnosticsEnabled}
       pixelShift={pixelShift}
+      stayAwake={{ requested: stayAwakeRequested, status: wakeLockStatus, onToggle: toggleStayAwake }}
     />
   );
 }

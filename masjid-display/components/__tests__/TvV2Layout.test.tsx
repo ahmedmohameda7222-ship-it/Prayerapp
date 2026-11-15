@@ -105,12 +105,14 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
 
   it("restores the original Fullscreen-only controls and TV coordinates without Stay Awake", () => {
     render(<DisplayShell vm={vm()} />);
-    expect(screen.getByRole("button", { name: /Vollbild/i })).toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Stay Awake/i })).not.toBeInTheDocument();
 
     const shellSource = readFileSync(path.join(process.cwd(), "components/DisplayShell.tsx"), "utf8");
     const pageSource = readFileSync(path.join(process.cwd(), "app/page.tsx"), "utf8");
     const legibility = readFileSync(path.join(process.cwd(), "app/tv-legibility.css"), "utf8");
 
+    expect(shellSource).toContain("<PresentationModeControl />");
     expect(shellSource).not.toContain("StayAwakeControl");
     expect(pageSource).not.toContain("toggleStayAwake");
     expect(legibility).not.toContain(".tv-v2 .presentation-mode-slot {");

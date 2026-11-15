@@ -63,6 +63,9 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
 
     const shell = screen.getByTestId("display-shell");
     expect(shell).toHaveAttribute("data-display-mode", "post-prayer");
+    expect(shell).toHaveAttribute("data-dedicated-post-prayer", "true");
+    expect(within(shell).getAllByRole("main")).toHaveLength(1);
+    expect(within(shell).queryByRole("banner")).toBeNull();
     expect(screen.getByTestId("after-prayer-board")).toBeInTheDocument();
     expect(screen.getAllByTestId("after-prayer-item")).toHaveLength(1);
     expect(screen.queryByTestId("tv-prayer-dock")).not.toBeInTheDocument();
@@ -94,6 +97,10 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(legibility).toContain("grid-template-rows: minmax(0, 1fr);");
     expect(legibility).toContain("--post-dhikr-fit-scale");
     expect(legibility).toContain('.after-dhikr[data-density="long"]');
+    expect(legibility).toContain(".after-heading-titles");
+    expect(legibility).toContain(".after-counter");
+    expect(legibility).toContain(".after-dhikr-copy");
+    expect(legibility).toContain("grid-template-rows: auto minmax(0, 1fr)");
   });
 
   it("shows Fire TV browser Wake Lock status only in opt-in diagnostics", () => {

@@ -38,6 +38,10 @@ describe("large rotating after-prayer reading slide", () => {
     expect(screen.queryByText("لا تظهر")).not.toBeInTheDocument();
     expect(screen.getByText("×3")).toBeInTheDocument();
     expect(screen.getByTestId("after-prayer-progress")).toHaveTextContent("01 / 02");
+    expect(screen.getByTestId("after-prayer-counter")).toContainElement(screen.getByTestId("after-prayer-progress"));
+    expect(screen.getByTestId("after-prayer-titles")).toHaveTextContent("أذكار ما بعد الصلاة");
+    expect(screen.getByTestId("after-prayer-titles")).toHaveTextContent("Dhikr nach dem Gebet");
+    expect(screen.getByTestId("after-prayer-item")).toContainElement(screen.getByTestId("after-prayer-copy"));
     expect(screen.getByTestId("after-slide-remaining")).toHaveTextContent("00:11");
 
     rerender(<AfterPrayerBoard vm={{ ...vm, logicalNow: new Date("2026-09-15T17:10:41+02:00") }} />);
@@ -48,6 +52,24 @@ describe("large rotating after-prayer reading slide", () => {
     expect(screen.getByText("×33")).toBeInTheDocument();
     expect(screen.getByTestId("after-prayer-progress")).toHaveTextContent("02 / 02");
     expect(screen.getAllByTestId("after-prayer-item")).toHaveLength(1);
+  });
+
+  it("keeps the active count in the center for a 42-dhikr playlist (13 / 42)", () => {
+    const vm = viewModel();
+    const feed = vm.feed!;
+    feed.azkar = Array.from({ length: 42 }, (_, index) => ({
+      id: `dhikr-${index + 1}`, category: "After Prayer" as const,
+      arabicText: `ذِكر رقم ${index + 1}`,
+      translationDe: `Dhikr Nummer ${index + 1}`,
+      repeatCount: 1, sortOrder: index + 1, source: "Hisn al-Muslim",
+    }));
+    feed.displaySettings.azkarPlaylistIds = feed.azkar.map((item) => item.id);
+    const playlist = getPostPrayerPlaylist(feed, "asr");
+    const elapsedMs = playlist.slides.slice(0, 12).reduce((ms, slide) => ms + slide.durationMs, 0);
+    render(<AfterPrayerBoard vm={{ ...vm, logicalNow: new Date(vm.logicalNow.getTime() + elapsedMs) }} />);
+    expect(screen.getByTestId("after-prayer-progress")).toHaveTextContent("13 / 42");
+    expect(screen.getByTestId("after-prayer-counter")).toContainElement(screen.getByTestId("after-prayer-progress"));
+    expect(screen.getByTestId("after-prayer-item")).toHaveAttribute("data-item-id", "dhikr-13");
   });
 
   it("shows the correct calculated overall remaining time and ends exactly after the playlist", () => {
@@ -77,6 +99,8 @@ describe("large rotating after-prayer reading slide", () => {
     const slide = screen.getByTestId("after-prayer-item");
     expect(slide).toHaveAttribute("data-language", "both");
     expect(slide).toHaveAttribute("data-density", "long");
+    expect(within(slide).getByTestId("after-prayer-copy")).toContainElement(within(slide).getByText(arabic));
+    expect(within(slide).getByTestId("after-prayer-copy")).toContainElement(within(slide).getByText(german));
     expect(within(slide).getByText(arabic)).toBeInTheDocument();
     expect(within(slide).getByText(german)).toBeInTheDocument();
     expect(screen.getByTestId("after-prayer-progress")).toHaveTextContent("01 / 01");

@@ -187,26 +187,78 @@
 .tv-v2 .content-meta {font-size:clamp(.8rem,1.3vmin,1.2rem)}
 .tv-v2 .azkar-attribution {gap:clamp(.4rem,1vmin,1rem)}
 
-/* Fixed display after the congregation: 2x4 or 3x6 index, never a slide carousel. */
-.tv-v2 .after-wrapper {width:100%;height:100%;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:clamp(.5rem,1.4vmin,1.3rem)}
-.tv-v2 .after-heading {display:flex;align-items:center;justify-content:space-between;gap:clamp(.5rem,2vmin,2rem);padding:0 clamp(.4rem,1vmin,1rem)}
-.tv-v2 .after-title {margin:0;font:700 clamp(2rem,4.2vmin,3.4rem)/1.3 "Noto Naskh Arabic","Amiri",serif}
-.tv-v2 .after-subtitle {margin:0;color:#cfb985;font-size:clamp(.85rem,1.8vmin,1.4rem)}
-.tv-v2 .after-fixed-status {display:flex;align-items:center;gap:clamp(.3rem,.9vmin,.7rem);border:1px solid #baa16a90;background:#725d2d4d;color:#f1dfab;border-radius:.7rem;padding:clamp(.25rem,.7vmin,.6rem) clamp(.5rem,1vmin,1rem);white-space:nowrap;font-size:clamp(.95rem,1.9vmin,1.6rem)}
-.tv-v2 .after-grid {min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:clamp(.4rem,1.1vmin,.9rem);direction:rtl}
-.tv-v2 .after-cell {min-width:0;min-height:0;display:grid;grid-template-columns:minmax(1.6rem,2.3vmin) minmax(0,1fr) auto;align-items:center;gap:clamp(.2rem,.8vmin,.8rem);padding:clamp(.25rem,.9vmin,.8rem) clamp(.35rem,1vmin,1rem);background:#133c30a8;border:1px solid #6888797d;border-radius:clamp(.45rem,1.1vmin,.85rem);overflow:hidden;text-align:right}
-.tv-v2 .after-copy {min-width:0;min-height:0;display:grid;align-content:center;gap:clamp(.05rem,.3vmin,.3rem)}
-.tv-v2 .after-number {color:#c6ab70;font:700 clamp(.85rem,2vmin,1.5rem) ui-monospace,monospace}
-.tv-v2 .after-ar {font:560 clamp(1.2rem,2.65vmin,2.15rem)/1.28 "Noto Naskh Arabic","Amiri",serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.tv-v2 .after-de {font-size:clamp(.66rem,1.35vmin,1.1rem);color:#bcd0c2;line-height:1.16;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
-.tv-v2 .after-source {display:none}
-.tv-v2 .after-repeat {flex:none;color:#e5cb85;border:1px solid #a68b5285;padding:clamp(.17rem,.55vmin,.45rem) clamp(.24rem,.75vmin,.6rem);border-radius:.5rem;font-size:clamp(.7rem,1.6vmin,1.3rem);white-space:nowrap}
-.tv-v2 .after-wrapper[data-density="full"] .after-grid {grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr));gap:clamp(.22rem,.7vmin,.55rem)}
-.tv-v2 .after-wrapper[data-density="full"] .after-cell {grid-template-columns:clamp(1.3rem,1.8vmin,1.6rem) minmax(0,1fr) auto;padding:clamp(.1rem,.4vmin,.35rem) clamp(.2rem,.55vmin,.55rem)}
-.tv-v2 .after-wrapper[data-density="full"] .after-ar {font-size:clamp(.86rem,1.8vmin,1.5rem);-webkit-line-clamp:1}
-.tv-v2 .after-wrapper[data-density="full"] .after-de {font-size:clamp(.6rem,1vmin,.9rem)}
-.tv-v2 .after-wrapper[data-density="full"] .after-number {font-size:clamp(.65rem,1.15vmin,1rem)}
-.tv-v2 .after-wrapper[data-density="full"] .after-repeat {font-size:clamp(.65rem,1.2vmin,1rem);padding:.1rem .35rem}
+/* After Prayer: one complete selected Hisn al-Muslim dhikr per timed slide. */
+.tv-v2[data-display-mode="post-prayer"] {
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: clamp(.2rem, .65vmin, .65rem);
+}
+.tv-v2[data-display-mode="post-prayer"] .tv-hero {
+  padding: clamp(.15rem, .45vmin, .4rem) clamp(.1rem, .4vmin, .4rem);
+}
+.tv-v2[data-display-mode="post-prayer"] .after-wrapper {
+  width: 100%; height: 100%; min-height: 0;
+  display: grid; grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(.2rem, .6vmin, .55rem);
+}
+.tv-v2[data-display-mode="post-prayer"] .after-heading {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: clamp(.5rem, 1vmin, 1rem); padding: 0 clamp(.4rem, 1vmin, 1rem);
+}
+.tv-v2[data-display-mode="post-prayer"] .after-title {
+  margin: 0; font: 720 clamp(2.2rem, 4.1vmin, 3.7rem)/1.2 "Noto Naskh Arabic", "Amiri", serif;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-subtitle {
+  margin: 0; font-size: clamp(1rem, 2.1vmin, 1.7rem); color: #e0ca93;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-slide-status {
+  display: flex; align-items: center; gap: clamp(.4rem, 1vmin, 1rem);
+  color: #f4e3b0; font-size: clamp(1.15rem, 2.4vmin, 2rem);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-slide-status time {
+  border: 1px solid #b6a4779c; padding: .2rem .5rem; border-radius: .55rem;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-active-slide {
+  width: 100%; height: 100%; min-height: 0; margin: auto;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: clamp(.45rem, 1.5vmin, 1.3rem);
+  padding: clamp(.35rem, 1.1vmin, 1rem) clamp(.6rem, 2vmin, 2rem);
+  text-align: center; border: 1px solid #aa946b85;
+  border-radius: clamp(.7rem, 1.45vmin, 1.3rem);
+  background: linear-gradient(180deg, #103a2fbb, #0a271fc9);
+  overflow: hidden;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-active-ar {
+  max-width: 100%; font: 680 clamp(2.6rem, 7.2vmin, 6.3rem)/1.42 "Noto Naskh Arabic", "Amiri", serif;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-active-de {
+  max-width: 100%; font-size: clamp(1.65rem, 3.75vmin, 3.2rem);
+  line-height: 1.36; color: #f3f1e9; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-active-meta {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: clamp(.55rem, 1.2vmin, 1rem); font-size: clamp(.95rem, 1.75vmin, 1.5rem);
+  color: #d7c9aa; overflow-wrap: anywhere;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-active-repeat {
+  color: #f9df9c; border: 1px solid #b69a59;
+  border-radius: .5rem; padding: .15rem .6rem;
+  font-size: clamp(1.35rem, 3vmin, 2.8rem);
+}
+.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="medium"] .after-active-ar {
+  font-size: clamp(2.35rem, 5.5vmin, 5rem);
+}
+.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="medium"] .after-active-de {
+  font-size: clamp(1.45rem, 3.2vmin, 2.8rem);
+}
+.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="long"] .after-active-ar {
+  font-size: clamp(1.9rem, 4.2vmin, 4rem); line-height: 1.3;
+}
+.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="long"] .after-active-de {
+  font-size: clamp(1.25rem, 2.6vmin, 2.4rem); line-height: 1.25;
+}
+
 
 /* Donation, events and Maghrib programme have their own full hero compositions. */
 .tv-v2 .event-layout {display:grid;grid-template-columns:minmax(12rem,26%) minmax(0,1fr);align-items:center;gap:clamp(1rem,3vmin,3rem);width:100%;height:100%;max-width:95rem}
@@ -431,83 +483,6 @@
 }
 
 
-/*
- * POST_PRAYER_AZKAR is intentionally the only fullscreen reading exception.
- * The six-prayer dock and its app QR are unmounted during this fixed 4-minute
- * board. The expanded hero has room for all 18 source-ordered Azkar cards.
- * Every other display state retains the regular six-cell prayer dock.
- */
-.tv-v2[data-display-mode="post-prayer"] {
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  gap: clamp(.25rem, .8vmin, .7rem);
-}
-
-.tv-v2[data-display-mode="post-prayer"] .tv-hero {
-  padding: clamp(.15rem, .5vmin, .55rem) clamp(.15rem, .65vmin, .65rem);
-}
-
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper {
-  gap: clamp(.35rem, .9vmin, .8rem);
-}
-
-.tv-v2[data-display-mode="post-prayer"] .after-heading {
-  padding: 0 clamp(.25rem, .7vmin, .7rem);
-}
-
-/* When all published Hisn al-Muslim entries are enabled, fit 3 × 6 rows.
-   Bigger Arabic and German copy use the reclaimed dock height; no scrolling,
-   animation or change to the absolute 4-minute display duration. */
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="full"] .after-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(6, minmax(0, 1fr));
-  gap: clamp(.3rem, .7vmin, .6rem);
-}
-
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="full"] .after-cell {
-  grid-template-columns: clamp(1.2rem, 2vmin, 1.8rem) minmax(0, 1fr) auto;
-  padding: clamp(.25rem, .6vmin, .55rem) clamp(.3rem, .75vmin, .75rem);
-  gap: clamp(.2rem, .55vmin, .55rem);
-  background: #153d32d9;
-  border-color: #779985a6;
-}
-
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="full"] .after-copy {
-  gap: clamp(.08rem, .25vmin, .25rem);
-}
-
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="full"] .after-ar {
-  font-size: clamp(1.15rem, 2.55vmin, 2.15rem);
-  line-height: 1.24;
-  -webkit-line-clamp: 2;
-}
-
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="full"] .after-de {
-  font-size: clamp(.8rem, 1.52vmin, 1.25rem);
-  line-height: 1.2;
-  -webkit-line-clamp: 2;
-}
-
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="full"] .after-number {
-  font-size: clamp(.78rem, 1.45vmin, 1.2rem);
-}
-
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="full"] .after-repeat {
-  font-size: clamp(.75rem, 1.55vmin, 1.2rem);
-  padding: clamp(.12rem, .35vmin, .32rem) clamp(.25rem, .5vmin, .5rem);
-}
-
-/* Fewer selected Azkar can use substantially larger cards. */
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="selected"] .after-ar {
-  font-size: clamp(1.45rem, 3.2vmin, 2.8rem);
-  line-height: 1.28;
-  -webkit-line-clamp: 3;
-}
-
-.tv-v2[data-display-mode="post-prayer"] .after-wrapper[data-density="selected"] .after-de {
-  font-size: clamp(1rem, 1.9vmin, 1.55rem);
-  line-height: 1.22;
-  -webkit-line-clamp: 2;
-}
 
 
 /* Physical-TV admin rehearsal: visible distinction from real prayer times.
@@ -581,4 +556,97 @@
   color: #cadbd0;
   font-size: clamp(1.5rem, 2.8vmin, 2.4rem);
   line-height: 1.35;
+}
+
+
+/* 32-inch landscape signage: maximize physical reading size at 720p/1080p.
+ * Time and prayer rail remain readable without covering the center hero.
+ * Existing mobile/portrait composition is unchanged. */
+@media (min-aspect-ratio: 1.5) and (min-width: 821px) {
+  .tv-v2 {
+    padding: clamp(.4rem, 1vmin, .95rem) clamp(.5rem, 1.2vmin, 1.1rem) clamp(.2rem, .55vmin, .55rem);
+    gap: clamp(.18rem, .65vmin, .6rem);
+  }
+  .tv-v2 .display-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+    padding-bottom: clamp(.25rem, .8vmin, .75rem);
+    gap: clamp(.35rem, 1vmin, 1rem);
+  }
+  .tv-v2 .mosque-seal {
+    display: grid; width: clamp(3rem, 7.5vmin, 6.2rem); height: clamp(3rem, 7.5vmin, 6.2rem);
+  }
+  .tv-v2 .mosque-identity {
+    font-size: clamp(1.45rem, 3.25vmin, 2.8rem);
+    line-height: 1.13;
+  }
+  .tv-v2 .mosque-identity span { font-size: .83em; }
+  .tv-v2 .header-dates {
+    font-size: clamp(1.05rem, 2.6vmin, 2.2rem); line-height: 1.2;
+  }
+  .tv-v2 .header-dates span { font-size: .88em; }
+  .tv-v2 .header-clock {
+    font-size: clamp(3.3rem, 8vmin, 7rem);
+    letter-spacing: -.05em;
+  }
+  .tv-v2 .tv-hero { padding: clamp(.1rem, .3vmin, .3rem); }
+  .tv-v2 .state-panel { width: 100%; padding: clamp(.4rem, .9vmin, 1rem); gap: clamp(.2rem, .75vmin, .85rem); }
+  .tv-v2 .state-eyebrow { font-size: clamp(2rem, 4.8vmin, 4.8rem); line-height: 1.18; }
+  .tv-v2 .state-prayer-name { font-size: clamp(4.4rem, 10vmin, 10rem); line-height: 1.05; }
+  .tv-v2 .state-countdown { font-size: clamp(6.3rem, 18vmin, 16rem); line-height: .98; }
+  .tv-v2 .state-target { font-size: clamp(1.55rem, 3.4vmin, 3rem); }
+  .tv-v2 .state-target time { font-size: clamp(2rem, 4.8vmin, 4.5rem); }
+  .tv-v2 .state-support { font-size: clamp(1.45rem, 3.3vmin, 3rem); }
+  .tv-v2 .tv-hero[data-layout="iqama-now"] .state-eyebrow,
+  .tv-v2 .tv-hero[data-layout="prayer-time-now"] .state-eyebrow,
+  .tv-v2 .tv-hero[data-layout="jumuah-now"] .state-eyebrow {
+    font-size: clamp(2rem, 5.1vmin, 5rem);
+  }
+  .tv-v2 .tv-prayer-dock {
+    grid-template-columns: minmax(0, 1fr) clamp(5.7rem, 11.5vmin, 9.4rem);
+    gap: clamp(.3rem, .8vmin, .8rem);
+  }
+  .tv-v2 .prayer-strip {
+    min-height: clamp(9rem, 20vmin, 16rem);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: clamp(.3rem, .75vmin, .85rem);
+  }
+  .tv-v2 .prayer-cell {
+    padding: clamp(.24rem, .7vmin, .65rem) clamp(.12rem, .3vmin, .45rem);
+    gap: clamp(.15rem, .35vmin, .4rem);
+  }
+  .tv-v2 .prayer-labels {
+    font-size: clamp(.98rem, 2.55vmin, 2.4rem); line-height: 1.08;
+  }
+  .tv-v2 .prayer-labels span { font-size: .88em; }
+  .tv-v2 .prayer-time {
+    font-size: clamp(2.1rem, 5.2vmin, 5rem);
+    line-height: 1.04;
+  }
+  .tv-v2 .prayer-iqama {
+    font-size: clamp(.8rem, 2.1vmin, 1.9rem);
+    padding: clamp(.15rem, .4vmin, .35rem) .1rem;
+    margin-top: clamp(.1rem, .3vmin, .3rem);
+  }
+  .tv-v2 .persistent-app-qr {
+    font-size: clamp(.72rem, 1.35vmin, 1.2rem);
+    padding-left: clamp(.25rem, .6vmin, .6rem);
+  }
+  .tv-v2 .persistent-app-qr svg { width: clamp(4.4rem, 8.7vmin, 8rem); }
+  .tv-v2 .content-slide { width: 100%; padding: clamp(.4rem, 1vmin, 1.1rem); }
+  .tv-v2 .content-slide h2 { font-size: clamp(2.5rem, 5.9vmin, 5.2rem); }
+  .tv-v2 .azkar-slide { max-width: 100%; gap: clamp(.25rem, 1vmin, 1rem); }
+  .tv-v2 .azkar-category { font-size: clamp(1.35rem, 3vmin, 2.8rem); }
+  .tv-v2 .azkar-arabic { font-size: clamp(2.7rem, 7.3vmin, 6.8rem); line-height: 1.38; }
+  .tv-v2 .azkar-german { font-size: clamp(1.5rem, 3.7vmin, 3.4rem); line-height: 1.3; }
+  .tv-v2 .azkar-slide-long .azkar-arabic { font-size: clamp(2.15rem, 5vmin, 4.8rem); }
+  .tv-v2 .azkar-slide-long .azkar-german { font-size: clamp(1.35rem, 3.1vmin, 3rem); }
+  .tv-v2 .azkar-slide-single .azkar-arabic { font-size: clamp(2.7rem, 7vmin, 6.7rem); }
+  .tv-v2 .azkar-slide-single .azkar-german { font-size: clamp(1.7rem, 4.2vmin, 3.8rem); }
+  .tv-v2 .next-prayer-heading h2 { font-size: clamp(2.5rem, 5.2vmin, 4.8rem); }
+  .tv-v2 .next-prayer-heading p { font-size: clamp(1.45rem, 3vmin, 2.8rem); }
+  .tv-v2 .next-prayer-names h3 { font-size: clamp(4rem, 9.5vmin, 9rem); }
+  .tv-v2 .next-prayer-names p { font-size: clamp(2rem, 4.3vmin, 4rem); }
+  .tv-v2 .next-prayer-time time { font-size: clamp(3.2rem, 8vmin, 7rem); }
+  .tv-v2 .friday-khutbah-body { font-size: clamp(1.55rem, 3.4vmin, 3.3rem); }
+  .tv-v2 .friday-khutbah-title { font-size: clamp(2rem, 4.3vmin, 4.1rem); }
 }

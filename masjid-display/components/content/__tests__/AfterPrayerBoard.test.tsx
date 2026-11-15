@@ -54,6 +54,24 @@ describe("large rotating after-prayer reading slide", () => {
     expect(screen.getAllByTestId("after-prayer-item")).toHaveLength(1);
   });
 
+  it("keeps the active count in the center for a 42-dhikr playlist (13 / 42)", () => {
+    const vm = viewModel();
+    const feed = vm.feed!;
+    feed.azkar = Array.from({ length: 42 }, (_, index) => ({
+      id: `dhikr-${index + 1}`, category: "After Prayer" as const,
+      arabicText: `ذِكر رقم ${index + 1}`,
+      translationDe: `Dhikr Nummer ${index + 1}`,
+      repeatCount: 1, sortOrder: index + 1, source: "Hisn al-Muslim",
+    }));
+    feed.displaySettings.azkarPlaylistIds = feed.azkar.map((item) => item.id);
+    const playlist = getPostPrayerPlaylist(feed, "asr");
+    const elapsedMs = playlist.slides.slice(0, 12).reduce((ms, slide) => ms + slide.durationMs, 0);
+    render(<AfterPrayerBoard vm={{ ...vm, logicalNow: new Date(vm.logicalNow.getTime() + elapsedMs) }} />);
+    expect(screen.getByTestId("after-prayer-progress")).toHaveTextContent("13 / 42");
+    expect(screen.getByTestId("after-prayer-counter")).toContainElement(screen.getByTestId("after-prayer-progress"));
+    expect(screen.getByTestId("after-prayer-item")).toHaveAttribute("data-item-id", "dhikr-13");
+  });
+
   it("shows the correct calculated overall remaining time and ends exactly after the playlist", () => {
     const vm = viewModel();
     const { rerender } = render(<AfterPrayerBoard vm={vm} />);

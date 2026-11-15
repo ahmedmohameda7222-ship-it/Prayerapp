@@ -30,28 +30,31 @@ describe("deterministic after-prayer reading-time rotation", () => {
     expect(postPrayerSlideAt(playlist, 63_000)).toBeNull();
   });
 
-  it("shows long Arabic and German in separate, untruncated word-boundary pages", () => {
+  it("keeps a complete long Quranic verse with its German translation on ONE slide", () => {
     const feed = feedWithItems();
-    const arabic = Array.from({ length: 86 }, (_, i) => `كلمة${i}`).join(" ");
+    const arabic = Array.from({ length: 86 }, (_, i) => `آية${i}`).join(" ");
     const german = Array.from({ length: 130 }, (_, i) => `Wort${i}`).join(" ");
     feed.azkar = [{
-      id: "long", category: "After Prayer", arabicText: arabic, translationDe: german,
-      source: "Hisn al-Muslim", repeatCount: 1, sortOrder: 1,
+      id: "after-prayer-ayat-al-kursi", category: "After Prayer",
+      arabicText: arabic, translationDe: german,
+      source: "Quran 2:255", repeatCount: 1, sortOrder: 1,
     }];
-    feed.displaySettings.azkarPlaylistIds = ["long"];
+    feed.displaySettings.azkarPlaylistIds = [feed.azkar[0].id];
+
     const playlist = getPostPrayerPlaylist(feed, "asr");
-    expect(playlist.slides.length).toBeGreaterThan(2);
-    expect(playlist.slides.some((slide) => slide.language === "both")).toBe(false);
-    expect(playlist.slides.map((slide) => slide.language)).toEqual([
-      ...playlist.slides.filter((slide) => slide.language === "ar").map(() => "ar" as const),
-      ...playlist.slides.filter((slide) => slide.language === "de").map(() => "de" as const),
-    ]);
-    expect(playlist.slides.filter((slide) => slide.language === "ar").map((slide) => slide.arabicText).join(" ")).toBe(arabic);
-    expect(playlist.slides.filter((slide) => slide.language === "de").map((slide) => slide.translationDe).join(" ")).toBe(german);
-    expect(playlist.slides.every((slide) => slide.durationMs >= 9_000)).toBe(true);
+    expect(playlist.slides).toHaveLength(1);
+    expect(playlist.slides[0]).toMatchObject({
+      itemId: "after-prayer-ayat-al-kursi",
+      language: "both",
+      arabicText: arabic,
+      translationDe: german,
+    });
+    expect(playlist.totalMs).toBe(playlist.slides[0].durationMs);
+    expect(postPrayerSlideAt(playlist, playlist.totalMs - 1)?.slide.arabicText).toBe(arabic);
+    expect(postPrayerSlideAt(playlist, playlist.totalMs)).toBeNull();
   });
 
-  it("separates medium bilingual text into full-width language pages before it crowds an HD screen", () => {
+  it("keeps medium-length Arabic and German together without splitting either text", () => {
     const feed = feedWithItems();
     feed.azkar = [{
       id: "medium", category: "After Prayer",
@@ -61,9 +64,11 @@ describe("deterministic after-prayer reading-time rotation", () => {
     }];
     feed.displaySettings.azkarPlaylistIds = ["medium"];
     const playlist = getPostPrayerPlaylist(feed, "asr");
-    expect(playlist.slides.map((slide) => slide.language)).toEqual(["ar", "de"]);
-    expect(playlist.slides[0].arabicText).toBe(feed.azkar[0].arabicText);
-    expect(playlist.slides[1].translationDe).toBe(feed.azkar[0].translationDe);
+    expect(playlist.slides).toHaveLength(1);
+    expect(playlist.slides[0]).toMatchObject({
+      language: "both", arabicText: feed.azkar[0].arabicText,
+      translationDe: feed.azkar[0].translationDe,
+    });
   });
 
   it("keeps Fajr-only items out of Asr and does not invent an empty playlist", () => {

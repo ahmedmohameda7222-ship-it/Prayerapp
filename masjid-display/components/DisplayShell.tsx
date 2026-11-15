@@ -41,7 +41,7 @@ export function DisplayShell({
       data-display-mode={isPostPrayer ? "post-prayer" : undefined}
       style={{ transform: `translate3d(${pixelShift.x}px, ${pixelShift.y}px, 0)` }}
     >
-      <Header vm={vm} />
+      {!isPostPrayer ? <Header vm={vm} /> : null}
 
       <main className="display-main tv-hero" data-testid="tv-hero" data-layout={vm.state?.kind.toLowerCase().replaceAll("_", "-") ?? "initial-loading"} aria-live="polite">
         {testMode ? (
@@ -50,7 +50,7 @@ export function DisplayShell({
           </aside>
         ) : null}
         <DisplayMain vm={vm} />
-        {vm.feed ? (
+        {vm.feed && !isPostPrayer ? (
           <StatusOverlay
             networkAvailable={vm.networkAvailable}
             usingLkg={vm.usingLkg}
@@ -59,7 +59,9 @@ export function DisplayShell({
         ) : null}
       </main>
 
-      <UrgentBar items={vm.state?.kind === "JUMUAH_NOW" ? [] : vm.urgent} logicalNow={vm.logicalNow} />
+      {!isPostPrayer ? (
+        <UrgentBar items={vm.state?.kind === "JUMUAH_NOW" ? [] : vm.urgent} logicalNow={vm.logicalNow} />
+      ) : null}
       {!isPostPrayer ? (
         <div className="tv-prayer-dock" data-testid="tv-prayer-dock">
           <PrayerStrip vm={vm} />
@@ -67,11 +69,13 @@ export function DisplayShell({
         </div>
       ) : null}
 
-      <footer className="display-footer">
-        <div className="presentation-mode-slot">
-          <PresentationModeControl />
-        </div>
-      </footer>
+      {!isPostPrayer ? (
+        <footer className="display-footer">
+          <div className="presentation-mode-slot">
+            <PresentationModeControl />
+          </div>
+        </footer>
+      ) : null}
 
       <DiagnosticsPanel enabled={diagnosticsEnabled} vm={vm} />
     </section>

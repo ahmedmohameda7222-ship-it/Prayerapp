@@ -68,9 +68,14 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(screen.queryByTestId("tv-prayer-dock")).not.toBeInTheDocument();
     expect(screen.queryByTestId("prayerapp-qr")).not.toBeInTheDocument();
     expect(screen.getByTestId("tv-hero")).toBeInTheDocument();
-    expect(screen.getByTestId("header-clock")).toBeInTheDocument();
+    expect(screen.queryByTestId("header-clock")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("gregorian-date")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("hijri-date")).not.toBeInTheDocument();
+    expect(within(shell).queryByRole("banner")).not.toBeInTheDocument();
+    expect(within(shell).queryByRole("contentinfo")).not.toBeInTheDocument();
 
     rerender(<DisplayShell vm={vm()} />);
+    expect(screen.getByTestId("header-clock")).toBeInTheDocument();
     expect(screen.getByTestId("tv-prayer-dock")).toBeInTheDocument();
     expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
     expect(screen.getAllByTestId(/^prayer-cell-/)).toHaveLength(6);
@@ -84,6 +89,11 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(css).toContain('.tv-v2 .after-dhikr-ar');
     expect(css).toContain('.tv-v2 .after-dhikr-de');
     expect(css).not.toContain('-webkit-line-clamp');
+    const legibility = readFileSync(path.join(process.cwd(), "app/tv-legibility.css"), "utf8");
+    expect(legibility).toContain('.tv-v2[data-display-mode="post-prayer"] {');
+    expect(legibility).toContain("grid-template-rows: minmax(0, 1fr);");
+    expect(legibility).toContain("--post-dhikr-fit-scale");
+    expect(legibility).toContain('.after-dhikr[data-density="long"]');
   });
 
   it("shows Fire TV browser Wake Lock status only in opt-in diagnostics", () => {

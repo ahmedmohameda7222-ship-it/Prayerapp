@@ -60,23 +60,43 @@ describe("large rotating after-prayer reading slide", () => {
     expect(screen.queryByTestId("after-prayer-board")).not.toBeInTheDocument();
   });
 
-  it("reads long text with full-width Arabic then German pages, never a dense grid", () => {
+  it("renders one complete long Quranic dhikr with Arabic AND German at the same instant", () => {
     const vm = viewModel();
     const feed = vm.feed!;
     const arabic = Array.from({ length: 85 }, (_, i) => `ذكر${i}`).join(" ");
     const german = Array.from({ length: 120 }, (_, i) => `Wort${i}`).join(" ");
-    feed.azkar = [{ id:"long",category:"After Prayer",arabicText:arabic,translationDe:german,source:"Hisn al-Muslim",repeatCount:1,sortOrder:1 }];
-    feed.displaySettings.azkarPlaylistIds = ["long"];
+    feed.azkar = [{
+      id: "quran-verse", category: "After Prayer", arabicText: arabic,
+      translationDe: german, source: "Quran 2:255", repeatCount: 1, sortOrder: 1,
+    }];
+    feed.displaySettings.azkarPlaylistIds = ["quran-verse"];
     const playlist = getPostPrayerPlaylist(feed, "asr");
     const { rerender } = render(<AfterPrayerBoard vm={vm} />);
-    expect(screen.getByTestId("after-prayer-item")).toHaveAttribute("data-language", "ar");
-    expect(screen.queryByText(german)).not.toBeInTheDocument();
-    expect(screen.queryByTestId("after-grid")).not.toBeInTheDocument();
 
-    const arabicDuration = playlist.slides.filter((slide) => slide.language === "ar")
-      .reduce((sum, slide) => sum + slide.durationMs, 0);
-    rerender(<AfterPrayerBoard vm={{ ...vm, logicalNow: new Date(vm.logicalNow.getTime() + arabicDuration) }} />);
-    expect(screen.getByTestId("after-prayer-item")).toHaveAttribute("data-language", "de");
-    expect(screen.getByTestId("after-prayer-item").querySelector('[lang="ar"]')).toBeNull();
+    expect(playlist.slides).toHaveLength(1);
+    const slide = screen.getByTestId("after-prayer-item");
+    expect(slide).toHaveAttribute("data-language", "both");
+    expect(slide).toHaveAttribute("data-density", "long");
+    expect(within(slide).getByText(arabic)).toBeInTheDocument();
+    expect(within(slide).getByText(german)).toBeInTheDocument();
+    expect(screen.getByTestId("after-prayer-progress")).toHaveTextContent("01 / 01");
+
+    rerender(<AfterPrayerBoard vm={{
+      ...vm, logicalNow: new Date(vm.logicalNow.getTime() + playlist.totalMs - 1),
+    }} />);
+    expect(screen.getByText(arabic)).toBeInTheDocument();
+    expect(screen.getByText(german)).toBeInTheDocument();
+    rerender(<AfterPrayerBoard vm={{
+      ...vm, logicalNow: new Date(vm.logicalNow.getTime() + playlist.totalMs),
+    }} />);
+    expect(screen.queryByTestId("after-prayer-item")).not.toBeInTheDocument();
   });
+
+  it("shows only the Arabic/German after-prayer title, without Hisn al-Muslim in the heading", () => {
+    render(<AfterPrayerBoard vm={viewModel()} />);
+    expect(screen.getByRole("heading", { name: "أذكار ما بعد الصلاة" })).toBeInTheDocument();
+    expect(screen.getByText("Dhikr nach dem Gebet")).toBeInTheDocument();
+    expect(screen.queryByText("Dhikr nach dem Gebet · Hisn al-Muslim")).not.toBeInTheDocument();
+  });
+
 });

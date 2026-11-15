@@ -2,20 +2,14 @@ import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "./feed-types";
 import { selectedPostPrayerAzkar } from "./post-prayer-selection";
 
 /**
- * Reading-time presentation, not religious timing: 86 Arabic words/minute,
- * 133 German words/minute, plus a 4-second visual orientation allowance.
- * 9-second minimum gives a short dhikr time to settle on a distant TV.
+ * Presentation reading time only, not the prayer schedule.
+ * Each complete Arabic dhikr and its full German translation share ONE slide,
+ * including Quran verses. Never paginate, truncate or change sacred text.
  */
 const ARABIC_WORD_MS = 700;
 const GERMAN_WORD_MS = 450;
 const ORIENTATION_MS = 4_000;
 const MIN_SLIDE_MS = 9_000;
-// Cap the per-language page independently of the shorter bilingual threshold.
-// At 1280x720 large Arabic + German text should not compete for the same hero.
-const BILINGUAL_ARABIC_CHARS = 60;
-const BILINGUAL_GERMAN_CHARS = 95;
-const ARABIC_PAGE_CHARS = 90;
-const GERMAN_PAGE_CHARS = 160;
 
 export interface PostPrayerSlide {
   itemId: string;
@@ -34,30 +28,6 @@ export interface PostPrayerPlaylist {
 
 function words(text: string): number {
   return text.trim().split(/\s+/u).filter(Boolean).length;
-}
-
-/** Break at words, without dropping meaningful text or truncating a long prayer. */
-function paginate(text: string, maxChars: number): string[] {
-  const parts = text.trim().split(/\s+/u).filter(Boolean);
-  const pages: string[] = [];
-  let current = "";
-  for (const original of parts) {
-    let word = original;
-    // A single unusually long unbroken token must never overflow the screen.
-    while (word.length > maxChars) {
-      if (current) { pages.push(current); current = ""; }
-      pages.push(word.slice(0, maxChars));
-      word = word.slice(maxChars);
-    }
-    if (!word) continue;
-    if (current && current.length + 1 + word.length > maxChars) {
-      pages.push(current);
-      current = "";
-    }
-    current = current ? `${current} ${word}` : word;
-  }
-  if (current) pages.push(current);
-  return pages;
 }
 
 export function estimatePostPrayerSlideMs(
@@ -86,27 +56,15 @@ export function getPostPrayerPlaylist(
     const arabic = item.arabicText.trim();
     const german = item.translationDe.trim();
     if (!arabic || !german) continue;
-
-    const details = { itemId: item.id, source: item.source, repeatCount: item.repeatCount };
-    if (arabic.length <= BILINGUAL_ARABIC_CHARS && german.length <= BILINGUAL_GERMAN_CHARS) {
-      slides.push({
-        ...details, arabicText: arabic, translationDe: german, language: "both",
-        durationMs: estimatePostPrayerSlideMs(arabic, german, item.repeatCount),
-      });
-    } else {
-      for (const page of paginate(arabic, ARABIC_PAGE_CHARS)) {
-        slides.push({
-          ...details, arabicText: page, translationDe: null, language: "ar",
-          durationMs: estimatePostPrayerSlideMs(page, null, item.repeatCount),
-        });
-      }
-      for (const page of paginate(german, GERMAN_PAGE_CHARS)) {
-        slides.push({
-          ...details, arabicText: null, translationDe: page, language: "de",
-          durationMs: estimatePostPrayerSlideMs(null, page, 1),
-        });
-      }
-    }
+    slides.push({
+      itemId: item.id,
+      arabicText: arabic,
+      translationDe: german,
+      source: item.source,
+      repeatCount: item.repeatCount,
+      language: "both",
+      durationMs: estimatePostPrayerSlideMs(arabic, german, item.repeatCount),
+    });
   }
 
   const playlist: PostPrayerPlaylist = {

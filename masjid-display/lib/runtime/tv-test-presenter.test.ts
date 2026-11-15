@@ -63,6 +63,16 @@ describe("TV Test command reader", () => {
       .toMatchObject({ kind: "POST_PRAYER_AZKAR", prayer: "asr" });
   });
 
+  it("shows an unavailable-case notice rather than mislabeling a real different prayer state", () => {
+    const noAfterPrayer = applyTvTestCommand(vm(), command("POST_PRAYER_AZKAR", "asr"));
+    expect(noAfterPrayer.tvTestUnavailableReason).toMatch(/POST_PRAYER_AZKAR/);
+
+    const shortIqama = vm();
+    shortIqama.feed!.prayers.iqamaDelays.asr = 1;
+    const noWait = applyTvTestCommand(shortIqama, command("WAITING_FOR_IQAMA", "asr"));
+    expect(noWait.tvTestUnavailableReason).toMatch(/WAITING_FOR_IQAMA/);
+  });
+
   it("finds the next Friday in the Feed rather than manufacturing a Friday date", () => {
     const pre = applyTvTestCommand(vm(), command("FRIDAY_MODE"));
     const now = applyTvTestCommand(vm(), command("JUMUAH_NOW"));

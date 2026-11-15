@@ -47,7 +47,7 @@ describe("TV Test command reader", () => {
     expect(raw.state?.kind).toBe("NORMAL");
   });
 
-  it("selects authentic Iqama, prayer in progress and fixed post-prayer board", () => {
+  it("selects authentic Iqama, prayer blackout and rotating post-prayer dhikr", () => {
     for (const scenario of ["WAITING_FOR_IQAMA", "IQAMA_NOW", "PRAYER_IN_PROGRESS"]) {
       const preview = applyTvTestCommand(vm(), command(scenario, "asr"));
       expect(preview.state).toMatchObject({ kind: scenario, prayer: "asr" });
@@ -59,8 +59,9 @@ describe("TV Test command reader", () => {
       source: "Hisn al-Muslim 66", repeatCount: 3, sortOrder: 1,
     });
     withAfterPrayer.feed!.displaySettings.azkarPlaylistIds.push("after-test");
-    expect(applyTvTestCommand(withAfterPrayer, command("POST_PRAYER_AZKAR", "asr")).state)
-      .toMatchObject({ kind: "POST_PRAYER_AZKAR", prayer: "asr" });
+    const afterTest = applyTvTestCommand(withAfterPrayer, command("POST_PRAYER_AZKAR", "asr"));
+    expect(afterTest.state).toMatchObject({ kind: "POST_PRAYER_AZKAR", prayer: "asr" });
+    expect(afterTest.tvTestUnavailableReason).toBeUndefined();
   });
 
   it("shows an unavailable-case notice rather than mislabeling a real different prayer state", () => {

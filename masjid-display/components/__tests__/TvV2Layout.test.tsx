@@ -90,7 +90,8 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(css).toContain('.tv-v2 .after-dhikr-de');
     expect(css).not.toContain('-webkit-line-clamp');
     const legibility = readFileSync(path.join(process.cwd(), "app/tv-legibility.css"), "utf8");
-    expect(legibility).toMatch(/\\.tv-v2\\[data-display-mode="post-prayer"\\][^{]*\\{[^}]*grid-template-rows:\\s*minmax\\(0,\\s*1fr\\)/);
+    expect(legibility).toContain('.tv-v2[data-display-mode="post-prayer"] {');
+    expect(legibility).toContain("grid-template-rows: minmax(0, 1fr);");
     expect(legibility).toContain("--post-dhikr-fit-scale");
     expect(legibility).toContain('.after-dhikr[data-density="long"]');
   });

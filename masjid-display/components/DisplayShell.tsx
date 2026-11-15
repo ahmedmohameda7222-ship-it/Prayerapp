@@ -11,12 +11,14 @@ import { UrgentBar } from "./UrgentBar";
 export interface DisplayShellProps {
   vm: DisplayRuntimeViewModel;
   diagnosticsEnabled?: boolean;
+  testMode?: string | null;
   pixelShift?: { x: number; y: number };
 }
 
 export function DisplayShell({
   vm,
   diagnosticsEnabled = false,
+  testMode = null,
   pixelShift = { x: 0, y: 0 },
 }: DisplayShellProps) {
   const isPostPrayer = vm.state?.kind === "POST_PRAYER_AZKAR";
@@ -25,12 +27,18 @@ export function DisplayShell({
     <section
       className="display-shell tv-v2"
       data-testid="display-shell"
+      data-tv-test={testMode ? "active" : undefined}
       data-display-mode={isPostPrayer ? "post-prayer" : undefined}
       style={{ transform: `translate3d(${pixelShift.x}px, ${pixelShift.y}px, 0)` }}
     >
       <Header vm={vm} />
 
       <main className="display-main tv-hero" data-testid="tv-hero" data-layout={vm.state?.kind.toLowerCase().replaceAll("_", "-") ?? "initial-loading"} aria-live="polite">
+        {testMode ? (
+          <aside className="tv-test-badge" role="status" data-testid="tv-test-badge">
+            TV TEST MODE · {testMode}
+          </aside>
+        ) : null}
         <DisplayMain vm={vm} />
         {vm.feed ? (
           <StatusOverlay

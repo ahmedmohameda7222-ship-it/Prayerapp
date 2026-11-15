@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CalendarDays, ChevronDown, Clock, HandHeart, LayoutDashboard, LogOut, Settings, SlidersHorizontal } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, Clock, HandHeart, LayoutDashboard, LogOut, MonitorPlay, Settings, SlidersHorizontal } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { MosqueIcon } from "@/components/ui/MosqueIcon";
 import { useAdminAuth } from "@/lib/auth/use-admin-auth";
@@ -17,6 +17,7 @@ const items = [
   { href: "/admin/donations", labelKey: "admin.donations", icon: HandHeart },
   { href: "/admin/events", labelKey: "admin.events", icon: CalendarDays },
   { href: "/admin/ramadan", labelKey: "admin.ramadan", icon: CalendarDays },
+  { href: "/admin/tv-test", labelKey: "TV Test", icon: MonitorPlay },
   { href: "/admin/settings", labelKey: "admin.settings", icon: Settings },
 ];
 
@@ -49,7 +50,7 @@ export function AdminSidebar() {
               }`}
             >
               <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-              <span className="min-w-0 flex-1">{t(item.labelKey)}</span>
+              <span className="min-w-0 flex-1">{item.labelKey === "TV Test" ? "TV Test" : t(item.labelKey)}</span>
             </Link>
           );
         })}

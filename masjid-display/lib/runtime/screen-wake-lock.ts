@@ -41,7 +41,7 @@ export function installScreenWakeLock(onStatus?: (status: TvWakeLockStatus) => v
         }
       });
     } catch {
-      onStatus?.("denied");
+      if (!disposed) onStatus?.("denied");
       // The TV must keep presenting even if Silk denies this API.
     } finally {
       acquiring = false;

@@ -36,15 +36,26 @@ function RuntimeHarness() {
 }
 
 async function waitForProductionRuntime() {
-  await waitFor(() => expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument(), {
-    timeout: 15_000,
-  });
+  // Loaded data is defined by the validated LKG and public-app URL, not by
+  // the QR: the real prayer blackout and post-prayer dhikr intentionally hide it.
+  await waitFor(() => {
+    expect(loadLkg()).not.toBeNull();
+    expect(screen.getByTestId("runtime-public-app-url")).toHaveTextContent(
+      PRODUCTION_PUBLIC_APP_URL,
+    );
+  }, { timeout: 15_000 });
+
   const lkg = loadLkg();
-  expect(lkg).not.toBeNull();
-  expect(screen.getByTestId("runtime-public-app-url")).toHaveTextContent(
-    PRODUCTION_PUBLIC_APP_URL,
-  );
-  return lkg!;
+  if (!lkg) throw new Error("Production runtime did not persist a validated LKG");
+
+  if (screen.queryByTestId("prayer-blackout")) {
+    expect(screen.queryByTestId("prayerapp-qr")).not.toBeInTheDocument();
+  } else if (screen.queryByTestId("after-prayer-board")) {
+    expect(screen.queryByTestId("prayerapp-qr")).not.toBeInTheDocument();
+  } else {
+    expect(screen.getByTestId("prayerapp-qr")).toBeInTheDocument();
+  }
+  return lkg;
 }
 
 integrationDescribe("live Prayerapp + Masjid Display integration", () => {

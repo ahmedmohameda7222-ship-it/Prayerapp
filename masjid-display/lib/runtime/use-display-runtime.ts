@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { activeDisplayContent, type ActiveContent } from "../content-eligibility";
 import type { MasjidDisplayFeedV1 } from "../feed-types";
 import type { GermanFridayKhutbah } from "../friday-khutbah";
+import type { TvWakeLockStatus } from "./screen-wake-lock";
 import { loadLkg, replaceLkg } from "../lkg";
 import { createLogicalClock } from "../logical-clock";
 import { resolveNormalSlide, type NormalSlide } from "../scheduler";
@@ -35,6 +36,7 @@ export interface DisplayRuntimeViewModel {
   prayerScheduleStale: boolean;
   publicAppUrl: string | null;
   fridayKhutbah?: GermanFridayKhutbah | null;
+  wakeLockStatus?: TvWakeLockStatus;
   tvTestUnavailableReason?: string;
   diagnostics?: DisplayRuntimeDiagnostics;
 }

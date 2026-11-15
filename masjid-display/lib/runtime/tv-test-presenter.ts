@@ -97,7 +97,7 @@ function stageInstant(
     case "WAITING_FOR_IQAMA": return iqama - 90_000;
     case "IQAMA_NOW": return iqama + 1_000;
     case "PRAYER_IN_PROGRESS": return iqama + IQAMA_ANNOUNCEMENT_MS + 1_000;
-    case "POST_PRAYER_AZKAR": return prayerBlackoutEndMs(prayer, iqama) + 15_000;
+    case "POST_PRAYER_AZKAR": return prayerBlackoutEndMs(prayer, iqama) + 1_000;
     default: return null;
   }
 }

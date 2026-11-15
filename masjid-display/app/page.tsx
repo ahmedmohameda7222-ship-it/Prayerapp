@@ -4,6 +4,8 @@ import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { DisplayShell } from "../components/DisplayShell";
 import { pixelShiftForEpoch } from "../lib/pixel-shift";
 import { useDisplayRuntime } from "../lib/runtime/use-display-runtime";
+import { useTvTestCommand } from "../lib/runtime/use-tv-test-command";
+import { applyTvTestCommand, parseTvTestStatus } from "../lib/runtime/tv-test-presenter";
 import { createWatchdog } from "../lib/runtime/watchdog";
 
 const PIXEL_SHIFT_EPOCH_MS = 10 * 60_000;
@@ -24,7 +26,15 @@ function diagnosticsOnServer() {
 }
 
 export default function Home() {
-  const vm = useDisplayRuntime();
+  const liveVm = useDisplayRuntime();
+  const remoteCommand = useTvTestCommand();
+  // Read test status independently from the production Feed; expire locally
+  // even if the status endpoint is unreachable or the browser was sleeping.
+  const activeTest = parseTvTestStatus(
+    { active: remoteCommand !== null, command: remoteCommand },
+    liveVm.logicalNow,
+  );
+  const vm = applyTvTestCommand(liveVm, activeTest);
   const watchdog = useMemo(
     () => createWatchdog({ hardFailureMs: WATCHDOG_HARD_FAILURE_MS }),
     [],
@@ -73,6 +83,7 @@ export default function Home() {
   return (
     <DisplayShell
       vm={vm}
+      testMode={activeTest && liveVm.feed ? activeTest.scenario : null}
       diagnosticsEnabled={diagnosticsEnabled}
       pixelShift={pixelShift}
     />

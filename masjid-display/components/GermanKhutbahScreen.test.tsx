@@ -1,9 +1,9 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import fixture from "../../lib/__fixtures__/feed-v1.json";
-import type { MasjidDisplayFeedV1 } from "../../lib/feed-types";
-import type { DisplayRuntimeViewModel } from "../../lib/runtime/use-display-runtime";
-import { DisplayShell } from "../DisplayShell";
+import fixture from "../lib/__fixtures__/feed-v1.json";
+import type { MasjidDisplayFeedV1 } from "../lib/feed-types";
+import type { DisplayRuntimeViewModel } from "../lib/runtime/use-display-runtime";
+import { DisplayShell } from "./DisplayShell";
 
 vi.mock("qrcode.react", () => ({
   QRCodeSVG: ({ value, ...props }: { value: string; [key: string]: unknown }) => (

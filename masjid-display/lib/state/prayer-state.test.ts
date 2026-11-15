@@ -36,7 +36,7 @@ describe("normal prayer lifecycle", () => {
     ["18:02:00", "WAITING_FOR_IQAMA"],
     ["18:10:00", "IQAMA_NOW"],
     ["18:12:00", "PRAYER_IN_PROGRESS"],
-    ["18:20:00", "NORMAL"],
+    ["18:20:30", "NORMAL"],
   ] as const)("resolves %s as %s", (localTime, expected) => {
     expect(resolvePrayerState(feedWithPrayer(), local(localTime)).kind).toBe(expected);
   });
@@ -44,7 +44,7 @@ describe("normal prayer lifecycle", () => {
   it("enters Iqama Now immediately when delay is zero", () => {
     const feed = feedWithPrayer({ delay: 0 });
     expect(resolvePrayerState(feed, local("18:00:00")).kind).toBe("IQAMA_NOW");
-    expect(resolvePrayerState(feed, local("18:02:00")).kind).toBe("PRAYER_IN_PROGRESS");
+    expect(resolvePrayerState(feed, local("18:00:30")).kind).toBe("PRAYER_IN_PROGRESS");
   });
 
   it("shortens Prayer Time Now to one minute when delay is one", () => {

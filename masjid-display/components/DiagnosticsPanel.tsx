@@ -44,6 +44,8 @@ export function DiagnosticsPanel({ enabled, vm }: DiagnosticsPanelProps) {
         </dd>
         <dt>Validation</dt>
         <dd>{diagnostics?.validationError ?? "none"}</dd>
+        <dt>Browser Wake Lock (best effort)</dt>
+        <dd data-testid="wake-lock-status">{vm.wakeLockStatus ?? "pending"}</dd>
       </dl>
     </aside>
   );

@@ -137,6 +137,12 @@ export function applyTvTestCommand(
     const elapsed = Math.max(0, now.getTime() - Date.parse(command.startedAt));
     const simulatedNow = new Date(anchor + elapsed);
     const state = resolveDisplayState(feed, simulatedNow);
+    if (state.kind !== command.scenario) {
+      return {
+        ...vm,
+        tvTestUnavailableReason: `Cannot simulate ${command.scenario} for ${command.prayer ?? "Friday"} from this Feed.`,
+      };
+    }
     const content = activeDisplayContent(feed, simulatedNow);
     return {
       ...vm,

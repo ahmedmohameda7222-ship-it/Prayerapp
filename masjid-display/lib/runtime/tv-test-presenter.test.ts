@@ -63,7 +63,7 @@ describe("TV Test command reader", () => {
     expect(afterTest.state).toMatchObject({ kind: "POST_PRAYER_AZKAR", prayer: "asr" });
     expect(afterTest.tvTestUnavailableReason).toBeUndefined();
     // One short 11-second item genuinely ends before the 180s rehearsal TTL.
-    const finished = applyTvTestCommand(vm("2026-09-15T10:00:15.000Z"), command("POST_PRAYER_AZKAR", "asr"));
+    const finished = applyTvTestCommand({ ...withAfterPrayer, logicalNow: new Date("2026-09-15T10:00:15.000Z") }, command("POST_PRAYER_AZKAR", "asr"));
     expect(finished.state?.kind).toBe("NORMAL");
   });
 

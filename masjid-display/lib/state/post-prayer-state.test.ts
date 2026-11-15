@@ -57,7 +57,7 @@ describe("reading-time after-prayer TV state", () => {
     feed.azkar[0].id = "after-prayer-fajr-ilm-rizq-amal";
     feed.displaySettings.azkarPlaylistIds = ["after-prayer-fajr-ilm-rizq-amal"];
     expect(resolveDisplayState(feed, at("2026-09-15", "17:10:31")).kind).toBe("NORMAL");
-    expect(resolveDisplayState(feed, at("2026-09-15", "05:30:01")).kind).toBe("POST_PRAYER_AZKAR");
+    expect(resolveDisplayState(feed, at("2026-09-15", "05:26:31")).kind).toBe("POST_PRAYER_AZKAR");
   });
 
   it("keeps the regular prayer and Friday precedence while the board would otherwise be eligible", () => {

@@ -10,8 +10,12 @@ const ARABIC_WORD_MS = 700;
 const GERMAN_WORD_MS = 450;
 const ORIENTATION_MS = 4_000;
 const MIN_SLIDE_MS = 9_000;
-const ARABIC_PAGE_CHARS = 160;
-const GERMAN_PAGE_CHARS = 235;
+// Cap the per-language page independently of the shorter bilingual threshold.
+// At 1280x720 large Arabic + German text should not compete for the same hero.
+const BILINGUAL_ARABIC_CHARS = 60;
+const BILINGUAL_GERMAN_CHARS = 95;
+const ARABIC_PAGE_CHARS = 90;
+const GERMAN_PAGE_CHARS = 160;
 
 export interface PostPrayerSlide {
   itemId: string;
@@ -84,7 +88,7 @@ export function getPostPrayerPlaylist(
     if (!arabic || !german) continue;
 
     const details = { itemId: item.id, source: item.source, repeatCount: item.repeatCount };
-    if (arabic.length <= ARABIC_PAGE_CHARS && german.length <= GERMAN_PAGE_CHARS) {
+    if (arabic.length <= BILINGUAL_ARABIC_CHARS && german.length <= BILINGUAL_GERMAN_CHARS) {
       slides.push({
         ...details, arabicText: arabic, translationDe: german, language: "both",
         durationMs: estimatePostPrayerSlideMs(arabic, german, item.repeatCount),

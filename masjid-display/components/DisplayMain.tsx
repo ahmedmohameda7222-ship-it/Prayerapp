@@ -62,6 +62,13 @@ function renderNormalSlide(vm: DisplayRuntimeViewModel, slide: NormalSlide | nul
 }
 
 export function DisplayMain({ vm }: { vm: DisplayRuntimeViewModel }) {
+  if (vm.tvTestUnavailableReason) return (
+    <section className="tv-empty" data-testid="tv-test-missing-content">
+      <h2>TV TEST</h2>
+      <p>{vm.tvTestUnavailableReason}</p>
+      <p>No content is invented during rehearsal.</p>
+    </section>
+  );
   const state = vm.state;
   if (!state) return (
     <section className="tv-empty" data-testid="tv-initial-loading">

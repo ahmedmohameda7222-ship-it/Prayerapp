@@ -14,7 +14,9 @@ afterEach(() => {
 describe("Fire TV screen wake lock (best effort)", () => {
   it("does not pretend to synthesize user activity on browsers without Wake Lock", () => {
     Reflect.deleteProperty(navigator, "wakeLock");
-    const stop = installScreenWakeLock();
+    const onStatus = vi.fn();
+    const stop = installScreenWakeLock(onStatus);
+    expect(onStatus).toHaveBeenCalledWith("unsupported");
     expect(SCREEN_WAKE_RECHECK_MS).toBe(240_000);
     expect(stop).toBeTypeOf("function");
     expect(() => stop()).not.toThrow();
@@ -28,9 +30,11 @@ describe("Fire TV screen wake lock (best effort)", () => {
     const second = { released: false, release, addEventListener: vi.fn() };
     const request = vi.fn().mockResolvedValueOnce(sentinel).mockResolvedValueOnce(second);
     Object.defineProperty(navigator, "wakeLock", { configurable: true, value: { request } });
-    const stop = installScreenWakeLock();
+    const onStatus = vi.fn();
+    const stop = installScreenWakeLock(onStatus);
     await Promise.resolve(); await Promise.resolve();
     expect(request).toHaveBeenCalledExactlyOnceWith("screen");
+    expect(onStatus).toHaveBeenCalledWith("active");
 
     await vi.advanceTimersByTimeAsync(240_000);
     expect(request).toHaveBeenCalledTimes(1); // existing held lock is reused
@@ -62,8 +66,10 @@ describe("Fire TV screen wake lock (best effort)", () => {
     vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
     const request = vi.fn().mockRejectedValue(new DOMException("Not allowed", "NotAllowedError"));
     Object.defineProperty(navigator, "wakeLock", { configurable: true, value: { request } });
-    const stop = installScreenWakeLock();
+    const onStatus = vi.fn();
+    const stop = installScreenWakeLock(onStatus);
     await Promise.resolve(); await Promise.resolve();
+    expect(onStatus).toHaveBeenCalledWith("denied");
     expect(request).toHaveBeenCalledOnce();
     expect(() => stop()).not.toThrow();
   });

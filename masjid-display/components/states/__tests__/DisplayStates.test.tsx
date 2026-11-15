@@ -44,6 +44,19 @@ function vm(
 afterEach(() => cleanup());
 
 describe("Display religious state renderers", () => {
+  it("announces the Adhan with the prayer name and no redundant 00:00 countdown", () => {
+    render(<DisplayShell vm={vm(new Date("2026-09-15T14:45:00Z"), {
+      state: { kind: "PRAYER_TIME_NOW", prayer: "asr", degraded: false, degradedReason: null },
+    })} />);
+    const main = screen.getByRole("main");
+    expect(within(main).getByText("حان الآن موعد أذان صلاة")).toBeInTheDocument();
+    expect(within(main).getByText("Jetzt ist Zeit für den Adhan zum Gebet")).toBeInTheDocument();
+    expect(within(main).getByText("العصر")).toBeInTheDocument();
+    expect(within(main).getByText("Asr")).toBeInTheDocument();
+    expect(within(main).getByTestId("state-target-time")).toHaveTextContent("16:45");
+    expect(within(main).queryByTestId("state-countdown")).not.toBeInTheDocument();
+  });
+
   it("renders Iqama Now bilingually and suppresses the normal rotating slide", () => {
     const now = new Date("2026-09-15T14:55:00.000Z");
     render(

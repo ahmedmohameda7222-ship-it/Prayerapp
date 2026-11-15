@@ -62,7 +62,7 @@ describe("Display religious state renderers", () => {
 
     const main = screen.getByRole("main");
     expect(within(main).getByText(/Iqama/i)).toBeInTheDocument();
-    expect(within(main).getByText(/إقامة الصلاة/)).toBeInTheDocument();
+    expect(within(main).getByText(/حان الآن موعد إقامة صلاة/)).toBeInTheDocument();
     expect(within(main).queryByText("Aktuelle Veranstaltung")).not.toBeInTheDocument();
   });
 
@@ -82,10 +82,9 @@ describe("Display religious state renderers", () => {
       />,
     );
 
-    const main = screen.getByRole("main");
-    expect(within(main).getByText(/Gebet läuft/i)).toBeInTheDocument();
-    expect(within(main).getByText(/الصلاة قائمة/)).toBeInTheDocument();
-    expect(within(main).queryByText("Spendenkampagne")).not.toBeInTheDocument();
+    expect(screen.getByTestId("prayer-blackout")).toBeInTheDocument();
+    expect(screen.queryByRole("main")).not.toBeInTheDocument();
+    expect(screen.queryByText("Spendenkampagne")).not.toBeInTheDocument();
   });
 
   it("renders prayer-approaching countdown from logical time to the stored prayer instant", () => {
@@ -194,9 +193,8 @@ describe("Display religious state renderers", () => {
     );
 
     const main = screen.getByRole("main");
-    expect(within(main).getByText(/Jumuah jetzt/i)).toBeInTheDocument();
-    expect(within(main).getByText(/صلاة الجمعة الآن/)).toBeInTheDocument();
-    expect(within(main).getByText("Jumuah")).toBeInTheDocument();
-    expect(within(main).queryByText(/Iqama/i)).not.toBeInTheDocument();
+    expect(within(main).getByTestId("friday-german-khutbah")).toBeInTheDocument();
+    expect(within(main).getByText("Keine veröffentlichte deutsche Freitagspredigt vorhanden.")).toBeInTheDocument();
+    expect(within(main).queryByText(/صلاة الجمعة الآن|Iqama/)).not.toBeInTheDocument();
   });
 });

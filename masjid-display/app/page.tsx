@@ -9,7 +9,7 @@ import { localDateIso } from "../lib/time";
 import { useTvTestCommand } from "../lib/runtime/use-tv-test-command";
 import { applyTvTestCommand, parseTvTestStatus } from "../lib/runtime/tv-test-presenter";
 import { createWatchdog } from "../lib/runtime/watchdog";
-import { installScreenWakeLock, type ScreenWakeLockHandle, type TvWakeLockStatus } from "../lib/runtime/screen-wake-lock";
+import { installScreenWakeLock, STAY_AWAKE_STORAGE_KEY, type ScreenWakeLockHandle, type TvWakeLockStatus } from "../lib/runtime/screen-wake-lock";
 
 const PIXEL_SHIFT_EPOCH_MS = 10 * 60_000;
 const WATCHDOG_CHECK_MS = 30_000;
@@ -28,16 +28,40 @@ function diagnosticsOnServer() {
   return false;
 }
 
+const STAY_AWAKE_EVENT = "prayerapp-tv-stay-awake-change";
+
+function subscribeToStayAwake(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(STAY_AWAKE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(STAY_AWAKE_EVENT, onStoreChange);
+  };
+}
+
+function stayAwakePreference() {
+  try {
+    return window.localStorage.getItem(STAY_AWAKE_STORAGE_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
+function stayAwakeServerPreference() {
+  return false;
+}
+
 export default function Home() {
   // Best-effort platform Wake Lock. Does not spoof remote input or override Fire OS.
   const [wakeLockStatus, setWakeLockStatus] = useState<TvWakeLockStatus>("pending");
-  const [stayAwakeRequested, setStayAwakeRequested] = useState(false);
+  const stayAwakeRequested = useSyncExternalStore(
+    subscribeToStayAwake, stayAwakePreference, stayAwakeServerPreference,
+  );
   const screenWakeRef = useRef<ScreenWakeLockHandle | null>(null);
 
   useEffect(() => {
     const handle = installScreenWakeLock(setWakeLockStatus);
     screenWakeRef.current = handle;
-    setStayAwakeRequested(handle.isStayAwakeRequested());
     return () => {
       screenWakeRef.current = null;
       handle();
@@ -50,7 +74,7 @@ export default function Home() {
     const next = !handle.isStayAwakeRequested();
     if (next) handle.requestStayAwake();
     else handle.stopStayAwake();
-    setStayAwakeRequested(next);
+    window.dispatchEvent(new Event(STAY_AWAKE_EVENT));
   }, []);
   const liveVm = useDisplayRuntime();
   const remoteCommand = useTvTestCommand();

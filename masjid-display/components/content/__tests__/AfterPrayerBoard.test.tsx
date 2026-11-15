@@ -59,6 +59,23 @@ describe("sequential, readable after-prayer TV dhikr", () => {
     expect(screen.queryByTestId("after-prayer-board")).not.toBeInTheDocument();
   });
 
+  it("uses separate large language pages for Ayat-al-Kursi-length text", () => {
+    const vm = viewModel();
+    vm.feed!.azkar = [{
+      id: "long", category: "After Prayer",
+      arabicText: Array(100).fill("الله").join(" "),
+      translationDe: Array(180).fill("Allah").join(" "),
+      repeatCount: 1, sortOrder: 1, source: "Hisn al-Muslim",
+    }];
+    vm.feed!.displaySettings.azkarPlaylistIds = ["long"];
+    const { rerender } = render(<AfterPrayerBoard vm={vm} />);
+    expect(screen.getByTestId("after-prayer-item")).toHaveAttribute("data-language", "ar");
+    expect(screen.queryByText(Array(180).fill("Allah").join(" "))).not.toBeInTheDocument();
+    rerender(<AfterPrayerBoard vm={{ ...vm, logicalNow: new Date("2026-09-15T17:12:30+02:00") }} />);
+    expect(screen.getByTestId("after-prayer-item")).toHaveAttribute("data-language", "de");
+    expect(screen.getByText(Array(180).fill("Allah").join(" "))).toBeInTheDocument();
+  });
+
   it("can rotate all 18 source items without rendering a truncated grid", () => {
     const vm = viewModel();
     const feed = vm.feed!;

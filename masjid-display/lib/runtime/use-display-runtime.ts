@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { activeDisplayContent, type ActiveContent } from "../content-eligibility";
 import type { MasjidDisplayFeedV1 } from "../feed-types";
+import type { GermanFridayKhutbah } from "../friday-khutbah";
 import { loadLkg, replaceLkg } from "../lkg";
 import { createLogicalClock } from "../logical-clock";
 import { resolveNormalSlide, type NormalSlide } from "../scheduler";
@@ -33,6 +34,7 @@ export interface DisplayRuntimeViewModel {
   usingLkg: boolean;
   prayerScheduleStale: boolean;
   publicAppUrl: string | null;
+  fridayKhutbah?: GermanFridayKhutbah | null;
   tvTestUnavailableReason?: string;
   diagnostics?: DisplayRuntimeDiagnostics;
 }

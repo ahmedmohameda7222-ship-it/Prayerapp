@@ -48,10 +48,11 @@ export async function fetchPrayerappUpstream(
     headers.set("if-none-match", ifNoneMatch);
   }
 
-  const url = new URL(`${configuredOrigin()}${path}`);
-  if (fridayDate) url.searchParams.set("date", fridayDate);
+  // Build a fixed, validated date suffix without ever reading URLs from the request.
+  const suffix = fridayDate ? `?date=${encodeURIComponent(fridayDate)}` : "";
+  const url = `${configuredOrigin()}${path}${suffix}`;
 
-  return fetch(url.toString(), {
+  return fetch(url, {
     method: "GET",
     headers,
     cache: "no-store",

@@ -41,7 +41,7 @@ describe("TV Test command reader", () => {
     const simulated = applyTvTestCommand(raw, command("PRAYER_APPROACHING", "asr"));
     expect(simulated.state).toMatchObject({ kind: "PRAYER_APPROACHING", prayer: "asr" });
     expect(simulated.logicalNow.toISOString()).not.toBe(raw.logicalNow.toISOString());
-    const later = applyTvTestCommand(vm("2026-09-15T10:01:30.000Z"), command("PRAYER_APPROACHING", "asr"));
+    const later = applyTvTestCommand(vm("2026-09-15T10:02:15.000Z"), command("PRAYER_APPROACHING", "asr"));
     expect(later.state?.kind).toBe("PRAYER_TIME_NOW");
     expect(raw.state?.kind).toBe("NORMAL");
   });

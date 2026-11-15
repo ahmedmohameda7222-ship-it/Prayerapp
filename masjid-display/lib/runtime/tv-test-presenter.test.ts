@@ -47,10 +47,19 @@ describe("TV Test command reader", () => {
   });
 
   it("selects authentic Iqama, prayer in progress and fixed post-prayer board", () => {
-    for (const scenario of ["WAITING_FOR_IQAMA", "IQAMA_NOW", "PRAYER_IN_PROGRESS", "POST_PRAYER_AZKAR"]) {
+    for (const scenario of ["WAITING_FOR_IQAMA", "IQAMA_NOW", "PRAYER_IN_PROGRESS"]) {
       const preview = applyTvTestCommand(vm(), command(scenario, "asr"));
       expect(preview.state).toMatchObject({ kind: scenario, prayer: "asr" });
     }
+    const withAfterPrayer = vm();
+    withAfterPrayer.feed!.azkar.push({
+      id: "after-test", category: "After Prayer",
+      arabicText: "أستغفر الله", translationDe: "Ich bitte Allah um Vergebung",
+      source: "Hisn al-Muslim 66", repeatCount: 3, sortOrder: 1,
+    });
+    withAfterPrayer.feed!.displaySettings.azkarPlaylistIds.push("after-test");
+    expect(applyTvTestCommand(withAfterPrayer, command("POST_PRAYER_AZKAR", "asr")).state)
+      .toMatchObject({ kind: "POST_PRAYER_AZKAR", prayer: "asr" });
   });
 
   it("finds the next Friday in the Feed rather than manufacturing a Friday date", () => {

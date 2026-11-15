@@ -103,6 +103,38 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(legibility).toContain("grid-template-rows: auto minmax(0, 1fr)");
   });
 
+  it("places the Stay Awake button with fullscreen and retains it in dedicated post-prayer mode", () => {
+    const onToggle = vi.fn();
+    const setup = { requested: false, status: "pending" as const, onToggle };
+    const { rerender } = render(<DisplayShell vm={vm()} stayAwake={setup} />);
+    const footer = screen.getByRole("contentinfo");
+    expect(within(footer).getByRole("button", { name: /Stay Awake/i })).toBeInTheDocument();
+    expect(within(footer).getByRole("button", { name: /Stay Awake/i })).toHaveAttribute("aria-pressed", "false");
+
+    const postPrayerFeed = structuredClone(feed);
+    postPrayerFeed.azkar = [{
+      id: "after1", category: "After Prayer" as const, arabicText: "أستغفر الله",
+      translationDe: "Ich bitte Allah um Vergebung", source: "Hisn al-Muslim",
+      repeatCount: 1, sortOrder: 1,
+    }];
+    postPrayerFeed.displaySettings.azkarPlaylistIds = ["after1"];
+    rerender(<DisplayShell
+      vm={{ ...vm({ kind: "POST_PRAYER_AZKAR", prayer: "asr", degraded: false, degradedReason: null }),
+        feed: postPrayerFeed, logicalNow: new Date("2026-09-15T17:11:00+02:00") }}
+      stayAwake={setup}
+    />);
+    expect(screen.getByRole("button", { name: /Stay Awake/i })).toBeInTheDocument();
+    expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("header-clock")).not.toBeInTheDocument();
+
+    rerender(<DisplayShell
+      vm={vm({ kind: "PRAYER_IN_PROGRESS", prayer: "asr", degraded: false, degradedReason: null })}
+      stayAwake={setup}
+    />);
+    expect(screen.queryByRole("button", { name: /Stay Awake/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId("prayer-blackout")).toBeInTheDocument();
+  });
+
   it("shows Fire TV browser Wake Lock status only in opt-in diagnostics", () => {
     render(<DisplayShell vm={{ ...vm(), wakeLockStatus: "unsupported" }} diagnosticsEnabled />);
     expect(screen.getByTestId("wake-lock-status")).toHaveTextContent("unsupported");

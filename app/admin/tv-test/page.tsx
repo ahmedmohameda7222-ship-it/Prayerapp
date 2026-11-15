@@ -46,12 +46,11 @@ export default function TvTestAdminPage() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [nowMs, setNowMs] = useState(0);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 1_000);
-    setNowMs(Date.now());
     return () => window.clearInterval(timer);
   }, []);
 

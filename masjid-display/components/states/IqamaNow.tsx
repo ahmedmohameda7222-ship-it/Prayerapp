@@ -5,11 +5,9 @@ export function IqamaNow({ vm }: { vm: DisplayRuntimeViewModel }) {
   return (
     <StateFrame
       testId="prayer-state-iqama-now"
-      titleDe="Iqama"
-      titleAr="إقامة الصلاة"
+      titleDe="Jetzt ist Zeit für die Iqama zum Gebet"
+      titleAr="حان الآن موعد إقامة صلاة"
       prayer={vm.state?.prayer}
-      supportDe="Beginn jetzt"
-      supportAr="الإقامة الآن"
       now={vm.logicalNow}
       timezone={presentationTimezone(vm)}
     />

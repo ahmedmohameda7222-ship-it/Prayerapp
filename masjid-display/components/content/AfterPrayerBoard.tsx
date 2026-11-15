@@ -1,3 +1,4 @@
+import { activeAfterPrayerSlide } from "../../lib/after-prayer-rotation";
 import { selectedPostPrayerAzkar } from "../../lib/post-prayer-selection";
 import type { DisplayRuntimeViewModel } from "../../lib/runtime/use-display-runtime";
 import { resolvePostPrayerWindow } from "../../lib/state/post-prayer-state";
@@ -14,16 +15,22 @@ export function AfterPrayerBoard({ vm }: { vm: DisplayRuntimeViewModel }) {
   if (!window) return null;
 
   const items = selectedPostPrayerAzkar(vm.feed, vm.state?.prayer ?? window.prayer);
+  const slide = activeAfterPrayerSlide(items, window.startMs, vm.logicalNow.getTime());
+  if (!slide) return null;
 
-  if (items.length === 0) return null;
-
-  const density = items.length > 8 ? "full" : "selected";
+  const { item, index, count } = slide;
+  const density = item.arabicText.length > 240 || item.translationDe.length > 320
+    ? "long"
+    : item.arabicText.length > 110 || item.translationDe.length > 170
+      ? "medium"
+      : "short";
 
   return (
     <section
-      className="after-wrapper"
+      className="after-wrapper after-rotating"
       data-testid="after-prayer-board"
       data-density={density}
+      data-active-index={index}
       aria-label="أذكار ما بعد الصلاة — Dhikr nach dem Gebet"
     >
       <div className="after-heading">
@@ -31,31 +38,23 @@ export function AfterPrayerBoard({ vm }: { vm: DisplayRuntimeViewModel }) {
           <h2 className="after-title" lang="ar" dir="rtl">أذكار ما بعد الصلاة</h2>
           <p className="after-subtitle" lang="de">Dhikr nach dem Gebet · Hisn al-Muslim</p>
         </div>
-        <span className="after-fixed-status">
-          <span lang="ar">ثابتة</span>
-          <time data-testid="after-prayer-remaining">{remainingDisplayTime(window.endMs, vm.logicalNow)}</time>
-        </span>
+        <div className="after-slide-status">
+          <span data-testid="after-prayer-position">{index + 1} / {count}</span>
+          <time data-testid="after-prayer-remaining">{remainingDisplayTime(slide.endsAtMs, vm.logicalNow)}</time>
+        </div>
       </div>
-      <div className="after-grid">
-        {items.map((item, index) => (
-          <article
-            key={item.id}
-            className="after-cell"
-            data-testid="after-prayer-item"
-            title={item.arabicText}
-          >
-            <span className="after-number">{String(index + 1).padStart(2, "0")}</span>
-            <div className="after-copy">
-              <div lang="ar" dir="rtl" className="after-ar">{item.arabicText}</div>
-              <div lang="de" className="after-de">{item.translationDe}</div>
-              <span className="after-source">{item.source}</span>
-            </div>
-            <span className="after-repeat" aria-label={`Wiederholungen: ${item.repeatCount}`}>
+      <article className="after-active-slide" data-testid="after-prayer-item" aria-live="off">
+        <div lang="ar" dir="rtl" className="after-active-ar">{item.arabicText}</div>
+        <div lang="de" className="after-active-de">{item.translationDe}</div>
+        <div className="after-active-meta">
+          <span>{item.source}</span>
+          {item.repeatCount > 1 ? (
+            <strong className="after-active-repeat" aria-label={`Wiederholungen: ${item.repeatCount}`}>
               ×{item.repeatCount}
-            </span>
-          </article>
-        ))}
-      </div>
+            </strong>
+          ) : null}
+        </div>
+      </article>
     </section>
   );
 }

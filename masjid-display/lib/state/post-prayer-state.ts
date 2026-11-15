@@ -1,10 +1,11 @@
 import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "../feed-types";
 import { isFridayIso, zonedDateTime } from "../time";
 import { JUMUAH_HOLD_MS } from "./friday-state";
+import { selectedPostPrayerAzkar } from "../post-prayer-selection";
+import { afterPrayerTotalMs } from "../after-prayer-rotation";
 import { prayerBlackoutEndMs } from "./prayer-lifecycle";
 
 const MINUTE_MS = 60_000;
-export const POST_PRAYER_DISPLAY_MS = 4 * MINUTE_MS;
 const DAILY_PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
 
 export interface PostPrayerWindow {
@@ -22,10 +23,12 @@ function windowsForFeed(feed: MasjidDisplayFeedV1): PostPrayerWindow[] {
   const windows: PostPrayerWindow[] = [];
   const insert = (prayer: DisplayPrayerName, completedAtMs: number) => {
     if (!Number.isFinite(completedAtMs)) return;
+    const duration = afterPrayerTotalMs(selectedPostPrayerAzkar(feed, prayer));
+    if (duration === 0) return;
     windows.push({
       prayer,
       startMs: completedAtMs,
-      endMs: completedAtMs + POST_PRAYER_DISPLAY_MS,
+      endMs: completedAtMs + duration,
     });
   };
 

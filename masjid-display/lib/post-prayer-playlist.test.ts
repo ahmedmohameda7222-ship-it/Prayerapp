@@ -51,6 +51,21 @@ describe("deterministic after-prayer reading-time rotation", () => {
     expect(playlist.slides.every((slide) => slide.durationMs >= 9_000)).toBe(true);
   });
 
+  it("separates medium bilingual text into full-width language pages before it crowds an HD screen", () => {
+    const feed = feedWithItems();
+    feed.azkar = [{
+      id: "medium", category: "After Prayer",
+      arabicText: Array.from({ length: 15 }, () => "اللهم").join(" "),
+      translationDe: Array.from({ length: 22 }, () => "Allah").join(" "),
+      source: "Hisn al-Muslim", repeatCount: 1, sortOrder: 1,
+    }];
+    feed.displaySettings.azkarPlaylistIds = ["medium"];
+    const playlist = getPostPrayerPlaylist(feed, "asr");
+    expect(playlist.slides.map((slide) => slide.language)).toEqual(["ar", "de"]);
+    expect(playlist.slides[0].arabicText).toBe(feed.azkar[0].arabicText);
+    expect(playlist.slides[1].translationDe).toBe(feed.azkar[0].translationDe);
+  });
+
   it("keeps Fajr-only items out of Asr and does not invent an empty playlist", () => {
     const feed = feedWithItems();
     feed.azkar = [{ id: "after-prayer-fajr-ilm-rizq-amal", category: "After Prayer", arabicText: "اللهم", translationDe: "O Allah", source: "Hisn al-Muslim", repeatCount: 1, sortOrder: 1 }];

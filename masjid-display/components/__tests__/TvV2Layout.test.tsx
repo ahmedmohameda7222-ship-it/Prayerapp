@@ -43,7 +43,7 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(screen.getByTestId("tv-hero")).toBeInTheDocument();
   });
 
-  it("gives the static post-prayer board the whole lower TV area, without prayer rail or app QR", () => {
+  it("gives the rotating full-screen dhikr the whole hero, without prayer rail or app QR", () => {
     const postPrayerFeed = structuredClone(feed);
     postPrayerFeed.azkar = Array.from({ length: 18 }, (_, index) => ({
       id: `after-${index}`,
@@ -58,13 +58,13 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     const { rerender } = render(<DisplayShell vm={{
       ...vm({ kind: "POST_PRAYER_AZKAR", prayer: "asr", degraded: false, degradedReason: null }),
       feed: postPrayerFeed,
-      logicalNow: new Date("2026-09-15T17:11:00+02:00"),
+      logicalNow: new Date("2026-09-15T17:10:30+02:00"),
     }} />);
 
     const shell = screen.getByTestId("display-shell");
     expect(shell).toHaveAttribute("data-display-mode", "post-prayer");
-    expect(screen.getByTestId("after-prayer-board")).toHaveAttribute("data-density", "full");
-    expect(screen.getAllByTestId("after-prayer-item")).toHaveLength(18);
+    expect(screen.getByTestId("after-prayer-board")).toHaveAttribute("data-density", "short");
+    expect(screen.getAllByTestId("after-prayer-item")).toHaveLength(1);
     expect(screen.queryByTestId("tv-prayer-dock")).not.toBeInTheDocument();
     expect(screen.queryByTestId("prayerapp-qr")).not.toBeInTheDocument();
     expect(screen.getByTestId("tv-hero")).toBeInTheDocument();
@@ -76,13 +76,14 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(screen.getAllByTestId(/^prayer-cell-/)).toHaveLength(6);
   });
 
-  it("expands the post-prayer grid and uses larger two-line Arabic and German typography", () => {
+  it("uses a full-screen dhikr slide without text truncation and larger television typography", () => {
     const css = readFileSync(path.join(process.cwd(), "app/tv-v2.css"), "utf8");
     expect(css).toContain('.tv-v2[data-display-mode="post-prayer"]');
-    expect(css).toMatch(/\.tv-v2\[data-display-mode="post-prayer"\] \.after-wrapper\[data-density="full"\] \.after-ar\s*\{[^}]*font-size:\s*clamp\(/);
-    expect(css).toMatch(/\.tv-v2\[data-display-mode="post-prayer"\] \.after-wrapper\[data-density="full"\] \.after-de\s*\{[^}]*font-size:\s*clamp\(/);
-    expect(css).toMatch(/\.tv-v2\[data-display-mode="post-prayer"\] \.after-wrapper\[data-density="full"\] \.after-ar\s*\{[^}]*-webkit-line-clamp:\s*2;/);
-    expect(css).toMatch(/\.tv-v2\[data-display-mode="post-prayer"\] \.after-wrapper\[data-density="full"\] \.after-de\s*\{[^}]*-webkit-line-clamp:\s*2;/);
+    expect(css).toMatch(/\.tv-v2\[data-display-mode="post-prayer"\] \.after-active-ar\s*\{[^}]*font-size:\s*clamp\(/);
+    expect(css).toMatch(/\.tv-v2\[data-display-mode="post-prayer"\] \.after-active-de\s*\{[^}]*font-size:\s*clamp\(/);
+    expect(css).not.toMatch(/\.after-active-(ar|de)[^}]*-webkit-line-clamp/);
+    expect(css).toMatch(/\.tv-v2 \.header-clock\s*\{[^}]*font-size:\s*clamp\(/);
+    expect(css).toMatch(/\.tv-v2 \.prayer-iqama\s*\{[^}]*font-size:\s*clamp\(/);
   });
 
   it("shows a neutral loading composition until the first trusted Feed arrives", () => {

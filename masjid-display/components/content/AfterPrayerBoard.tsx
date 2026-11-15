@@ -18,7 +18,7 @@ export function AfterPrayerBoard({ vm }: { vm: DisplayRuntimeViewModel }) {
   const slide = activeAfterPrayerSlide(items, window.startMs, vm.logicalNow.getTime());
   if (!slide) return null;
 
-  const { item, index, count, language } = slide;
+  const { item, index, count, language, textAr, textDe, pageIndex, pageCount } = slide;
   const density = needsSeparatedDhikr(item)
     ? "long"
     : item.arabicText.length > 110 || item.translationDe.length > 170
@@ -40,12 +40,13 @@ export function AfterPrayerBoard({ vm }: { vm: DisplayRuntimeViewModel }) {
         </div>
         <div className="after-slide-status">
           <span data-testid="after-prayer-position">{index + 1} / {count}</span>
+          {pageCount > 1 ? <span data-testid="after-prayer-page">Seite {pageIndex + 1} / {pageCount}</span> : null}
           <time data-testid="after-prayer-remaining">{remainingDisplayTime(slide.endsAtMs, vm.logicalNow)}</time>
         </div>
       </div>
       <article className="after-active-slide" data-testid="after-prayer-item" data-language={language} aria-live="off">
-        {language !== "de" ? <div lang="ar" dir="rtl" className="after-active-ar">{item.arabicText}</div> : null}
-        {language !== "ar" ? <div lang="de" className="after-active-de">{item.translationDe}</div> : null}
+        {textAr ? <div lang="ar" dir="rtl" className="after-active-ar">{textAr}</div> : null}
+        {textDe ? <div lang="de" className="after-active-de">{textDe}</div> : null}
         <div className="after-active-meta">
           <span>{item.source}</span>
           {item.repeatCount > 1 ? (

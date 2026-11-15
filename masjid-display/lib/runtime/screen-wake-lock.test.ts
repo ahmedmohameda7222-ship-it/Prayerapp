@@ -8,12 +8,12 @@ afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
   if (original) Object.defineProperty(navigator, "wakeLock", original);
-  else delete (navigator as Navigator & { wakeLock?: WakeLock }).wakeLock;
+  else Reflect.deleteProperty(navigator, "wakeLock");
 });
 
 describe("Fire TV screen wake lock (best effort)", () => {
   it("does not pretend to synthesize user activity on browsers without Wake Lock", () => {
-    delete (navigator as Navigator & { wakeLock?: WakeLock }).wakeLock;
+    Reflect.deleteProperty(navigator, "wakeLock");
     const stop = installScreenWakeLock();
     expect(SCREEN_WAKE_RECHECK_MS).toBe(240_000);
     expect(stop).toBeTypeOf("function");
@@ -24,8 +24,9 @@ describe("Fire TV screen wake lock (best effort)", () => {
     vi.useFakeTimers();
     vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
     const release = vi.fn().mockResolvedValue(undefined);
-    const sentinel = { released: false, release, addEventListener: vi.fn() };
-    const request = vi.fn().mockResolvedValue(sentinel);
+    const sentinel = { released: false, release: vi.fn().mockResolvedValue(undefined), addEventListener: vi.fn() };
+    const second = { released: false, release, addEventListener: vi.fn() };
+    const request = vi.fn().mockResolvedValueOnce(sentinel).mockResolvedValueOnce(second);
     Object.defineProperty(navigator, "wakeLock", { configurable: true, value: { request } });
     const stop = installScreenWakeLock();
     await Promise.resolve(); await Promise.resolve();

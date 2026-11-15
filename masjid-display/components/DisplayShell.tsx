@@ -19,10 +19,13 @@ export function DisplayShell({
   diagnosticsEnabled = false,
   pixelShift = { x: 0, y: 0 },
 }: DisplayShellProps) {
+  const isPostPrayer = vm.state?.kind === "POST_PRAYER_AZKAR";
+
   return (
     <section
       className="display-shell tv-v2"
       data-testid="display-shell"
+      data-display-mode={isPostPrayer ? "post-prayer" : undefined}
       style={{ transform: `translate3d(${pixelShift.x}px, ${pixelShift.y}px, 0)` }}
     >
       <Header vm={vm} />
@@ -39,10 +42,12 @@ export function DisplayShell({
       </main>
 
       <UrgentBar items={vm.urgent} logicalNow={vm.logicalNow} />
-      <div className="tv-prayer-dock" data-testid="tv-prayer-dock">
-        <PrayerStrip vm={vm} />
-        <PersistentAppQr publicAppUrl={vm.publicAppUrl} />
-      </div>
+      {!isPostPrayer ? (
+        <div className="tv-prayer-dock" data-testid="tv-prayer-dock">
+          <PrayerStrip vm={vm} />
+          <PersistentAppQr publicAppUrl={vm.publicAppUrl} />
+        </div>
+      ) : null}
 
       <footer className="display-footer">
         <div className="presentation-mode-slot">

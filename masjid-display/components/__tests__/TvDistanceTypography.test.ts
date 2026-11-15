@@ -38,6 +38,8 @@ describe("32-inch Samsung/Fire Stick Calibri-first distance typography", () => {
     expect(styles).toContain('font-family: var(--tv-font-latin)');
     expect(styles).toContain('font-family: var(--tv-font-arabic)');
     expect(styles).not.toContain("@import url");
+    // Mixed Arabic/German pseudo-headings need the bundled Arabic font too.
+    expect(styles).toMatch(/\.tv-v2 \.announcement-slide::before,[\s\S]*?font-family: var\(--tv-font-arabic\)/);
   });
 
   it("keeps header and ALL six prayer boxes large at 720p", () => {

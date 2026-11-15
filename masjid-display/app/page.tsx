@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { DisplayShell } from "../components/DisplayShell";
 import { pixelShiftForEpoch } from "../lib/pixel-shift";
 import { useDisplayRuntime } from "../lib/runtime/use-display-runtime";
@@ -9,7 +9,7 @@ import { localDateIso } from "../lib/time";
 import { useTvTestCommand } from "../lib/runtime/use-tv-test-command";
 import { applyTvTestCommand, parseTvTestStatus } from "../lib/runtime/tv-test-presenter";
 import { createWatchdog } from "../lib/runtime/watchdog";
-import { installScreenWakeLock } from "../lib/runtime/screen-wake-lock";
+import { installScreenWakeLock, type TvWakeLockStatus } from "../lib/runtime/screen-wake-lock";
 
 const PIXEL_SHIFT_EPOCH_MS = 10 * 60_000;
 const WATCHDOG_CHECK_MS = 30_000;
@@ -30,7 +30,8 @@ function diagnosticsOnServer() {
 
 export default function Home() {
   // Best-effort platform Wake Lock. Does not spoof remote input or override Fire OS.
-  useEffect(() => installScreenWakeLock(), []);
+  const [wakeLockStatus, setWakeLockStatus] = useState<TvWakeLockStatus>("pending");
+  useEffect(() => installScreenWakeLock(setWakeLockStatus), []);
   const liveVm = useDisplayRuntime();
   const remoteCommand = useTvTestCommand();
   // Read test status independently from the production Feed; expire locally
@@ -46,7 +47,7 @@ export default function Home() {
     ? localDateIso(presentationVm.logicalNow, presentationVm.feed.timezone)
     : null;
   const germanKhutbah = useGermanFridayKhutbah(fridayDate);
-  const vm = { ...presentationVm, fridayKhutbah: germanKhutbah };
+  const vm = { ...presentationVm, fridayKhutbah: germanKhutbah, wakeLockStatus };
   const watchdog = useMemo(
     () => createWatchdog({ hardFailureMs: WATCHDOG_HARD_FAILURE_MS }),
     [],

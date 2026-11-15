@@ -10,6 +10,7 @@ export function PrayerTimeNow({ vm }: { vm: DisplayRuntimeViewModel }) {
       prayer={vm.state?.prayer}
       target={prayerTarget(vm, "prayer")}
       targetLabel="Adhan / الأذان"
+      showCountdown={false}
       now={vm.logicalNow}
       timezone={presentationTimezone(vm)}
     />

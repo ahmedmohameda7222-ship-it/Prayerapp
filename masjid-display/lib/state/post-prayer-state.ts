@@ -1,6 +1,7 @@
 import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "../feed-types";
 import { isFridayIso, zonedDateTime } from "../time";
 import { JUMUAH_HOLD_MS } from "./friday-state";
+import { prayerBlackoutEndMs } from "./prayer-lifecycle";
 
 const MINUTE_MS = 60_000;
 export const POST_PRAYER_DISPLAY_MS = 4 * MINUTE_MS;
@@ -32,14 +33,15 @@ function windowsForFeed(feed: MasjidDisplayFeedV1): PostPrayerWindow[] {
     for (const prayer of DAILY_PRAYERS) {
       if (prayer === "dhuhr" && isFridayIso(day.date)) continue;
       const delay = feed.prayers.iqamaDelays[prayer];
-      const duration = feed.displaySettings.prayerDurations[prayer];
-      if (!Number.isFinite(delay) || delay < 0 || !Number.isFinite(duration) || duration < 0) {
+      if (!Number.isFinite(delay) || delay < 0) {
         continue;
       }
       insert(
         prayer,
-        zonedDateTime(day.date, day[prayer], feed.timezone).getTime() +
-          (delay + duration) * MINUTE_MS,
+        prayerBlackoutEndMs(
+          prayer,
+          zonedDateTime(day.date, day[prayer], feed.timezone).getTime() + delay * MINUTE_MS,
+        ),
       );
     }
 

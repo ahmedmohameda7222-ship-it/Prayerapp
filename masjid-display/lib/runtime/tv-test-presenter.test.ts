@@ -81,6 +81,24 @@ describe("TV Test command reader", () => {
     expect(pre.state?.serviceIndex).toBe(0);
   });
 
+  it("allows an Admin to demonstrate published morning Azkar outside the morning window", () => {
+    const afternoon = vm("2026-09-15T11:00:15.000Z"); // 13:00 Berlin: no daypart
+    const preview = applyTvTestCommand(afternoon, {
+      ...command("AZKAR"), startedAt: "2026-09-15T11:00:00.000Z", expiresAt: "2026-09-15T11:03:00.000Z",
+    });
+    expect(preview.state?.kind).toBe("NORMAL");
+    expect(preview.normalSlide?.kind).toBe("AZKAR");
+    expect(preview.content?.azkar.length).toBeGreaterThan(0);
+  });
+
+  it("allows preview of a published campaign without modifying its real display schedule", () => {
+    const initial = vm();
+    const preview = applyTvTestCommand(initial, command("CAMPAIGN"));
+    expect(preview.normalSlide?.kind).toBe("CAMPAIGN");
+    expect(preview.content?.campaigns.length).toBeGreaterThan(0);
+    expect(initial.feed?.campaigns.length).toBeGreaterThan(0);
+  });
+
   it("derives Next Prayer from the real feed, and returns to original VM if stopped or expired", () => {
     const real = vm();
     const preview = applyTvTestCommand(real, command("NEXT_PRAYER"));

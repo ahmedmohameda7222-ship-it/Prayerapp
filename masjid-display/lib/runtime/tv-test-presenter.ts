@@ -1,4 +1,4 @@
-import type { DisplayPrayerName, DisplayPrayerDay, MasjidDisplayFeedV1 } from "../feed-types";
+import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "../feed-types";
 import { activeDisplayContent } from "../content-eligibility";
 import { resolveNormalSlide, type NormalSlide, type NormalSlideKind } from "../scheduler";
 import { resolveDisplayState } from "../state/resolve-display-state";

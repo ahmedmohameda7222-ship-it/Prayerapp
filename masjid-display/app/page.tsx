@@ -37,7 +37,9 @@ export default function Home() {
     liveVm.logicalNow,
   );
   const presentationVm = applyTvTestCommand(liveVm, activeTest);
-  const fridayDate = presentationVm.state?.kind === "JUMUAH_NOW" && presentationVm.feed
+  // Preload published German sermon during Friday countdown as well, so a
+  // brief network outage at Jumuah start does not lose already fetched text.
+  const fridayDate = (presentationVm.state?.kind === "FRIDAY_MODE" || presentationVm.state?.kind === "JUMUAH_NOW") && presentationVm.feed
     ? localDateIso(presentationVm.logicalNow, presentationVm.feed.timezone)
     : null;
   const germanKhutbah = useGermanFridayKhutbah(fridayDate);

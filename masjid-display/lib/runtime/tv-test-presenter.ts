@@ -173,15 +173,18 @@ export function applyTvTestCommand(
   if (dailyOrFriday) {
     const anchor = stageInstant(command.scenario, command.prayer, feed, now);
     if (anchor === null) return vm;
-    const elapsed = Math.max(0, now.getTime() - Date.parse(command.startedAt));
-    const simulatedNow = new Date(anchor + elapsed);
-    const state = resolveDisplayState(feed, simulatedNow);
-    if (state.kind !== command.scenario) {
+    // Only the starting phase must match the requested case; after that,
+    // allow the real state machine to progress naturally (countdown -> Adhan).
+    const initial = resolveDisplayState(feed, new Date(anchor));
+    if (initial.kind !== command.scenario) {
       return {
         ...vm,
         tvTestUnavailableReason: `Cannot simulate ${command.scenario} for ${command.prayer ?? "Friday"} from this Feed.`,
       };
     }
+    const elapsed = Math.max(0, now.getTime() - Date.parse(command.startedAt));
+    const simulatedNow = new Date(anchor + elapsed);
+    const state = resolveDisplayState(feed, simulatedNow);
     const content = activeDisplayContent(feed, simulatedNow);
     return {
       ...vm,

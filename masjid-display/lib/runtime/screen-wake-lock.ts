@@ -4,29 +4,44 @@
  */
 export const SCREEN_WAKE_RECHECK_MS = 4 * 60_000;
 
-export function installScreenWakeLock(): () => void {
+export type TvWakeLockStatus = "pending" | "active" | "unsupported" | "denied" | "hidden" | "released";
+
+export function installScreenWakeLock(onStatus?: (status: TvWakeLockStatus) => void): () => void {
   let sentinel: WakeLockSentinel | null = null;
   let acquiring = false;
   let disposed = false;
 
   const acquire = async () => {
-    if (disposed || acquiring || document.visibilityState !== "visible" ||
-        !("wakeLock" in navigator) || !navigator.wakeLock ||
-        typeof navigator.wakeLock.request !== "function" ||
-        (sentinel && !sentinel.released)) return;
+    if (disposed || acquiring) return;
+    if (document.visibilityState !== "visible") {
+      onStatus?.("hidden");
+      return;
+    }
+    if (!("wakeLock" in navigator) || !navigator.wakeLock ||
+        typeof navigator.wakeLock.request !== "function") {
+      onStatus?.("unsupported");
+      return;
+    }
+    if (sentinel && !sentinel.released) return;
 
     acquiring = true;
     try {
       const next = await navigator.wakeLock.request("screen");
       if (disposed || document.visibilityState !== "visible") {
         void next.release();
+        if (!disposed) onStatus?.("hidden");
         return;
       }
       sentinel = next;
+      onStatus?.("active");
       next.addEventListener("release", () => {
-        if (sentinel === next) sentinel = null;
+        if (sentinel === next) {
+          sentinel = null;
+          if (!disposed) onStatus?.("released");
+        }
       });
     } catch {
+      onStatus?.("denied");
       // The TV must keep presenting even if Silk denies this API.
     } finally {
       acquiring = false;

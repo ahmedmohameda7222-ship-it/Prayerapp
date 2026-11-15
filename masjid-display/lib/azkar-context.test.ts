@@ -64,6 +64,6 @@ describe("context-aware TV Azkar selection", () => {
     const feed = configuredFeed();
     feed.displaySettings.azkarPlaylistIds = ["evening", "after-prayer"];
     expect(activeDisplayContent(feed, weekday("09:00:00")).azkar).toEqual([]);
-    expect(activeDisplayContent(feed, weekday("17:11:00")).azkar.map((a) => a.id)).toEqual(["after-prayer"]);
+    expect(activeDisplayContent(feed, weekday("17:10:31")).azkar.map((a) => a.id)).toEqual(["after-prayer"]);
   });
 });

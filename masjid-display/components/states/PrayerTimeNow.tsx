@@ -5,13 +5,11 @@ export function PrayerTimeNow({ vm }: { vm: DisplayRuntimeViewModel }) {
   return (
     <StateFrame
       testId="prayer-state-prayer-time-now"
-      titleDe="Gebetszeit ist jetzt"
-      titleAr="حان وقت الصلاة"
+      titleDe="Jetzt ist Zeit für den Adhan zum Gebet"
+      titleAr="حان الآن موعد أذان صلاة"
       prayer={vm.state?.prayer}
       target={prayerTarget(vm, "prayer")}
       targetLabel="Adhan / الأذان"
-      supportDe="Die Gebetszeit hat begonnen"
-      supportAr="دخل وقت الصلاة"
       now={vm.logicalNow}
       timezone={presentationTimezone(vm)}
     />

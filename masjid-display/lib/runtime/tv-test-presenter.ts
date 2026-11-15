@@ -1,5 +1,5 @@
 import type { DisplayPrayerName, MasjidDisplayFeedV1 } from "../feed-types";
-import { activeDisplayContent } from "../content-eligibility";
+import { activeDisplayContent, type ActiveContent } from "../content-eligibility";
 import { resolveNormalSlide, type NormalSlide, type NormalSlideKind } from "../scheduler";
 import { resolveDisplayState } from "../state/resolve-display-state";
 import { isFridayIso, localDateIso, zonedDateTime } from "../time";
@@ -101,6 +101,45 @@ function stageInstant(
   }
 }
 
+/**
+ * Rehearsal buttons should show real published Feed content even if that item
+ * is scheduled for another hour. This is a presentation-only selection:
+ * production content eligibility and the Feed are never modified.
+ */
+function previewFamilyContent(
+  feed: MasjidDisplayFeedV1,
+  content: ActiveContent,
+  scenario: Scenario,
+): ActiveContent {
+  switch (scenario) {
+    case "AZKAR": {
+      const selected = new Set(feed.displaySettings.azkarPlaylistIds);
+      return {
+        ...content,
+        azkar: feed.azkar
+          .filter((item) => selected.has(item.id) &&
+            ["Morning", "Evening", "Friday"].includes(item.category))
+          .sort((a, b) => a.sortOrder - b.sortOrder),
+      };
+    }
+    case "ANNOUNCEMENT":
+      return { ...content, announcements: feed.announcements.filter((item) =>
+        !item.isUrgent && item.displayStyle === "normal") };
+    case "SPECIAL":
+      return { ...content, specialAnnouncements: feed.announcements.filter((item) =>
+        !item.isUrgent && item.displayStyle === "special") };
+    case "EVENT":
+      return { ...content, events: feed.events };
+    case "CAMPAIGN":
+      return { ...content, campaigns: feed.campaigns };
+    case "MAGHRIB_PROGRAM":
+      return { ...content, maghribPrograms: feed.prayers.schedule.filter((day) =>
+        day.maghribProgram?.enabled) };
+    default:
+      return content;
+  }
+}
+
 function selectedNormalContent(kind: Scenario, vm: DisplayRuntimeViewModel): NormalSlide | null {
   const active = vm.content;
   if (!active) return null;
@@ -167,14 +206,16 @@ export function applyTvTestCommand(
       }, true),
     };
   }
-  const slide = selectedNormalContent(command.scenario, testVm);
+  const previewContent = previewFamilyContent(feed, content, command.scenario);
+  const previewVm = { ...testVm, content: previewContent };
+  const slide = selectedNormalContent(command.scenario, previewVm);
   const kind = command.scenario as NormalSlideKind;
   if (!slide || (slide.itemId === null && kind !== "NEXT_PRAYER")) {
     return {
-      ...testVm,
+      ...previewVm,
       normalSlide: null,
       tvTestUnavailableReason: "No eligible published content for " + command.scenario,
     };
   }
-  return { ...testVm, normalSlide: slide };
+  return { ...previewVm, normalSlide: slide };
 }

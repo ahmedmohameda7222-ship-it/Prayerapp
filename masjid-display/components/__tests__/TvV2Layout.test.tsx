@@ -103,38 +103,20 @@ describe("approved 1920x1080 TV Layout V2 shell", () => {
     expect(legibility).toContain("grid-template-rows: auto minmax(0, 1fr)");
   });
 
-  it("keeps the Stay Awake preference across full-screen post-prayer and blackout states without overlaying Quran", () => {
-    const onToggle = vi.fn();
-    const setup = { requested: false, status: "pending" as const, onToggle };
-    const { rerender } = render(<DisplayShell vm={vm()} stayAwake={setup} />);
-    const footer = screen.getByRole("contentinfo");
-    expect(within(footer).getByRole("button", { name: /Stay Awake/i })).toBeInTheDocument();
-    expect(within(footer).getByRole("button", { name: /Stay Awake/i })).toHaveAttribute("aria-pressed", "false");
-
-    const postPrayerFeed = structuredClone(feed);
-    postPrayerFeed.azkar = [{
-      id: "after1", category: "After Prayer" as const, arabicText: "أستغفر الله",
-      translationDe: "Ich bitte Allah um Vergebung", source: "Hisn al-Muslim",
-      repeatCount: 1, sortOrder: 1,
-    }];
-    postPrayerFeed.displaySettings.azkarPlaylistIds = ["after1"];
-    rerender(<DisplayShell
-      vm={{ ...vm({ kind: "POST_PRAYER_AZKAR", prayer: "asr", degraded: false, degradedReason: null }),
-        feed: postPrayerFeed, logicalNow: new Date("2026-09-15T17:11:00+02:00") }}
-      stayAwake={setup}
-    />);
+  it("restores the original Fullscreen-only controls and TV coordinates without Stay Awake", () => {
+    render(<DisplayShell vm={vm()} />);
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Stay Awake/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("header-clock")).not.toBeInTheDocument();
 
-    rerender(<DisplayShell
-      vm={vm({ kind: "PRAYER_IN_PROGRESS", prayer: "asr", degraded: false, degradedReason: null })}
-      stayAwake={setup}
-    />);
-    expect(screen.queryByRole("button", { name: /Stay Awake/i })).not.toBeInTheDocument();
-    expect(screen.getByTestId("prayer-blackout")).toBeInTheDocument();
-    rerender(<DisplayShell vm={vm()} stayAwake={{ ...setup, requested: true, status: "active" }} />);
-    expect(screen.getByRole("button", { name: /Stay Awake/i })).toHaveAttribute("aria-pressed", "true");
+    const shellSource = readFileSync(path.join(process.cwd(), "components/DisplayShell.tsx"), "utf8");
+    const pageSource = readFileSync(path.join(process.cwd(), "app/page.tsx"), "utf8");
+    const legibility = readFileSync(path.join(process.cwd(), "app/tv-legibility.css"), "utf8");
+
+    expect(shellSource).toContain("<PresentationModeControl />");
+    expect(shellSource).not.toContain("StayAwakeControl");
+    expect(pageSource).not.toContain("toggleStayAwake");
+    expect(legibility).not.toContain(".tv-v2 .presentation-mode-slot {");
+    expect(legibility).not.toContain(".tv-v2 .stay-awake-control");
   });
 
   it("shows Fire TV browser Wake Lock status only in opt-in diagnostics", () => {

@@ -14,4 +14,8 @@
     <string name="prayer_asr">Asr</string>
     <string name="prayer_maghrib">Maghrib</string>
     <string name="prayer_isha">Isha</string>
+    <string name="offline_first_launch_title">Internetverbindung erforderlich</string>
+    <string name="offline_first_launch_body">Verbinde dich einmal mit dem Internet, um den Gebetsplan zu speichern. Danach sind die gespeicherten Gebetszeiten offline verfügbar.</string>
+    <string name="offline_first_launch_retry">Erneut versuchen</string>
+    <string name="offline_first_launch_still_offline">Keine Verbindung. Bitte WLAN oder mobile Daten aktivieren.</string>
 </resources>

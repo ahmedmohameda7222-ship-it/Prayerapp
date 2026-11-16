@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#005a52" />
+  <meta name="robots" content="noindex" />
+  <title>Prayerapp · Offline</title>
+  <link rel="stylesheet" href="/offline.css" />
+  <script src="/offline.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <div class="identity">
+      <img src="/assets/app-icon-192.png" width="50" height="50" alt="" />
+      <div><h1 id="title">Prayer times</h1><p class="sub" id="subtitle">Saved for use without internet</p></div>
+    </div>
+  </header>
+  <main class="container">
+    <section class="notice" role="status"><span aria-hidden="true">ⓘ</span><div><strong id="notice-title">Offline mode</strong><div id="notice-body">This is a saved copy. Changes and online features need internet.</div></div></section>
+    <section class="card">
+      <h2 id="schedule-title">Prayer schedule</h2>
+      <div class="days">
+        <button id="previous-day" type="button" aria-label="Previous date">‹</button>
+        <strong id="selected-day">—</strong>
+        <button id="next-day" type="button" aria-label="Next date">›</button>
+      </div>
+      <p class="meta" id="updated-at"></p>
+      <div id="prayers" aria-live="polite"><p class="empty" id="loading-message">Loading saved prayer times…</p></div>
+    </section>
+    <div class="actions">
+      <button type="button" id="retry">Retry connection</button>
+      <a href="/" id="back-home">Open app</a>
+    </div>
+    <p class="meta" id="disclaimer">Prayer times are published by the mosque. Do not assume they are current after a long offline period.</p>
+  </main>
+</body>
+</html>

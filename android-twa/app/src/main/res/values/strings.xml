@@ -15,4 +15,8 @@
     <string name="prayer_asr">Asr</string>
     <string name="prayer_maghrib">Maghrib</string>
     <string name="prayer_isha">Isha</string>
+    <string name="offline_first_launch_title">Internet connection required</string>
+    <string name="offline_first_launch_body">Connect once to load the mosque prayer schedule. After your first online launch, saved prayer times can open without internet.</string>
+    <string name="offline_first_launch_retry">Retry</string>
+    <string name="offline_first_launch_still_offline">Still offline. Connect to Wi-Fi or mobile data and retry.</string>
 </resources>
